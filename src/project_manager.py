@@ -16,7 +16,7 @@ class ProjectManager:
         if self.verbose:
             print(message)
 
-    def create_or_open_project(self, phantom_name, frequency_mhz, placement_name=None, simulation_name_suffix=None):
+    def create_or_open_project(self, phantom_name, frequency_mhz, placement_name=None, skip_load=False):
         """
         Creates or opens a project. Handles different naming conventions for
         near-field and far-field studies.
@@ -40,9 +40,17 @@ class ProjectManager:
         self.project_path = os.path.join(project_dir, project_filename)
         self._log(f"Project path set to: {self.project_path}")
 
-        # Always create a new project to avoid issues with corrupted files from previous runs.
-        self.create_new()
-        self.save()
+        if skip_load:
+            if os.path.exists(self.project_path):
+                self.open()
+            else:
+                self._log(f"WARNING: Project file not found at {self.project_path}. Cannot open.")
+                if self.document and hasattr(self.document, 'IsOpen') and self.document.IsOpen():
+                    self.document.Close()
+        else:
+            # Always create a new project to avoid issues with corrupted files from previous runs.
+            self.create_new()
+            self.save()
 
     def create_new(self):
         """

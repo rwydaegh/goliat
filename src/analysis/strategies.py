@@ -152,26 +152,16 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
         return os.path.join(self.base_dir, 'plots', 'far_field', self.phantom_name)
 
     def load_and_process_results(self, analyzer):
-        results_dir = self.get_results_base_dir()
-        if not os.path.exists(results_dir):
-            return
+        frequencies = self.config.get_setting('frequencies_mhz', [])
+        far_field_params = self.config.get_setting('far_field_setup/environmental', {})
+        incident_directions = far_field_params.get('incident_directions', [])
+        polarizations = far_field_params.get('polarizations', [])
 
-        for freq_dir in os.listdir(results_dir):
-            freq_path = os.path.join(results_dir, freq_dir)
-            if not os.path.isdir(freq_path) or not freq_dir.endswith("MHz"):
-                continue
-            
-            frequency_mhz = int(freq_dir.replace("MHz", ""))
-            
-            for placement_dir in os.listdir(freq_path):
-                placement_path = os.path.join(freq_path, placement_dir)
-                if not os.path.isdir(placement_path) or not placement_dir.startswith("environmental"):
-                    continue
-                
-                # Pass the directory name directly as the detailed placement name
-                # The analyzer will construct the full path from this.
-                # We still need to provide dummy values for scenario, pos, and orient names for the method signature.
-                analyzer._process_single_result(frequency_mhz, "environmental", placement_dir, "")
+        for freq in frequencies:
+            for direction_name in incident_directions:
+                for polarization_name in polarizations:
+                    placement_name = f"environmental_{direction_name}_{polarization_name}"
+                    analyzer._process_single_result(freq, "environmental", placement_name, "")
 
     def get_normalization_factor(self, frequency_mhz, simulated_power_w):
         # For far-field, we normalize to a power density of 1 W/m^2

@@ -5,7 +5,7 @@
         "simulation_time_multiplier": 5
     },
     "solver_settings": {
-        "kernel": "Cuda",
+        "kernel": "Acceleware",
         "location": "localhost",
         "show_solver_output": true
     },

@@ -37,6 +37,11 @@ def main():
         action='store_true',
         help="Only run the setup phase, do not run the simulation."
     )
+    parser.add_argument(
+        '--extract-only',
+        action='store_true',
+        help="Only run the extraction phase, skipping setup and simulation."
+    )
 
     args = parser.parse_args()
 
@@ -54,7 +59,7 @@ def main():
         print(f"Error: Unknown study type '{args.study_type}'")
         sys.exit(1)
         
-    study.run(setup_only=args.setup_only)
+    study.run(setup_only=args.setup_only, extract_only=args.extract_only)
 
 if __name__ == "__main__":
     main()

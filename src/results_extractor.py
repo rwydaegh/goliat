@@ -136,6 +136,9 @@ class ResultsExtractor:
             stats_output = sar_stats_evaluator.Outputs[0]
             results = stats_output.Data
 
+            # IMPORTANT: Clean up the algorithm to avoid issues when processing multiple simulations in the same project
+            self.document.AllAlgorithms.Remove(sar_stats_evaluator)
+
             if not (results and results.NumberOfRows() > 0 and results.NumberOfColumns() > 0):
                 self._log("  - WARNING: No SAR statistics data found.")
                 return
@@ -160,16 +163,17 @@ class ResultsExtractor:
                 results_data[f"{group}_peak_sar"] = data['peak_sar']
 
             all_regions_row = df[df['Tissue'] == 'All Regions']
-            peak_sar_col_name = 'Peak Spatial-Average SAR[IEEE/IEC62704-1] (10g)'
-            if not all_regions_row.empty and peak_sar_col_name in all_regions_row.columns:
-                results_data['peak_sar_10g_W_kg'] = all_regions_row[peak_sar_col_name].iloc[0]
+            if not all_regions_row.empty:
+                mass_averaged_sar = all_regions_row['Mass-Averaged SAR'].iloc[0]
+                if self.study_type == 'near_field':
+                    sar_key = 'head_SAR' if self.placement_name.lower() in ['front_of_eyes', 'by_cheek'] else 'trunk_SAR'
+                    results_data[sar_key] = mass_averaged_sar
+                else:
+                    results_data['whole_body_sar'] = mass_averaged_sar
 
-            total_avg_sar_row = df.iloc[-1]
-            if self.study_type == 'near_field':
-                sar_key = 'head_SAR' if self.placement_name.lower() in ['front_of_eyes', 'by_cheek'] else 'trunk_SAR'
-                results_data[sar_key] = total_avg_sar_row['Mass-Averaged SAR']
-            else:
-                results_data['whole_body_sar'] = total_avg_sar_row['Mass-Averaged SAR']
+                peak_sar_col_name = 'Peak Spatial-Average SAR[IEEE/IEC62704-1] (10g)'
+                if peak_sar_col_name in all_regions_row.columns:
+                    results_data['peak_sar_10g_W_kg'] = all_regions_row[peak_sar_col_name].iloc[0]
 
             self._save_reports(df, tissue_groups, group_sar_stats, results_data)
 
