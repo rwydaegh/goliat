@@ -4,7 +4,7 @@
     "convergence_level_dB": -15,
     "global_gridding": 3.0,
     "freespace_antenna_bbox_expansion_mm": [20, 20, 20],
-    "simulation_time_multiplier": 2,
+    "simulation_time_multiplier": 5,
     "number_of_point_sources": 2,
     "point_source_order": [
       "lower_left_bottom",
@@ -201,12 +201,80 @@
   },
   "solver_settings": {
     "kernel": "Cuda",
-    "location": "localhost"
+    "location": "localhost",
+    "show_solver_output": true
   },
-  "verbose": true,
+  "verbose": false,
   "manual_isolve": true,
   "data_setup": {
     "gdrive_url": "https://drive.google.com/drive/folders/1Ps0ilW6yx4Z5VoWRZKrkhP225m8lBQOV?usp=sharing",
     "data_dir": "data"
+  },
+  "placement_scenarios": {
+    "front_of_eyes": {
+      "positions": {
+        "center": [0, 0, 0],
+        "left": [-25, 0, 0],
+        "right": [25, 0, 0],
+        "down": [0, 0, -60]
+      },
+      "orientations": {
+        "vertical": [],
+        "horizontal": [
+          {"axis": "Y", "angle_deg": 90}
+        ]
+      }
+    },
+    "by_cheek": {
+      "positions": {
+        "base": [0, 0, 0]
+      },
+      "orientations": {
+        "base": [],
+        "up": [{"axis": "X", "angle_deg": 10}],
+        "down": [{"axis": "X", "angle_deg": -10}]
+      }
+    },
+    "by_belly": {
+      "positions": {
+        "center": [0, 0, 0],
+        "left": [-150, 0, 0],
+        "right": [150, 0, 0],
+        "up": [0, 0, 100]
+      },
+      "orientations": {
+        "vertical": [],
+        "horizontal": [
+          {"axis": "Y", "angle_deg": 90}
+        ]
+      }
+    }
+  },
+  "phantoms": {
+    "martin_29month": {
+      "head_y_separation": -20,
+      "trunk_z_separation": -280,
+      "chest_extension": 80
+    },
+    "athena": {
+      "head_y_separation": -120,
+      "trunk_z_separation": -390,
+      "chest_extension": 90
+    },
+    "thelonius": {
+      "head_y_separation": 0,
+      "trunk_z_separation": -300,
+      "chest_extension": 100,
+      "back_of_head": -28,
+      "placements": {
+        "do_front_of_eyes": true,
+        "do_by_belly": true,
+        "do_by_cheek": true,
+        "do_by_cheek_tilt": true,
+        "distance_from_eye": 200,
+        "distance_from_belly": 100,
+        "distance_from_cheek": 8
+      }
+    }
   }
 }

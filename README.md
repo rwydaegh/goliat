@@ -65,8 +65,7 @@ The project is organized into a modular and scalable structure:
 │   ├── what we need.md           # Summary of deliverables
 │   └── README.md                 # Explains reference materials
 ├── run_study.py                    # Main entry point to run a simulation campaign
-├── simulation_config.json          # Main simulation configuration
-├── phantoms_config.json            # Phantom-specific configuration
+├── config.json                     # Main simulation and phantom configuration
 ├── material_name_mapping.json      # Maps model entity names to material names
 ├── README.md                       # This file
 └── requirements.txt                # Python dependencies
@@ -98,15 +97,14 @@ The script will automatically perform all necessary setup steps:
 
 ## 5. Configuration
 
-The simulation is controlled by three main JSON files. For most use cases, you will only need to modify `simulation_config.json`.
+The simulation is controlled by two main JSON files. For most use cases, you will only need to modify `config.json`.
 
--   **`simulation_config.json`**: Defines global simulation parameters.
--   **`phantoms_config.json`**: Contains phantom-specific data, including placements, bounding box definitions, and tissue lists.
+-   **`config.json`**: Defines global simulation and phantom parameters.
 -   **`material_name_mapping.json`**: Maps entity names from the CAD models to the material names used in Sim4Life's database.
 
 ### Key Configuration Parameters
 
-The following parameters in `simulation_config.json` are the most important for customizing the simulation:
+The following parameters in `config.json` are the most important for customizing the simulation:
 
 -   `"global_auto_termination"`: Defines how the simulation decides when to end.
     -   `"GlobalAutoTerminationUserDefined"`: The simulation stops when the energy in the field decays by a specific amount. This is the most common setting.

@@ -99,6 +99,32 @@ class NearFieldStudy:
         extractor = ResultsExtractor(self.config, project['simulation'], project['phantom_name'], project['frequency_mhz'], project['placement_name'], self.config.get_verbose(), project['free_space'])
         extractor.extract()
 
+    def run_placement_scenario(self, base_project_name, phantom_name, frequency_mhz, placement_name, **kwargs):
+        """
+        Runs a full placement scenario, iterating through all its positions and orientations.
+        """
+        scenario = self.config.get_placement_scenario(placement_name)
+        if not scenario:
+            raise ValueError(f"Placement scenario '{placement_name}' not defined in config.json")
+
+        print(f"--- Running Placement Scenario: {placement_name} ---")
+        for position_name, _ in scenario["positions"].items():
+            for orientation_name, _ in scenario["orientations"].items():
+                
+                # Append position and orientation to the placement name for uniqueness
+                detailed_placement_name = f"{placement_name}_{position_name}_{orientation_name}"
+                project_name = f"{base_project_name}_{position_name}_{orientation_name}"
+
+                # Pass the detailed names to the single run
+                self.run_single(
+                    project_name=project_name,
+                    phantom_name=phantom_name,
+                    frequency_mhz=frequency_mhz,
+                    placement_name=detailed_placement_name,
+                    **kwargs
+                )
+        print(f"--- Finished Placement Scenario: {placement_name} ---")
+
     def run_campaign(self):
         """
         Runs the entire simulation campaign based on the configuration.
@@ -113,20 +139,4 @@ class NearFieldStudy:
             for freq in frequencies:
                 for placement in placements:
                     project_name = f"{phantom_name}_{freq}MHz_{placement}"
-                    self.run_single(project_name, phantom_name, freq, placement)
-
-    def run_campaign(self):
-        """
-        Runs the entire simulation campaign based on the configuration.
-        """
-        phantoms = self.config.phantoms_config.keys()
-        frequencies = self.config.get_frequencies()
-
-        for phantom_name in phantoms:
-            placements_config = self.config.get_phantom_placements(phantom_name)
-            placements = [p.replace('do_', '') for p, enabled in placements_config.items() if enabled and p.startswith('do_')]
-            
-            for freq in frequencies:
-                for placement in placements:
-                    project_name = f"{phantom_name}_{freq}MHz_{placement}"
-                    self.run_single(project_name, phantom_name, freq, placement)
+                    self.run_placement_scenario(project_name, phantom_name, freq, placement)

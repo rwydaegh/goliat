@@ -20,6 +20,15 @@ class SimulationSetup:
         self.antenna = antenna
         self.verbose = verbose
         self.free_space = free_space
+
+        if placement_name.startswith('front_of_eyes'):
+            self.base_placement_name = 'front_of_eyes'
+        elif placement_name.startswith('by_cheek'):
+            self.base_placement_name = 'by_cheek'
+        elif placement_name.startswith('by_belly'):
+            self.base_placement_name = 'by_belly'
+        else:
+            self.base_placement_name = placement_name
         
         # S4L modules
         import s4l_v1
@@ -154,7 +163,7 @@ class SimulationSetup:
             self._log(f"  - Created free-space simulation BBox.")
         else:
             antenna_bbox_entity = next((e for e in self.model.AllEntities() if hasattr(e, 'Name') and "Antenna bounding box" in e.Name), None)
-            if self.placement_name.lower() in ['front_of_eyes', 'by_cheek']:
+            if self.base_placement_name in ['front_of_eyes', 'by_cheek']:
                 bbox_to_combine_name = f"{self.phantom_name.lower()}_Head_BBox"
             else:
                 bbox_to_combine_name = f"{self.phantom_name.lower()}_Trunk_BBox"

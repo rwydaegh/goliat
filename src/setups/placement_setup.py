@@ -10,12 +10,45 @@ class PlacementSetup:
         self.antenna = antenna
         self.verbose = verbose
         self.free_space = free_space
+
+        # Parse the detailed placement name, e.g., "front_of_eyes_center_vertical"
+        try:
+            parts = placement_name.split('_')
+            if placement_name.startswith('front_of_eyes'):
+                self.base_placement_name = 'front_of_eyes'
+                self.position_name = parts[3]
+                self.orientation_name = parts[4]
+            elif placement_name.startswith('by_cheek_tilt'):
+                self.base_placement_name = 'by_cheek_tilt'
+                self.position_name = parts[3]
+                self.orientation_name = parts[4]
+            elif placement_name.startswith('by_cheek'):
+                self.base_placement_name = 'by_cheek'
+                self.position_name = parts[2]
+                self.orientation_name = parts[3]
+            elif placement_name.startswith('by_belly'):
+                self.base_placement_name = 'by_belly'
+                self.position_name = parts[2]
+                self.orientation_name = parts[3]
+            else:
+                # Fallback for old single placement names or unknown format
+                self.base_placement_name = placement_name
+                self.position_name = "default"
+                self.orientation_name = "default"
+
+        except IndexError:
+            # Fallback for old single placement names
+            self.base_placement_name = placement_name
+            self.position_name = "default"
+            self.orientation_name = "default"
         
         import s4l_v1.model
         import XCoreModeling
+        import XCoreMath
 
         self.model = s4l_v1.model
         self.XCoreModeling = XCoreModeling
+        self.XCoreMath = XCoreMath
 
     def _log(self, message):
         if self.verbose:
@@ -23,115 +56,161 @@ class PlacementSetup:
 
     def place_antenna(self):
         """
-        Places and orients the antenna in the simulation environment.
+        Places and orients the antenna by composing a single transformation matrix
+        and applying it once.
         """
-        self._log("Placing and orienting antenna...")
-        
+        self._log(f"--- Starting Placement: {self.base_placement_name} - {self.position_name} - {self.orientation_name} ---")
+
         placements_config = self.config.get_phantom_placements(self.phantom_name.lower())
-        if not self.free_space and not placements_config.get(f"do_{self.placement_name.lower()}"):
-            self._log(f"Placement '{self.placement_name}' is disabled in the configuration.")
+        if not self.free_space and not placements_config.get(f"do_{self.base_placement_name}"):
+            self._log(f"Placement '{self.base_placement_name}' is disabled in the configuration.")
             return
 
-        target_point, rotations_deg = self._get_placement_details()
+        base_target_point, orientation_rotations, position_offset = self._get_placement_details()
 
+        # Import antenna model
         antenna_path = self.antenna.get_centered_antenna_path(os.path.join(self.config.base_dir, 'data', 'antennas', 'centered'))
-        if not os.path.exists(antenna_path):
-            raise FileNotFoundError(f"Antenna file not found at: {antenna_path}")
-
         imported_entities = list(self.model.Import(antenna_path))
         
-        antenna_group_orig_name = f"Antenna {self.frequency_mhz} MHz"
+        antenna_group = next((e for e in imported_entities if "Antenna" in e.Name and "bounding box" not in e.Name), None)
+        bbox_entity = next((e for e in imported_entities if "bounding box" in e.Name), None)
         
-        new_antenna_group = next((e for e in imported_entities if hasattr(e, 'Name') and e.Name == antenna_group_orig_name), None)
-        new_bbox_entity = next((e for e in imported_entities if hasattr(e, 'Name') and e.Name == "Antenna bounding box"), None)
+        if not antenna_group:
+            raise RuntimeError("Could not find imported antenna group.")
+        
+        # Rename the entities to include the placement name for uniqueness
+        antenna_group.Name = f"{antenna_group.Name} ({self.placement_name})"
+        if bbox_entity:
+            bbox_entity.Name = f"{bbox_entity.Name} ({self.placement_name})"
 
-        if not new_antenna_group:
-            raise ValueError(f"Could not find antenna group '{antenna_group_orig_name}' in newly imported entities.")
+        entities_to_transform = [antenna_group, bbox_entity] if bbox_entity else [antenna_group]
 
-        new_antenna_group.Name = f"Antenna {self.frequency_mhz} MHz ({self.placement_name})"
-        if new_bbox_entity:
-            new_bbox_entity.Name = f"Antenna bounding box ({self.placement_name})"
+        # --- Transformation Composition ---
+        self._log("Composing final transformation...")
+        
+        # Start with an identity transform
+        final_transform = self.XCoreMath.Transform()
 
-        entities_to_transform = [new_antenna_group]
-        if new_bbox_entity:
-            entities_to_transform.append(new_bbox_entity)
+        # 1. Stand-up Rotation
+        rot_stand_up = self.XCoreMath.Rotation(self.XCoreMath.Vec3(1, 0, 0), np.deg2rad(90))
+        final_transform = rot_stand_up * final_transform
 
-        scale = self.model.Vec3(1, 1, 1)
-        null_translation = self.model.Vec3(0, 0, 0)
+        # Special rotation for 'by_cheek' to align with YZ plane
+        if self.base_placement_name.startswith('by_cheek'):
+            self._log("Applying 'by_cheek' specific Z-rotation.")
+            rot_z_cheek = self.XCoreMath.Rotation(self.XCoreMath.Vec3(0, 0, 1), np.deg2rad(-90))
+            final_transform = rot_z_cheek * final_transform
 
-        for axis, angle_deg in rotations_deg:
-            rotation_vec = self.model.Vec3(0, 0, 0)
-            if axis.upper() == 'X':
-                rotation_vec.X = np.deg2rad(angle_deg)
-            elif axis.upper() == 'Y':
-                rotation_vec.Y = np.deg2rad(angle_deg)
-            elif axis.upper() == 'Z':
-                rotation_vec.Z = np.deg2rad(angle_deg)
-            
-            transform = self.model.Transform(scale, rotation_vec, null_translation)
-            for entity in entities_to_transform:
-                entity.ApplyTransform(transform)
+        # 2. Orientation Twist
+        if orientation_rotations:
+            for rot in orientation_rotations:
+                axis_map = {'X': self.XCoreMath.Vec3(1,0,0), 'Y': self.XCoreMath.Vec3(0,1,0), 'Z': self.XCoreMath.Vec3(0,0,1)}
+                rot_twist = self.XCoreMath.Rotation(axis_map[rot['axis'].upper()], np.deg2rad(rot['angle_deg']))
+                final_transform = rot_twist * final_transform
 
-        rotation_vec_x = self.model.Vec3(np.deg2rad(90), 0, 0)
-        transform_x = self.model.Transform(scale, rotation_vec_x, null_translation)
+        # 3. Final Translation
+        final_target_point = self.model.Vec3(
+            base_target_point[0] + position_offset[0],
+            base_target_point[1] + position_offset[1],
+            base_target_point[2] + position_offset[2]
+        )
+        translation_transform = self.XCoreMath.Translation(final_target_point)
+        final_transform = translation_transform * final_transform
+
+        # --- Apply the single, composed transform ---
+        self._log("Applying final composed transform.")
         for entity in entities_to_transform:
-            entity.ApplyTransform(transform_x)
-
-        if self.placement_name == "by_cheek":
-            rotation_vec_z = self.model.Vec3(0, 0, np.deg2rad(-90))
-            transform_z = self.model.Transform(scale, rotation_vec_z, null_translation)
-            for entity in entities_to_transform:
-                entity.ApplyTransform(transform_z)
-
-        translation_transform = self.XCoreModeling.Transform()
-        translation_transform.Translation = target_point
-        for entity in entities_to_transform:
-            entity.ApplyTransform(translation_transform)
+            entity.ApplyTransform(final_transform)
+        
+        self._log("--- Transformation Sequence Complete ---")
 
     def _get_placement_details(self):
         """
-        Returns the target point and rotations for a given placement.
+        Calculates the base target point, position offset, and orientation rotations.
         """
         if self.free_space:
-            self._log("  - Free-space mode: Placing antenna at origin.")
-            return self.model.Vec3(0, 0, 0), [('X', 90), ('Y', 180)]
+            return self.model.Vec3(0, 0, 0), [], [0, 0, 0]
 
+        scenario = self.config.get_placement_scenario(self.base_placement_name)
+        if not scenario:
+            raise ValueError(f"Placement scenario '{self.base_placement_name}' not defined.")
+
+        if self.base_placement_name.startswith('by_cheek'):
+            position_offset = [0, 0, 0]
+        else:
+            position_offset = scenario['positions'].get(self.position_name, [0, 0, 0])
+        orientation_rotations = scenario['orientations'].get(self.orientation_name, [])
+        
         all_entities = self.model.AllEntities()
         placements_config = self.config.get_phantom_placements(self.phantom_name.lower())
-        
-        upright_rotations = [('X', 90), ('Y', 180)]
-        cheek_rotations = [('X', 90), ('Y', 180), ('Z', 90)]
+        base_target_point = self.model.Vec3(0, 0, 0)
 
-        if self.placement_name.lower() == 'front_of_eyes':
+        if self.base_placement_name == 'front_of_eyes':
             eye_entities = [e for e in all_entities if 'Eye' in e.Name or 'Cornea' in e.Name]
             if not eye_entities:
                 raise ValueError("No eye or cornea entities found for 'Eyes' placement.")
             eye_bbox_min, eye_bbox_max = self.model.GetBoundingBox(eye_entities)
-            distance = placements_config.get('distance_from_eye', 100)
-            center_x = (eye_bbox_min[0] + eye_bbox_max[0]) / 2.0
-            center_z = (eye_bbox_min[2] + eye_bbox_max[2]) / 2.0
-            target_y = eye_bbox_max[1] + distance
-            return self.model.Vec3(center_x, target_y, center_z), upright_rotations
-        
-        elif self.placement_name.lower() == 'front_of_belly':
-            trunk_bbox = self.model.AllEntities()[f"{self.phantom_name.lower()}_Trunk_BBox"]
-            trunk_bbox_min, trunk_bbox_max = self.model.GetBoundingBox([trunk_bbox])
-            distance = placements_config.get('distance_from_belly', 100)
-            center_x = (trunk_bbox_min[0] + trunk_bbox_max[0]) / 2.0
-            center_z = (trunk_bbox_min[2] + trunk_bbox_max[2]) / 2.0
-            target_y = trunk_bbox_max[1] + distance
-            return self.model.Vec3(center_x, target_y, center_z), upright_rotations
+            distance = placements_config.get('distance_from_eye', 200)
+            base_target_point[0] = (eye_bbox_min[0] + eye_bbox_max[0]) / 2.0
+            base_target_point[1] = eye_bbox_max[1] + distance
+            base_target_point[2] = (eye_bbox_min[2] + eye_bbox_max[2]) / 2.0
 
-        elif self.placement_name.lower() == 'by_cheek':
-            ear_skin_entity = next((e for e in all_entities if hasattr(e, 'Name') and e.Name == "Ear_skin"), None)
-            if not ear_skin_entity:
-                raise ValueError("Could not find 'Ear_skin' entity for 'Cheek' placement.")
-            ear_bbox_min, ear_bbox_max = self.model.GetBoundingBox([ear_skin_entity])
-            distance = placements_config.get('distance_from_cheek', 15)
-            center_y = (ear_bbox_min[1] + ear_bbox_max[1]) / 2.0
-            center_z = (ear_bbox_min[2] + ear_bbox_max[2]) / 2.0
-            target_x = ear_bbox_max[0] + distance
-            return self.model.Vec3(target_x, center_y, center_z), cheek_rotations
+        elif self.base_placement_name.startswith('by_cheek'):
+            # Find ear and mouth entities
+            ear_skin = next((e for e in all_entities if hasattr(e, 'Name') and e.Name == "Ear_skin"), None)
+            mouth_entity = next((e for e in all_entities if hasattr(e, 'Name') and e.Name == "Tongue"), None)
+            if not ear_skin or not mouth_entity:
+                raise ValueError("Could not find 'Ear_skin' or 'Tongue' entities for 'Cheek' placement.")
+
+            # Get center points
+            ear_bbox_min, ear_bbox_max = self.model.GetBoundingBox([ear_skin])
+            mouth_bbox_min, mouth_bbox_max = self.model.GetBoundingBox([mouth_entity])
+            
+            ear_center = self.XCoreMath.Vec3(
+                (ear_bbox_min[0] + ear_bbox_max[0]) / 2.0,
+                (ear_bbox_min[1] + ear_bbox_max[1]) / 2.0,
+                (ear_bbox_min[2] + ear_bbox_max[2]) / 2.0
+            )
+            mouth_center = self.XCoreMath.Vec3(
+                (mouth_bbox_min[0] + mouth_bbox_max[0]) / 2.0,
+                (mouth_bbox_min[1] + mouth_bbox_max[1]) / 2.0,
+                (mouth_bbox_min[2] + mouth_bbox_max[2]) / 2.0
+            )
+
+            # Calculate angle for base alignment
+            direction_vector = mouth_center - ear_center
+            # Angle in YZ plane is rotation around X-axis
+            angle_rad = np.arctan2(direction_vector[2], direction_vector[1])
+            angle_deg = np.rad2deg(angle_rad)
+
+            # The phone should be perpendicular to this line, so add 90 degrees
+            base_rotation_deg = angle_deg + 90
+            self._log(f"Calculated base rotation for cheek alignment: {base_rotation_deg:.2f} degrees around X-axis.")
+
+            # Add this as a new base rotation
+            base_rotation = {"axis": "X", "angle_deg": base_rotation_deg}
+            orientation_rotations.insert(0, base_rotation)
+
+            # Set the target point based on the ear
+            distance = placements_config.get('distance_from_cheek', 8)
+            base_target_point[0] = ear_bbox_max[0] + distance
+            base_target_point[1] = ear_center[1]
+            base_target_point[2] = ear_center[2]
+        
+        elif self.base_placement_name == 'by_belly':
+            trunk_bbox_name = f"{self.phantom_name.lower()}_Trunk_BBox"
+            trunk_bbox = next((e for e in all_entities if hasattr(e, 'Name') and e.Name == trunk_bbox_name), None)
+            if not trunk_bbox:
+                raise ValueError(f"Could not find '{trunk_bbox_name}' entity for 'Belly' placement.")
+            
+            belly_bbox_min, belly_bbox_max = self.model.GetBoundingBox([trunk_bbox])
+            distance = placements_config.get('distance_from_belly', 50)
+            
+            base_target_point[0] = (belly_bbox_min[0] + belly_bbox_max[0]) / 2.0
+            base_target_point[1] = belly_bbox_max[1] + distance
+            base_target_point[2] = (belly_bbox_min[2] + belly_bbox_max[2]) / 2.0
         
         else:
-            raise ValueError(f"Invalid placement name: {self.placement_name}")
+            raise ValueError(f"Invalid base placement name: {self.base_placement_name}")
+
+        return base_target_point, orientation_rotations, position_offset

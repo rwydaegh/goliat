@@ -7,21 +7,19 @@ class Config:
     """
     def __init__(self, base_dir):
         self.base_dir = base_dir
-        self.simulation_config_path = os.path.join(self.base_dir, 'simulation_config.json')
-        self.phantoms_config_path = os.path.join(self.base_dir, 'phantoms_config.json')
+        self.config_path = os.path.join(self.base_dir, 'config.json')
         self.material_mapping_path = os.path.join(self.base_dir, 'material_name_mapping.json')
         
-        self.simulation_config = self._load_json(self.simulation_config_path)
-        self.phantoms_config = self._load_json(self.phantoms_config_path)
+        self.config = self._load_json(self.config_path)
         self.material_mapping = self._load_json(self.material_mapping_path)
 
     def get_setting(self, path, default=None):
         """
-        Retrieves a setting from the simulation configuration using a path-like string.
+        Retrieves a setting from the configuration using a path-like string.
         Example path: "simulation_parameters/number_of_point_sources"
         """
         keys = path.split('/')
-        current_config = self.simulation_config
+        current_config = self.config
         for key in keys:
             if isinstance(current_config, dict) and key in current_config:
                 current_config = current_config[key]
@@ -38,19 +36,19 @@ class Config:
 
     def get_simulation_parameters(self):
         """Returns the simulation parameters."""
-        return self.simulation_config.get("simulation_parameters", {})
+        return self.config.get("simulation_parameters", {})
 
     def get_antenna_config(self):
         """Returns the antenna configuration."""
-        return self.simulation_config.get("antenna_config", {})
+        return self.config.get("antenna_config", {})
 
     def get_gridding_parameters(self):
         """Returns the gridding parameters."""
-        return self.simulation_config.get("gridding_parameters", {})
+        return self.config.get("gridding_parameters", {})
 
     def get_phantom_config(self, phantom_name):
         """Returns the configuration for a specific phantom."""
-        return self.phantoms_config.get(phantom_name)
+        return self.config.get("phantoms", {}).get(phantom_name)
 
     def get_phantom_placements(self, phantom_name):
         """Returns the placement configuration for a specific phantom."""
@@ -65,19 +63,19 @@ class Config:
 
     def get_solver_settings(self):
         """Returns the solver settings."""
-        return self.simulation_config.get("solver_settings", {})
+        return self.config.get("solver_settings", {})
 
     def get_antenna_component_names(self, antenna_model_type):
         """Returns the component names for a specific antenna model."""
-        return self.simulation_config.get("antenna_config", {}).get("components", {}).get(antenna_model_type)
+        return self.config.get("antenna_config", {}).get("components", {}).get(antenna_model_type)
 
     def get_verbose(self):
         """Returns the verbose flag."""
-        return self.simulation_config.get("verbose", True)
+        return self.config.get("verbose", True)
 
     def get_manual_isolve(self):
         """Returns the manual_isolve flag."""
-        return self.simulation_config.get("manual_isolve", False)
+        return self.config.get("manual_isolve", False)
 
     def get_freespace_expansion(self):
         """Returns the freespace antenna bounding box expansion in mm."""
@@ -90,3 +88,7 @@ class Config:
     def get_bandwidth(self):
         """Returns the bandwidth in MHz."""
         return self.get_simulation_parameters().get("bandwidth_mhz", 50.0)
+
+    def get_placement_scenario(self, scenario_name):
+        """Returns the definition for a specific placement scenario."""
+        return self.config.get("placement_scenarios", {}).get(scenario_name)

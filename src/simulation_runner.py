@@ -70,8 +70,13 @@ class SimulationRunner:
         command = [isolve_path, "-i", input_file_path]
         self._log(f"Executing command: {' '.join(command)}")
 
+        show_output = self.config.get_solver_settings().get('show_solver_output', True)
+        
+        stdout_pipe = None if show_output else subprocess.DEVNULL
+        stderr_pipe = None if show_output else subprocess.DEVNULL
+
         try:
-            subprocess.run(command, check=True)
+            subprocess.run(command, check=True, stdout=stdout_pipe, stderr=stderr_pipe)
             self._log("iSolve.exe completed successfully.")
 
             self._log("Waiting for 5 seconds to ensure results are written to disk...")
