@@ -446,6 +446,6 @@ Run: `pre-commit run`.
 - License: MIT – see LICENSE.
 - Changelog: Update CHANGELOG.md for releases.
 
-For more, see [Contributing](/CONTRIBUTING.md).
+For more, see [Contributing](https://github.com/rwydaegh/goliat/blob/master/.github/CONTRIBUTING.md).
 
 ---

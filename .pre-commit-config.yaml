@@ -28,6 +28,7 @@ repos:
       - id: end-of-file-fixer
         exclude: ^(docs/|archive/|analysis/)
       - id: check-yaml
+        exclude: ^mkdocs\.yml$
       - id: check-added-large-files
         args: ['--maxkb=10000']
       - id: check-json

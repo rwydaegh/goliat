@@ -5,7 +5,7 @@
 ### Comprehensive automated near- and far-field SAR assessments using Sim4Life
 
 [![Documentation](https://img.shields.io/badge/docs-latest-blue.svg)](https://rwydaegh.github.io/goliat/)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-passing%20(on%20CI)-brightgreen.svg?logo=pytest)](.github/workflows/test.yml)
 [![Python](https://img.shields.io/badge/python-3.11+-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![CI/CD](https://github.com/rwydaegh/goliat/actions/workflows/test.yml/badge.svg)](https://github.com/rwydaegh/goliat/actions/workflows/test.yml)
@@ -225,7 +225,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines, code style rules
 
 ## License
 
-This project is licensed under the **MIT License** – see [LICENSE](LICENSE) for details.
+This project is licensed under the **Apache 2.0 License** – see [LICENSE](LICENSE) for details.
 
 ---
 
