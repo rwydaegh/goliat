@@ -1,0 +1,50 @@
+{
+  "simulation_parameters": {
+    "simulation_time_periods": 30,
+    "global_auto_termination": "Medium"
+  },
+  "frequencies_mhz": [
+    700,
+    835,
+    1450,
+    2140,
+    2450,
+    3500,
+    5200,
+    5800
+  ],
+  "antenna_config": {
+    "models": {
+      "PIFA": [700, 835],
+      "IFA": [1450, 2140, 2450, 3500, 5200, 5800]
+    },
+    "sources": {
+      "Unite 1": [700, 835],
+      "Feed": [1450, 2140, 2450, 3500, 5200, 5800]
+    },
+    "components": {
+      "PIFA": {
+        "antenna": "component1:Patch",
+        "battery": "component1:Battery",
+        "ground": "component1:Substrate",
+        "source": "Lines 1"
+      },
+      "IFA": {
+        "antenna": "Antenna",
+        "battery": "Battery",
+        "ground": "Ground",
+        "source": "Feed"
+      }
+    }
+  },
+  "gridding_parameters": {
+    "antenna_fine_grid": 0.3,
+    "battery_ground_fine_grid": 0.3,
+    "battery_ground_coarse_grid": 1.0
+  },
+  "solver_settings": {
+    "kernel": "Cuda",
+    "location": "localhost"
+  },
+  "verbose": false
+}

@@ -1,0 +1,18 @@
+# Simulation results and logs
+results/
+*.smash
+*.smash_Results/
+*.log
+
+# Python cache
+__pycache__/
+*.pyc
+
+# IDE and OS files
+.vscode/
+.DS_Store
+
+# Data files that are not part of the repository
+data/antennas/downloaded_from_drive/
+data/antennas/centered/
+data/phantoms/*.sab
