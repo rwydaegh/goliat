@@ -2,11 +2,12 @@
   "extends": "base_config.json",
   "study_type": "near_field",
   "execution_control": {
-      "do_setup": false,
+      "do_setup": true,
       "only_write_input_file": false,
       "do_run": true,
-      "do_extract": false,
-      "batch_run": false
+      "do_extract": true,
+      "batch_run": false,
+      "auto_cleanup_previous_results": ["output", "input", "smash"]
   },
   "phantoms": [
     "thelonious",
@@ -26,15 +27,15 @@
         "manual_fallback_max_step_mm": 5.0
     },
     "global_gridding_per_frequency": {
-        "450": 3.0,
-        "700": 3.0,
-        "835": 3.0,
-        "1450": 3.0,
-        "2140": 3.0,
-        "2450": 3.0,
-        "3500": 3.0,
-        "5200": 3.0,
-        "5800": 3.0
+        "450": 2.5,
+        "700": 2.5,
+        "835": 2.5,
+        "1450": 2.5,
+        "2140": 1.694,
+        "2450": 1.482,
+        "3500": 1.0,
+        "5200": 1.0,
+        "5800": 1.0
     },
     "padding": {
         "padding_mode": "manual",

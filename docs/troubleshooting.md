@@ -109,11 +109,29 @@ This section addresses common issues encountered when using GOLIAT. Issues are g
   2. Delete stale locks: `rm logs/log_rotation.lock`.
   3. Run with `--pid 1` for unique logs.
 
+## Disk Space Issues
+
+### Running Out of Disk Space
+
+- **Symptom**: "No space left on device" or simulation failures.
+- **Cause**: Large simulation output files accumulating.
+- **Solution**:
+  1. Enable automatic cleanup for serial workflows:
+     ```json
+     "execution_control": {
+       "auto_cleanup_previous_results": ["output"]
+     }
+     ```
+  2. Manually delete old `*_Output.h5`, `*_Input.h5` files from `results/` directories.
+  3. Archive completed studies to external storage.
+  4. See [Configuration Guide](configuration.md#execution-control) for cleanup options.
+
 ## General Tips
 
 - Always check `logs/` and console for errors.
 - Rerun phases individually using `execution_control`.
 - For cloud: Monitor oSPARC dashboard for job details.
+- For disk space: Use `auto_cleanup_previous_results` in serial workflows.
 - Still stuck? Open [GitHub Issue](https://github.com/rwydaegh/goliat/issues) with log snippet.
 
 See [User Guide](user_guide.md) for workflows.

@@ -29,6 +29,7 @@ class NearFieldStudy(BaseStudy):
         do_setup = self.config.get_setting("execution_control.do_setup", True)
         do_run = self.config.get_setting("execution_control.do_run", True)
         do_extract = self.config.get_setting("execution_control.do_extract", True)
+        auto_cleanup = self.config.get_auto_cleanup_previous_results()
 
         if not do_setup and not do_run and not do_extract:
             self._log(
@@ -36,6 +37,9 @@ class NearFieldStudy(BaseStudy):
                 log_type="warning",
             )
             return
+
+        # Sanity check for auto_cleanup_previous_results
+        self._validate_auto_cleanup_config(do_setup, do_run, do_extract, auto_cleanup)
 
         phantoms = self.config.get_setting("phantoms", [])
         if not isinstance(phantoms, list):
@@ -93,6 +97,69 @@ class NearFieldStudy(BaseStudy):
                     self._run_placement(
                         phantom_name, freq, placement_name, do_setup, do_run, do_extract
                     )
+
+    def _validate_auto_cleanup_config(self, do_setup, do_run, do_extract, auto_cleanup):
+        """
+        Validates the auto_cleanup_previous_results configuration and warns about potential issues.
+        
+        Args:
+            do_setup (bool): Whether setup phase is enabled
+            do_run (bool): Whether run phase is enabled
+            do_extract (bool): Whether extract phase is enabled
+            auto_cleanup (list): List of file types to clean up
+        """
+        if not auto_cleanup:
+            return
+        
+        # Check if this is a proper serial workflow (all phases enabled)
+        if not (do_setup and do_run and do_extract):
+            self._log(
+                "WARNING: 'auto_cleanup_previous_results' is enabled, but not all phases "
+                "(setup, run, extract) are active. This may cause data loss if you're running "
+                "phases separately!",
+                level="progress",
+                log_type="warning",
+            )
+            self._log(
+                "  Recommendation: Only use auto_cleanup when running complete serial workflows "
+                "where do_setup=true, do_run=true, and do_extract=true.",
+                level="progress",
+                log_type="info",
+            )
+        
+        # Check for batch/parallel run mode
+        batch_run = self.config.get_setting("execution_control.batch_run", False)
+        if batch_run:
+            self._log(
+                "ERROR: 'auto_cleanup_previous_results' is enabled alongside 'batch_run'. "
+                "This combination can cause data corruption in parallel execution!",
+                level="progress",
+                log_type="error",
+            )
+            self._log(
+                "  Auto-cleanup will be DISABLED for safety. Please set "
+                "'auto_cleanup_previous_results' to [] in your config when using batch mode.",
+                level="progress",
+                log_type="warning",
+            )
+            # Force disable auto-cleanup to prevent data corruption
+            self.config.config["execution_control"]["auto_cleanup_previous_results"] = []
+        
+        # Inform user that auto-cleanup is active
+        cleanup_types = self.config.get_auto_cleanup_previous_results()
+        if cleanup_types:
+            file_type_names = {
+                "output": "output files (*_Output.h5)",
+                "input": "input files (*_Input.h5)",
+                "smash": "project files (*.smash)"
+            }
+            cleanup_descriptions = [file_type_names.get(t, t) for t in cleanup_types]
+            self._log(
+                f"Auto-cleanup enabled: {', '.join(cleanup_descriptions)} will be "
+                "deleted after each simulation's results are extracted to save disk space.",
+                level="progress",
+                log_type="info",
+            )
 
     def _run_placement(
         self, phantom_name, freq, placement_name, do_setup, do_run, do_extract

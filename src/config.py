@@ -325,3 +325,50 @@ class Config:
             bool: The value of the 'only_write_input_file' flag.
         """
         return self.get_setting("execution_control.only_write_input_file", False)
+
+    def get_auto_cleanup_previous_results(self):
+        """
+        Retrieves the 'auto_cleanup_previous_results' setting from 'execution_control'.
+
+        This setting determines which previous simulation files to automatically delete
+        before starting a new simulation. This helps preserve disk space but should only
+        be used in serial workflows where setup, run, and extract are all enabled.
+
+        Valid file types:
+        - "output": Deletes *_Output.h5 files (simulation results)
+        - "input": Deletes *_Input.h5 files (solver input files)
+        - "smash": Deletes *.smash files (project files)
+
+        Returns:
+            list: A list of file types to clean up. Empty list means no cleanup.
+        """
+        cleanup_setting = self.get_setting("execution_control.auto_cleanup_previous_results", [])
+        
+        # Handle legacy boolean format for backwards compatibility
+        if isinstance(cleanup_setting, bool):
+            if cleanup_setting:
+                # Legacy behavior: only clean output files
+                return ["output"]
+            else:
+                return []
+        
+        # Validate that it's a list
+        if not isinstance(cleanup_setting, list):
+            import logging
+            logging.warning(
+                f"'auto_cleanup_previous_results' should be a list, got {type(cleanup_setting)}. "
+                "Disabling cleanup for safety."
+            )
+            return []
+        
+        # Validate file types
+        valid_types = {"output", "input", "smash"}
+        invalid_types = [t for t in cleanup_setting if t not in valid_types]
+        if invalid_types:
+            import logging
+            logging.warning(
+                f"Invalid file types in 'auto_cleanup_previous_results': {invalid_types}. "
+                f"Valid types are: {valid_types}"
+            )
+        
+        return [t for t in cleanup_setting if t in valid_types]

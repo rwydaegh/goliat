@@ -1,15 +1,16 @@
 {
     "near_field": {
-        "avg_setup_time": 135.18799999915063,
-        "avg_setup_simulation": 140.53613157888972,
-        "avg_extract_time": 33.125,
-        "avg_run_write_input_file": 8.312000000849366,
-        "avg_run_isolve_execution": 588.4840000001714,
-        "avg_run_wait_for_results": 5.015999999828637,
-        "avg_run_reload_project": 10.016000000061467,
-        "avg_run_simulation_total": 15.876236842160946,
-        "avg_extract_input_power": 0.9850000001024455,
-        "avg_extract_sar_statistics": 6.936999999918044
+        "avg_setup_time": 46.17100000000028,
+        "avg_setup_simulation": 36.61859999999979,
+        "avg_extract_time": 28.125,
+        "avg_run_write_input_file": 7.606599999999526,
+        "avg_run_isolve_execution": 73.17574999999988,
+        "avg_run_wait_for_results": 5.00800000000072,
+        "avg_run_reload_project": 9.99200000000019,
+        "avg_run_simulation_total": 88.33624999999984,
+        "avg_extract_input_power": 0.2852499999999054,
+        "avg_extract_sar_statistics": 5.81650000000036,
+        "avg_extract_point_sensor_data": 0.5509999999999309
     },
     "far_field": {
         "avg_setup_simulation": 77.79129411764563,

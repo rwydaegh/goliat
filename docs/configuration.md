@@ -46,6 +46,7 @@ Booleans to run specific phases:
 | `execution_control.do_extract` | boolean | `true` | Extract and normalize results. |
 | `execution_control.only_write_input_file` | boolean | `false` | Generate .h5 inputs without running (for manual/cloud upload). |
 | `execution_control.batch_run` | boolean | `false` | Enable oSPARC batch submission (advanced). |
+| `execution_control.auto_cleanup_previous_results` | array | `[]` | List of file types to automatically delete before each simulation. Valid values: `"output"` (`*_Output.h5`), `"input"` (`*_Input.h5`), `"smash"` (`*.smash`). **Warning**: Only use in serial workflows with all phases enabled; incompatible with parallel/batch runs. |
 
 Example for extraction only:
 
@@ -56,6 +57,54 @@ Example for extraction only:
   "do_extract": true
 }
 ```
+
+Example with auto-cleanup for serial workflow:
+
+```json
+"execution_control": {
+  "do_setup": true,
+  "do_run": true,
+  "do_extract": true,
+  "auto_cleanup_previous_results": ["output"]
+}
+```
+
+Example with aggressive cleanup (output + input files):
+
+```json
+"execution_control": {
+  "do_setup": true,
+  "do_run": true,
+  "do_extract": true,
+  "auto_cleanup_previous_results": ["output", "input"]
+}
+```
+
+Example with full cleanup (all files including .smash projects):
+
+```json
+"execution_control": {
+  "do_setup": true,
+  "do_run": true,
+  "do_extract": true,
+  "auto_cleanup_previous_results": ["output", "input", "smash"]
+}
+```
+
+**Important Notes on `auto_cleanup_previous_results`**:
+
+- **Purpose**: Selectively deletes a simulation's files **after** its results have been successfully extracted to preserve disk space.
+- **File Types**:
+  - `"output"`: Simulation results (`*_Output.h5`) - safe to delete after extraction is complete
+  - `"input"`: Solver input files (`*_Input.h5`) - can be regenerated during setup
+  - `"smash"`: Project files (`*.smash`) - **use with extreme caution**, deletes entire project
+- **Safe Usage**: Only enable when running complete serial workflows where `do_setup`, `do_run`, and `do_extract` are all `true`.
+- **Warnings**:
+  - Do NOT use with `batch_run: true` or parallel execution - this will cause data corruption!
+  - Do NOT use when running phases separately (e.g., only setup and run) - the cleanup will not be triggered.
+  - Be very careful with `"smash"` option - it deletes the entire project file
+  - If misused, GOLIAT will automatically disable this feature and log warnings.
+- **Backward Compatibility**: Legacy boolean format (`true`/`false`) is supported and automatically converts to `["output"]` or `[]`.
 
 ### Simulation Parameters
 

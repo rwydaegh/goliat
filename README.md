@@ -143,6 +143,43 @@ python run_study.py --config configs/large_study.json
 
 Supports up to 61 concurrent jobs with auto-retry on failures.
 
+### Example 4: Disk Space Management
+
+For serial workflows where disk space is limited, enable automatic cleanup of previous simulation files. You can selectively clean different file types:
+
+```json
+// Clean only output files (safest option)
+"execution_control": {
+  "do_setup": true,
+  "do_run": true,
+  "do_extract": true,
+  "auto_cleanup_previous_results": ["output"]
+}
+
+// Clean output and input files (more aggressive)
+"execution_control": {
+  "do_setup": true,
+  "do_run": true,
+  "do_extract": true,
+  "auto_cleanup_previous_results": ["output", "input"]
+}
+
+// Clean everything including project files (use with caution!)
+"execution_control": {
+  "do_setup": true,
+  "do_run": true,
+  "do_extract": true,
+  "auto_cleanup_previous_results": ["output", "input", "smash"]
+}
+```
+
+**File Types:**
+- `"output"`: Simulation results (`*_Output.h5`)
+- `"input"`: Solver input files (`*_Input.h5`)
+- `"smash"`: Project files (`*.smash`)
+
+⚠️ **Warning**: Only use this in complete serial workflows where `do_setup`, `do_run`, and `do_extract` are all `true`. Do NOT enable with `batch_run`!
+
 ---
 
 ## Screenshots

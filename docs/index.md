@@ -62,6 +62,7 @@ GOLIAT automates dosimetric assessments for the GOLIAT project, calculating SAR 
 - Local or cloud execution (iSolve/oSPARC).
 - Results extraction and analysis (SAR metrics, plots).
 - GUI for progress tracking.
+- Automatic disk space management for serial workflows.
 
 Start with the [Quick Start](quick_start.md) to run your first simulation.
 

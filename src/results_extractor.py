@@ -1,3 +1,4 @@
+import glob
 import json
 import os
 import pickle
@@ -5,6 +6,7 @@ import re
 import traceback
 
 import matplotlib.pyplot as plt
+import scienceplots
 import numpy as np
 import pandas as pd
 
@@ -138,6 +140,75 @@ class ResultsExtractor(LoggingMixin):
         with open(results_filepath, "w") as f:
             json.dump(final_results_data, f, indent=4)
         self._log(f"  - SAR results saved to: {results_filepath}", log_type="info")
+
+        # After successful extraction, perform cleanup if configured
+        if self.config.get_auto_cleanup_previous_results():
+            self._cleanup_simulation_files()
+
+    def _cleanup_simulation_files(self):
+        """
+        Deletes simulation files for the current simulation based on the
+        'auto_cleanup_previous_results' configuration. This is called after
+        successful extraction to save disk space.
+        """
+        cleanup_types = self.config.get_auto_cleanup_previous_results()
+        if not cleanup_types:
+            return
+
+        project_path = self.study.project_manager.project_path
+        project_dir = os.path.dirname(project_path)
+        project_filename = os.path.basename(project_path)
+        results_dir = os.path.join(project_dir, project_filename + "_Results")
+
+        # Map cleanup types to file patterns and directories
+        file_patterns = {
+            "output": (results_dir, "*_Output.h5", "output"),
+            "input": (results_dir, "*_Input.h5", "input"),
+            "smash": (project_dir, "*.smash", "project"),
+        }
+
+        self._log(
+            "--- Starting Auto-Cleanup ---",
+            level="progress",
+            log_type="header",
+        )
+
+        total_deleted = 0
+        for cleanup_type in cleanup_types:
+            if cleanup_type not in file_patterns:
+                continue
+
+            search_dir, pattern, description = file_patterns[cleanup_type]
+            file_pattern = os.path.join(search_dir, pattern)
+            files_to_delete = glob.glob(file_pattern)
+
+            if files_to_delete:
+                self._log(
+                    f"  - Cleaning up {len(files_to_delete)} {description} file(s) ({pattern})...",
+                    level="progress",
+                    log_type="info",
+                )
+                for file_path in files_to_delete:
+                    try:
+                        os.remove(file_path)
+                        total_deleted += 1
+                        self._log(
+                            f"    - Deleted: {os.path.basename(file_path)}",
+                            log_type="verbose",
+                        )
+                    except Exception as e:
+                        self._log(
+                            f"    - Warning: Could not delete {os.path.basename(file_path)}: {e}",
+                            level="progress",
+                            log_type="warning",
+                        )
+
+        if total_deleted > 0:
+            self._log(
+                f"--- Auto-Cleanup Complete: {total_deleted} file(s) deleted. ---",
+                level="progress",
+                log_type="success",
+            )
 
     def _extract_input_power(self, simulation_extractor, results_data):
         """
@@ -422,15 +493,13 @@ class ResultsExtractor(LoggingMixin):
             )
             phantom_groups = material_mapping["_tissue_groups"]
             tissue_groups = {}
-            reverse_mapping = {
-                v: k for k, v in material_mapping.items() if not k.startswith("_")
-            }
+            
             for group_name, tissue_list in phantom_groups.items():
                 s4l_names_in_group = set(tissue_list)
+                # NOTE: Both available_tissues and s4l_names_in_group contain config keys,
+                # so we can directly compare them without using reverse_mapping
                 tissue_groups[group_name] = [
-                    t
-                    for t in available_tissues
-                    if reverse_mapping.get(t) in s4l_names_in_group
+                    t for t in available_tissues if t in s4l_names_in_group
                 ]
             return tissue_groups
 
@@ -659,7 +728,7 @@ class ResultsExtractor(LoggingMixin):
                     return
 
                 plt.ioff()
-                plt.style.use("science")
+                plt.style.use('science')
                 plt.rcParams.update({"text.usetex": False})
                 fig, ax = plt.subplots()
                 ax.grid(True, which="major", axis="y", linestyle="--")

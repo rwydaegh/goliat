@@ -113,6 +113,7 @@ While the core GOLIAT workflow remains consistent, the specifics of scene setup 
 
 -   **Scale Up Your Studies**: For multi-core local execution, leverage `run_parallel_studies.py --num-splits 4` to distribute simulations across multiple CPU cores.
 -   **Cloud Computing with oSPARC**: For hundreds or thousands of simulations, oSPARC offers a cost-effective and fast cloud solution. Remember to set up your API keys in a `.env` file.
+-   **Manage Disk Space**: For serial workflows on machines with limited storage, use `"auto_cleanup_previous_results": ["output"]` to automatically delete previous simulation files. See [Configuration Guide](configuration.md#execution-control) for details.
 -   **Customize with Confidence**: Feel free to modify frequencies and placements in your configuration files. However, for consistency with GOLIAT's protocols, it's generally recommended to keep the core antenna models fixed.
 -   **Effective Debugging**: Always consult the `logs/` directory for detailed error messages. You can also rerun specific phases of a study (e.g., `"do_setup": false, "do_run": false, "do_extract": true`) to isolate and debug issues more efficiently.
 
