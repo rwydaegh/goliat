@@ -40,8 +40,8 @@
             "extract_input_power": 0.08973333329583208,
             "extract_sar_statistics": 4.38540000001279
         },
-        "avg_setup_time": 82.35999999986961,
-        "avg_setup_simulation": 46.39849999989383,
+        "avg_setup_time": 1378.157000000123,
+        "avg_setup_simulation": 93.52604629628843,
         "avg_extract_time": 25.875,
         "avg_run_write_input_file": 33.64099999982864,
         "avg_run_isolve_execution": 288.60900000017136,

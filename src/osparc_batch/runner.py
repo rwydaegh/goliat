@@ -9,10 +9,23 @@ import traceback
 from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from collections import defaultdict
-from PySide6.QtCore import QObject, Signal, QThread, Slot, QTimer
+from PySide6.QtCore import QThread
 import colorama
-from batch_gui import BatchGUI
+from src.osparc_batch.gui import BatchGUI
+from src.osparc_batch.worker import Worker
 
+# --- 1. Set up Logging ---
+def setup_console_logging():
+    """Sets up a basic console logger with color."""
+    colorama.init(autoreset=True)
+    logger = logging.getLogger('osparc_batch')
+    logger.setLevel(logging.INFO)
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter('%(message)s'))
+    logger.addHandler(handler)
+    return logger
+
+main_logger = setup_console_logging()
 # --- 1. Setup Logging & Colors ---
 def setup_job_logging(base_dir: str, job_id: str):
     """Set up a unique log file for each job in a specific subdirectory."""
@@ -33,7 +46,6 @@ def setup_job_logging(base_dir: str, job_id: str):
     
     return job_logger
 
-colorama.init(autoreset=True)
 STATUS_COLORS = {
     "PENDING": colorama.Fore.YELLOW,
     "PUBLISHED": colorama.Fore.LIGHTYELLOW_EX,
@@ -43,25 +55,27 @@ STATUS_COLORS = {
     "SUCCESS": colorama.Fore.GREEN,
     "FAILED": colorama.Fore.RED,
     "DOWNLOADING": colorama.Fore.BLUE,
-    "FINALIZING": colorama.Fore.CYAN,
     "FINISHED": colorama.Fore.GREEN,
+    "COMPLETED": colorama.Fore.GREEN,
     "UNKNOWN": colorama.Fore.WHITE,
 }
 
 # --- 2. Core Functions ---
 def find_input_files(config) -> list[Path]:
-    """Finds all solver input files (.h5) based on the provided configuration."""
-    print("--- Searching for input files based on configuration ---")
+    """
+    Finds solver input files (.h5), identifies the latest group based on creation time and configuration,
+    and cleans up older, unselected files.
+    """
+    main_logger.info(f"{colorama.Fore.MAGENTA}--- Searching for input files based on configuration ---")
     results_base_dir = Path(config.base_dir) / "results"
     study_type = config.get_setting('study_type')
     phantoms = config.get_setting('phantoms', [])
     frequencies = config.get_setting('frequencies_mhz', [])
-    
-    input_files = []
 
-    if not study_type or not phantoms or not frequencies:
-        raise ValueError("Configuration must specify 'study_type', 'phantoms', and 'frequencies_mhz'.")
+    if not all([study_type, phantoms, frequencies]):
+        raise ValueError("Config must specify 'study_type', 'phantoms', and 'frequencies_mhz'.")
 
+    all_input_files = []
     for phantom in phantoms:
         for freq in frequencies:
             if study_type == 'far_field':
@@ -69,22 +83,63 @@ def find_input_files(config) -> list[Path]:
                 project_filename_base = f"far_field_{phantom.lower()}_{freq}MHz"
                 results_folder = project_dir / f"{project_filename_base}.smash_Results"
 
-                if results_folder.exists():
-                    found_files = list(results_folder.glob('*_Input.h5'))
-                    if found_files:
-                        input_files.extend(found_files)
-                        print(f"Found {len(found_files)} input file(s) in: {results_folder}")
-                    else:
-                        print(f"WARNING: No input files found in expected directory: {results_folder}")
-                else:
-                    print(f"WARNING: Results directory does not exist: {results_folder}")
+                if not results_folder.exists():
+                    main_logger.warning(f"{colorama.Fore.YELLOW}WARNING: Results directory does not exist: {results_folder}")
+                    continue
 
-    if not input_files:
-        print("ERROR: Could not find any input files. Make sure you have run the 'setup' phase first.")
+                found_files = list(results_folder.glob('*_Input.h5'))
+                if not found_files:
+                    main_logger.warning(f"{colorama.Fore.YELLOW}WARNING: No input files found in: {results_folder}")
+                    continue
+                
+                main_logger.info(f"{colorama.Fore.CYAN}Found {len(found_files)} raw input file(s) in: {results_folder}")
+
+                # --- Grouping Logic ---
+                far_field_setup = config.get_setting('far_field_setup', {}).get('environmental', {})
+                if not far_field_setup:
+                    main_logger.warning(f"{colorama.Fore.YELLOW}WARNING: No 'environmental' far-field setup in config. Using all found files.")
+                    all_input_files.extend(found_files)
+                    continue
+
+                inc_dirs = far_field_setup.get('incident_directions', [])
+                pols = far_field_setup.get('polarizations', [])
+                expected_count = len(inc_dirs) * len(pols)
+                main_logger.info(f"Expected file count per batch: {expected_count} ({len(inc_dirs)} dirs x {len(pols)} pols)")
+
+                if len(found_files) < expected_count:
+                    main_logger.warning(f"{colorama.Fore.YELLOW}WARNING: Not enough files for a full batch ({len(found_files)}/{expected_count}). Using all available.")
+                    all_input_files.extend(found_files)
+                    continue
+                
+                files_with_mtime = sorted([(f, f.stat().st_mtime) for f in found_files], key=lambda x: x, reverse=True)
+                
+                main_logger.info("Analyzing file timestamps to find the latest batch...")
+                latest_files = files_with_mtime[:expected_count]
+                oldest_in_group_time = latest_files[-1]
+                
+                # Simple approach: take the N youngest files. A more complex periodicity analysis could be added here if needed.
+                selected_files = [f for f, _ in latest_files]
+                main_logger.info(f"{colorama.Fore.GREEN}Selected the latest {len(selected_files)} files based on modification time.")
+
+                # --- Cleanup Logic ---
+                unselected_files = [f for f, _ in files_with_mtime[expected_count:]]
+                if unselected_files:
+                    main_logger.info(f"{colorama.Fore.YELLOW}--- Deleting {len(unselected_files)} older input files ---")
+                    for f in unselected_files:
+                        try:
+                            f.unlink()
+                            main_logger.info(f"Deleted: {f.name}")
+                        except OSError as e:
+                            main_logger.error(f"Error deleting file {f}: {e}")
+                
+                all_input_files.extend(selected_files)
+
+    if not all_input_files:
+        main_logger.error(f"{colorama.Fore.RED}ERROR: Could not find any input files to process.")
         sys.exit(1)
     
-    print(f"--- Found a total of {len(input_files)} input files to process. ---")
-    return input_files
+    main_logger.info(f"{colorama.Fore.GREEN}--- Found a total of {len(all_input_files)} input files to process. ---")
+    return all_input_files
 
 
 def get_osparc_client_config(config, osparc_module):
@@ -147,13 +202,27 @@ def download_and_process_results(job, solver, client_cfg, input_file_path, ospar
                 
                 download_path = files_api.download_file(file_id=result_file.id)
                 
-                if status_callback:
-                    status_callback.emit(job.id, "FINALIZING")
-                
                 if result_file.filename.endswith('.zip'):
                     job_logger.info(f"Extracting {result_file.filename} to {output_dir}")
                     with zipfile.ZipFile(download_path, 'r') as zip_ref:
                         zip_ref.extractall(output_dir)
+                        
+                        # --- Enhanced Log File Handling ---
+                        uuid = input_file_path.stem.replace('_Input', '')
+                        extracted_files = zip_ref.namelist()
+                        
+                        for filename in extracted_files:
+                            if filename.endswith('.log'):
+                                extracted_path = output_dir / filename
+                                if "input.log" in filename:
+                                    new_name = f"iSolve-output-{uuid}.log"
+                                else:
+                                    new_name = f"{uuid}_AxLog.log"
+                                
+                                final_log_path = output_dir / new_name
+                                shutil.move(extracted_path, final_log_path)
+                                job_logger.info(f"Renamed and moved log file to {final_log_path}")
+
                     os.remove(download_path)
                 else:
                     if "output.h5" in result_file.filename:
@@ -166,7 +235,7 @@ def download_and_process_results(job, solver, client_cfg, input_file_path, ospar
                     job_logger.info(f"Saved {output_name} to {final_path}")
                 
                 if status_callback:
-                    status_callback.emit(job.id, "FINISHED")
+                    status_callback.emit(job.id, "COMPLETED")
 
     except Exception as e:
         job_logger.error(f"Could not retrieve results for job {job.id}: {e}\n{traceback.format_exc()}")
@@ -179,13 +248,14 @@ def get_progress_report(input_files, job_statuses, file_to_job_id) -> str:
     report_lines = []
     
     status_counts = defaultdict(int)
-    for status_str in job_statuses.values():
+    for status_tuple in job_statuses.values():
+        status_str = status_tuple[0] if isinstance(status_tuple, tuple) else status_tuple
         state = status_str.split(" ")[0]
         status_counts[state] += 1
     summary = " | ".join(f"{state}: {count}" for state, count in sorted(status_counts.items()))
-    report_lines.append(f"\n--- Progress Summary ---\n{summary}\n")
+    report_lines.append(f"\n{colorama.Fore.BLUE}--- Progress Summary ---\n{summary}\n{colorama.Style.RESET_ALL}")
 
-    tree = defaultdict(lambda: defaultdict(list))
+    tree = {}
     if not input_files:
         return ""
     common_path_str = os.path.commonpath([str(p.parent) for p in input_files])
@@ -200,18 +270,15 @@ def get_progress_report(input_files, job_statuses, file_to_job_id) -> str:
 
             current_level = tree
             for part in parts[:-1]:
+                if part not in current_level:
+                    current_level[part] = {}
                 current_level = current_level[part]
             
             filename = parts[-1]
-            parent_key = parts[-2] if len(parts) > 1 else base_path.name
-            
-            if isinstance(current_level.get(parent_key), dict):
-                current_level[parent_key][filename] = file_to_job_id.get(file_path)
-            else:
-                current_level[parent_key] = {filename: file_to_job_id.get(file_path)}
+            current_level[filename] = file_to_job_id.get(file_path)
 
         except (IndexError, ValueError) as e:
-            report_lines.append(f"Could not process path {file_path}: {e}")
+            report_lines.append(f"{colorama.Fore.RED}Could not process path {file_path}: {e}{colorama.Style.RESET_ALL}")
 
     def build_tree_recursive(node, prefix=""):
         items = sorted(node.keys())
@@ -225,15 +292,20 @@ def get_progress_report(input_files, job_statuses, file_to_job_id) -> str:
                 build_tree_recursive(node[item], new_prefix)
             else:
                 job_id = node[item]
-                status_str = job_statuses.get(job_id, "UNKNOWN")
+                status_tuple = job_statuses.get(job_id, ("UNKNOWN", time.time()))
+                status_str, start_time = status_tuple if isinstance(status_tuple, tuple) else (status_tuple, time.time())
+                
+                elapsed_time = time.time() - start_time
+                timer_str = f" ({elapsed_time:.0f}s)"
+                
                 status = status_str.split(" ")[0]
                 color = STATUS_COLORS.get(status, colorama.Fore.WHITE)
-                colored_text = f"{color}{item} (oSPARC Job: {job_id}, Status: {status_str}){colorama.Style.RESET_ALL}"
+                colored_text = f"{color}{item} (oSPARC Job: {job_id}, Status: {status_str}{timer_str}){colorama.Style.RESET_ALL}"
                 report_lines.append(f"{prefix}{connector}{colored_text}")
 
-    report_lines.append("--- File Status Tree ---")
+    report_lines.append(f"{colorama.Fore.BLUE}--- File Status Tree ---{colorama.Style.RESET_ALL}")
     build_tree_recursive(tree)
-    report_lines.append("------------------------\n")
+    report_lines.append(f"{colorama.Fore.BLUE}------------------------{colorama.Style.RESET_ALL}\n")
     
     return "\n".join(report_lines)
 
@@ -241,12 +313,12 @@ def get_progress_report(input_files, job_statuses, file_to_job_id) -> str:
 # --- 3. Main Process Logic ---
 def main_process_logic(worker: 'Worker'):
     """The main logic of the batch run, now running in a QThread."""
-    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+    # No longer need to modify sys.path, assuming the script is run from the project root
     from src.config import Config
     import osparc as osparc_module
 
     try:
-        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
         
         config = Config(base_dir, worker.config_path)
         worker.config = config
@@ -256,7 +328,7 @@ def main_process_logic(worker: 'Worker'):
         solver_key = "simcore/services/comp/isolve-gpu"
         solver_version = "2.2.212"
 
-        worker.progress.emit("--- Submitting Jobs to oSPARC in Parallel ---")
+        main_logger.info(f"{colorama.Fore.MAGENTA}--- Submitting Jobs to oSPARC in Parallel ---")
         worker.running_jobs = {}
         with ProcessPoolExecutor(max_workers=len(worker.input_files) or 1) as executor:
             future_to_file = {
@@ -272,166 +344,63 @@ def main_process_logic(worker: 'Worker'):
                     job_logger = logging.getLogger(f'job_{job.id}')
                     job_logger.info(f"Job {job.id} submitted for input file {file_path.name} at path {file_path}.")
                 except Exception as exc:
-                    worker.progress.emit(f'ERROR: Submitting job for {file_path.name} generated an exception: {exc}\n{traceback.format_exc()}')
+                    main_logger.error(f'ERROR: Submitting job for {file_path.name} generated an exception: {exc}\n{traceback.format_exc()}')
 
         if not worker.running_jobs:
-            worker.progress.emit("ERROR: No jobs were successfully submitted. Exiting.")
+            main_logger.error("ERROR: No jobs were successfully submitted. Exiting.")
             worker.finished.emit()
             return
 
-        worker.progress.emit("--- Polling for Job Completion and Downloading Results ---")
-        worker.job_statuses = {job.id: "PENDING" for _, (job, _) in worker.running_jobs.items()}
+        main_logger.info(f"{colorama.Fore.MAGENTA}--- Polling for Job Completion and Downloading Results ---")
+        worker.job_statuses = {job.id: ("PENDING", time.time()) for _, (job, _) in worker.running_jobs.items()}
         worker.file_to_job_id = {fp: j.id for fp, (j, s) in worker.running_jobs.items()}
         worker.downloaded_jobs = set()
         
         worker.timer.start(5000)
 
     except Exception as e:
-        worker.progress.emit(f"\nCRITICAL ERROR in main process: {e}\n{traceback.format_exc()}")
+        main_logger.error(f"\nCRITICAL ERROR in main process: {e}\n{traceback.format_exc()}")
         worker.finished.emit()
 
 # --- 4. Main Entry Point ---
-class Worker(QObject):
-    """Worker thread to run the main logic."""
-    finished = Signal()
-    progress = Signal(str)
-    status_update_requested = Signal(str, str)
-
-    def __init__(self, config_path):
-        super().__init__()
-        self.config_path = config_path
-        self.config = None
-        self.stop_requested = False
-        self.input_files = []
-        self.job_statuses = {}
-        self.file_to_job_id = {}
-        self.running_jobs = {}
-        self.downloaded_jobs = set()
-        self.jobs_being_downloaded = set()
-        self.client_cfg = None
-        self.download_executor = ThreadPoolExecutor(max_workers=4)
-        
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self._check_jobs_status)
-        self.status_update_requested.connect(self._update_job_status)
-
-    def run(self):
-        """Starts the long-running task."""
-        main_process_logic(self)
-
-    def _download_job_in_thread(self, job, solver, file_path):
-        """Helper to run a single download in a thread."""
-        import osparc as osparc_module
-        try:
-            client_cfg = get_osparc_client_config(self.config, osparc_module)
-            download_and_process_results(job, solver, client_cfg, file_path, osparc_module, self.status_update_requested)
-        except Exception as e:
-            job_logger = logging.getLogger(f'job_{job.id}')
-            job_logger.error(f"Error during download for job {job.id}: {e}\n{traceback.format_exc()}")
-            self.status_update_requested.emit(job.id, "FAILED")
-        finally:
-            if job.id in self.jobs_being_downloaded:
-                self.jobs_being_downloaded.remove(job.id)
-            self.downloaded_jobs.add(job.id)
-
-    def _check_jobs_status(self):
-        """Periodically checks the status of running jobs."""
-        if self.stop_requested or len(self.downloaded_jobs) >= len(self.running_jobs):
-            self.timer.stop()
-            self.download_executor.shutdown()
-            self.progress.emit("\n--- All Jobs Finished or Stopped ---")
-            final_report = get_progress_report(self.input_files, self.job_statuses, self.file_to_job_id)
-            self.progress.emit(final_report)
-            self.finished.emit()
-            return
-
-        import osparc as osparc_module
-        with osparc_module.ApiClient(self.client_cfg) as api_client:
-            solvers_api = osparc_module.SolversApi(api_client)
-            for file_path, (job, solver) in self.running_jobs.items():
-                if job.id in self.downloaded_jobs:
-                    continue
-
-                try:
-                    status = solvers_api.inspect_job(solver.id, solver.version, job.id)
-                    job_logger = logging.getLogger(f'job_{job.id}')
-                    new_status_str = f"{status.state} ({status.progress}%)"
-
-                    if self.job_statuses.get(job.id) != new_status_str:
-                        self.job_statuses[job.id] = new_status_str
-                        job_logger.info(f"Status update: {new_status_str}")
-
-                    if status.state == "SUCCESS" and job.id not in self.jobs_being_downloaded:
-                        self.progress.emit(f"\nJob {job.id} for {file_path.name} finished. Starting download...")
-                        self.jobs_being_downloaded.add(job.id)
-                        self.download_executor.submit(self._download_job_in_thread, job, solver, file_path)
-                    
-                    elif status.state == "FAILED":
-                        job_logger.error("Job failed.")
-                        self.downloaded_jobs.add(job.id)
-
-                except Exception as exc:
-                    job_logger = logging.getLogger(f'job_{job.id}')
-                    job_logger.error(f"Error inspecting job {job.id}: {exc}\n{traceback.format_exc()}")
-                    self.job_statuses[job.id] = "FAILED"
-                    self.downloaded_jobs.add(job.id)
-
-    @Slot(str, str)
-    def _update_job_status(self, job_id, status):
-        """Thread-safe method to update job status."""
-        self.job_statuses[job_id] = status
-
-    @Slot()
-    def request_progress_report(self):
-        """Handles the request for a progress report."""
-        timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        self.progress.emit(f"--- Progress report requested by user at {timestamp} ---")
-        if not self.input_files:
-            self.progress.emit("No input files found yet. The process may still be initializing.")
-            return
-        report = get_progress_report(self.input_files, self.job_statuses, self.file_to_job_id)
-        self.progress.emit(report)
-
-    @Slot()
-    def stop(self):
-        """Requests the worker to stop."""
-        self.progress.emit("--- Stop requested by user ---")
-        self.stop_requested = True
-        if self.timer.isActive():
-            self.timer.stop()
-        self.download_executor.shutdown(wait=False)
-        self.finished.emit()
 
 
 def clear_log_directory(base_dir: str):
     """Deletes all files in the osparc_submission_logs directory."""
     log_dir = Path(base_dir) / "logs" / "osparc_submission_logs"
     if log_dir.exists():
-        print(f"--- Clearing log directory: {log_dir} ---")
+        main_logger.info(f"--- Clearing log directory: {log_dir} ---")
         for item in log_dir.iterdir():
             if item.is_file():
                 try:
                     item.unlink()
                 except OSError as e:
-                    print(f"Error deleting file {item}: {e}")
+                    main_logger.error(f"Error deleting file {item}: {e}")
             elif item.is_dir():
                 try:
                     shutil.rmtree(item)
                 except OSError as e:
-                    print(f"Error deleting directory {item}: {e}")
+                    main_logger.error(f"Error deleting directory {item}: {e}")
 
 def main(config_path: str):
     """Main entry point: sets up and starts the GUI and the main logic process."""
     import sys
     from PySide6.QtWidgets import QApplication
 
-    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
     clear_log_directory(base_dir)
 
     app = QApplication.instance() or QApplication(sys.argv)
     
     thread = QThread()
-    worker = Worker(config_path)
+    worker = Worker(
+        config_path=config_path,
+        logger=main_logger,
+        get_osparc_client_config_func=get_osparc_client_config,
+        download_and_process_results_func=download_and_process_results,
+        get_progress_report_func=get_progress_report,
+        main_process_logic_func=main_process_logic,
+    )
     worker.moveToThread(thread)
     
     gui = BatchGUI()
@@ -442,7 +411,7 @@ def main(config_path: str):
     worker.finished.connect(worker.deleteLater)
     thread.finished.connect(thread.deleteLater)
     
-    worker.progress.connect(print)
+    worker.progress.connect(main_logger.info)
     gui.print_progress_requested.connect(worker.request_progress_report)
     gui.stop_run_requested.connect(worker.stop)
     

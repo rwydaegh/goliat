@@ -3,8 +3,9 @@
     "study_type": "far_field",
     "execution_control": {
         "do_setup": true,
-        "do_run": true,
-        "do_extract": true
+        "do_run": false,
+        "do_extract": false,
+        "only_write_input_file": true
     },
     "manual_isolve": true,
     "phantoms": [
@@ -42,22 +43,27 @@
         }
     },
     "simulation_parameters": {
-        "bbox_padding_mm": 50,
+        "bbox_padding_mm": 0,
         "simulation_bbox_points": 8,
         "number_of_point_sensors": 2
     },
     "gridding_parameters": {
         "gridding_mode": "automatic",
         "global_gridding_per_frequency": {
-            "450": 8.021,
-            "700": 5.158,
-            "835": 4.325,
-            "1450": 2.494,
+            "450": 2.5,
+            "700": 2.5,
+            "835": 2.5,
+            "1450": 2.5,
             "2140": 1.694,
             "2450": 1.482,
-            "3500": 1.043,
-            "5200": 0.712,
-            "5800": 0.642
+            "3500": 1.0,
+            "5200": 1.0,
+            "5800": 1.0
+        },
+        "padding": {
+            "padding_mode": "manual",
+            "manual_bottom_padding_mm": [15, 15, 15],
+            "manual_top_padding_mm": [15, 15, 15]
         }
     }
 }

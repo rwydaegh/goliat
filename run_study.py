@@ -14,6 +14,8 @@ from src.logging_manager import setup_loggers, shutdown_loggers
 from src.gui_manager import ProgressGUI, QueueGUI
 from src.startup import run_full_startup
 from src.studies.base_study import StudyCancelledError
+from src.config import Config
+from src.osparc_batch.runner import main as run_osparc_batch
 
 def study_process_wrapper(queue, stop_event, config_filename):
     """
@@ -84,26 +86,32 @@ def main():
     # The main process only needs a minimal logger setup for the GUI.
     setup_loggers()
 
-    # Use spawn context for compatibility across platforms
-    ctx = multiprocessing.get_context('spawn')
-    queue = ctx.Queue()
-    stop_event = ctx.Event()
-    
-    # Create and start the study process
-    study_process = ctx.Process(target=study_process_wrapper, args=(queue, stop_event, config_filename))
-    study_process.start()
+    config = Config(base_dir, config_filename)
+    execution_control = config.get_setting('execution_control', {})
 
-    # The GUI runs in the main process
-    app = QApplication(sys.argv)
-    gui = ProgressGUI(queue, stop_event, study_process)
-    gui.show()
-    
-    app.exec()
-    
-    # Ensure the study process is cleaned up
-    if study_process.is_alive():
-        study_process.terminate()
-        study_process.join()
+    if execution_control.get('batch_run'):
+        run_osparc_batch(config_filename)
+    else:
+        # Use spawn context for compatibility across platforms
+        ctx = multiprocessing.get_context('spawn')
+        queue = ctx.Queue()
+        stop_event = ctx.Event()
+        
+        # Create and start the study process
+        study_process = ctx.Process(target=study_process_wrapper, args=(queue, stop_event, config_filename))
+        study_process.start()
+
+        # The GUI runs in the main process
+        app = QApplication(sys.argv)
+        gui = ProgressGUI(queue, stop_event, study_process)
+        gui.show()
+        
+        app.exec()
+        
+        # Ensure the study process is cleaned up
+        if study_process.is_alive():
+            study_process.terminate()
+            study_process.join()
 
 if __name__ == '__main__':
     # This is crucial for multiprocessing to work correctly on Windows

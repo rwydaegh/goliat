@@ -9,6 +9,21 @@ from src.config import Config
 from src.logging_manager import setup_loggers, shutdown_loggers
 import logging
 import atexit
+import colorama
+
+def setup_console_logging():
+    """Sets up a basic console logger with color."""
+    colorama.init(autoreset=True)
+    # We can reuse the 'progress' logger name since it's standalone in this script
+    logger = logging.getLogger('progress')
+    logger.setLevel(logging.INFO)
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter('%(message)s'))
+    # Clear existing handlers to avoid duplicate messages
+    if logger.hasHandlers():
+        logger.handlers.clear()
+    logger.addHandler(handler)
+    return logger
 
 def main():
     """
@@ -20,10 +35,7 @@ def main():
     args = parser.parse_args()
 
     # Setup logging
-    setup_loggers()
-    atexit.register(shutdown_loggers)
-    progress_logger = logging.getLogger('progress')
-    verbose_logger = logging.getLogger('verbose')
+    logger = setup_console_logging()
 
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     config = Config(project_root, args.config)
@@ -39,7 +51,7 @@ def main():
 
     project_name = f"inspect_{freq_band}MHz_antenna"
     
-    progress_logger.info(f"--- Setting up project to inspect antenna for {freq_band} MHz ---")
+    logger.info(f"{colorama.Fore.MAGENTA}--- Setting up project to inspect antenna for {freq_band} MHz ---")
     
     from src.project_manager import ProjectManager
     from src.setups.near_field_setup import NearFieldSetup
@@ -48,23 +60,28 @@ def main():
 
     ensure_s4l_running()
     
-    project_manager = ProjectManager(config, verbose_logger, progress_logger)
+    # The loggers passed here are for the modules, which expect them.
+    # This script's own output will use the simple logger.
+    progress_logger_dummy = logging.getLogger('progress_dummy')
+    verbose_logger_dummy = logging.getLogger('verbose_dummy')
+
+    project_manager = ProjectManager(config, verbose_logger_dummy, progress_logger_dummy)
     antenna = Antenna(config, center_frequency)
 
     # Use the NearFieldSetup for freespace inspection
-    setup = NearFieldSetup(config, "freespace", center_frequency, "origin", antenna, verbose_logger, progress_logger, free_space=True)
+    setup = NearFieldSetup(config, "freespace", center_frequency, "origin", antenna, verbose_logger_dummy, progress_logger_dummy, free_space=True)
     setup.run_full_setup(project_manager)
 
-    verbose_logger.info(f"\n--- Antenna Components for {freq_band} MHz (Live Inspection) ---")
+    logger.info(f"\n{colorama.Fore.MAGENTA}--- Antenna Components for {freq_band} MHz (Live Inspection) ---")
     
     import s4l_v1.model
     all_entities = s4l_v1.model.AllEntities()
     
     # Recursively find and print all entities
-    verbose_logger.info("--- All Entities in Scene ---")
+    logger.info(f"{colorama.Fore.BLUE}--- All Entities in Scene ---")
     def print_entities_recursive(entity, indent=0):
         if hasattr(entity, 'Name'):
-            verbose_logger.info(f"{'  ' * indent}- Name: '{entity.Name}', Type: {type(entity).__name__}")
+            logger.info(f"{colorama.Fore.CYAN}{'  ' * indent}- Name: '{entity.Name}', Type: {type(entity).__name__}")
         
         if hasattr(entity, 'Entities') and entity.Entities is not None:
             for child in entity.Entities:
@@ -73,7 +90,7 @@ def main():
     for entity in all_entities:
         print_entities_recursive(entity)
 
-    progress_logger.info("\n--- Inspection Finished ---")
+    logger.info(f"\n{colorama.Fore.GREEN}--- Inspection Finished ---")
     project_manager.save()
     project_manager.close()
 

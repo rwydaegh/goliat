@@ -11,6 +11,10 @@ from s4l_v1._api.application import run_application
 import numpy as np
 import XCoreModeling
 import re
+import logging
+
+# --- 1. Set up Logging ---
+logger = logging.getLogger(__name__)
 
 # Add project root to Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -21,14 +25,14 @@ def center_antenna_and_export_sab(file_path, output_dir):
     conditionally rotates it, adds a final bounding box, and exports the antenna
     and its bounding box to a .sab file.
     """
-    print(f"Processing: {os.path.basename(file_path)}")
+    logger.info(f"Processing: {os.path.basename(file_path)}")
     document.Open(file_path)
 
     # --- 1. Identify Target Group and Standardize Name ---
     base_name = os.path.basename(file_path)
     freq_match = re.search(r'\d+', base_name)
     if not freq_match:
-        print(f"  - Error: Could not extract frequency from filename. Skipping.")
+        logger.error(f"  - Error: Could not extract frequency from filename. Skipping.")
         document.Close()
         return
     
@@ -47,7 +51,7 @@ def center_antenna_and_export_sab(file_path, output_dir):
             antenna_group = mhz_candidates[0]
 
     if not antenna_group:
-        print(f"  - Error: Could not identify a unique antenna group. Skipping.")
+        logger.error(f"  - Error: Could not identify a unique antenna group. Skipping.")
         document.Close()
         return
     
@@ -80,7 +84,7 @@ def center_antenna_and_export_sab(file_path, output_dir):
     
     entities_to_export = [antenna_group, bbox_entity]
     
-    print(f"  -> Exporting to: {os.path.basename(save_path)}")
+    logger.info(f"  -> Exporting to: {os.path.basename(save_path)}")
     model.Export(entities_to_export, save_path)
     document.Close()
 
@@ -101,19 +105,19 @@ def main():
     ]
 
     if not files_to_process:
-        print(f"No .smash files found to process in '{source_dir}'.")
+        logger.warning(f"No .smash files found to process in '{source_dir}'.")
         return
 
-    print(f"Found {len(files_to_process)} files to process...")
+    logger.info(f"Found {len(files_to_process)} files to process...")
     for file_path in files_to_process:
         try:
             center_antenna_and_export_sab(file_path, centered_dir)
         except Exception as e:
-            print(f"An unexpected error occurred while processing {os.path.basename(file_path)}: {e}")
+            logger.error(f"An unexpected error occurred while processing {os.path.basename(file_path)}: {e}")
             if s4l_v1.document.IsOpen():
                 s4l_v1.document.Close()
 
-    print("\nProcessing complete.")
+    logger.info("\nProcessing complete.")
 
 
 if __name__ == "__main__":

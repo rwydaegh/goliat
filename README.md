@@ -121,6 +121,49 @@ The script will automatically perform all necessary setup steps on the first run
 2.  **Download Data**: Phantoms and antennas.
 3.  **Prepare Antennas**: Processes antenna models.
 
+## 5. oSPARC Batch Run
+
+For large-scale studies, this framework supports batch submissions to oSPARC, allowing for massively parallel simulations. This is ideal for scenarios where you need to run hundreds or thousands of simulations efficiently.
+
+The process is designed in three stages to ensure a smooth workflow:
+
+1.  **Input File Generation**: First, you generate all the necessary solver input files (`.h5`). This is done locally. In your configuration file (e.g., `configs/todays_far_field_config.json`), modify the `execution_control` section as follows:
+
+    ```json
+    "execution_control": {
+        "do_setup": true,
+        "only_write_input_file": true,
+        "do_run": false,
+        "do_extract": false,
+        "batch_run": false
+    }
+    ```
+
+    Then, run the study: `python run_study.py --config configs/your_config.json`. The framework will prepare all simulation input files without running the simulations.
+
+2.  **Batch Submission to oSPARC**: Once the input files are generated, you can submit them to oSPARC in a batch. Update the `execution_control` to enable `batch_run`:
+
+    ```json
+    "execution_control": {
+        "batch_run": true
+    }
+    ```
+
+    Now, execute the study script again: `python run_study.py --config configs/your_config.json`. This will launch a GUI that monitors the progress of all your oSPARC jobs in real-time. It will handle job submission, status polling, and result downloads automatically.
+
+3.  **Post-Processing and Analysis**: After all oSPARC jobs have completed and the results are downloaded, the final step is to analyze the outputs. Disable the `batch_run` and enable `do_extract` in your configuration:
+
+    ```json
+    "execution_control": {
+        "do_setup": false,
+        "do_run": false,
+        "do_extract": true,
+        "batch_run": false
+    }
+    ```
+
+    Run the study one last time: `python run_study.py --config configs/your_config.json`. This will process all the downloaded results and generate the final SAR (Specific Absorption Rate) reports and any other required analyses.
+
 ## 5. Configuration
 
 The framework is controlled by a hierarchical JSON configuration system. A study-specific config (e.g., [`near_field_config.json`](configs/near_field_config.json:1)) inherits settings from a [`base_config.json`](configs/base_config.json:1) and can override them. This allows for a high degree of flexibility and avoids repetition.

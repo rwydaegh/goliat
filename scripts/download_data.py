@@ -2,11 +2,20 @@ import os
 import sys
 import gdown
 import json
+import logging
+import colorama
 
-# Add project root to Python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+def setup_console_logging():
+    """Sets up a basic console logger with color."""
+    colorama.init(autoreset=True)
+    logger = logging.getLogger('script_logger')
+    logger.setLevel(logging.INFO)
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter('%(message)s'))
+    logger.addHandler(handler)
+    return logger
 
-def download_and_extract_data(base_dir):
+def download_and_extract_data(base_dir, logger):
     """
     Downloads folder from Google Drive.
     """
@@ -21,11 +30,12 @@ def download_and_extract_data(base_dir):
         os.makedirs(data_dir)
 
     # Download the folder content
-    print(f"Downloading data from {gdrive_url} into {data_dir}...")
+    logger.info(f"{colorama.Fore.CYAN}Downloading data from {gdrive_url} into {data_dir}...")
     gdown.download_folder(gdrive_url, output=data_dir, quiet=False, fuzzy=True)
 
-    print("Data download complete.")
+    logger.info(f"{colorama.Fore.GREEN}Data download complete.")
 
 if __name__ == '__main__':
+    logger = setup_console_logging()
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-    download_and_extract_data(project_root)
+    download_and_extract_data(project_root, logger)
