@@ -46,5 +46,6 @@
     "kernel": "Cuda",
     "location": "localhost"
   },
-  "verbose": false
+  "verbose": false,
+  "manual_isove": true
 }

@@ -35,7 +35,9 @@ def main():
         
         project.setup()
         project.run()
-        project.extract_results()
+        
+        if not config.get_manual_isove():
+            project.extract_results()
         
     except Exception as e:
         print(f"An error occurred during the study: {e}")

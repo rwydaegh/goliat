@@ -1,5 +1,6 @@
 # Simulation results and logs
 results/
+PythonAPIReference/
 *.smash
 *.smash_Results/
 *.log

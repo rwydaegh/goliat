@@ -1,6 +1,8 @@
 import os
 import numpy as np
 import json
+import subprocess
+import glob
 
 from .antenna import Antenna
 from .utils import ensure_s4l_running, open_project
@@ -56,29 +58,97 @@ class NearFieldProject:
         self.em_evaluators = s4l_v1.analysis.em_evaluators
         self.XCoreModeling = XCoreModeling
 
+    def _run_isove_manual(self):
+        """Finds iSolve.exe and runs it on the project's input file."""
+        self._log("Attempting to run simulation with iSolve.exe...")
+        
+        # Find iSolve.exe
+        s4l_path_candidates = glob.glob("C:/Program Files/Sim4Life_*.*/")
+        if not s4l_path_candidates:
+            raise FileNotFoundError("Could not find Sim4Life installation directory.")
+        
+        # Sort paths to get the latest version, assuming higher version number is "later"
+        s4l_path_candidates.sort(reverse=True)
+        
+        isove_path = os.path.join(s4l_path_candidates[0], "Solvers", "iSolve.exe")
+        if not os.path.exists(isove_path):
+            raise FileNotFoundError(f"iSolve.exe not found at {isove_path}")
+            
+        # Get the input file path from the simulation object
+        if hasattr(self.simulation, 'GetInputFileName'):
+            relative_path = self.simulation.GetInputFileName()
+            project_dir = os.path.dirname(self.project_path)
+            input_file_path = os.path.join(project_dir, relative_path)
+            self._log(f"Found input file path from API: {input_file_path}")
+        else:
+            raise RuntimeError("Could not get input file name from simulation object.")
+
+        if not os.path.exists(input_file_path):
+             raise FileNotFoundError(f"Solver input file not found at: {input_file_path}")
+
+        command = [isove_path, "-i", input_file_path]
+        self._log(f"Executing command: {' '.join(command)}")
+
+        try:
+            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8')
+            
+            for line in process.stdout:
+                print(line, end='')
+
+            process.wait()
+            
+            if process.returncode == 0:
+                self._log("iSolve.exe completed successfully.")
+            else:
+                self._log(f"iSolve.exe failed with return code {process.returncode}.")
+
+        except Exception as e:
+            self._log(f"An error occurred while running iSolve.exe: {e}")
+
+
     def setup(self):
         """
         Sets up the entire simulation environment in Sim4Life.
+        If the project already exists, it will just be opened.
         """
+        project_exists = os.path.exists(self.project_path)
         open_project(self.project_path)
-        self._ensure_phantom_is_loaded()
-        self._setup_bounding_boxes()
-        self._place_antenna()
-        self._setup_simulation()
-        self.save()
+
+        if not project_exists:
+            self._log("Project not found, running full setup...")
+            self._ensure_phantom_is_loaded()
+            self._setup_bounding_boxes()
+            self._place_antenna()
+            self._setup_simulation()
+            self.simulation.UpdateGrid()
+            self.simulation.CreateVoxels()
+            self.save()
+        else:
+            self._log("Project already exists, skipping setup.")
+            # Still need to get the simulation object from the document
+            sim_name = f"EM_FDTD_{self.phantom_name}_{self.antenna.get_model_name()}_{self.placement_name}"
+            self.simulation = next((s for s in self.document.AllSimulations if s.Name == sim_name), None)
+            if not self.simulation:
+                self._log(f"Warning: Could not find simulation '{sim_name}' in existing project.")
 
     def run(self):
         """
-        Runs the simulation.
+        Runs the simulation, either via S4L API or iSolve executable.
         """
         self._log(f"Running simulation for {self.project_name}...")
-        if self.simulation:
-            self.simulation.UpdateGrid()
-            self.simulation.CreateVoxels()
+        if not self.simulation:
+            self._log(f"ERROR: Simulation object not found.")
+            return
+
+        if hasattr(self.simulation, "WriteInputFile"):
+            self._log("Writing solver input file...")
+            self.simulation.WriteInputFile()
+        
+        if self.config.get_manual_isove():
+            self._run_isove_manual()
+        else:
             self.simulation.RunSimulation(wait=True)
             self._log("Simulation finished.")
-        else:
-            self._log(f"ERROR: Simulation object not found.")
 
     def extract_results(self):
         """
