@@ -30,17 +30,19 @@ class SourceSetup:
 
         # Source setup
         edge_source_settings = self.emfdtd.EdgeSourceSettings()
-        
-        excitation_type = self.config.get_excitation_type()
-        
+
         # Get the enum for ExcitationType
         excitation_enum = edge_source_settings.ExcitationType.enum
-        
-        if excitation_type.lower() == 'gaussian':
+
+        if self.free_space:
+            self._log("  - Using Gaussian source for free-space simulation.")
+            excitation_type = 'gaussian'
             edge_source_settings.ExcitationType = excitation_enum.Gaussian
             edge_source_settings.CenterFrequency = self.frequency_mhz, self.units.MHz
-            edge_source_settings.Bandwidth = self.config.get_bandwidth(), self.units.MHz
-        else: # Harmonic
+            edge_source_settings.Bandwidth = 50.0, self.units.MHz
+        else:
+            self._log("  - Using Harmonic source for phantom simulation.")
+            excitation_type = 'harmonic'
             edge_source_settings.ExcitationType = excitation_enum.Harmonic
             edge_source_settings.Frequency = self.frequency_mhz, self.units.MHz
 
@@ -56,7 +58,7 @@ class SourceSetup:
             # Configure extracted frequencies for Gaussian source
             if excitation_type.lower() == 'gaussian':
                 center_freq_hz = self.frequency_mhz * 1e6
-                bandwidth_hz = self.config.get_bandwidth() * 1e6
+                bandwidth_hz = 50.0 * 1e6
                 start_freq_hz = center_freq_hz - (bandwidth_hz / 2)
                 end_freq_hz = center_freq_hz + (bandwidth_hz / 2)
                 

@@ -63,31 +63,50 @@ class ResultsExtractor:
             input_power_extractor = simulation_extractor["Input Power"]
             self.document.AllAlgorithms.Add(input_power_extractor)
             input_power_extractor.Update()
-            
-            input_power_output = input_power_extractor.Outputs["EM Input Power(f)"]
-            input_power_output.Update()
-            
-            power_data = input_power_output.Data.GetComponent(0)
 
-            if power_data is not None and power_data.size > 0:
-                # For harmonic simulations, power_data is a 1-element array
-                if power_data.size == 1:
-                    input_power_w = power_data.item()
-                    frequency_at_value_mhz = self.frequency_mhz
-                # For broadband simulations, power_data is a 1D array of power values
-                # and we need to get the frequencies from the data object's axis
-                else:
-                    frequencies = np.array(input_power_output.Data.Axis)
-                    powers = power_data
-                    center_frequency_hz = self.frequency_mhz * 1e6
-                    target_index = np.abs(frequencies - center_frequency_hz).argmin()
-                    input_power_w = powers[target_index]
-                    frequency_at_value_mhz = frequencies[target_index] / 1e6
-                
-                results_data['input_power_W'] = float(input_power_w)
-                results_data['input_power_frequency_MHz'] = float(frequency_at_value_mhz)
+            if hasattr(input_power_extractor, 'GetPower'):
+                self._log("  - Using GetPower() to extract input power.")
+                power_w, _ = input_power_extractor.GetPower(0)
+                results_data['input_power_W'] = float(power_w)
+                results_data['input_power_frequency_MHz'] = float(self.frequency_mhz)
             else:
-                self._log("  - WARNING: Could not extract input power values.")
+                self._log("  - GetPower() not available, falling back to manual extraction.")
+                input_power_output = input_power_extractor.Outputs["EM Input Power(f)"]
+                input_power_output.Update()
+
+                if hasattr(input_power_output, 'GetHarmonicData'):
+                    self._log("  - Harmonic data detected. Extracting single power value.")
+                    power_complex = input_power_output.GetHarmonicData(0)
+                    input_power_w = abs(power_complex)
+                    frequency_at_value_mhz = self.frequency_mhz
+                    results_data['input_power_W'] = float(input_power_w)
+                    results_data['input_power_frequency_MHz'] = float(frequency_at_value_mhz)
+                else:
+                    power_data = input_power_output.Data.GetComponent(0)
+                    if power_data is not None and hasattr(power_data, 'size') and power_data.size > 0:
+                        if power_data.size == 1:
+                            input_power_w = power_data.item()
+                            frequency_at_value_mhz = self.frequency_mhz
+                        else:
+                            center_frequency_hz = self.frequency_mhz * 1e6
+                            axis = input_power_output.Data.Axis
+                            min_diff = float('inf')
+                            target_index = -1
+                            for i, freq_hz in enumerate(axis):
+                                diff = abs(freq_hz - center_frequency_hz)
+                                if diff < min_diff:
+                                    min_diff = diff
+                                    target_index = i
+                            if target_index != -1:
+                                input_power_w = power_data[target_index]
+                                frequency_at_value_mhz = axis[target_index] / 1e6
+                            else:
+                                input_power_w = -1
+                                frequency_at_value_mhz = -1
+                        results_data['input_power_W'] = float(input_power_w)
+                        results_data['input_power_frequency_MHz'] = float(frequency_at_value_mhz)
+                    else:
+                        self._log("  - WARNING: Could not extract input power values.")
         except Exception as e:
             self._log(f"  - ERROR: An exception occurred during input power extraction: {e}")
 

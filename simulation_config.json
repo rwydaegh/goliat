@@ -2,7 +2,7 @@
   "simulation_parameters": {
     "global_auto_termination": "GlobalAutoTerminationUserDefined",
     "convergence_level_dB": -15,
-    "global_gridding": 3.0,
+    "global_gridding": 0.5,
     "freespace_antenna_bbox_expansion_mm": [20, 20, 20],
     "excitation_type": "Gaussian",
     "bandwidth_mhz": 50.0,

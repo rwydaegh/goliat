@@ -88,7 +88,7 @@ class NearFieldStudy:
         project['simulation'] = runner.run()
 
         # Reload the project to ensure results are available
-        project['project_manager'].reload_project()
+        # project['project_manager'].reload_project()
         
         # Update the simulation object reference after reload
         sim_name = f"EM_FDTD_{project['phantom_name']}_{project['antenna'].get_model_type()}_{project['placement_name']}"
