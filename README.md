@@ -106,7 +106,7 @@ The script is pre-configured to run a single test case for the Thelonius phantom
 For more control over the simulation, you can run the solver manually. This is useful for debugging or running on a machine without a full Sim4Life UI license.
 
 1.  Open `simulation_config.json`.
-2.  Set the `"manual_isove"` flag to `true`.
+2.  Set the `"manual_isolve"` flag to `true`.
 3.  Run the `run_study.py` script as usual.
 
 This will configure the project and generate the necessary solver input files without starting the simulation. It will then execute `iSolve.exe` in a separate process. The output of the solver will be piped to the console. When using this mode, result extraction is skipped.

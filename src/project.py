@@ -11,13 +11,14 @@ class NearFieldProject:
     """
     Manages the setup, execution, and result extraction for a single near-field simulation.
     """
-    def __init__(self, project_name, phantom_name, frequency_mhz, placement_name, config, verbose=True):
+    def __init__(self, project_name, phantom_name, frequency_mhz, placement_name, config, verbose=True, force_setup=False):
         self.project_name = project_name
         self.phantom_name = phantom_name
         self.frequency_mhz = frequency_mhz
         self.placement_name = placement_name
         self.config = config
         self.verbose = verbose
+        self.force_setup = force_setup
         self.antenna = Antenna(config, frequency_mhz)
         self.simulation = None
         
@@ -58,52 +59,55 @@ class NearFieldProject:
         self.em_evaluators = s4l_v1.analysis.em_evaluators
         self.XCoreModeling = XCoreModeling
 
-    def _run_isove_manual(self):
-        """Finds iSolve.exe and runs it on the project's input file."""
+    def _run_isolve_manual(self):
+        """Finds iSolve.exe, runs it, and reloads the results."""
         self._log("Attempting to run simulation with iSolve.exe...")
         
-        # Find iSolve.exe
         s4l_path_candidates = glob.glob("C:/Program Files/Sim4Life_*.*/")
         if not s4l_path_candidates:
             raise FileNotFoundError("Could not find Sim4Life installation directory.")
         
-        # Sort paths to get the latest version, assuming higher version number is "later"
         s4l_path_candidates.sort(reverse=True)
-        
-        isove_path = os.path.join(s4l_path_candidates[0], "Solvers", "iSolve.exe")
-        if not os.path.exists(isove_path):
-            raise FileNotFoundError(f"iSolve.exe not found at {isove_path}")
+        isolve_path = os.path.join(s4l_path_candidates[0], "Solvers", "iSolve.exe")
+        if not os.path.exists(isolve_path):
+            raise FileNotFoundError(f"iSolve.exe not found at {isolve_path}")
             
-        # Get the input file path from the simulation object
-        if hasattr(self.simulation, 'GetInputFileName'):
-            relative_path = self.simulation.GetInputFileName()
-            project_dir = os.path.dirname(self.project_path)
-            input_file_path = os.path.join(project_dir, relative_path)
-            self._log(f"Found input file path from API: {input_file_path}")
-        else:
+        if not hasattr(self.simulation, 'GetInputFileName'):
             raise RuntimeError("Could not get input file name from simulation object.")
+
+        relative_path = self.simulation.GetInputFileName()
+        project_dir = os.path.dirname(self.project_path)
+        input_file_path = os.path.join(project_dir, relative_path)
+        self._log(f"Found input file path from API: {input_file_path}")
 
         if not os.path.exists(input_file_path):
              raise FileNotFoundError(f"Solver input file not found at: {input_file_path}")
 
-        command = [isove_path, "-i", input_file_path]
+        command = [isolve_path, "-i", input_file_path]
         self._log(f"Executing command: {' '.join(command)}")
 
         try:
-            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8')
+            # Using subprocess.run without capturing output lets it stream directly.
+            # check=True will still raise an error if the process fails.
+            subprocess.run(command, check=True)
             
-            for line in process.stdout:
-                print(line, end='')
-
-            process.wait()
+            self._log("iSolve.exe completed successfully.")
             
-            if process.returncode == 0:
-                self._log("iSolve.exe completed successfully.")
-            else:
-                self._log(f"iSolve.exe failed with return code {process.returncode}.")
+            # After the simulation, load the results back into the project
+            self._log("Loading results back into the project...")
+            self.simulation.LoadResults()
+            self._log("Results loaded.")
 
+        except subprocess.CalledProcessError as e:
+            error_message = (
+                f"iSolve.exe failed with return code {e.returncode}.\n"
+                "Check the console output above for more details."
+            )
+            self._log(error_message)
+            raise RuntimeError(error_message)
         except Exception as e:
-            self._log(f"An error occurred while running iSolve.exe: {e}")
+            self._log(f"An unexpected error occurred while running iSolve.exe: {e}")
+            raise
 
 
     def setup(self):
@@ -111,11 +115,16 @@ class NearFieldProject:
         Sets up the entire simulation environment in Sim4Life.
         If the project already exists, it will just be opened.
         """
-        project_exists = os.path.exists(self.project_path)
-        open_project(self.project_path)
+        if self.force_setup and os.path.exists(self.project_path):
+            self._log(f"Force setup: deleting existing project file at {self.project_path}")
+            os.remove(self.project_path)
 
-        if not project_exists:
-            self._log("Project not found, running full setup...")
+        if not os.path.exists(self.project_path):
+            self._log("Project file not found, creating and saving a new empty project.")
+            self.document.New()
+            self.save()  # Save immediately to establish the path
+            
+            self._log("Running full setup...")
             self._ensure_phantom_is_loaded()
             self._setup_bounding_boxes()
             self._place_antenna()
@@ -124,7 +133,8 @@ class NearFieldProject:
             self.simulation.CreateVoxels()
             self.save()
         else:
-            self._log("Project already exists, skipping setup.")
+            self._log("Project already exists, opening it.")
+            open_project(self.project_path)
             # Still need to get the simulation object from the document
             sim_name = f"EM_FDTD_{self.phantom_name}_{self.antenna.get_model_name()}_{self.placement_name}"
             self.simulation = next((s for s in self.document.AllSimulations if s.Name == sim_name), None)
@@ -143,9 +153,10 @@ class NearFieldProject:
         if hasattr(self.simulation, "WriteInputFile"):
             self._log("Writing solver input file...")
             self.simulation.WriteInputFile()
+            self.save() # Force a save to flush files before running the solver
         
-        if self.config.get_manual_isove():
-            self._run_isove_manual()
+        if self.config.get_manual_isolve():
+            self._run_isolve_manual()
         else:
             self.simulation.RunSimulation(wait=True)
             self._log("Simulation finished.")
@@ -473,12 +484,20 @@ class NearFieldProject:
             
             solver = simulation.SolverSettings
             kernel_enum = solver.Kernel.enum
+            available_kernels = [k.name for k in kernel_enum]
             
-            if hasattr(kernel_enum, kernel_type):
-                solver.Kernel = getattr(kernel_enum, kernel_type)
-                self._log(f"  - Solver kernel set to: {kernel_type}")
+            # Find the correct kernel name, case-insensitively
+            kernel_to_set = None
+            for available in available_kernels:
+                if available.lower() == kernel_type.lower():
+                    kernel_to_set = available
+                    break
+
+            if kernel_to_set:
+                solver.Kernel = getattr(kernel_enum, kernel_to_set)
+                self._log(f"  - Solver kernel set to: {kernel_to_set}")
             else:
-                self._log(f"  - Warning: Invalid solver kernel '{kernel_type}' specified. Using default.")
+                self._log(f"  - Warning: Invalid solver kernel '{kernel_type}' specified. Available: {available_kernels}. Using default.")
 
         sim_time = sim_params.get("simulation_time_periods", 15)
         term_level = sim_params.get("global_auto_termination", "Medium")
@@ -574,23 +593,23 @@ class NearFieldProject:
         simulation.Add(edge_source_settings, [source_entity])
 
         # Define Gridding
-        ant_fine_grid = grid_params.get("antenna_fine_grid", 0.3)
-        bat_fine_grid = grid_params.get("battery_ground_fine_grid", 0.3)
-        bat_coarse_grid = grid_params.get("battery_ground_coarse_grid", 1.0)
+        antenna_gridding = grid_params.get("antenna_gridding", 0.3)
+        fine_grid = grid_params.get("fine_grid", 0.3)
+        coarse_grid = grid_params.get("coarse_grid", 3.0)
         
         sim_bbox_entity = self.model.AllEntities()[f"{self.placement_name.lower()}_simulation_bbox"]
         simulation.GlobalGridSettings.BoundingBox = self.model.GetBoundingBox([sim_bbox_entity])
         manual_grid_sim_bbox = simulation.AddManualGridSettings([sim_bbox_entity])
-        manual_grid_sim_bbox.MaxStep = np.array([1, 1, 1]), self.units.MilliMeters
+        manual_grid_sim_bbox.MaxStep = np.array([coarse_grid] * 3), self.units.MilliMeters
 
         auto_grid_settings = simulation.AddAutomaticGridSettings([source_entity])
         manual_grid_antenna = simulation.AddManualGridSettings([antenna_entity])
-        manual_grid_antenna.MaxStep = np.array([ant_fine_grid] * 3), self.units.MilliMeters
+        manual_grid_antenna.MaxStep = np.array([antenna_gridding] * 3), self.units.MilliMeters
 
         if self.placement_name.lower() == 'cheek':
-            battery_grid_res = np.array([bat_fine_grid, bat_coarse_grid, bat_coarse_grid])
+            battery_grid_res = np.array([fine_grid, coarse_grid, coarse_grid])
         else:
-            battery_grid_res = np.array([bat_coarse_grid, bat_fine_grid, bat_coarse_grid])
+            battery_grid_res = np.array([coarse_grid, fine_grid, coarse_grid])
         
         manual_grid_battery = simulation.AddManualGridSettings([battery_entity, ground_entity])
         manual_grid_battery.MaxStep = battery_grid_res, self.units.MilliMeters

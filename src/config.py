@@ -65,6 +65,6 @@ class Config:
         """Returns the verbose flag."""
         return self.simulation_config.get("verbose", True)
 
-    def get_manual_isove(self):
-        """Returns the manual_isove flag."""
-        return self.simulation_config.get("manual_isove", False)
+    def get_manual_isolve(self):
+        """Returns the manual_isolve flag."""
+        return self.simulation_config.get("manual_isolve", False)

@@ -25,6 +25,14 @@ def open_project(project_path):
         print(f"Opening project: {project_path}")
         s4l_v1.document.Open(project_path)
 
+def delete_project_file(project_path):
+    """
+    Deletes the project file if it exists.
+    """
+    if os.path.exists(project_path):
+        print(f"Deleting existing project file: {project_path}")
+        os.remove(project_path)
+
 @contextlib.contextmanager
 def suppress_stdout_stderr():
     """A context manager that redirects stdout and stderr to devnull."""

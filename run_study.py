@@ -1,5 +1,6 @@
 import os
 import sys
+import argparse
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
@@ -11,11 +12,15 @@ def main():
     """
     Main entry point to run the near-field simulation study.
     """
+    parser = argparse.ArgumentParser(description="Run a near-field simulation study.")
+    parser.add_argument('--force-setup', action='store_true', help="Force the project setup to run even if a .smash file exists.")
+    args = parser.parse_args()
+
     base_dir = os.path.dirname(os.path.abspath(__file__))
     
     # --- Single Test Case Configuration ---
     test_phantom = "thelonius"
-    test_frequency = 700
+    test_frequency = 1450
     test_placement = "front_of_eyes"
     project_name = f"{test_phantom}_{test_frequency}MHz_{test_placement}"
     
@@ -30,14 +35,14 @@ def main():
             frequency_mhz=test_frequency,
             placement_name=test_placement,
             config=config,
-            verbose=config.get_verbose()
+            verbose=config.get_verbose(),
+            force_setup=args.force_setup
         )
         
         project.setup()
         project.run()
         
-        if not config.get_manual_isove():
-            project.extract_results()
+        project.extract_results()
         
     except Exception as e:
         print(f"An error occurred during the study: {e}")
