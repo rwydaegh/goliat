@@ -13,6 +13,8 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    notifications:
+      email: never
     permissions:
       contents: write
 
@@ -42,4 +44,4 @@ jobs:
     - name: Run Pytest tests
       run: |
         export PYTHONPATH=$PYTHONPATH:./src
-        pytest
+        pytest tests/
