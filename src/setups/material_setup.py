@@ -66,7 +66,16 @@ class MaterialSetup:
                 entity = antenna_components[comp_name]
                 material_settings = self.emfdtd.MaterialSettings()
 
-                if mat_name.lower() == 'pec':
+                excitation_type = self.config.get_excitation_type()
+                if "Copper" in mat_name and excitation_type.lower() == 'gaussian':
+                    material_settings.Type = "PEC"
+                    self.simulation.Add(material_settings, [entity])
+                    self._log("\n" + "="*80)
+                    self._log(f"  WARNING: Forcing material for '{comp_name}' to PEC.")
+                    self._log("           This is a required workaround because Sim4Life does not yet support")
+                    self._log("           Gaussian excitation with dispersive materials like Copper.")
+                    self._log("="*80 + "\n")
+                elif mat_name.lower() == 'pec':
                     material_settings.Type = "PEC"
                     self.simulation.Add(material_settings, [entity])
                     self._log(f"  - Assigned 'PEC' to '{comp_name}'.")

@@ -74,95 +74,49 @@ The project is organized into a modular and scalable structure:
 
 *Note: The `data` and `results` directories are not included in the repository and should be created locally.*
 
-## 4. Setup and Usage
+## 4. Automated Workflow
 
-### Step 1: Prerequisites
+The framework is designed for a fully automated, "one-click" execution.
 
-Ensure you have Sim4Life v8.2 or later installed and licensed.
+### Prerequisites
 
-### Step 2: Run the Study
+Ensure you have **Sim4Life v8.2 or later** installed and licensed.
 
-The project is now fully automated. Simply run the `run_study.py` script using the Sim4Life Python interpreter:
+### Running the Study
+
+To run the entire simulation campaign, simply execute the main script using the Sim4Life Python interpreter:
 
 ```bash
 "C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe" run_study.py
 ```
 
 The script will automatically perform all necessary setup steps:
-1.  **Install Dependencies**: Check for and install any missing Python packages listed in `requirements.txt`.
-2.  **Download Data**: Download and extract the required simulation data from Google Drive into the `data` directory if it's not already present.
-3.  **Prepare Antennas**: Center the raw antenna models and save them as `.sab` files in the `data/antennas/centered` directory. This step is only run if the centered files are missing.
-4.  **Run Simulations**: Proceed with the simulation campaign.
-
-### Step 3: Run Simulations
-
-The `run_study.py` script is the main entry point. You can easily configure it to run a single simulation or a full campaign.
-
-#### Example 1: Running a Single Test Case
-
-To run a single, specific simulation, modify `run_study.py` as follows:
-
-```python
-# run_study.py
-
-from src.config import Config
-from src.study import NearFieldStudy
-
-if __name__ == '__main__':
-    # Load configuration from JSON files in the 'data' directory
-    config = Config(base_dir='.')
-
-    # Instantiate the main study controller
-    study = NearFieldStudy(config)
-
-    # Define and run a single simulation
-    study.run_single(
-        project_name="Thelonius_700MHz_FrontOfEyes_Test",
-        phantom_name="thelonius",
-        frequency_mhz=700,
-        placement_name="front_of_eyes_pos1_h"
-    )
-```
-
-Then execute the script:
-```bash
-"C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe" run_study.py
-```
-
-#### Example 2: Running a Full Campaign
-
-To run the entire campaign iterating through all phantoms, frequencies, and placements defined in your configuration files, simply call the `run_campaign` method:
-
-```python
-# run_study.py
-
-from src.config import Config
-from src.study import NearFieldStudy
-
-if __name__ == '__main__':
-    config = Config(base_dir='.')
-    study = NearFieldStudy(config)
-
-    # Run the full campaign
-    study.run_campaign()
-```
-
-### Manual Solver Execution (iSolve)
-
-For more control, you can run the solver manually (e.g., on a machine without a full Sim4Life UI license).
-
-1.  Open `simulation_config.json`.
-2.  Set the `"manual_isolve"` flag to `true`.
-3.  Run the `run_study.py` script as usual.
-
-The framework will set up the project, generate solver input files, and then execute `iSolve.exe` in a separate process. The solver output will be piped to the console.
+1.  **Install Dependencies**: Checks for and installs any missing Python packages from `requirements.txt`.
+2.  **Download Data**: Downloads and extracts the required simulation data (phantoms and raw antenna models) from Google Drive into the `data/` directory. This step is skipped if the data is already present.
+3.  **Prepare Antennas**: Centers the raw antenna models and saves them as processed `.sab` files in `data/antennas/centered/`. This step is also skipped if the centered files already exist.
+4.  **Run Simulations**: Proceeds with the full simulation campaign as defined in the configuration files.
 
 ## 5. Configuration
 
-The simulation is controlled by three main JSON files:
--   **`simulation_config.json`**: Defines global parameters like frequencies, solver settings, and termination criteria.
+The simulation is controlled by three main JSON files. For most use cases, you will only need to modify `simulation_config.json`.
+
+-   **`simulation_config.json`**: Defines global simulation parameters.
 -   **`phantoms_config.json`**: Contains phantom-specific data, including placements, bounding box definitions, and tissue lists.
 -   **`material_name_mapping.json`**: Maps entity names from the CAD models to the material names used in Sim4Life's database.
+
+### Key Configuration Parameters
+
+The following parameters in `simulation_config.json` are the most important for customizing the simulation:
+
+-   `"global_auto_termination"`: Defines how the simulation decides when to end.
+    -   `"GlobalAutoTerminationUserDefined"`: The simulation stops when the energy in the field decays by a specific amount. This is the most common setting.
+    -   `"GlobalAutoTerminationWeak"` / `"GlobalAutoTerminationStrong"`: Pre-defined termination criteria.
+-   `"convergence_level_dB"`: If using `"UserDefined"` termination, this sets the energy decay threshold in decibels (dB). A value of `-15` means the simulation runs until the energy has dropped by 15 dB.
+-   `"excitation_type"`: The type of signal used to excite the antenna.
+    -   `"Gaussian"`: A pulse that covers a range of frequencies. Good for broadband analysis.
+    -   `"Harmonic"`: A continuous sine wave at a single frequency.
+-   `"simulation_time_multiplier"`: A factor that controls the total simulation time. The duration is calculated based on the time it takes for a wave to travel across the diagonal of the simulation bounding box, multiplied by this value. A larger value allows more time for reflections to settle, increasing accuracy but also runtime.
+-   `"manual_isolve"`: Set to `true` to run the simulation using the standalone `iSolve.exe` solver instead of the integrated Sim4Life solver. This is useful for running on machines without a full Sim4Life UI license.
 
 ## 6. Roadmap & Future Features
 

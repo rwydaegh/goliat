@@ -41,13 +41,14 @@ class PlacementSetup:
         imported_entities = list(self.model.Import(antenna_path))
         
         antenna_group_orig_name = f"Antenna {self.frequency_mhz} MHz"
+        
         new_antenna_group = next((e for e in imported_entities if hasattr(e, 'Name') and e.Name == antenna_group_orig_name), None)
         new_bbox_entity = next((e for e in imported_entities if hasattr(e, 'Name') and e.Name == "Antenna bounding box"), None)
 
         if not new_antenna_group:
             raise ValueError(f"Could not find antenna group '{antenna_group_orig_name}' in newly imported entities.")
 
-        new_antenna_group.Name = f"{antenna_group_orig_name} ({self.placement_name})"
+        new_antenna_group.Name = f"Antenna {self.frequency_mhz} MHz ({self.placement_name})"
         if new_bbox_entity:
             new_bbox_entity.Name = f"Antenna bounding box ({self.placement_name})"
 

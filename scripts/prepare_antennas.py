@@ -33,7 +33,7 @@ def center_antenna_and_export_sab(file_path, output_dir):
         return
     
     freq_mhz = int(freq_match.group())
-    freq_str = '2150' if freq_mhz == 2140 else str(freq_mhz)
+    freq_str = str(freq_mhz)
 
     all_groups = [e for e in model.AllEntities() if isinstance(e, model.EntityGroup)]
     antenna_group = next((g for g in all_groups if g.Name == 'Antenna'), None)

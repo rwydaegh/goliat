@@ -69,10 +69,21 @@ class SimulationSetup:
         return simulation
 
     def _get_antenna_components(self):
-        antenna_group_name = f"Antenna {self.frequency_mhz} MHz ({self.placement_name})"
-        antenna_group = next((e for e in self.model.AllEntities() if hasattr(e, 'Name') and e.Name == antenna_group_name), None)
+        # The antenna group name changes during placement. We need to find it regardless of its state.
+        # Initial name: "Antenna {freq} MHz"
+        # Placed name:  "Antenna {freq} MHz (Placement)"
+        
+        placed_name = f"Antenna {self.frequency_mhz} MHz ({self.placement_name})"
+        initial_name = f"Antenna {self.frequency_mhz} MHz"
+
+        all_entities = self.model.AllEntities()
+        
+        antenna_group = next((e for e in all_entities if hasattr(e, 'Name') and e.Name == placed_name), None)
         if not antenna_group:
-            raise RuntimeError(f"Could not find antenna group: {antenna_group_name}")
+            antenna_group = next((e for e in all_entities if hasattr(e, 'Name') and e.Name == initial_name), None)
+
+        if not antenna_group:
+            raise RuntimeError(f"Could not find antenna group. Looked for '{placed_name}' and '{initial_name}'.")
 
         flat_component_list = []
         for entity in antenna_group.Entities:
@@ -191,7 +202,11 @@ class SimulationSetup:
 
         bbox_min, bbox_max = self.model.GetBoundingBox([sim_bbox_entity])
         diagonal_length_m = np.linalg.norm(np.array(bbox_max) - np.array(bbox_min)) / 1000.0
-        time_to_travel_s = (5 * diagonal_length_m) / 299792458
+        
+        time_multiplier = sim_params.get("simulation_time_multiplier", 5)
+        self._log(f"  - Using simulation time multiplier: {time_multiplier}")
+        
+        time_to_travel_s = (time_multiplier * diagonal_length_m) / 299792458
         sim_time_periods = time_to_travel_s / (1 / (self.frequency_mhz * 1e6))
         simulation.SetupSettings.SimulationTime = sim_time_periods, s4l_v1.units.Periods
         
