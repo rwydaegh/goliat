@@ -71,7 +71,7 @@ class NearFieldStudy:
     def _run_extraction_only(self, project):
         print("--- Opening project for result extraction only ---")
         project['project_manager'].open()
-        sim_name = f"EM_FDTD_{project['phantom_name']}_{project['antenna'].get_model_name()}_{project['placement_name']}"
+        sim_name = f"EM_FDTD_{project['phantom_name']}_{project['antenna'].get_model_type()}_{project['placement_name']}"
         import s4l_v1.document
         project['simulation'] = next((s for s in s4l_v1.document.AllSimulations if s.Name == sim_name), None)
         if not project['simulation']:
@@ -86,6 +86,14 @@ class NearFieldStudy:
         print("--- Project Run Phase ---")
         runner = SimulationRunner(self.config, project['project_path'], project['simulation'], self.config.get_verbose())
         project['simulation'] = runner.run()
+
+        # Reload the project to ensure results are available
+        project['project_manager'].reload_project()
+        
+        # Update the simulation object reference after reload
+        sim_name = f"EM_FDTD_{project['phantom_name']}_{project['antenna'].get_model_type()}_{project['placement_name']}"
+        import s4l_v1.document
+        project['simulation'] = next((s for s in s4l_v1.document.AllSimulations if s.Name == sim_name), None)
 
         print("--- Result Extraction Phase ---")
         extractor = ResultsExtractor(self.config, project['simulation'], project['phantom_name'], project['frequency_mhz'], project['placement_name'], self.config.get_verbose(), project['free_space'])

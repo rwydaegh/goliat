@@ -11,13 +11,13 @@
   "antenna_config": {
     "700": {
       "center_frequency": 700,
-      "model_name": "PIFA",
+      "model_type": "PIFA",
       "source_name": "Lines 1",
       "materials": {
-        "Extrude 1": "PEC",
-        "component1:Battery": "PEC",
-        "component1:Patch": "PEC",
-        "component1:ShortingPin": "PEC",
+        "Extrude 1": "Copper",
+        "component1:Battery": "Copper",
+        "component1:Patch": "Copper",
+        "component1:ShortingPin": "Copper",
         "component1:Substrate": "Rogers RT/duroid 5880"
       },
       "gridding": {
@@ -38,13 +38,13 @@
     },
     "835": {
       "center_frequency": 835,
-      "model_name": "PIFA",
+      "model_type": "PIFA",
       "source_name": "Lines 1",
       "materials": {
-        "Extrude 1": "PEC",
-        "component1:Battery": "PEC",
-        "component1:Patch": "PEC",
-        "component1:ShortingPin": "PEC",
+        "Extrude 1": "Copper",
+        "component1:Battery": "Copper",
+        "component1:Patch": "Copper",
+        "component1:ShortingPin": "Copper",
         "component1:Substrate": "Rogers RT/duroid 5880"
       },
       "gridding": {
@@ -65,12 +65,12 @@
     },
     "1450": {
       "center_frequency": 1450,
-      "model_name": "IFA",
+      "model_type": "IFA",
       "source_name": "Feed",
       "materials": {
-        "Antenna": "PEC",
-        "Battery": "PEC",
-        "Ground": "PEC"
+        "Antenna": "Copper",
+        "Battery": "Copper",
+        "Ground": "Copper"
       },
       "gridding": {
         "automatic": ["Feed"],
@@ -86,12 +86,12 @@
     },
     "2140": {
       "center_frequency": 2140,
-      "model_name": "IFA",
+      "model_type": "IFA",
       "source_name": "Feed",
       "materials": {
-        "Antenna": "PEC",
-        "Battery": "PEC",
-        "Ground": "PEC"
+        "Antenna": "Copper",
+        "Battery": "Copper",
+        "Ground": "Copper"
       },
       "gridding": {
         "automatic": ["Feed"],
@@ -107,12 +107,12 @@
     },
     "2450": {
       "center_frequency": 2450,
-      "model_name": "IFA",
+      "model_type": "IFA",
       "source_name": "Feed",
       "materials": {
-        "Antenna": "PEC",
-        "Battery": "PEC",
-        "Ground": "PEC"
+        "Antenna": "Copper",
+        "Battery": "Copper",
+        "Ground": "Copper"
       },
       "gridding": {
         "automatic": ["Feed"],
@@ -128,12 +128,12 @@
     },
     "3500": {
       "center_frequency": 3500,
-      "model_name": "IFA",
+      "model_type": "IFA",
       "source_name": "Feed",
       "materials": {
-        "Antenna": "PEC",
-        "Battery": "PEC",
-        "Ground": "PEC"
+        "Antenna": "Copper",
+        "Battery": "Copper",
+        "Ground": "Copper"
       },
       "gridding": {
         "automatic": ["Feed"],
@@ -149,12 +149,12 @@
     },
     "5200": {
       "center_frequency": 5200,
-      "model_name": "IFA",
+      "model_type": "IFA",
       "source_name": "Feed",
       "materials": {
-        "Antenna": "PEC",
-        "Battery": "PEC",
-        "Ground": "PEC"
+        "Antenna": "Copper",
+        "Battery": "Copper",
+        "Ground": "Copper"
       },
       "gridding": {
         "automatic": ["Feed"],
@@ -170,12 +170,12 @@
     },
     "5800": {
       "center_frequency": 5800,
-      "model_name": "IFA",
+      "model_type": "IFA",
       "source_name": "Feed",
       "materials": {
-        "Antenna": "PEC",
-        "Battery": "PEC",
-        "Ground": "PEC"
+        "Antenna": "Copper",
+        "Battery": "Copper",
+        "Ground": "Copper"
       },
       "gridding": {
         "automatic": ["Feed"],
@@ -195,7 +195,7 @@
     "location": "localhost"
   },
   "verbose": true,
-  "manual_isolve": false,
+  "manual_isolve": true,
   "data_setup": {
     "gdrive_url": "https://drive.google.com/drive/folders/1Ps0ilW6yx4Z5VoWRZKrkhP225m8lBQOV?usp=sharing",
     "data_dir": "data"

@@ -18,11 +18,11 @@ class Antenna:
             raise ValueError(f"Antenna configuration not defined for frequency: {self.frequency_mhz} MHz")
         return self.antenna_config[freq_str]
 
-    def get_model_name(self):
+    def get_model_type(self):
         """
-        Returns the antenna model name (e.g., 'PIFA', 'IFA') for the current frequency.
+        Returns the antenna model type (e.g., 'PIFA', 'IFA') for the current frequency.
         """
-        return self.get_config_for_frequency().get("model_name")
+        return self.get_config_for_frequency().get("model_type")
 
     def get_source_entity_name(self):
         """

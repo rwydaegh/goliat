@@ -67,7 +67,7 @@ class MaterialSetup:
                 material_settings = self.emfdtd.MaterialSettings()
 
                 excitation_type = self.config.get_excitation_type()
-                if "Copper" in mat_name and excitation_type.lower() == 'gaussian':
+                if "Copper" in mat_name and self.free_space and excitation_type.lower() == 'gaussian':
                     material_settings.Type = "PEC"
                     self.simulation.Add(material_settings, [entity])
                     self._log("\n" + "="*80)

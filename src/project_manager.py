@@ -54,4 +54,14 @@ class ProjectManager:
         Placeholder for any additional cleanup tasks.
         Currently just closes the project.
         """
-        self.close()
+        if self.document and hasattr(self.document, 'IsOpen') and self.document.IsOpen():
+            self.close()
+
+    def reload_project(self):
+        """Saves, closes, and re-opens the project to ensure results are loaded."""
+        if self.document and self.document.IsOpen():
+            self._log("Saving and reloading project to load results...")
+            self.save()
+            self.close()
+            self.open()
+            self._log("Project reloaded.")

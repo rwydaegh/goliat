@@ -2,7 +2,6 @@ import os
 import sys
 import subprocess
 import pkg_resources
-from scripts.download_data import download_and_extract_data
 
 def check_and_install_packages(requirements_path):
     """
@@ -31,6 +30,8 @@ def prepare_data(base_dir):
     """
     Ensures all necessary data is downloaded and prepared.
     """
+    from scripts.download_data import download_and_extract_data
+    
     data_dir = os.path.join(base_dir, 'data')
     if not os.path.exists(data_dir):
         print("Data directory not found. Downloading and extracting data...")

@@ -53,9 +53,9 @@ class Config:
         """Returns the solver settings."""
         return self.simulation_config.get("solver_settings", {})
 
-    def get_antenna_component_names(self, antenna_model_name):
+    def get_antenna_component_names(self, antenna_model_type):
         """Returns the component names for a specific antenna model."""
-        return self.simulation_config.get("antenna_config", {}).get("components", {}).get(antenna_model_name)
+        return self.simulation_config.get("antenna_config", {}).get("components", {}).get(antenna_model_type)
 
     def get_verbose(self):
         """Returns the verbose flag."""

@@ -176,7 +176,7 @@ class SimulationSetup:
             for sim in list(self.document.AllSimulations):
                 self.document.AllSimulations.Remove(sim)
         
-        sim_name = f"EM_FDTD_{self.phantom_name}_{self.antenna.get_model_name()}_{self.placement_name}"
+        sim_name = f"EM_FDTD_{self.phantom_name}_{self.antenna.get_model_type()}_{self.placement_name}"
         if self.free_space:
             sim_name += "_freespace"
         simulation = self.emfdtd.Simulation()
