@@ -2,7 +2,8 @@
     "execution_control": {
         "do_setup": false,
         "do_run": false,
-        "do_extract": true
+        "do_extract": true,
+        "only_write_input_file": false
     },
     "simulation_parameters": {
         "global_auto_termination": "GlobalAutoTerminationUserDefined",
@@ -43,5 +44,15 @@
     },
     "verbose": false,
     "manual_isolve": true,
-    "download_email": "example@example.com"
+    "download_email": "example@example.com",
+    "data_setup": {
+        "gdrive_url": "https://drive.google.com/drive/folders/1Ps0ilW6yx4Z5VoWRZKrkhP225m8lBQOV?usp=sharing",
+        "data_dir": "data"
+      },
+    "osparc_credentials": {
+        "api_key": "YOUR_OSPARC_API_KEY",
+        "api_secret": "YOUR_OSPARC_API_SECRET",
+        "api_server": "https://api.sim4life.science",
+        "api_version": "v0"
+    }
 }

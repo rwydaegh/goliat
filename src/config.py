@@ -151,3 +151,13 @@ class Config:
     def get_server(self):
         """Returns the server name."""
         return self.config.get("server", None)
+
+    def get_osparc_credentials(self):
+        """Returns the osparc credentials."""
+        return self.config.get("osparc_credentials", {})
+
+    def get_only_write_input_file(self):
+        """
+        Returns the 'only_write_input_file' flag from execution_control.
+        """
+        return self.get_setting('execution_control.only_write_input_file', False)

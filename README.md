@@ -32,7 +32,10 @@ A typical run follows these steps:
     *   **Near-Field**: The setup involves importing a specific antenna CAD model, which acts as the source of the EMF, and placing it at a precise distance and orientation relative to the phantom (e.g., 8mm from the cheek). This can also be run as a "free-space" simulation without a phantom to characterize the antenna alone.
     *   **Far-Field**: The setup defines one or more **plane wave** sources with specific incident directions (e.g., `x_pos`) and polarizations (e.g., `theta`). It does not involve placing a device.
 
-5.  **Simulation Execution**: The [`SimulationRunner`](src/simulation_runner.py:13) executes the simulation by invoking the standalone `iSolve.exe` solver.
+5.  **Simulation Execution**: The [`SimulationRunner`](src/simulation_runner.py:13) executes the simulation. It supports three modes:
+    *   **Local Manual Run**: It generates the solver input file and waits for the user to manually launch `iSolve.exe`. This is the default for GUI-based runs.
+    *   **Local Automated Run**: It directly invokes the standalone `iSolve.exe` solver and waits for it to complete.
+    *   **Cloud Run**: It submits the simulation to a specified cloud-based oSPARC server using the oSPARC API. This is controlled by the `server` and `osparc_credentials` settings in the configuration.
 
 6.  **Results Extraction**: After the simulation completes, the [`ResultsExtractor`](src/results_extractor.py:11) performs post-processing. The extracted data differs significantly by study type:
     *   **Near-Field**: Results are stored in a dedicated folder for each unique combination of `phantom/frequency/placement`. The extractor calculates whole-body, head, or trunk SAR, as well as psSAR10g for specific tissue groups like the eyes and brain.

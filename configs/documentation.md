@@ -9,6 +9,7 @@ The framework is controlled by a hierarchical JSON configuration system. A study
 | `extends` | string | `"base_config.json"` | Specifies the parent configuration file to inherit from. |
 | `phantoms` | array | `["thelonious"]` | List of virtual human phantoms. |
 | `execution_control` | object | `{"do_setup": true, ...}` | Booleans (`do_setup`, `do_run`, `do_extract`) to control the main workflow stages. Allows re-running parts of a study, e.g., only extraction. |
+| `execution_control.only_write_input_file` | boolean | `false` | If `true`, the `run` phase will only generate the solver input file and then stop, without actually running the simulation. This is useful for debugging the setup. |
 | `simulation_parameters.global_auto_termination` | string | `"GlobalAutoTerminationUserDefined"` | Sets the FDTD solver's termination criteria. |
 | `simulation_parameters.convergence_level_dB` | number | `-15` | If the termination is set to user defined, this is the convergence level in dB. |
 | `simulation_parameters.simulation_time_multiplier` | number | `5` | To determine the simulation time, we compute the time it takes to traverse the longest diagonal at the speed of light, and multiply by this number. |

@@ -10,7 +10,7 @@ def download_and_extract_data(base_dir):
     """
     Downloads folder from Google Drive.
     """
-    config_path = os.path.join(base_dir, 'config.json')
+    config_path = os.path.join(base_dir, 'configs/base_config.json')
     with open(config_path, 'r') as f:
         config = json.load(f)
 

@@ -7,6 +7,8 @@ import logging
 import traceback
 import threading
 from queue import Queue, Empty
+
+import XOsparcApiClient
 from .utils import open_project, non_blocking_sleep
 from .logging_manager import LoggingMixin
 
@@ -65,19 +67,7 @@ class SimulationRunner(LoggingMixin):
 
         with self.study.subtask("run_simulation_total"):
             server_name = self.config.get_server()
-            server_id = None
-            if server_name:
-                self._log(f"Attempting to use server: {server_name}", level='progress')
-                import s4l_v1.simulation
-                available_servers = s4l_v1.simulation.GetAvailableServers()
-                for server in available_servers:
-                    if server_name.lower() in server.lower():
-                        server_id = server
-                        self._log(f"Found matching server: {server}", level='progress')
-                        break
-                if not server_id:
-                    raise RuntimeError(f"Server '{server_name}' not found.")
-
+            
             try:
                 if hasattr(simulation, "WriteInputFile"):
                     with self.study.subtask("run_write_input_file"):
@@ -85,16 +75,25 @@ class SimulationRunner(LoggingMixin):
                         simulation.WriteInputFile()
                         self.document.SaveAs(self.project_path) # Force a save to flush files
 
+                # Stop here if we only want to write the input file
+                if self.config.get_only_write_input_file():
+                    self._log("'only_write_input_file' is true, skipping simulation run.", level='progress')
+                    return
+
                 if self.config.get_manual_isolve():
                     self._run_isolve_manual(simulation)
+                elif server_name and server_name != 'localhost':
+                    self._run_osparc_direct(simulation, server_name)
                 else:
-                    simulation.RunSimulation(wait=True, server_id=server_id)
-                    self._log("Simulation finished.", level='progress')
+                    # Fallback to localhost if no server or localhost is specified
+                    simulation.RunSimulation(wait=True, server_id=None)
+                    self._log("Simulation finished on localhost.", level='progress')
 
             except Exception as e:
                 self._log(f"An error occurred during simulation run: {e}", level='progress')
-                if server_id:
-                    self._log("If you are running on the cloud, please ensure you are logged into Sim4Life via the GUI.", level='progress')
+                # Check if a cloud server was intended for the run
+                if self.config.get_server() and self.config.get_server() != 'localhost':
+                    self._log("If you are running on the cloud, please ensure you are logged into Sim4Life via the GUI and your API credentials are correct.", level='progress')
                 traceback.print_exc()
 
         return simulation
@@ -190,3 +189,84 @@ class SimulationRunner(LoggingMixin):
             self._log(f"An unexpected error occurred while running iSolve.exe: {e}", level='progress')
             traceback.print_exc()
             raise
+
+    def _run_osparc_direct(self, simulation, server_name):
+        """
+        Submits a job directly to the oSPARC platform, bypassing server discovery.
+        """
+        self._log("--- Running simulation directly on oSPARC ---", level='progress')
+
+        # 1. Get Credentials and Initialize Client
+        creds = self.config.get_osparc_credentials()
+        if not all(k in creds for k in ['api_key', 'api_secret', 'api_server']):
+            raise ValueError("Missing oSPARC credentials in configuration.")
+
+        client = XOsparcApiClient.OsparcApiClient(
+            api_key=creds['api_key'],
+            api_secret=creds['api_secret'],
+            api_server=creds['api_server'],
+            api_version=creds.get('api_version', 'v0')
+        )
+        self._log("oSPARC client initialized.", level='verbose')
+
+        # 2. Prepare Job Submission Data
+        input_file_path = os.path.join(os.path.dirname(self.project_path), simulation.GetInputFileName())
+        if not os.path.exists(input_file_path):
+            raise FileNotFoundError(f"Solver input file not found at: {input_file_path}")
+
+        job_data = XOsparcApiClient.JobSubmissionData()
+        job_data.InputFilePath = input_file_path
+        job_data.ResourceName = server_name
+        job_data.SolverKey = "sim4life-isolve"
+        job_data.SolverVersion = "" # Let the API choose the default version
+
+        # 3. Create and Start the Job
+        self._log(f"Creating job for input file: {os.path.basename(input_file_path)}", level='progress')
+        create_response = client.CreateJob(job_data)
+        if not create_response.Success:
+            raise RuntimeError(f"Failed to create oSPARC job: {create_response.Content}")
+        
+        job_id = create_response.Content.get("id")
+        if not job_id:
+            raise RuntimeError("oSPARC API did not return a job ID after creation.")
+        
+        self._log(f"Job created with ID: {job_id}. Starting job...", level='progress')
+        start_response = client.StartJob(job_data, job_id)
+        if not start_response.Success:
+            raise RuntimeError(f"Failed to start oSPARC job {job_id}: {start_response.Content}")
+
+        # 4. Poll for Job Completion
+        self._log("Job started. Polling for status...", level='progress')
+        while True:
+            status_response = client.GetJobStatus(job_data.SolverKey, job_data.SolverVersion, job_id)
+            if not status_response.Success:
+                self._log(f"Warning: Could not get job status for {job_id}.", level='progress')
+                time.sleep(10)
+                continue
+
+            status = status_response.Content.get("state")
+            self._log(f"  - Job '{job_id}' status: {status}", level='verbose')
+
+            if status in ["SUCCESS", "FAILED", "ABORTED"]:
+                self._log(f"Job {job_id} finished with status: {status}", level='progress')
+                if status != "SUCCESS":
+                    raise RuntimeError(f"oSPARC job {job_id} failed with status: {status}")
+                break
+            
+            time.sleep(30)
+
+        # 5. Post-simulation steps (similar to _run_isolve_manual)
+        with self.study.subtask("run_wait_for_results"):
+            self._log("Waiting for 5 seconds to ensure results are written to disk...", level='progress')
+            non_blocking_sleep(5)
+        
+        with self.study.subtask("run_reload_project"):
+            self._log("Re-opening project to load results...", level='progress')
+            self.document.Close()
+            open_project(self.project_path)
+        
+        sim_name = simulation.Name
+        simulation = next((s for s in self.document.AllSimulations if s.Name == sim_name), None)
+        if not simulation:
+            raise RuntimeError(f"Could not find simulation '{sim_name}' after re-opening project.")
+        self._log("Project reloaded and results are available.", level='progress')

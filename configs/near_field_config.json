@@ -205,10 +205,6 @@
       }
     }
   },
-  "data_setup": {
-    "gdrive_url": "https://drive.google.com/drive/folders/1Ps0ilW6yx4Z5VoWRZKrkhP225m8lBQOV?usp=sharing",
-    "data_dir": "data"
-  },
   "placement_scenarios": {
     "front_of_eyes": {
       "positions": {

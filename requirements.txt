@@ -6,3 +6,5 @@ seaborn
 line-profiler
 pytest
 scienceplots
+osparc-client
+PySide6

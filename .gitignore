@@ -4,6 +4,8 @@ plots/
 paper/
 papers/far_field_old/
 PythonAPIReference/
+PythonAPIReference_old/
+#osparc_and_s4l_cloud_archive/
 Sim4Life_Manual_7.2.pdf
 Sim4Life_Introduction.pdf
 *.lprof
