@@ -1,22 +1,15 @@
 <div align="center">
 
-# GOLIAT
+<img src="data:image/svg+xml;base64,PHN2ZyBpZD0iZGlzc2VueSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2aWV3Qm94PSIwIDAgMjU1IDUwIj48ZGVmcz48c3R5bGU+LmNscy0xe2ZpbGw6I2ZmNTAyYjt9LmNscy0ye2ZpbGw6I2Y4ZDMwMDt9LmNscy0ze2ZpbGw6I2ZmYTMwMDt9LmNscy00e2ZpbGw6I2ZiNjkwZTt9PC9zdHlsZT48L2RlZnM+PHBhdGggZD0iTTgzLjE5LDMyLjU1VjQ3LjE3SDc3LjI2TDc2LjIsNDEuODNjLTMuMjMsNC4xMS03LjQ2LDUuNjQtMTMuMzksNS42NC0xMi41NywwLTIwLjkxLTguNjQtMjAuOTEtMjIuMDhTNTAuMTgsMyw2Mi40LDNDNzIuNSwzLDgxLjA3LDcuODgsODIuMjUsMTguNTdINzMuNzNDNzMsMTQuMDUsNjguNzQsMTEsNjMuMjgsMTFjLTguNTgsMC0xMy4xNiw1LjM0LTEzLjE2LDE0LjM5LDAsOC44LDUuOTMsMTQuMDksMTIuNjMsMTQuMDksNiwwLDExLjM5LTMsMTEuMzktOC40Nkg2My42M3YtNy40SDgzLjE5WiIvPjxwYXRoIGQ9Ik04OC4zLDI1LjE1Qzg4LjMsMTIuNjQsOTcsMi41NCwxMDkuOCwyLjU0czIxLjQ5LDEwLjEsMjEuNDksMjIuNjEtOC43NSwyMi42MS0yMS40OSwyMi42MVM4OC4zLDM3LjY2LDg4LjMsMjUuMTVabTM0LjQyLDBjMC04LTQuNy0xNC4xLTEyLjkyLTE0LjFzLTEzLDYuMTEtMTMsMTQuMSw0LjgxLDE0LDEzLDE0UzEyMi43MiwzMy4wOCwxMjIuNzIsMjUuMTVaIi8+PHBhdGggZD0iTTE0NS44NiwzLjEzVjM5LjQyaDI3LjA2djcuNzVIMTM3di00NFoiLz48cGF0aCBkPSJNMTcyLjkyLDE1VjM1LjA1aC04Ljg3VjE1WiIvPjxwYXRoIGQ9Ik0xODkuNDIsMzguMjVsLTMuMzQsOC45MkgxNzYuNWwxNy42OC00NGg5LjkzbDE3LjY4LDQ0aC05LjU4bC0zLjY0LTguOTJabTkuNzUtMjYuMTRMMTkyLDMwLjYxaDE0WiIvPjxwYXRoIGQ9Ik0yMzkuODIsMTAuODJWNDcuMTdoLTguNzVWMTAuODJIMjE4LjU2VjMuMTNoMzMuNzF2Ny42OVoiLz48Y2lyY2xlIGNsYXNzPSJjbHMtMSIgY3g9IjE2OC40OSIgY3k9IjcuMDIiIHI9IjQuNzgiLz48Y2lyY2xlIGNsYXNzPSJjbHMtMSIgY3g9IjcuNTkiIGN5PSI0Mi4zNCIgcj0iNC44NiIvPjxyZWN0IGNsYXNzPSJjbHMtMiIgeD0iMi43MyIgeT0iMy4xNSIgd2lkdGg9IjMyLjk2IiBoZWlnaHQ9IjcuMTIiLz48cGF0aCBjbGFzcz0iY2xzLTMiIGQ9Ik0zNS41Miw0Ny4ySDI4LjRBMjUuNjksMjUuNjksMCwwLDAsMi43MywyMS41M1YxNC40MUEzMi44MywzMi44MywwLDAsMSwzNS41Miw0Ny4yWiIvPjxwYXRoIGNsYXNzPSJjbHMtNCIgZD0iTTIuNzMsMjUuNjlWMjkuOUExNy4zMSwxNy4zMSwwLDAsMSwyMCw0Ny4yaDQuMjFBMjEuNTMsMjEuNTMsMCwwLDAsMi43MywyNS42OVoiLz48L3N2Zz4=" alt="GOLIAT Logo">
 
-### Effortless EMF Dosimetry Simulations
-
-**Automated near-field and far-field SAR assessments using Sim4Life**
-
-> **⚠️ Warning**
->
-> This is beta software. While it is actively used in research, it is still under development and may contain bugs. Please use with caution and report any issues.
+### Automated near-field and far-field SAR assessments using Sim4Life
 
 [![Documentation](https://img.shields.io/badge/docs-latest-blue.svg)](https://rwydaegh.github.io/goliat/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg?logo=pytest)](.github/workflows/test.yml)
 [![Python](https://img.shields.io/badge/python-3.11+-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![CI/CD](https://github.com/rwydaegh/goliat/actions/workflows/test.yml/badge.svg)](https://github.com/rwydaegh/goliat/actions/workflows/test.yml)
-[![Docs Deploy](https://github.com/rwydaegh/goliat/actions/workflows/docs.yml/badge.svg)](https://github.com/rwydaegh/goliat/actions/workflows/docs.yml)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg?style=flat&logo=black)](https://github.com/psf/black)
+[![Docs Deploy](https://github.com/rwydaegh/goliat/actions/workflows/docs.yml/badge.svg)](https://github.com/rwydaegh/goliat/actions/workflows/docs.yml) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg?style=flat&logo=black)](https://github.com/psf/black)
 [![Linting: flake8](https://img.shields.io/badge/linter-flake8-blue.svg?logo=flake8)](https://flake8.pycqa.org/en/latest/)
 [![GUI](https://img.shields.io/badge/GUI-PySide6-blue.svg?logo=qt&logoColor=white)](https://www.qt.io/qt-for-python)
 [![Cloud](https://img.shields.io/badge/cloud-oSPARC-blue.svg?logo=cloud&logoColor=white)](https://osparc.io/)
@@ -26,9 +19,13 @@
 
 </div>
 
+> **⚠️ Warning**
+>
+> This is beta software. While it is actively used in research, it is still under development and may contain bugs. Please use with caution and report any issues.
+
 ---
 
-## 🎯 What is GOLIAT?
+## What is GOLIAT?
 
 GOLIAT is a Python framework that **automates electromagnetic field (EMF) dosimetry simulations** from start to finish. Calculate Specific Absorption Rate (SAR) in digital human phantoms with minimal manual intervention, whether you're simulating a phone call (near-field) or environmental exposure (far-field).
 
@@ -42,7 +39,11 @@ GOLIAT is a Python framework that **automates electromagnetic field (EMF) dosime
 - 📊 **Analysis built-in** – Get publication-ready plots and detailed SAR reports
 - 🎨 **GUI included** – Monitor progress in real-time with ETA tracking
 
-## ✨ Key Features
+### Project funding and Acknowledgements
+
+This software is written for subtask **1.5** of [*5G expOsure, causaL effects, and rIsk perception through citizen engAgemenT* (GOLIAT)](https://projectgoliat.eu/) funded by the European Union as part of the [CLUE-H consortium](https://www.emf-health-cluster.eu/) to study health effects of radio-frequency electromagnetic fields. Subtask 1.5 is central to the project to relate incident fields to absorption values inside of humans.
+
+## Key Features
 
 <table>
 <tr>
@@ -74,7 +75,7 @@ Interactive GUI with progress bars, ETA estimation, and live logs. Optional head
 </tr>
 </table>
 
-## ⚡ Quick Start
+## Quick Start
 
 **Prerequisites**: [Sim4Life](https://zmt.swiss/) 8.2.2+ with a valid license.
 
@@ -91,13 +92,13 @@ pip install -r requirements.txt
 python run_study.py --config configs/near_field_config.json
 ```
 
-✅ That's it! The GUI will launch, download required phantoms/antennas, and run the simulation. Results appear in `results/` with JSON metrics and plots.
+That's it! The GUI will launch, download required phantoms/antennas, and run the simulation. Results appear in `results/` with JSON metrics and plots.
 
-📖 **New to GOLIAT?** Follow the [📘 Quick Start Tutorial](https://rwydaegh.github.io/goliat/quick_start.html) for a step-by-step walkthrough.
+**New to GOLIAT?** Follow the [Quick Start Tutorial](https://rwydaegh.github.io/goliat/quick_start.html) for a step-by-step walkthrough.
 
 ---
 
-## 💡 Usage Examples
+## Usage Examples
 
 ### Example 1: Near-Field Phone Simulation
 
@@ -144,10 +145,10 @@ Supports up to 61 concurrent jobs with auto-retry on failures.
 
 ---
 
-## 📸 Screenshots
+## Screenshots
 
 <details>
-<summary>🖥️ <b>Click to see GOLIAT in action</b></summary>
+<summary> <b>Click to see GOLIAT in action</b></summary>
 
 ### Interactive GUI
 Real-time progress tracking with phase-based ETA estimation.
@@ -163,7 +164,7 @@ Auto-generated SAR heatmaps by tissue and frequency.
 
 ---
 
-## 🏛️ How It Works
+## How It Works
 
 GOLIAT follows a simple **5-stage pipeline**:
 
@@ -193,21 +194,21 @@ Each stage is modular, swap in custom phantoms, antennas, or analysis strategies
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 | Resource | Description |
 |----------|-------------|
-| [📘 Quick Start](https://rwydaegh.github.io/goliat/quick_start.html) | Get running in 5 minutes |
-| [📖 User Guide](https://rwydaegh.github.io/goliat/user_guide.html) | Workflows and concepts explained |
-| [🎓 Tutorials](https://rwydaegh.github.io/goliat/tutorials/basic.html) | Step-by-step examples (basic → advanced) |
-| [⚙️ Configuration](https://rwydaegh.github.io/goliat/configuration.html) | All config options with examples |
-| [🔧 API Reference](https://rwydaegh.github.io/goliat/api.html) | Class and function details |
-| [🐛 Troubleshooting](https://rwydaegh.github.io/goliat/troubleshooting.html) | Common issues and solutions |
-| [👨‍💻 Developer Guide](https://rwydaegh.github.io/goliat/developer_guide.html) | Extend GOLIAT or contribute |
+| [Quick Start](https://rwydaegh.github.io/goliat/quick_start.html) | Get running in 5 minutes |
+| [User Guide](https://rwydaegh.github.io/goliat/user_guide.html) | Workflows and concepts explained |
+| [Tutorials](https://rwydaegh.github.io/goliat/tutorials/basic.html) | Step-by-step examples (basic → advanced) |
+| [ Configuration](https://rwydaegh.github.io/goliat/configuration.html) | All config options with examples |
+| [API Reference](https://rwydaegh.github.io/goliat/api.html) | Class and function details |
+| [Troubleshooting](https://rwydaegh.github.io/goliat/troubleshooting.html) | Common issues and solutions |
+| [Developer Guide](https://rwydaegh.github.io/goliat/developer_guide.html) | Extend GOLIAT or contribute |
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! We follow a standard fork-and-PR workflow:
 
@@ -222,7 +223,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines, code style rules
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the **MIT License** – see [LICENSE](LICENSE) for details.
 
@@ -238,8 +239,6 @@ This project is licensed under the **MIT License** – see [LICENSE](LICENSE) fo
 ---
 
 <div align="center">
-
-**Built with ❤️ for the EMF dosimetry community**
 
 ⭐ **Star this repo if GOLIAT helps your research!**
 
