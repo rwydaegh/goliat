@@ -3,12 +3,24 @@ import time
 from queue import Empty
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QIcon, QAction
-from PySide6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QProgressBar,
-                                 QLabel, QTextEdit, QPushButton, QHBoxLayout,
-                                 QSystemTrayIcon, QMenu, QGridLayout)
+from PySide6.QtWidgets import (
+    QApplication,
+    QWidget,
+    QVBoxLayout,
+    QProgressBar,
+    QLabel,
+    QTextEdit,
+    QPushButton,
+    QHBoxLayout,
+    QSystemTrayIcon,
+    QMenu,
+    QGridLayout,
+)
+
 
 class SensitivityAnalysisGUI(QWidget):
     """A GUI to display the progress of the sensitivity analysis, mirroring the main app's style."""
+
     def __init__(self, queue, process):
         super().__init__()
         self.queue = queue
@@ -33,7 +45,7 @@ class SensitivityAnalysisGUI(QWidget):
         self.overall_progress_label = QLabel("Overall Progress:")
         self.layout.addWidget(self.overall_progress_label)
         self.overall_progress_bar = QProgressBar(self)
-        self.overall_progress_bar.setRange(0, 1000) # Use a finer scale
+        self.overall_progress_bar.setRange(0, 1000)  # Use a finer scale
         self.overall_progress_bar.setFormat("%p%")
         self.layout.addWidget(self.overall_progress_bar)
 
@@ -97,21 +109,24 @@ class SensitivityAnalysisGUI(QWidget):
         while not self.queue.empty():
             try:
                 msg = self.queue.get_nowait()
-                msg_type = msg.get('type')
+                msg_type = msg.get("type")
 
-                if msg_type == 'status':
-                    self.update_status(msg['message'])
-                elif msg_type == 'progress':
+                if msg_type == "status":
+                    self.update_status(msg["message"])
+                elif msg_type == "progress":
                     # This now controls the stage progress bar
-                    self.update_stage_progress(msg['current'], msg['total'])
-                elif msg_type == 'timing':
-                    self.update_timing(msg['elapsed'], msg['eta'])
-                elif msg_type == 'finished':
+                    self.update_stage_progress(msg["current"], msg["total"])
+                elif msg_type == "timing":
+                    self.update_timing(msg["elapsed"], msg["eta"])
+                elif msg_type == "finished":
                     self.study_finished()
-                elif msg_type == 'plot':
+                elif msg_type == "plot":
                     # Import locally to avoid circular dependency issues at startup
-                    from analysis.sensitivity_analysis.run_sensitivity_analysis import plot_results
-                    plot_results(msg['df'], msg['freq'], msg['config'])
+                    from analysis.sensitivity_analysis.run_sensitivity_analysis import (
+                        plot_results,
+                    )
+
+                    plot_results(msg["df"], msg["freq"], msg["config"])
 
             except Empty:
                 break
@@ -147,6 +162,7 @@ class SensitivityAnalysisGUI(QWidget):
     def update_timing(self, elapsed, eta):
         """Updates the timing labels."""
         from src.utils import format_time
+
         if eta is not None:
             self.eta_label.setText(f"Time Remaining: {format_time(eta)}")
         else:
@@ -155,6 +171,7 @@ class SensitivityAnalysisGUI(QWidget):
     def update_clock(self):
         """Updates the elapsed time label every second."""
         from src.utils import format_time
+
         elapsed_sec = time.monotonic() - self.start_time
         self.elapsed_label.setText(f"Elapsed: {format_time(elapsed_sec)}")
 

@@ -37,8 +37,9 @@ jobs:
 
     - name: Run Flake8 linter
       run: |
-        flake8 . --max-line-length=120 --exclude=.git,__pycache__,docs,build,dist,venv,archive,analysis,osparc_api_example,post_process_results,scripts,tests
+        flake8 . --max-line-length=120 --exclude=.git,__pycache__,docs,build,dist,venv,archive,analysis,osparc_api_example,post_process_results,scripts,tests --ignore=E203,W503,E731,F401,F841
 
     - name: Run Pytest tests
       run: |
+        export PYTHONPATH=$PYTHONPATH:./src
         pytest

@@ -13,6 +13,13 @@
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11+-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg?logo=pytest)](.github/workflows/test.yml)
+[![CI/CD](https://github.com/rwydaegh/goliat/actions/workflows/test.yml/badge.svg)](https://github.com/rwydaegh/goliat/actions/workflows/test.yml)
+[![Docs Deploy](https://github.com/rwydaegh/goliat/actions/workflows/docs.yml/badge.svg)](https://github.com/rwydaegh/goliat/actions/workflows/docs.yml)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg?style=flat&logo=black)](https://github.com/psf/black)
+[![Linting: flake8](https://img.shields.io/badge/linter-flake8-blue.svg?logo=flake8)](https://flake8.pycqa.org/en/latest/)
+[![GUI](https://img.shields.io/badge/GUI-PySide6-blue.svg?logo=qt&logoColor=white)](https://www.qt.io/qt-for-python)
+[![Cloud](https://img.shields.io/badge/cloud-oSPARC-blue.svg?logo=cloud&logoColor=white)](https://osparc.io/)
+[![Sim4Life](https://img.shields.io/badge/Sim4Life-8.2.2+-red.svg?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjU2Ij48cGF0aCBmaWxsPSIjZmZmZmZmIiBkPSJNMjI0IDBoLTMybC02NCAxMjhsLTY0LTEyOEgwTDEyOCAyNTYgMjI0IDB6Ii8+PC9zdmc+)](https://sim4life.swiss/)
 
 [📚 Documentation](https://rwydaegh.github.io/goliat/) • [🚀 Quick Start](#-quick-start) • [💡 Examples](#-usage-examples) • [🤝 Contributing](#-contributing)
 
