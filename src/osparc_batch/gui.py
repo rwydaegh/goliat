@@ -1,4 +1,5 @@
 import sys
+import subprocess
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QPushButton, QHBoxLayout,
                                  QSystemTrayIcon, QMenu, QTextEdit)
@@ -12,6 +13,7 @@ class BatchGUI(QWidget):
     """A simple GUI for the oSPARC batch run."""
     print_progress_requested = Signal()
     stop_run_requested = Signal()
+    cancel_jobs_requested = Signal()
 
     def __init__(self):
         super().__init__()
@@ -26,13 +28,19 @@ class BatchGUI(QWidget):
         self.button_layout = QHBoxLayout()
         self.progress_button = QPushButton("Print Progress")
         self.progress_button.clicked.connect(self.print_progress_requested.emit)
-        self.stop_button = QPushButton("Stop")
-        self.stop_button.clicked.connect(self.stop_run)
+        
+        self.force_stop_button = QPushButton("Force Stop")
+        self.force_stop_button.clicked.connect(self.force_stop_run)
+        
+        self.stop_and_cancel_button = QPushButton("Stop and Cancel Jobs")
+        self.stop_and_cancel_button.clicked.connect(self.stop_and_cancel_jobs)
+        
         self.tray_button = QPushButton("Move to Tray")
         self.tray_button.clicked.connect(self.hide_to_tray)
         
         self.button_layout.addWidget(self.progress_button)
-        self.button_layout.addWidget(self.stop_button)
+        self.button_layout.addWidget(self.force_stop_button)
+        self.button_layout.addWidget(self.stop_and_cancel_button)
         self.button_layout.addWidget(self.tray_button)
         self.layout.addLayout(self.button_layout)
 
@@ -56,13 +64,22 @@ class BatchGUI(QWidget):
         self.tray_icon.setContextMenu(tray_menu)
         self.tray_icon.activated.connect(self.tray_icon_activated)
 
-    def stop_run(self):
-        """Stops the main batch process."""
-        logger.info("Stop button clicked.")
-        self.stop_button.setEnabled(False)
+    def force_stop_run(self):
+        """Stops the main batch process immediately."""
+        logger.info("Force stop button clicked.")
+        self.force_stop_button.setEnabled(False)
+        self.stop_and_cancel_button.setEnabled(False)
         self.stop_run_requested.emit()
         QApplication.instance().quit()
 
+    def stop_and_cancel_jobs(self):
+        """Stops the main batch process and cancels all running jobs."""
+        logger.info("Stop and cancel jobs button clicked.")
+        self.force_stop_button.setEnabled(False)
+        self.stop_and_cancel_button.setEnabled(False)
+        self.cancel_jobs_requested.emit()
+        # The worker will handle the rest, including quitting the app
+    
     def hide_to_tray(self):
         """Hide the main window and show the tray icon."""
         logger.info("Hiding window to system tray.")
@@ -84,8 +101,5 @@ class BatchGUI(QWidget):
     def closeEvent(self, event):
         """Handle the window close event."""
         logger.info("Window close event triggered.")
-        self.stop_run_requested.emit()
-        if self.tray_icon.isVisible():
-            self.tray_icon.hide()
-        QApplication.instance().quit()
+        self.force_stop_run()
         event.accept()

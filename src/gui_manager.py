@@ -49,8 +49,8 @@ class QueueGUI(LoggingMixin):
 
     def update_profiler(self):
         """Puts the updated profiler object on the queue."""
-        # To avoid serialization issues with complex objects, we send the necessary data
-        self.queue.put({'type': 'profiler_update', 'phase': self.profiler.current_phase})
+        # We now send the entire profiler object to the GUI
+        self.queue.put({'type': 'profiler_update', 'profiler': self.profiler})
 
     def process_events(self):
         """This is a no-op in the process-based model, but kept for interface compatibility."""
@@ -62,7 +62,7 @@ class QueueGUI(LoggingMixin):
 
 
 class ProgressGUI(QWidget):
-    def __init__(self, queue, stop_event, process):
+    def __init__(self, queue, stop_event, process, window_title="Simulation Progress"):
         super().__init__()
         self.queue = queue
         self.stop_event = stop_event
@@ -70,6 +70,7 @@ class ProgressGUI(QWidget):
         self.start_time = time.monotonic()
         self.progress_logger = logging.getLogger('progress')
         self.verbose_logger = logging.getLogger('verbose')
+        self.window_title = window_title
         self.init_ui()
 
         self.phase_name_map = {
@@ -98,7 +99,7 @@ class ProgressGUI(QWidget):
         self.clock_timer.start(1000)
 
     def init_ui(self):
-        self.setWindowTitle("Simulation Progress")
+        self.setWindowTitle(self.window_title)
         self.layout = QVBoxLayout()
         self.grid_layout = QGridLayout()
 
@@ -178,7 +179,11 @@ class ProgressGUI(QWidget):
                 elif msg_type == 'end_animation':
                     self.end_stage_animation()
                 elif msg_type == 'profiler_update':
-                    self.profiler_phase = msg.get('phase')
+                    # This message now passes the entire profiler object
+                    # to ensure the GUI has the latest estimates.
+                    self.profiler = msg.get('profiler')
+                    if self.profiler:
+                        self.profiler_phase = self.profiler.current_phase
                 elif msg_type == 'finished':
                     self.study_finished()
                 elif msg_type == 'fatal_error':
@@ -283,7 +288,18 @@ class ProgressGUI(QWidget):
     def update_clock(self):
         elapsed_sec = time.monotonic() - self.start_time
         self.elapsed_label.setText(f"Elapsed: {format_time(elapsed_sec)}")
-        # ETA is now pushed from the study process, so we don't calculate it here.
+
+        # Calculate ETA here using the pull model
+        if hasattr(self, 'profiler') and self.profiler and self.profiler.current_phase:
+            current_stage_progress_ratio = self.stage_progress_bar.value() / 1000.0
+            eta_sec = self.profiler.get_time_remaining(current_stage_progress=current_stage_progress_ratio)
+            
+            if eta_sec is not None:
+                self.eta_label.setText(f"Time Remaining: {format_time(eta_sec)}")
+            else:
+                self.eta_label.setText("Time Remaining: N/A")
+        else:
+            self.eta_label.setText("Time Remaining: N/A")
 
     def study_finished(self, error=False):
         self.clock_timer.stop()

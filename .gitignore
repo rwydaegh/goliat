@@ -36,3 +36,6 @@ analysis/sensitivity_analysis/plots/
 !analysis/**/*.png
 !analysis/**/*.pdf
 *.zip
+# Lock files
+*.lock
+tmp_download/

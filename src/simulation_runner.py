@@ -8,7 +8,6 @@ import traceback
 import threading
 from queue import Queue, Empty
 
-import XOsparcApiClient
 from .utils import open_project, non_blocking_sleep
 from .logging_manager import LoggingMixin
 
@@ -194,6 +193,15 @@ class SimulationRunner(LoggingMixin):
         """
         Submits a job directly to the oSPARC platform, bypassing server discovery.
         """
+        try:
+            import XOsparcApiClient  # Only available in Sim4Life v8.2.2 and later.
+        except ImportError as e:
+            self._log("Failed to import XOsparcApiClient. This module is required for direct oSPARC integration.", level='progress', log_type='error')
+            self._log("Please ensure you are using Sim4Life version 8.2.2 or higher.", level='progress', log_type='info')
+            self._log(f"Original error: {e}", log_type='verbose')
+            traceback.print_exc()
+            raise RuntimeError("Could not import XOsparcApiClient module, which is necessary for oSPARC runs.")
+
         self._log("--- Running simulation directly on oSPARC ---", level='progress', log_type='header')
 
         # 1. Get Credentials and Initialize Client

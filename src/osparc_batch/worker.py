@@ -40,6 +40,7 @@ class Worker(QObject):
         self.running_jobs = {}
         self.downloaded_jobs = set()
         self.jobs_being_downloaded = set()
+        self.file_retries = {} # Correct: Associate retries with the file path
         self.client_cfg = None
 
         # Executors and timers
@@ -84,7 +85,8 @@ class Worker(QObject):
         import osparc as osparc_module
         with osparc_module.ApiClient(self.client_cfg) as api_client:
             solvers_api = osparc_module.SolversApi(api_client)
-            for file_path, (job, solver) in self.running_jobs.items():
+            # Iterate over a copy of the items, as the dictionary may be modified during the loop
+            for file_path, (job, solver) in list(self.running_jobs.items()):
                 if job.id in self.downloaded_jobs or job.id in self.jobs_being_downloaded:
                     continue
 
@@ -93,8 +95,11 @@ class Worker(QObject):
                     job_logger = logging.getLogger(f'job_{job.id}')
                     new_status_str = f"{status.state} ({status.progress}%)"
 
-                    current_status, _ = self.job_statuses.get(job.id, ("UNKNOWN", time.time()))
-                    if current_status != new_status_str:
+                    current_status_str, _ = self.job_statuses.get(job.id, ("UNKNOWN", time.time()))
+                    
+                    if status.state == current_status_str.split(" ")[0]:
+                        self.job_statuses[job.id] = (new_status_str, self.job_statuses[job.id][1])
+                    else:
                         self.job_statuses[job.id] = (new_status_str, time.time())
                         job_logger.info(f"Status update: {new_status_str}")
 
@@ -105,16 +110,66 @@ class Worker(QObject):
                         self.download_executor.submit(self._download_job_in_thread, job, solver, file_path)
 
                     elif status.state == "FAILED":
-                        job_logger.error("Job failed.")
-                        self.downloaded_jobs.add(job.id)
-                        if self.job_statuses.get(job.id, ("dummy", 0))[0] != "FAILED":
-                            self.job_statuses[job.id] = ("FAILED", time.time())
+                        job_logger.error(f"Job {job.id} for {file_path.name} has failed.")
+                        
+                        retries = self.file_retries.get(file_path, 0)
+                        if retries < 3:
+                            new_retry_count = retries + 1
+                            self.file_retries[file_path] = new_retry_count
+                            job_logger.warning(f"Retrying job for {file_path.name} (attempt {new_retry_count}/3)...")
+                            self.status_update_requested.emit(job.id, f"RETRYING ({new_retry_count}/3)")
+                            self._resubmit_job(file_path)
+                        else:
+                            job_logger.error(f"Job for {file_path.name} has failed after {retries} retries. Giving up.")
+                            self.downloaded_jobs.add(job.id)
+                            if self.job_statuses.get(job.id, ("dummy", 0))[0] != "FAILED":
+                                self.job_statuses[job.id] = ("FAILED", time.time())
 
                 except Exception as exc:
                     job_logger = logging.getLogger(f'job_{job.id}')
                     job_logger.error(f"Error inspecting job {job.id}: {exc}\n{traceback.format_exc()}")
                     self.job_statuses[job.id] = ("FAILED", time.time())
                     self.downloaded_jobs.add(job.id)
+
+    def _resubmit_job(self, file_path):
+        """Resubmits a failed job."""
+        import osparc as osparc_module
+        from src.osparc_batch.runner import _submit_job_in_process, setup_job_logging
+        
+        try:
+            base_dir = self.config.base_dir
+            solver_key = "simcore/services/comp/isolve-gpu"
+            solver_version = "2.2.212"
+            
+            # --- State Cleanup for the Old Job ---
+            old_job_id = self.file_to_job_id.pop(file_path, None)
+            if old_job_id:
+                self.running_jobs.pop(file_path, None)
+                self.job_statuses.pop(old_job_id, None)
+                self.downloaded_jobs.discard(old_job_id)
+
+            # --- Submit New Job ---
+            job, solver = _submit_job_in_process(file_path, self.client_cfg, solver_key, solver_version)
+            if job:
+                setup_job_logging(base_dir, job.id)
+                job_logger = logging.getLogger(f'job_{job.id}')
+                job_logger.info(f"Resubmitted as new job {job.id} for input file {file_path.name}.")
+                
+                # --- State Update for the New Job ---
+                self.running_jobs[file_path] = (job, solver)
+                self.file_to_job_id[file_path] = job.id
+                self.job_statuses[job.id] = ("PENDING", time.time())
+                # The retry count is already updated in _check_jobs_status using self.file_retries
+            else:
+                self.logger.error(f"Failed to resubmit job for {file_path.name}. The job will be marked as FAILED.")
+                if old_job_id:
+                    self.file_to_job_id[file_path] = old_job_id 
+                    self.job_statuses[old_job_id] = ("FAILED", time.time())
+                    self.downloaded_jobs.add(old_job_id)
+
+        except Exception as e:
+            self.logger.error(f"Critical error during job resubmission for {file_path.name}: {e}\n{traceback.format_exc()}")
+
 
     @Slot(str, str)
     def _update_job_status(self, job_id, status):
@@ -146,3 +201,42 @@ class Worker(QObject):
         if self.thread():
             self.thread().quit()
             self.thread().wait()
+
+    @Slot()
+    def cancel_jobs(self):
+        """Cancels all running jobs and then stops the worker."""
+        self.logger.info("--- Cancellation of all jobs requested by user ---")
+        self.stop_requested = True
+        if self.timer.isActive():
+            self.timer.stop()
+
+        # Run the cancel_all_jobs.py script
+        try:
+            script_path = "scripts/cancel_all_jobs.py"
+            config_path = self.config_path
+            max_jobs = len(self.running_jobs)
+            self.logger.info(f"Running cancellation script for {max_jobs} jobs...")
+            subprocess.run(
+                [
+                    "python",
+                    script_path,
+                    "--config",
+                    config_path,
+                    "--max-jobs",
+                    str(max_jobs),
+                ],
+                check=True,
+            )
+            self.logger.info("--- Job cancellation script finished ---")
+        except FileNotFoundError:
+            self.logger.error(f"Error: The script '{script_path}' was not found.")
+        except subprocess.CalledProcessError as e:
+            self.logger.error(f"Error running cancellation script: {e}")
+        except Exception as e:
+            self.logger.error(f"An unexpected error occurred during job cancellation: {e}")
+        finally:
+            self.download_executor.shutdown(wait=False, cancel_futures=True)
+            self.finished.emit()
+            if self.thread():
+                self.thread().quit()
+                self.thread().wait()

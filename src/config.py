@@ -21,7 +21,7 @@ class Config:
     """
     def __init__(self, base_dir, config_filename="near_field_config.json"):
         self.base_dir = base_dir
-        self.config_path = self._resolve_config_path(config_filename)
+        self.config_path = self._resolve_config_path(config_filename, self.base_dir)
         self.material_mapping_path = os.path.join(self.base_dir, 'data', 'material_name_mapping.json')
         self.profiling_config_path = os.path.join(self.base_dir, 'configs', 'profiling_config.json')
         
@@ -29,13 +29,18 @@ class Config:
         self.material_mapping = self._load_json(self.material_mapping_path)
         self.profiling_config = self._load_json(self.profiling_config_path)
 
-    def _resolve_config_path(self, config_filename):
+    def _resolve_config_path(self, config_filename, base_path):
         """
         Resolves the absolute path to the configuration file.
         """
         if os.path.isabs(config_filename):
             return config_filename
         
+        # Check if the file exists relative to the base_path
+        prospective_path = os.path.join(base_path, config_filename)
+        if os.path.exists(prospective_path):
+            return prospective_path
+
         # If a relative path with directory components is given
         if os.path.dirname(config_filename):
             return os.path.join(self.base_dir, config_filename)
@@ -64,7 +69,8 @@ class Config:
         config = self._load_json(path)
         
         if "extends" in config:
-            base_config_path = self._resolve_config_path(config["extends"])
+            # Pass the directory of the current file as the base for resolution
+            base_config_path = self._resolve_config_path(config["extends"], base_path=os.path.dirname(path))
             base_config = self._load_config_with_inheritance(base_config_path)
             
             # Merge the current configuration into the base, with the current overriding the base.

@@ -85,13 +85,33 @@ class Profiler:
         return self.profiling_config.get(f'avg_{task_name}', 1.0) # Default to 1 second
 
     def get_time_remaining(self, current_stage_progress=0.0):
-        """Estimates the total time remaining for the study."""
-        total_estimated_time = sum(self.profiling_config.get(f'avg_{phase}_time', 60) for phase in self.phase_weights)
-        elapsed_time = time.monotonic() - self.start_time
-        
-        # A simple estimate: total expected time minus elapsed time
-        eta = max(0, total_estimated_time - elapsed_time)
-        return eta
+        """
+        Estimates the total time remaining for the study by considering completed phases,
+        the progress of the current phase, and the estimated time for future phases.
+        """
+        if not self.current_phase:
+            return 0
+
+        # Find the index of the current phase in the execution order
+        ordered_phases = [p for p in ['setup', 'run', 'extract'] if self.execution_control.get(f'do_{p}', False)]
+        try:
+            current_phase_index = ordered_phases.index(self.current_phase)
+        except ValueError:
+            return 0 # Current phase not in the expected list
+
+        # 1. Time remaining in the current phase
+        current_phase_total_time = self.profiling_config.get(f'avg_{self.current_phase}_time', 60)
+        time_in_current_phase = current_phase_total_time * (1 - current_stage_progress)
+
+        # 2. Time for all future phases
+        time_for_future_phases = 0
+        for i in range(current_phase_index + 1, len(ordered_phases)):
+            future_phase = ordered_phases[i]
+            time_for_future_phases += self.profiling_config.get(f'avg_{future_phase}_time', 60)
+
+        # 3. Total ETA
+        eta = time_in_current_phase + time_for_future_phases
+        return max(0, eta)
 
     def save_estimates(self):
         """Saves the updated average times to the configuration file."""

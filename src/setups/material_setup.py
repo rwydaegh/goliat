@@ -1,3 +1,5 @@
+import os
+import time
 from .base_setup import BaseSetup
 
 class MaterialSetup(BaseSetup):
@@ -35,27 +37,43 @@ class MaterialSetup(BaseSetup):
             self._assign_antenna_materials(antenna_components)
 
     def _assign_phantom_materials(self):
-        all_entities = self.model.AllEntities()
-        phantom_parts = [e for e in all_entities if isinstance(e, self.XCoreModeling.TriangleMesh)]
-        
-        # Get the first phantom name from the config. This assumes one phantom per simulation.
-        phantom_name = self.config.get_setting("phantoms")[0]
-        name_mapping = self.config.get_material_mapping(phantom_name)
+        lock_file_path = os.path.join(self.config.base_dir, 'material_db.lock')
 
-        material_groups = {}
-        for part in phantom_parts:
-            base_name = part.Name.split('(')[0].strip()
-            material_name = name_mapping.get(base_name, base_name.replace('_', ' '))
-            material_groups.setdefault(material_name, []).append(part)
-
-        for material_name, entities in material_groups.items():
+        # Acquire lock
+        while True:
             try:
-                mat = self.database["IT'IS 4.2"][material_name]
-                material_settings = self.emfdtd.MaterialSettings()
-                self.simulation.LinkMaterialWithDatabase(material_settings, mat)
-                self.simulation.Add(material_settings, entities)
-            except KeyError:
-                self._log(f"    - Warning: Could not find material '{material_name}' in IT'IS 4.2 database.", log_type='warning')
+                # Use exclusive creation mode to atomically create the file
+                with open(lock_file_path, 'x'):
+                    break  # Lock acquired
+            except FileExistsError:
+                time.sleep(0.5)  # Wait before retrying
+
+        try:
+            all_entities = self.model.AllEntities()
+            phantom_parts = [e for e in all_entities if isinstance(e, self.XCoreModeling.TriangleMesh)]
+            
+            phantom_name = self.config.get_setting("phantoms")[0]
+            name_mapping = self.config.get_material_mapping(phantom_name)
+
+            material_groups = {}
+            for part in phantom_parts:
+                base_name = part.Name.split('(')[0].strip()
+                material_name = name_mapping.get(base_name, base_name.replace('_', ' '))
+                material_groups.setdefault(material_name, []).append(part)
+
+            for material_name, entities in material_groups.items():
+                try:
+                    mat = self.database["IT'IS 4.2"][material_name]
+                    material_settings = self.emfdtd.MaterialSettings()
+                    self.simulation.LinkMaterialWithDatabase(material_settings, mat)
+                    self.simulation.Add(material_settings, entities)
+                except KeyError:
+                    self._log(f"    - Warning: Could not find material '{material_name}' in IT'IS 4.2 database.", log_type='warning')
+
+        finally:
+            # Release lock
+            if os.path.exists(lock_file_path):
+                os.remove(lock_file_path)
 
     def _assign_antenna_materials(self, antenna_components):
         antenna_config = self.antenna.get_config_for_frequency()

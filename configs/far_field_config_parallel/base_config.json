@@ -1,0 +1,58 @@
+{
+    "execution_control": {
+        "do_setup": true,
+        "do_run": true,
+        "do_extract": true,
+        "only_write_input_file": false
+    },
+    "simulation_parameters": {
+        "global_auto_termination": "GlobalAutoTerminationUserDefined",
+        "convergence_level_dB": -15,
+        "simulation_time_multiplier": 5,
+        "number_of_point_sensors": 2,
+        "point_source_order": [
+            "lower_left_bottom",
+            "top_right_up",
+            "lower_right_bottom",
+            "top_left_up",
+            "lower_left_up",
+            "top_right_bottom",
+            "lower_right_up",
+            "top_left_bottom"
+        ]
+    },
+    "gridding_parameters": {
+        "global_gridding": {
+            "grid_mode": "automatic",
+            "refinement": "AutoRefinementDefault",
+            "manual_fallback_max_step_mm": 5.0
+        },
+        "padding": {
+            "padding_mode": "automatic",
+            "manual_bottom_padding_mm": [0, 0, 0],
+            "manual_top_padding_mm": [0, 0, 0]
+        }
+    },
+    "solver_settings": {
+        "kernel": "Acceleware",
+        "location": "localhost",
+        "show_solver_output": true,
+        "boundary_conditions": {
+            "type": "UpmlCpml",
+            "strength": "Low"
+        }
+    },
+    "verbose": false,
+    "manual_isolve": true,
+    "download_email": "example@example.com",
+    "data_setup": {
+        "gdrive_url": "https://drive.google.com/drive/folders/1Ps0ilW6yx4Z5VoWRZKrkhP225m8lBQOV?usp=sharing",
+        "data_dir": "data"
+      },
+    "osparc_credentials": {
+        "api_key": "YOUR_OSPARC_API_KEY",
+        "api_secret": "YOUR_OSPARC_API_SECRET",
+        "api_server": "https://api.sim4life.science",
+        "api_version": "v0"
+    }
+}

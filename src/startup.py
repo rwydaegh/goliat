@@ -37,7 +37,7 @@ def prepare_data(base_dir):
     phantoms_dir = os.path.join(data_dir, 'phantoms')
     if not os.path.exists(phantoms_dir) or len(os.listdir(phantoms_dir)) < 4:
         logging.getLogger('verbose').info("Phantoms directory is missing or incomplete. Downloading phantoms...", extra={'log_type': 'info'})
-        download_and_extract_data(base_dir)
+        download_and_extract_data(base_dir, logging.getLogger('verbose'))
     else:
         logging.getLogger('verbose').info("Phantoms already exist. Skipping download.", extra={'log_type': 'info'})
 
@@ -53,14 +53,11 @@ def prepare_data(base_dir):
 def run_full_startup(base_dir):
     """
     Runs all startup checks and preparations.
+    Package installation is now handled at the entry point.
     """
     logging.getLogger('verbose').info("--- Running Project Startup ---", extra={'log_type': 'header'})
     
-    # 1. Install Packages
-    requirements_path = os.path.join(base_dir, 'requirements.txt')
-    check_and_install_packages(requirements_path)
-    
-    # 2. Prepare Data
+    # 1. Prepare Data
     prepare_data(base_dir)
     
     logging.getLogger('verbose').info("--- Startup Complete ---", extra={'log_type': 'success'})

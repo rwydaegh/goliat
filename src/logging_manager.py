@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 from datetime import datetime
 from colorama import Fore, Style, init
 from .colors import get_color
@@ -15,7 +16,7 @@ class ColorFormatter(logging.Formatter):
         message = record.getMessage()
         return f"{color}{message}{Style.RESET_ALL}"
 
-def setup_loggers():
+def setup_loggers(process_id=None):
     """
     Sets up two loggers:
     1. 'progress': For high-level progress updates. Logs to console, a .progress.log file, and the main .log file.
@@ -29,24 +30,42 @@ def setup_loggers():
     # Create a timestamp for the session. This ensures all log files in a
     # single run share the same timestamp.
     session_timestamp = datetime.now().strftime('%d-%m_%H-%M-%S')
+    if process_id:
+        session_timestamp = f"{session_timestamp}_{process_id}"
 
     # --- Log Rotation ---
-    # Now managing two types of log files. The total limit is 20 (10 pairs).
-    log_files = [os.path.join(log_dir, f) for f in os.listdir(log_dir) if f.endswith('.log')]
-    log_files.sort(key=os.path.getctime)
-    # We check against 10 because each run creates a pair of files.
-    while len(log_files) >= 10:
+    lock_file_path = os.path.join(log_dir, 'log_rotation.lock')
+    
+    # Acquire lock for log rotation
+    while True:
         try:
-            old_log = log_files.pop(0)
-            base, _ = os.path.splitext(old_log)
-            progress_log = base + '.progress.log'
-            
-            os.remove(old_log)
-            if os.path.exists(progress_log):
-                os.remove(progress_log)
-        except OSError:
-            # File might be locked, skip.
-            pass
+            with open(lock_file_path, 'x'):
+                break  # Lock acquired
+        except FileExistsError:
+            time.sleep(0.1) # Wait for the lock to be released
+
+    try:
+        # Now managing two types of log files. The total limit is 30 (15 pairs).
+        log_files = [os.path.join(log_dir, f) for f in os.listdir(log_dir) if f.endswith('.log')]
+        log_files.sort(key=os.path.getctime)
+        # We check against 10 because each run creates a pair of files.
+        while len(log_files) >= 30:
+            try:
+                old_log = log_files.pop(0)
+                base, _ = os.path.splitext(old_log)
+                progress_log = base + '.progress.log'
+                
+                if os.path.exists(old_log):
+                    os.remove(old_log)
+                if os.path.exists(progress_log):
+                    os.remove(progress_log)
+            except OSError:
+                # File might be locked, skip.
+                pass
+    finally:
+        # Release lock
+        if os.path.exists(lock_file_path):
+            os.remove(lock_file_path)
 
     # --- Filename Setup ---
     progress_log_filename = os.path.join(log_dir, f'{session_timestamp}.progress.log')

@@ -5,7 +5,9 @@ import time
 import zipfile
 import argparse
 import shutil
+import statistics
 import traceback
+import re
 from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from collections import defaultdict
@@ -54,6 +56,7 @@ STATUS_COLORS = {
     "STARTED": colorama.Fore.CYAN,
     "SUCCESS": colorama.Fore.GREEN,
     "FAILED": colorama.Fore.RED,
+    "RETRYING": colorama.Fore.LIGHTRED_EX,
     "DOWNLOADING": colorama.Fore.BLUE,
     "FINISHED": colorama.Fore.GREEN,
     "COMPLETED": colorama.Fore.GREEN,
@@ -111,7 +114,7 @@ def find_input_files(config) -> list[Path]:
                     all_input_files.extend(found_files)
                     continue
                 
-                files_with_mtime = sorted([(f, f.stat().st_mtime) for f in found_files], key=lambda x: x, reverse=True)
+                files_with_mtime = sorted([(f, f.stat().st_mtime) for f in found_files], key=lambda x: x[1], reverse=True)
                 
                 main_logger.info("Analyzing file timestamps to find the latest batch...")
                 latest_files = files_with_mtime[:expected_count]
@@ -120,6 +123,29 @@ def find_input_files(config) -> list[Path]:
                 # Simple approach: take the N youngest files. A more complex periodicity analysis could be added here if needed.
                 selected_files = [f for f, _ in latest_files]
                 main_logger.info(f"{colorama.Fore.GREEN}Selected the latest {len(selected_files)} files based on modification time.")
+
+                # --- Time Gap Analysis ---
+                if len(latest_files) > 1:
+                    time_diffs = [latest_files[i][1] - latest_files[i+1][1] for i in range(len(latest_files)-1)]
+                    time_diffs_str = ", ".join([f"{diff:.2f}s" for diff in time_diffs])
+                    main_logger.info(f"{colorama.Fore.YELLOW}Time gaps between files: [{time_diffs_str}].")
+
+                    if len(time_diffs) > 3:
+                        max_diff = max(time_diffs)
+                        other_diffs = [d for d in time_diffs if d != max_diff]
+                        
+                        if len(other_diffs) > 1:
+                            mean_diff = statistics.mean(other_diffs)
+                            
+                            if max_diff > 2 * mean_diff:
+                                main_logger.warning(f"{colorama.Back.RED}{colorama.Fore.WHITE}CRITICAL WARNING: Potential old input file detected!{colorama.Style.RESET_ALL}")
+                                main_logger.warning(f"The largest time gap ({max_diff:.2f}s) is significantly larger than expected (mean: {mean_diff:.2f}s, std: {std_dev:.2f}s).")
+                                main_logger.warning("Please verify the input files are from the correct batch.")
+                                
+                                response = input("Do you want to continue anyway? (y/n): ").lower()
+                                if response != 'y':
+                                    main_logger.error("Aborting due to user request.")
+                                    sys.exit(1)
 
                 # --- Cleanup Logic ---
                 unselected_files = [f for f, _ in files_with_mtime[expected_count:]]
@@ -148,11 +174,16 @@ def get_osparc_client_config(config, osparc_module):
     if not all(k in creds for k in ['api_key', 'api_secret', 'api_server']):
         raise ValueError("Missing oSPARC credentials in configuration.")
     
-    return osparc_module.Configuration(
+    temp_dir = Path(config.base_dir) / "tmp_download"
+    temp_dir.mkdir(exist_ok=True)
+
+    client_config = osparc_module.Configuration(
         host=creds['api_server'],
         username=creds['api_key'],
         password=creds['api_secret'],
     )
+    client_config.temp_folder_path = str(temp_dir)
+    return client_config
 
 
 def submit_job(input_file_path: Path, client_cfg, solver_key: str, solver_version: str, osparc_module):
@@ -179,7 +210,13 @@ def submit_job(input_file_path: Path, client_cfg, solver_key: str, solver_versio
 def _submit_job_in_process(input_file_path: Path, client_cfg, solver_key: str, solver_version: str):
     """Helper function to run the oSPARC submission in a separate process."""
     import osparc as osparc_module
-    return submit_job(input_file_path, client_cfg, solver_key, solver_version, osparc_module)
+    try:
+        return submit_job(input_file_path, client_cfg, solver_key, solver_version, osparc_module)
+    except ValueError as e:
+        if "Invalid value for `items`, must not be `None`" in str(e):
+            main_logger.error(f"Error submitting job for {input_file_path.name}: oSPARC API returned invalid data. Skipping.")
+            return None
+        raise e
 
 
 def download_and_process_results(job, solver, client_cfg, input_file_path, osparc_module, status_callback=None):
@@ -257,9 +294,17 @@ def get_progress_report(input_files, job_statuses, file_to_job_id) -> str:
 
     tree = {}
     if not input_files:
-        return ""
-    common_path_str = os.path.commonpath([str(p.parent) for p in input_files])
-    base_path = Path(common_path_str)
+        return "\n".join(report_lines)
+
+    # --- Optimized Path Handling ---
+    try:
+        first_path_parts = input_files[0].parts
+        results_index = first_path_parts.index('results')
+        base_path = Path(*first_path_parts[:results_index+1])
+    except (ValueError, IndexError):
+        # Fallback for safety, though not expected with the current structure
+        common_path_str = os.path.commonpath([str(p.parent) for p in input_files])
+        base_path = Path(common_path_str)
 
     for file_path in input_files:
         try:
@@ -270,9 +315,7 @@ def get_progress_report(input_files, job_statuses, file_to_job_id) -> str:
 
             current_level = tree
             for part in parts[:-1]:
-                if part not in current_level:
-                    current_level[part] = {}
-                current_level = current_level[part]
+                current_level = current_level.setdefault(part, {})
             
             filename = parts[-1]
             current_level[filename] = file_to_job_id.get(file_path)
@@ -281,7 +324,13 @@ def get_progress_report(input_files, job_statuses, file_to_job_id) -> str:
             report_lines.append(f"{colorama.Fore.RED}Could not process path {file_path}: {e}{colorama.Style.RESET_ALL}")
 
     def build_tree_recursive(node, prefix=""):
-        items = sorted(node.keys())
+        def sort_key(item):
+            match = re.match(r'(\d+)', item)
+            if match:
+                return (1, int(match.group(1)))
+            return (0, item)
+
+        items = sorted(node.keys(), key=sort_key)
         for i, item in enumerate(items):
             is_last = i == len(items) - 1
             connector = "└── " if is_last else "├── "
@@ -313,24 +362,18 @@ def get_progress_report(input_files, job_statuses, file_to_job_id) -> str:
 # --- 3. Main Process Logic ---
 def main_process_logic(worker: 'Worker'):
     """The main logic of the batch run, now running in a QThread."""
-    # No longer need to modify sys.path, assuming the script is run from the project root
-    from src.config import Config
     import osparc as osparc_module
 
     try:
         base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
-        
-        config = Config(base_dir, worker.config_path)
-        worker.config = config
-        worker.input_files = find_input_files(config)
-        worker.client_cfg = get_osparc_client_config(config, osparc_module)
+        worker.client_cfg = get_osparc_client_config(worker.config, osparc_module)
         
         solver_key = "simcore/services/comp/isolve-gpu"
         solver_version = "2.2.212"
 
         main_logger.info(f"{colorama.Fore.MAGENTA}--- Submitting Jobs to oSPARC in Parallel ---")
         worker.running_jobs = {}
-        with ProcessPoolExecutor(max_workers=len(worker.input_files) or 1) as executor:
+        with ProcessPoolExecutor(max_workers=min(len(worker.input_files), 61) or 1) as executor:
             future_to_file = {
                 executor.submit(_submit_job_in_process, fp, worker.client_cfg, solver_key, solver_version): fp
                 for fp in worker.input_files
@@ -338,11 +381,13 @@ def main_process_logic(worker: 'Worker'):
             for future in as_completed(future_to_file):
                 file_path = future_to_file[future]
                 try:
-                    job, solver = future.result()
-                    worker.running_jobs[file_path] = (job, solver)
-                    setup_job_logging(base_dir, job.id)
-                    job_logger = logging.getLogger(f'job_{job.id}')
-                    job_logger.info(f"Job {job.id} submitted for input file {file_path.name} at path {file_path}.")
+                    result = future.result()
+                    if result:
+                        job, solver = result
+                        worker.running_jobs[file_path] = (job, solver)
+                        setup_job_logging(base_dir, job.id)
+                        job_logger = logging.getLogger(f'job_{job.id}')
+                        job_logger.info(f"Job {job.id} submitted for input file {file_path.name} at path {file_path}.")
                 except Exception as exc:
                     main_logger.error(f'ERROR: Submitting job for {file_path.name} generated an exception: {exc}\n{traceback.format_exc()}')
 
@@ -382,13 +427,27 @@ def clear_log_directory(base_dir: str):
                 except OSError as e:
                     main_logger.error(f"Error deleting directory {item}: {e}")
 
+def clear_temp_download_directory(base_dir: str):
+    """Deletes the temporary download directory."""
+    temp_dir = Path(base_dir) / "tmp_download"
+    if temp_dir.exists():
+        main_logger.info(f"--- Clearing temporary download directory: {temp_dir} ---")
+        try:
+            shutil.rmtree(temp_dir)
+        except OSError as e:
+            main_logger.error(f"Error deleting directory {temp_dir}: {e}")
+
 def main(config_path: str):
     """Main entry point: sets up and starts the GUI and the main logic process."""
     import sys
     from PySide6.QtWidgets import QApplication
+    from src.config import Config
 
     base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
     clear_log_directory(base_dir)
+
+    config = Config(base_dir, config_path)
+    input_files = find_input_files(config)
 
     app = QApplication.instance() or QApplication(sys.argv)
     
@@ -401,6 +460,8 @@ def main(config_path: str):
         get_progress_report_func=get_progress_report,
         main_process_logic_func=main_process_logic,
     )
+    worker.config = config
+    worker.input_files = input_files
     worker.moveToThread(thread)
     
     gui = BatchGUI()
@@ -414,6 +475,7 @@ def main(config_path: str):
     worker.progress.connect(main_logger.info)
     gui.print_progress_requested.connect(worker.request_progress_report)
     gui.stop_run_requested.connect(worker.stop)
+    gui.cancel_jobs_requested.connect(worker.cancel_jobs)
     
     worker.finished.connect(app.quit)
     
@@ -424,6 +486,8 @@ def main(config_path: str):
     if thread.isRunning():
         thread.quit()
         thread.wait()
+
+    clear_temp_download_directory(base_dir)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run a batch of simulations on oSPARC with a progress GUI.")

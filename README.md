@@ -175,3 +175,35 @@ The most important parameters are:
 - **`phantoms`** and **`frequencies_mhz`**: The lists that define the core matrix of the study.
 
 For a complete and detailed list of all available configuration parameters, please see the **[Configuration Documentation](configs/documentation.md)**.
+
+## 6. Parallel Execution
+
+For running large studies, the framework now includes a unified script for splitting a single large configuration file into multiple smaller ones and running them in parallel. This is useful for taking advantage of multiple machine cores.
+
+### 6.1. Splitting and Running in Parallel
+
+The `run_parallel_studies.py` script, located in the root directory, handles both the splitting of the configuration file and the execution of the parallel studies.
+
+**Usage:**
+
+To split a configuration and immediately run the studies:
+```bash
+python run_parallel_studies.py --config configs/your_config.json --num-splits 4
+```
+
+This command will first create a new directory named `configs/your_config_parallel/` containing four new configuration files, each with a subset of the original phantoms or frequencies. It will then automatically launch a separate `run_study.py` process for each of these new configuration files.
+
+The splitting logic is as follows:
+- **2 splits**: Divides the phantoms into two halves.
+- **4 splits**: Creates a separate config for each of the first four phantoms.
+- **8 splits**: Splits by the first two phantoms, and also splits the frequency list in half for each phantom.
+
+If you have already split the configuration files and want to run the studies from the existing directory, you can use the `--skip-split` flag:
+
+```bash
+python run_parallel_studies.py --config configs/your_config.json --skip-split
+```
+
+This will skip the splitting step and directly run the studies using the configuration files found in `configs/your_config_parallel/`.
+
+Each parallel process will launch its own GUI window, with the title indicating the process ID and the configuration file it is running, making it easy to track the progress of each job.
