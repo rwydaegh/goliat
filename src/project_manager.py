@@ -49,6 +49,11 @@ class ProjectManager:
         Creates a new empty project in memory, deleting any existing file.
         The project is not saved to disk until save() is explicitly called.
         """
+        # Close any currently open document to release file locks before deleting
+        if self.document and hasattr(self.document, 'IsOpen') and self.document.IsOpen():
+            self._log("Closing existing document before creating a new one to release file lock.")
+            self.document.Close()
+
         if os.path.exists(self.project_path):
             self._log(f"Deleting existing project file at {self.project_path}")
             os.remove(self.project_path)

@@ -71,6 +71,9 @@ class NearFieldSetup(BaseSetup):
         source_setup = SourceSetup(self.config, simulation, self.frequency_mhz, self.antenna, self.verbose, self.free_space)
         source_setup.setup_source_and_sensors(antenna_components)
 
+        sim_bbox_name = f"{self.placement_name.lower()}_simulation_bbox"
+        self._add_point_sensors(simulation, sim_bbox_name)
+
         self._finalize_setup(simulation, antenna_components)
         
         self._log("Full simulation setup complete.")

@@ -60,7 +60,7 @@ class PhantomSetup:
             raise FileNotFoundError(f"Phantom '{self.phantom_name}' not found for download or in local files.")
         
         self._log(f"Found '{phantom_to_download.Name}'. Downloading...")
-        user_email = self.config.get_setting('user_email', 'example@example.com')
-        self.data.DownloadModel(phantom_to_download, email=user_email, directory=os.path.join(self.config.base_dir, 'data', 'phantoms'))
+        download_email = self.config.get_setting('download_email', 'example@example.com')
+        self.data.DownloadModel(phantom_to_download, email=download_email, directory=os.path.join(self.config.base_dir, 'data', 'phantoms'))
         self._log("Phantom downloaded successfully. Please re-run the script to import the new .sab file.")
         return False

@@ -57,8 +57,15 @@ class GriddingSetup:
         manual_grid_sim_bbox = self.simulation.AddManualGridSettings([sim_bbox_entity])
         
         # Use the new, more specific parameter for far-field resolution.
-        global_grid_res_m = self.config.get_setting("simulation_parameters/global_gridding_resolution_m", 5.0)
-        global_grid_res_mm = global_grid_res_m * 1000
+        global_grid_res_m = self.config.get_setting("simulation_parameters/global_gridding_resolution_m")
+        global_gridding = self.config.get_setting("simulation_parameters/global_gridding")
+
+        if global_gridding:
+            global_grid_res_mm = global_gridding
+        elif global_grid_res_m:
+            global_grid_res_mm = global_grid_res_m * 1000
+        else:
+            global_grid_res_mm = 5.0 # Default value
 
         manual_grid_sim_bbox.MaxStep = np.array([global_grid_res_mm] * 3)
         self._log(f"  - Global grid set with resolution {global_grid_res_mm} mm.")

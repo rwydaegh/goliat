@@ -116,50 +116,12 @@ class FarFieldSetup(BaseSetup):
         gridding_setup = GriddingSetup(self.config, simulation, None, None, self.verbose)
         gridding_setup.setup_gridding()
 
-        self._add_point_sensors(simulation)
+        self._add_point_sensors(simulation, "far_field_simulation_bbox")
 
         self._setup_solver_settings(simulation)
 
         self._finalize_setup(simulation)
         self._log("Common settings applied.")
-
-    def _add_point_sensors(self, simulation):
-        """Adds point sensors at the corners of the simulation bounding box."""
-        num_points = self.config.get_setting("simulation_parameters/simulation_bbox_points", 8)
-        if num_points == 0:
-            self._log("  - Skipping point sensor creation (0 points requested).")
-            return
-
-        sim_bbox_entity = next((e for e in self.model.AllEntities() if "far_field_simulation_bbox" in e.Name), None)
-        if not sim_bbox_entity:
-            self._log("  - WARNING: Could not find simulation bounding box to add point sensors.")
-            return
-        
-        bbox_min, bbox_max = self.model.GetBoundingBox([sim_bbox_entity])
-        corners = [
-            (bbox_min[0], bbox_min[1], bbox_min[2]), (bbox_max[0], bbox_min[1], bbox_min[2]),
-            (bbox_min[0], bbox_max[1], bbox_min[2]), (bbox_max[0], bbox_max[1], bbox_min[2]),
-            (bbox_min[0], bbox_min[1], bbox_max[2]), (bbox_max[0], bbox_min[1], bbox_max[2]),
-            (bbox_min[0], bbox_max[1], bbox_max[2]), (bbox_max[0], bbox_max[1], bbox_max[2])
-        ]
-
-        for i in range(min(num_points, 8)):
-            corner = corners[i]
-            point_entity_name = f"Point Sensor Entity {i+1}"
-            
-            # Check if the point sensor entity already exists
-            existing_entity = next((e for e in self.model.AllEntities() if hasattr(e, 'Name') and e.Name == point_entity_name), None)
-            
-            if existing_entity:
-                self._log(f"  - Point sensor '{point_entity_name}' already exists. Skipping creation.")
-                continue
-
-            point_entity = self.model.CreatePoint(self.model.Vec3(corner))
-            point_entity.Name = point_entity_name
-            point_sensor = self.emfdtd.PointSensorSettings()
-            point_sensor.Name = f"Point Sensor {i+1}"
-            simulation.Add(point_sensor, [point_entity])
-            self._log(f"  - Added point sensor at {corner}")
 
     def _finalize_setup(self, simulation):
         """

@@ -1,0 +1,25 @@
+{
+    "simulation_parameters": {
+        "global_auto_termination": "GlobalAutoTerminationUserDefined",
+        "convergence_level_dB": -15,
+        "simulation_time_multiplier": 5
+    },
+    "solver_settings": {
+        "kernel": "Cuda",
+        "location": "localhost",
+        "show_solver_output": true
+    },
+    "verbose": true,
+    "manual_isolve": false,
+    "download_email": "example@example.com",
+    "point_source_order": [
+        "lower_left_bottom",
+        "top_right_up",
+        "lower_right_bottom",
+        "top_left_up",
+        "lower_left_up",
+        "top_right_bottom",
+        "lower_right_up",
+        "top_left_bottom"
+    ]
+}

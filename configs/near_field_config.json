@@ -1,21 +1,9 @@
 {
+  "extends": "base_config.json",
   "simulation_parameters": {
-    "global_auto_termination": "GlobalAutoTerminationUserDefined",
-    "convergence_level_dB": -15,
     "global_gridding": 3.0,
     "freespace_antenna_bbox_expansion_mm": [20, 20, 20],
-    "simulation_time_multiplier": 5,
-    "number_of_point_sources": 2,
-    "point_source_order": [
-      "lower_left_bottom",
-      "top_right_up",
-      "lower_right_bottom",
-      "top_left_up",
-      "lower_left_up",
-      "top_right_bottom",
-      "lower_right_up",
-      "top_left_bottom"
-    ]
+    "number_of_point_sources": 2
   },
   "antenna_config": {
     "700": {
@@ -207,14 +195,6 @@
       }
     }
   },
-  "solver_settings": {
-    "kernel": "Cuda",
-    "location": "localhost",
-    "show_solver_output": true
-  },
-  "user_email": "example@example.com",
-  "verbose": false,
-  "manual_isolve": true,
   "data_setup": {
     "gdrive_url": "https://drive.google.com/drive/folders/1Ps0ilW6yx4Z5VoWRZKrkhP225m8lBQOV?usp=sharing",
     "data_dir": "data"

@@ -1,6 +1,5 @@
 {
-    "study_name": "GOLIAT Far-Field Environmental Study",
-    "user_email": "example@example.com",
+    "extends": "base_config.json",
     "phantoms": [
         "thelonius"
     ],
@@ -25,14 +24,7 @@
         "bbox_padding_m": 0,
         "global_gridding_resolution_m": 0.005,
         "simulation_bbox_points": 8,
-        "global_auto_termination": "GlobalAutoTerminationUserDefined",
-        "convergence_level_dB": -15,
-        "simulation_time_multiplier": 5
-    },
-    "solver_settings": {
-        "kernel": "Cuda",
-        "location": "localhost",
-        "show_solver_output": true
-    },
-    "verbose": true
+        "global_gridding": 3.0,
+        "number_of_point_sources": 2
+    }
 }

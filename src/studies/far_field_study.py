@@ -16,7 +16,7 @@ class FarFieldStudy(BaseStudy):
         super().__init__(config_filename, verbose)
         self.project_manager = ProjectManager(self.config, self.verbose)
 
-    def run(self):
+    def run(self, setup_only=False):
         """
         Executes the entire far-field study by iterating through each simulation case,
         creating a separate project for each.
@@ -57,6 +57,11 @@ class FarFieldStudy(BaseStudy):
                         
                         if not all_simulations:
                             self._log("  ERROR: No simulations were created for this frequency. Skipping.")
+                            continue
+
+                        if setup_only:
+                            self._log("  --- Setup Only Mode: Skipping simulation run and extraction. ---")
+                            project_manager.save()
                             continue
 
                         # 2. Run All Simulations in the project

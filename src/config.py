@@ -1,17 +1,44 @@
 import json
 import os
 
+def deep_merge(source, destination):
+    """
+    Recursively merges two dictionaries.
+    """
+    for key, value in source.items():
+        if isinstance(value, dict):
+            # Get or create the nested dictionary in destination
+            node = destination.setdefault(key, {})
+            deep_merge(value, node)
+        else:
+            destination[key] = value
+    return destination
+
 class Config:
     """
-    Handles loading and validation of configuration files.
+    Handles loading and validation of configuration files with inheritance.
     """
     def __init__(self, base_dir, config_filename="near_field_config.json"):
         self.base_dir = base_dir
-        self.config_path = os.path.join(self.base_dir, 'configs', config_filename)
+        self.config_path = self._resolve_config_path(config_filename)
         self.material_mapping_path = os.path.join(self.base_dir, 'material_name_mapping.json')
-       
-        self.config = self._load_json(self.config_path)
+        
+        self.config = self._load_config_with_inheritance(self.config_path)
         self.material_mapping = self._load_json(self.material_mapping_path)
+
+    def _resolve_config_path(self, config_filename):
+        """
+        Resolves the absolute path to the configuration file.
+        """
+        if os.path.isabs(config_filename):
+            return config_filename
+        
+        # If a relative path with directory components is given
+        if os.path.dirname(config_filename):
+            return os.path.join(self.base_dir, config_filename)
+        
+        # If only a filename is given, assume it's in the 'configs' directory
+        return os.path.join(self.base_dir, 'configs', config_filename)
 
     def get_setting(self, path, default=None):
         """
@@ -26,6 +53,21 @@ class Config:
             else:
                 return default
         return current_config
+
+    def _load_config_with_inheritance(self, path):
+        """
+        Loads a JSON configuration file and handles 'extends' for inheritance.
+        """
+        config = self._load_json(path)
+        
+        if "extends" in config:
+            base_config_path = self._resolve_config_path(config["extends"])
+            base_config = self._load_config_with_inheritance(base_config_path)
+            
+            # Merge the base configuration into the current one
+            config = deep_merge(base_config, config)
+            
+        return config
 
     def _load_json(self, path):
         """Loads a JSON file."""

@@ -111,6 +111,55 @@ class BaseSetup:
         """
         raise NotImplementedError("The 'run_full_setup' method must be implemented by a subclass.")
 
+    def _add_point_sensors(self, simulation, sim_bbox_entity_name):
+        """Adds point sensors at the corners of the simulation bounding box."""
+        num_points = self.config.get_setting("simulation_parameters/number_of_point_sources", 0)
+        if num_points == 0:
+            self._log("  - Skipping point sensor creation (0 points requested).")
+            return
+
+        sim_bbox_entity = next((e for e in self.model.AllEntities() if sim_bbox_entity_name in e.Name), None)
+        if not sim_bbox_entity:
+            self._log(f"  - WARNING: Could not find simulation bounding box '{sim_bbox_entity_name}' to add point sensors.")
+            return
+        
+        bbox_min, bbox_max = self.model.GetBoundingBox([sim_bbox_entity])
+        
+        corner_map = {
+            "lower_left_bottom": (bbox_min[0], bbox_min[1], bbox_min[2]),
+            "lower_right_bottom": (bbox_max[0], bbox_min[1], bbox_min[2]),
+            "lower_left_up": (bbox_min[0], bbox_max[1], bbox_min[2]),
+            "lower_right_up": (bbox_max[0], bbox_max[1], bbox_min[2]),
+            "top_left_bottom": (bbox_min[0], bbox_min[1], bbox_max[2]),
+            "top_right_bottom": (bbox_max[0], bbox_min[1], bbox_max[2]),
+            "top_left_up": (bbox_min[0], bbox_max[1], bbox_max[2]),
+            "top_right_up": (bbox_max[0], bbox_max[1], bbox_max[2])
+        }
+
+        point_source_order = self.config.get_setting("simulation_parameters/point_source_order", list(corner_map.keys()))
+        
+        for i in range(num_points):
+            corner_name = point_source_order[i]
+            corner_coords = corner_map.get(corner_name)
+            if corner_coords is None:
+                self._log(f"  - WARNING: Invalid corner name '{corner_name}' in point_source_order. Skipping.")
+                continue
+
+            point_entity_name = f"Point Sensor Entity {i+1} ({corner_name})"
+            
+            existing_entity = next((e for e in self.model.AllEntities() if hasattr(e, 'Name') and e.Name == point_entity_name), None)
+            
+            if existing_entity:
+                self._log(f"  - Point sensor '{point_entity_name}' already exists. Skipping creation.")
+                continue
+
+            point_entity = self.model.CreatePoint(self.model.Vec3(corner_coords))
+            point_entity.Name = point_entity_name
+            point_sensor = self.emfdtd.PointSensorSettings()
+            point_sensor.Name = f"Point Sensor {i+1}"
+            simulation.Add(point_sensor, [point_entity])
+            self._log(f"  - Added point sensor at {corner_coords} ({corner_name})")
+
     def _finalize_setup(self, simulation, all_simulation_parts):
         """
         Performs the final voxelization and grid update for a simulation.

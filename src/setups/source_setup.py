@@ -70,34 +70,4 @@ class SourceSetup:
                 far_field_sensor_settings.ExtractedFrequencies = extracted_frequencies_hz, self.units.Hz
                 self._log(f"  - Set extracted frequencies from {start_freq_hz/1e6} MHz to {end_freq_hz/1e6} MHz.")
 
-        # Add point sensors at the corners of the simulation bounding box
-        import s4l_v1.model
-        sim_bbox_entity = next((e for e in s4l_v1.model.AllEntities() if "simulation_bbox" in e.Name), None)
-        if sim_bbox_entity:
-            bbox_min, bbox_max = s4l_v1.model.GetBoundingBox([sim_bbox_entity])
-            corner_map = {
-                "lower_left_bottom": (bbox_min[0], bbox_min[1], bbox_min[2]),
-                "lower_right_bottom": (bbox_max[0], bbox_min[1], bbox_min[2]),
-                "upper_left_bottom": (bbox_min[0], bbox_max[1], bbox_min[2]),
-                "upper_right_bottom": (bbox_max[0], bbox_max[1], bbox_min[2]),
-                "lower_left_up": (bbox_min[0], bbox_min[1], bbox_max[2]),
-                "lower_right_up": (bbox_max[0], bbox_min[1], bbox_max[2]),
-                "top_left_up": (bbox_min[0], bbox_max[1], bbox_max[2]),
-                "top_right_up": (bbox_max[0], bbox_max[1], bbox_max[2]),
-            }
-
-            num_point_sources = self.config.get_setting("simulation_parameters/number_of_point_sources", 8)
-            point_source_order = self.config.get_setting("simulation_parameters/point_source_order", list(corner_map.keys()))
-
-            for i in range(min(num_point_sources, len(point_source_order))):
-                corner_name = point_source_order[i]
-                if corner_name in corner_map:
-                    corner = corner_map[corner_name]
-                    point_entity = s4l_v1.model.CreatePoint(s4l_v1.model.Vec3(corner))
-                    point_entity.Name = f"Point Entity {i+1} ({corner_name})"
-                    point_sensor_settings = self.emfdtd.PointSensorSettings()
-                    point_sensor_settings.Name = f"Point Sensor {i+1} ({corner_name})"
-                    self.simulation.Add(point_sensor_settings, [point_entity])
-                    self._log(f"  - Added point sensor at {corner} for {corner_name}")
-                else:
-                    self._log(f"  - WARNING: Unknown point source order name: {corner_name}. Skipping.")
+        # Point sensors are now handled by the NearFieldSetup class.
