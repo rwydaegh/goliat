@@ -28,6 +28,9 @@ analysis/cpw/plots/
 analysis/sensitivity_analysis/configs/
 analysis/sensitivity_analysis/plots/
 
+# Ignore all directories inside configs/, but keep files
+configs/*/
+
 # Ignore generated files, but not in the analysis directory
 *.csv
 #*.png
@@ -39,3 +42,13 @@ analysis/sensitivity_analysis/plots/
 # Lock files
 *.lock
 tmp_download/
+.bashrc
+.setup_done
+.env
+
+# MkDocs build output
+site/
+
+# Personal notes and todos
+mindmap.md
+TODO.txt

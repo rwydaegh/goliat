@@ -7,6 +7,9 @@ from pathlib import Path
 project_root = Path(__file__).resolve().parent
 sys.path.insert(0, str(project_root))
 
+from scripts.utils import initial_setup
+initial_setup()
+
 from scripts.run_osparc_batch import main
 
 if __name__ == "__main__":

@@ -59,10 +59,10 @@ class NearFieldSetup(BaseSetup):
         
         antenna_components = self._get_antenna_components()
 
-        material_setup = MaterialSetup(self.config, simulation, self.antenna, self.verbose_logger, self.progress_logger, self.free_space)
+        material_setup = MaterialSetup(self.config, simulation, self.antenna, self.phantom_name, self.verbose_logger, self.progress_logger, self.free_space)
         material_setup.assign_materials(antenna_components)
 
-        gridding_setup = GriddingSetup(self.config, simulation, self.placement_name, self.antenna, self.verbose_logger, self.progress_logger)
+        gridding_setup = GriddingSetup(self.config, simulation, self.placement_name, self.antenna, self.verbose_logger, self.progress_logger, frequency_mhz=self.frequency_mhz)
         gridding_setup.setup_gridding(antenna_components)
 
         boundary_setup = BoundarySetup(self.config, simulation, self.verbose_logger, self.progress_logger)
@@ -215,12 +215,18 @@ class NearFieldSetup(BaseSetup):
 
     def _finalize_setup(self, project_manager, simulation, antenna_components):
         all_antenna_parts = list(antenna_components.values())
-        point_sensor_entities = [e for e in self.model.AllEntities() if "Point Entity" in e.Name]
+        point_sensor_entities = [e for e in self.model.AllEntities() if "Point Sensor Entity" in e.Name]
 
         if self.free_space:
-            all_simulation_parts = all_antenna_parts + point_sensor_entities
+            sim_bbox_name = "freespace_simulation_bbox"
         else:
-            phantom_entities = [e for e in self.model.AllEntities() if isinstance(e, self.XCoreModeling.TriangleMesh)]
-            all_simulation_parts = phantom_entities + all_antenna_parts + point_sensor_entities
+            sim_bbox_name = f"{self.placement_name.lower()}_simulation_bbox"
+
+        sim_bbox_entity = next((e for e in self.model.AllEntities() if hasattr(e, 'Name') and e.Name == sim_bbox_name), None)
+        if not sim_bbox_entity:
+            raise RuntimeError(f"Could not find simulation bounding box: '{sim_bbox_name}' for voxelization.")
+
+        phantom_entities = [e for e in self.model.AllEntities() if isinstance(e, self.XCoreModeling.TriangleMesh)]
+        all_simulation_parts = phantom_entities + all_antenna_parts + point_sensor_entities + [sim_bbox_entity]
         
         super()._finalize_setup(project_manager, simulation, all_simulation_parts, self.frequency_mhz)

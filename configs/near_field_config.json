@@ -1,6 +1,17 @@
 {
   "extends": "base_config.json",
   "study_type": "near_field",
+  "execution_control": {
+      "do_setup": false,
+      "only_write_input_file": false,
+      "do_run": true,
+      "do_extract": false,
+      "batch_run": false
+  },
+  "phantoms": [
+    "thelonious",
+    "eartha"
+  ],
   "simulation_parameters": {
     "freespace_antenna_bbox_expansion_mm": [
       20,
@@ -12,7 +23,23 @@
   "gridding_parameters": {
     "global_gridding": {
         "grid_mode": "manual",
-        "manual_fallback_max_step_mm": 3.0
+        "manual_fallback_max_step_mm": 5.0
+    },
+    "global_gridding_per_frequency": {
+        "450": 3.0,
+        "700": 3.0,
+        "835": 3.0,
+        "1450": 3.0,
+        "2140": 3.0,
+        "2450": 3.0,
+        "3500": 3.0,
+        "5200": 3.0,
+        "5800": 3.0
+    },
+    "padding": {
+        "padding_mode": "manual",
+        "manual_bottom_padding_mm": [0, 0, 0],
+        "manual_top_padding_mm": [0, 0, 0]
     }
   },
   "antenna_config": {
@@ -245,7 +272,7 @@
       }
     }
   },
-  "phantoms": {
+  "phantom_definitions": {
     "martin_29month": {
       "head_y_separation": -20,
       "trunk_z_separation": -280,
@@ -265,7 +292,20 @@
         "do_front_of_eyes": true,
         "do_by_belly": true,
         "do_by_cheek": true,
-        "do_by_cheek_tilt": true,
+        "distance_from_eye": 200,
+        "distance_from_belly": 100,
+        "distance_from_cheek": 8
+      }
+    },
+    "eartha": {
+      "head_y_separation": 386,
+      "trunk_z_separation": 100,
+      "chest_extension": 79,
+      "back_of_head": -55,
+      "placements": {
+        "do_front_of_eyes": true,
+        "do_by_belly": true,
+        "do_by_cheek": true,
         "distance_from_eye": 200,
         "distance_from_belly": 100,
         "distance_from_cheek": 8

@@ -18,10 +18,6 @@ class PlacementSetup(BaseSetup):
                 self.base_placement_name = 'front_of_eyes'
                 self.position_name = parts[3]
                 self.orientation_name = parts[4]
-            elif placement_name.startswith('by_cheek_tilt'):
-                self.base_placement_name = 'by_cheek_tilt'
-                self.position_name = parts[3]
-                self.orientation_name = parts[4]
             elif placement_name.startswith('by_cheek'):
                 self.base_placement_name = 'by_cheek'
                 self.position_name = parts[2]

@@ -9,16 +9,13 @@ base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
-# --- Early Startup: Install Dependencies ---
-# This must happen before any other src.* imports to ensure packages are available
-from src.startup import check_and_install_packages
-check_and_install_packages(os.path.join(base_dir, 'requirements.txt'))
-# --- End Early Startup ---
+# --- Centralized Startup ---
+from scripts.utils import initial_setup
+# --- End Centralized Startup ---
 
 from PySide6.QtWidgets import QApplication
 from src.logging_manager import setup_loggers, shutdown_loggers
 from src.gui_manager import ProgressGUI, QueueGUI
-from src.startup import run_full_startup
 from src.studies.base_study import StudyCancelledError
 from src.config import Config
 from src.osparc_batch.runner import main as run_osparc_batch
@@ -37,9 +34,6 @@ def study_process_wrapper(queue, stop_event, config_filename, process_id):
         from src.studies.near_field_study import NearFieldStudy
         from src.studies.far_field_study import FarFieldStudy
         from src.profiler import Profiler
-
-        # Basic setup
-        run_full_startup(base_dir)
         
         config = Config(base_dir, config_filename)
         study_type = config.get_setting('study_type')
@@ -90,7 +84,7 @@ def main():
     It launches the GUI in the main process and the study in a separate process.
     """
     parser = argparse.ArgumentParser(description="Run a dosimetric assessment study.")
-    parser.add_argument('--config', type=str, default="configs/todays_far_field_config.json", help='Path to the configuration file.')
+    parser.add_argument('config', type=str, nargs='?', default="near_field_config", help='Path or name of the configuration file (e.g., todays_far_field or configs/near_field_config.json).')
     parser.add_argument('--title', type=str, default="Simulation Progress", help='Set the title of the GUI window.')
     parser.add_argument('--pid', type=str, default=None, help='The process ID for logging.')
     args = parser.parse_args()
@@ -109,6 +103,9 @@ def main():
 
     # The main process only needs a minimal logger setup for the GUI.
     setup_loggers()
+
+    # Run initial setup once in the main process
+    initial_setup()
 
     config = Config(base_dir, config_filename)
     execution_control = config.get_setting('execution_control', {})
@@ -136,6 +133,11 @@ def main():
         if study_process.is_alive():
             study_process.terminate()
             study_process.join()
+
+    # Clean up the lock file on exit
+    lock_file = os.path.join(base_dir, '.setup_done')
+    if os.path.exists(lock_file):
+        os.remove(lock_file)
 
 if __name__ == '__main__':
     # This is crucial for multiprocessing to work correctly on Windows

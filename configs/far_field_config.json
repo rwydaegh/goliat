@@ -2,11 +2,11 @@
     "extends": "base_config.json",
     "study_type": "far_field",
     "execution_control": {
-        "do_setup": true,
-        "do_run": true,
-        "do_extract": false,
+        "do_setup": false,
         "only_write_input_file": true,
-        "batch_run": true
+        "do_run": false,
+        "do_extract": true,
+        "batch_run": false
     },
     "manual_isolve": true,
     "phantoms": [
@@ -69,8 +69,8 @@
         },
         "padding": {
             "padding_mode": "manual",
-            "manual_bottom_padding_mm": [15, 15, 15],
-            "manual_top_padding_mm": [15, 15, 15]
+            "manual_bottom_padding_mm": [0, 0, 0],
+            "manual_top_padding_mm": [0, 0, 0]
         }
     }
 }

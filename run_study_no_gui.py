@@ -8,13 +8,12 @@ base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
-# --- Early Startup: Install Dependencies ---
-from src.startup import check_and_install_packages
-check_and_install_packages(os.path.join(base_dir, 'requirements.txt'))
-# --- End Early Startup ---
+# --- Centralized Startup ---
+from scripts.utils import initial_setup
+initial_setup()
+# --- End Centralized Startup ---
 
 from src.logging_manager import setup_loggers, shutdown_loggers
-from src.startup import run_full_startup
 from src.studies.base_study import StudyCancelledError
 from src.config import Config
 from src.osparc_batch.runner import main as run_osparc_batch
@@ -86,8 +85,6 @@ def main():
         from src.studies.near_field_study import NearFieldStudy
         from src.studies.far_field_study import FarFieldStudy
         from src.profiler import Profiler
-
-        run_full_startup(base_dir)
         
         study_type = config.get_setting('study_type')
         

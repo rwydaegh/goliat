@@ -199,6 +199,9 @@ def profile_subtask(study, task_name, instance_to_profile=None):
         elapsed = time.monotonic() - subtask['start_time']
         study.profiler.subtask_times[subtask['name']].append(elapsed)
         study._log(f"    - Subtask '{task_name}' done in {elapsed:.2f}s", level='progress', log_type='progress')
+        
+        # Update and save estimates after each subtask
+        study.profiler.update_and_save_estimates()
 
         # If the line profiler was active, print its stats
         if lp:

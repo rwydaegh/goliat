@@ -1,4 +1,4 @@
-# Dosimetric Assessment Framework
+# GOLIAT automatic simulation code
 
 This project provides a robust and automated Python framework for conducting both **near-field** and **far-field** dosimetric assessments for the GOLIAT project, using the Sim4Life simulation platform.
 
@@ -12,7 +12,7 @@ The primary objective is to perform a comprehensive dosimetric assessment for th
 
 ### Key Deliverables
 
-As specified in [`context/what we need.md`](context/what%20we%20need.md:1), the required outputs include whole-body SAR, head SAR, trunk SAR, and psSAR10g in various tissues, calculated for normalized applied power.
+The required outputs include whole-body SAR, head SAR, trunk SAR, and psSAR10g in various tissues, calculated for normalized applied power.
 
 ## 2. Architecture
 
@@ -35,7 +35,7 @@ A typical run follows these steps:
 5.  **Simulation Execution**: The [`SimulationRunner`](src/simulation_runner.py:13) executes the simulation. It supports three modes:
     *   **Local Manual Run**: It generates the solver input file and waits for the user to manually launch `iSolve.exe`. This is the default for GUI-based runs.
     *   **Local Automated Run**: It directly invokes the standalone `iSolve.exe` solver and waits for it to complete.
-    *   **Cloud Run**: It submits the simulation to a specified cloud-based oSPARC server using the oSPARC API. This is controlled by the `server` and `osparc_credentials` settings in the configuration.
+    *   **Cloud Run**: It submits the simulation to a specified cloud-based oSPARC server using the oSPARC API. This is controlled by the `server` setting in the configuration and oSPARC credentials stored in environment variables.
 
 6.  **Results Extraction**: After the simulation completes, the [`ResultsExtractor`](src/results_extractor.py:11) performs post-processing. The extracted data differs significantly by study type:
     *   **Near-Field**: Results are stored in a dedicated folder for each unique combination of `phantom/frequency/placement`. The extractor calculates whole-body, head, or trunk SAR, as well as psSAR10g for specific tissue groups like the eyes and brain.
@@ -86,6 +86,14 @@ The project is organized into a modular and scalable structure:
 ### Prerequisites
 
 Ensure you have **Sim4Life v8.2.2** or later installed and licensed.
+
+For cloud-based oSPARC simulations, create a `.env` file in the project root with your credentials:
+```
+OSPARC_API_KEY="your_api_key"
+OSPARC_API_SECRET="your_api_secret"
+OSPARC_API_SERVER="https://api.sim4life.science"
+OSPARC_API_VERSION="v0"
+```
 
 ### Running a Study
 
@@ -207,3 +215,21 @@ python run_parallel_studies.py --config configs/your_config.json --skip-split
 This will skip the splitting step and directly run the studies using the configuration files found in `configs/your_config_parallel/`.
 
 Each parallel process will launch its own GUI window, with the title indicating the process ID and the configuration file it is running, making it easy to track the progress of each job.
+
+## 7. Documentation
+
+This project is documented using [MkDocs](https://www.mkdocs.org/) and the [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/) theme.
+
+The documentation includes:
+
+*   A high-level **[Architecture Overview](docs/architecture_overview.md)**
+*   A detailed **[API Reference](docs/api/index.md)**
+*   A **[UML Class Diagram](docs/classes.puml)**
+
+To view the documentation, run the following command from the project root:
+
+```bash
+mkdocs serve
+```
+
+Then, open your web browser and navigate to `http://127.0.0.1:8000/`.

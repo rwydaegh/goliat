@@ -3,10 +3,11 @@ import time
 from .base_setup import BaseSetup
 
 class MaterialSetup(BaseSetup):
-    def __init__(self, config, simulation, antenna, verbose_logger, progress_logger, free_space=False):
+    def __init__(self, config, simulation, antenna, phantom_name, verbose_logger, progress_logger, free_space=False):
         super().__init__(config, verbose_logger, progress_logger)
         self.simulation = simulation
         self.antenna = antenna
+        self.phantom_name = phantom_name
         self.free_space = free_space
         
         import s4l_v1.materials.database
@@ -52,8 +53,7 @@ class MaterialSetup(BaseSetup):
             all_entities = self.model.AllEntities()
             phantom_parts = [e for e in all_entities if isinstance(e, self.XCoreModeling.TriangleMesh)]
             
-            phantom_name = self.config.get_setting("phantoms")[0]
-            name_mapping = self.config.get_material_mapping(phantom_name)
+            name_mapping = self.config.get_material_mapping(self.phantom_name)
 
             material_groups = {}
             for part in phantom_parts:

@@ -9,7 +9,11 @@ base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
-from src.startup import check_and_install_packages, run_full_startup
+# --- Centralized Startup ---
+from scripts.utils import initial_setup
+initial_setup()
+# --- End Centralized Startup ---
+
 from src.config import Config
 from src.studies.near_field_study import NearFieldStudy
 from src.logging_manager import setup_loggers, shutdown_loggers
@@ -73,12 +77,9 @@ def main():
     Runs a free-space simulation for each available frequency to validate
     the antenna models and the core simulation pipeline.
     """
-    check_and_install_packages(os.path.join(base_dir, 'requirements.txt'))
     progress_logger, verbose_logger, _ = setup_loggers()
     
     try:
-        run_full_startup(base_dir)
-
         # Load the base near-field config to get all frequencies
         base_config = Config(base_dir, "configs/near_field_config.json")
         frequency_bands = base_config.get_antenna_config().keys()

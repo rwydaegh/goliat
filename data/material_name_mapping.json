@@ -1,5 +1,39 @@
 {
   "thelonious": {
+    "_tissue_groups": {
+      "eyes_group": [
+        "Cornea",
+        "Eye_lens",
+        "Eye_Sclera",
+        "Eye_vitreous_humor"
+      ],
+      "skin_group": [
+        "Ear_skin",
+        "Skin"
+      ],
+      "brain_group": [
+        "Brain_grey_matter",
+        "Brain_white_matter",
+        "commissura_anterior",
+        "commissura_posterior",
+        "Medulla_oblongata",
+        "Pinealbody",
+        "Cerebrospinal_fluid",
+        "Cerebellum",
+        "Hippocampus",
+        "Hypophysis",
+        "Hypothalamus",
+        "Midbrain",
+        "Pons",
+        "Thalamus"
+      ],
+      "genitals_group": [
+        "Epididymis",
+        "Penis",
+        "Prostate",
+        "Testis"
+      ]
+    },
     "Adrenal_gland": "Adrenal Gland",
     "Air_internal": "Air",
     "Artery": "Blood",
@@ -41,9 +75,76 @@
     "Trachea_lumen": "Trachea Lumen",
     "Ureter_Urethra": "Ureter\\Urethra",
     "Vein": "Blood",
-    "Cerebrospinal_fluid": "Cerebrospinal Fluid"
+    "Cerebrospinal_fluid": "Cerebrospinal Fluid",
+    "Bronchi": "Bronchi",
+    "Cartilage": "Cartilage",
+    "Cerebellum": "Cerebellum",
+    "Diaphragm": "Diaphragm",
+    "Epididymis": "Epididymis",
+    "Esophagus": "Esophagus",
+    "Fat": "Fat",
+    "Gallbladder": "Gallbladder",
+    "Hippocampus": "Hippocampus",
+    "Hypophysis": "Hypophysis",
+    "Hypothalamus": "Hypothalamus",
+    "Larynx": "Larynx",
+    "Liver": "Liver",
+    "Lung": "Lung",
+    "Mandible": "Mandible",
+    "Meniscus": "Meniscus",
+    "Midbrain": "Midbrain",
+    "Muscle": "Muscle",
+    "Nerve": "Nerve",
+    "Pancreas": "Pancreas",
+    "Penis": "Penis",
+    "Pharynx": "Pharynx",
+    "Pons": "Pons",
+    "Prostate": "Prostate",
+    "Skin": "Skin",
+    "Skull": "Skull",
+    "Spleen": "Spleen",
+    "Stomach": "Stomach",
+    "Testis": "Testis",
+    "Thalamus": "Thalamus",
+    "Thymus": "Thymus",
+    "Tongue": "Tongue",
+    "Trachea": "Trachea",
+    "Vertebrae": "Vertebrae"
   },
   "eartha": {
+    "_tissue_groups": {
+      "eyes_group": [
+        "Eye_Sclera",
+        "Eye_vitreous_humor",
+        "Cornea",
+        "Eye_lens"
+      ],
+      "skin_group": [
+        "Skin",
+        "Ear_skin"
+      ],
+      "brain_group": [
+        "Cerebrospinal_fluid",
+        "Brain_white_matter",
+        "Midbrain",
+        "Hippocampus",
+        "Medulla_oblongata",
+        "Hypophysis",
+        "Thalamus",
+        "Pinealbody",
+        "Brain_grey_matter",
+        "Pons",
+        "Commissura_anterior",
+        "Commissura_posterior",
+        "Cerebellum",
+        "Hypothalamus"
+      ],
+      "genitals_group": [
+        "Ovary",
+        "Uterus",
+        "Vagina"
+      ]
+    },
     "Cerebrospinal_fluid": "Cerebrospinal Fluid",
     "Fat": "Fat",
     "Stomach": "Stomach",
@@ -121,6 +222,40 @@
     "Stomach_lumen": "Stomach Lumen"
   },
   "duke": {
+    "_tissue_groups": {
+      "eyes_group": [
+        "Cornea",
+        "Eye_vitreous_humor",
+        "Eye_Sclera",
+        "Eye_lens"
+      ],
+      "skin_group": [
+        "Skin",
+        "Ear_skin"
+      ],
+      "brain_group": [
+        "Commissura_posterior",
+        "Thalamus",
+        "Pons",
+        "Medulla_oblongata",
+        "Brain_grey_matter",
+        "Hypothalamus",
+        "Hippocampus",
+        "Hypophysis",
+        "Pinealbody",
+        "Midbrain",
+        "Brain_white_matter",
+        "Cerebellum",
+        "Commissura_anterior",
+        "Cerebrospinal_fluid"
+      ],
+      "genitals_group": [
+        "Penis",
+        "Testis",
+        "Prostate",
+        "Epididymis"
+      ]
+    },
     "Skin": "Skin",
     "Commissura_posterior": "Commissura Posterior",
     "Heart_lumen": "Heart Lumen",
@@ -200,6 +335,39 @@
     "Kidney_cortex": "Kidney (Cortex)"
   },
   "ella": {
+    "_tissue_groups": {
+      "eyes_group": [
+        "Eye_Sclera",
+        "Eye_vitreous_humor",
+        "Cornea",
+        "Eye_lens"
+      ],
+      "skin_group": [
+        "Skin",
+        "Ear_skin"
+      ],
+      "brain_group": [
+        "commissura_anterior",
+        "Medulla_oblongata",
+        "Pinealbody",
+        "Pons",
+        "Brain_grey_matter",
+        "commissura_posterior",
+        "Brain_white_matter",
+        "Cerebellum",
+        "Thalamus",
+        "Hypothalamus",
+        "Hippocampus",
+        "Hypophysis",
+        "Midbrain",
+        "Cerebrospinal_fluid"
+      ],
+      "genitals_group": [
+        "Ovary",
+        "Uterus",
+        "Vagina"
+      ]
+    },
     "commissura_anterior": "Commissura Anterior",
     "Medulla_oblongata": "Medulla Oblongata",
     "Skin": "Skin",

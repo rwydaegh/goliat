@@ -30,8 +30,8 @@ class NearFieldStudy(BaseStudy):
             return
 
         phantoms = self.config.get_setting('phantoms', [])
-        if isinstance(phantoms, dict):
-            phantoms = phantoms.keys()
+        if not isinstance(phantoms, list):
+            phantoms = [phantoms]
         frequencies = self.config.get_setting('antenna_config', {}).keys()
         all_scenarios = self.config.get_setting('placement_scenarios', {})
 

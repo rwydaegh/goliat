@@ -65,14 +65,26 @@ class ResultsExtractor(LoggingMixin):
         if self.config.get_setting("simulation_parameters.number_of_point_sensors", 0) > 0:
             if self.gui:
                 self.gui.update_stage_progress("Extracting Point Sensors", 75, 100)
-            self._extract_point_sensor_data(simulation_extractor)
+            self._extract_point_sensor_data(simulation_extractor, results_data)
 
-        # Save final results
+        # Save reports and final results
+        if not self.free_space and '_temp_sar_df' in results_data:
+            self._save_reports(
+                results_data.pop('_temp_sar_df'),
+                results_data.pop('_temp_tissue_groups'),
+                results_data.pop('_temp_group_sar_stats'),
+                results_data
+            )
+
         results_dir = os.path.join(self.config.base_dir, 'results', self.study_type, self.phantom_name, f"{self.frequency_mhz}MHz", self.placement_name)
         os.makedirs(results_dir, exist_ok=True)
         results_filepath = os.path.join(results_dir, 'sar_results.json')
+        
+        # Clean up any remaining temporary keys before final json dump
+        final_results_data = {k: v for k, v in results_data.items() if not k.startswith('_temp')}
+        
         with open(results_filepath, 'w') as f:
-            json.dump(results_data, f, indent=4)
+            json.dump(final_results_data, f, indent=4)
         self._log(f"  - SAR results saved to: {results_filepath}", log_type='info')
 
     def _extract_input_power(self, simulation_extractor, results_data):
@@ -86,11 +98,14 @@ class ResultsExtractor(LoggingMixin):
                     
                     # Find the simulation bounding box entity
                     import s4l_v1.model
-                    bbox_entity = next((e for e in s4l_v1.model.AllEntities() if hasattr(e, 'Name') and e.Name == "far_field_simulation_bbox"), None)
-                    if not bbox_entity:
-                        raise RuntimeError("Could not find 'far_field_simulation_bbox' entity in the project.")
-
-                    sim_bbox = s4l_v1.model.GetBoundingBox([bbox_entity])
+                    try:
+                        bbox_entity = next((e for e in s4l_v1.model.AllEntities() if hasattr(e, 'Name') and e.Name == "far_field_simulation_bbox"), None)
+                        if not bbox_entity:
+                            raise RuntimeError("Could not find 'far_field_simulation_bbox' entity in the project.")
+                        sim_bbox = s4l_v1.model.GetBoundingBox([bbox_entity])
+                    except RuntimeError as e:
+                        self._log(f"  - WARNING: Could not calculate theoretical input power. {e}", log_type='warning')
+                        return
                     sim_min = np.array(sim_bbox[0])
                     sim_max = np.array(sim_bbox[1])
                     self._log(f"  - Bounding Box Min: {sim_min}, Max: {sim_max}", log_type='verbose')
@@ -253,18 +268,51 @@ class ResultsExtractor(LoggingMixin):
                     if peak_sar_col_name in all_regions_row.columns:
                         results_data['peak_sar_10g_W_kg'] = float(all_regions_row[peak_sar_col_name].iloc[0])
 
-                self._save_reports(df, tissue_groups, group_sar_stats, results_data)
+                self._extract_peak_sar_details(em_sensor_extractor, results_data)
+                # Save the dataframes for later reporting
+                results_data['_temp_sar_df'] = df
+                results_data['_temp_tissue_groups'] = tissue_groups
+                results_data['_temp_group_sar_stats'] = group_sar_stats
 
             except Exception as e:
                 self._log(f"  - ERROR: An unexpected error during all-tissue SAR statistics extraction: {e}", level='progress', log_type='error')
                 traceback.print_exc()
 
     def _define_tissue_groups(self, available_tissues):
-        """Defines tissue groups based on keywords."""
+        """Defines tissue groups from the material mapping file or falls back to keywords."""
+        
+        material_mapping = self.config.get_material_mapping(self.phantom_name)
+        
+        if "_tissue_groups" in material_mapping:
+            self._log(f"  - Loading tissue groups for '{self.phantom_name}' from material_name_mapping.json", log_type='info')
+            
+            phantom_groups = material_mapping["_tissue_groups"]
+            tissue_groups = {}
+            for group_name, tissue_list in phantom_groups.items():
+                # The tissues in the JSON are the S4L names, but 'available_tissues' are the mapped names.
+                # We need to get the S4L names for the available tissues to find the intersection.
+                
+                # Create a reverse mapping from mapped name to S4L name for the current phantom
+                reverse_mapping = {v: k for k, v in material_mapping.items() if not k.startswith('_')}
+                
+                # Find which of the available tissues (mapped names) correspond to the S4L names in our group list
+                s4l_names_in_group = set(tissue_list)
+                
+                final_tissue_list = []
+                for tissue in available_tissues:
+                    s4l_name = reverse_mapping.get(tissue)
+                    if s4l_name in s4l_names_in_group:
+                        final_tissue_list.append(tissue)
+
+                tissue_groups[group_name] = final_tissue_list
+            return tissue_groups
+
+        # Fallback to old method for backward compatibility
+        self._log("  - WARNING: '_tissue_groups' not found in material mapping. Falling back to keyword-based tissue grouping.", log_type='warning')
         groups = {
             "eyes_group": ["eye", "cornea", "sclera", "lens", "vitreous"],
             "skin_group": ["skin"],
-            "brain_group": ["brain", "commissura", "midbrain", "pineal", "hypophysis", "medulla", "pons", "thalamus", "hippocampus", "cerebellum"]
+            "brain_group": ["brain", "commissura", "midbrain", "pineal", "hypophysis", "medulla_oblongata", "pons", "thalamus", "hippocampus", "cerebellum"]
         }
         tissue_groups = {group: [t for t in available_tissues if any(k in t.lower() for k in keywords)] for group, keywords in groups.items()}
         return tissue_groups
@@ -282,16 +330,19 @@ class ResultsExtractor(LoggingMixin):
                 group_sar_data[group_name] = {'weighted_avg_sar': weighted_avg_sar, 'peak_sar': peak_sar}
         return group_sar_data
 
-    def _save_reports(self, df, tissue_groups, group_sar_stats, summary_results):
+    def _save_reports(self, df, tissue_groups, group_sar_stats, results_data):
         """Saves detailed reports in Pickle and HTML format."""
         results_dir = os.path.join(self.config.base_dir, 'results', self.study_type, self.phantom_name, f"{self.frequency_mhz}MHz", self.placement_name)
         os.makedirs(results_dir, exist_ok=True)
         
+        # Make sure point sensor data is included in the pickle
         pickle_data = {
             'detailed_sar_stats': df,
             'tissue_group_composition': tissue_groups,
             'grouped_sar_stats': group_sar_stats,
-            'summary_results': summary_results
+            'summary_results': results_data,
+            'peak_sar_details': results_data.get('peak_sar_details', {}),
+            'point_sensor_data': results_data.get('point_sensor_data', {})
         }
         pickle_filepath = os.path.join(results_dir, 'sar_stats_all_tissues.pkl')
         with open(pickle_filepath, 'wb') as f:
@@ -304,10 +355,48 @@ class ResultsExtractor(LoggingMixin):
         html_content += "<h2>Grouped SAR Statistics</h2>"
         html_content += pd.DataFrame.from_dict(group_sar_stats, orient='index').to_html()
         
+        html_content += "<h2>Peak SAR Details</h2>"
+        peak_sar_df = pd.DataFrame.from_dict(results_data.get('peak_sar_details', {}), orient='index', columns=['Value'])
+        peak_sar_df.index.name = 'Parameter'
+        html_content += peak_sar_df.to_html()
+        
         html_filepath = os.path.join(results_dir, 'sar_stats_all_tissues.html')
         with open(html_filepath, 'w', encoding='utf-8') as f:
             f.write(html_content)
         self._log(f"  - HTML report saved to: {html_filepath}", log_type='info')
+
+    def _extract_peak_sar_details(self, em_sensor_extractor, results_data):
+        """Extracts peak SAR details like location and cell."""
+        self._log("  - Extracting peak SAR details...", log_type='progress')
+        try:
+            inputs = [em_sensor_extractor.Outputs["SAR(x,y,z,f0)"]]
+            average_sar_field_evaluator = self.analysis.em_evaluators.AverageSarFieldEvaluator(inputs=inputs)
+            average_sar_field_evaluator.TargetMass = 10.0, self.units.Unit("g")
+            average_sar_field_evaluator.UpdateAttributes()
+            self.document.AllAlgorithms.Add(average_sar_field_evaluator)
+            average_sar_field_evaluator.Update()
+
+            peak_sar_output = average_sar_field_evaluator.Outputs["Peak Spatial SAR (psSAR) Results"]
+            peak_sar_output.Update()
+
+            data_collection = peak_sar_output.Data.DataSimpleDataCollection
+
+            peak_sar_details = {}
+            if data_collection:
+                keys = data_collection.Keys()
+                for key in keys:
+                    value = data_collection.FieldValue(key, 0)
+                    peak_sar_details[key] = value
+                    self._log(f"    - {key}: {value}", log_type='verbose')
+                results_data['peak_sar_details'] = peak_sar_details
+            else:
+                self._log("  - WARNING: Could not extract peak SAR details.", log_type='warning')
+
+            self.document.AllAlgorithms.Remove(average_sar_field_evaluator)
+
+        except Exception as e:
+            self._log(f"  - ERROR: An exception occurred during peak SAR detail extraction: {e}", log_type='error')
+            traceback.print_exc()
 
     def _extract_power_balance(self, simulation_extractor, results_data):
         """Extracts the power balance from the simulation."""
@@ -351,36 +440,37 @@ class ResultsExtractor(LoggingMixin):
             self._log(f"  - WARNING: Could not extract power balance: {e}", log_type='warning')
             traceback.print_exc()
 
-    def _extract_point_sensor_data(self, simulation_extractor):
-        """Extracts point sensor data and plots it."""
+    def _extract_point_sensor_data(self, simulation_extractor, results_data):
+        """Extracts point sensor data, plots it, and saves the raw data."""
         self._log("  - Extracting point sensor data...", log_type='progress')
         with self.study.subtask("extract_point_sensor_data"):
             try:
                 num_sensors = self.config.get_setting("simulation_parameters.number_of_point_sensors", 0)
                 if num_sensors == 0:
                     return
-
+                
+                plt.ioff()
                 plt.style.use('science')
                 plt.rcParams.update({"text.usetex": False})
                 fig, ax = plt.subplots()
                 ax.grid(True, which='major', axis='y', linestyle='--')
 
-                # In S4L v9, we need to get the sensor extractor from the 'Overall Field'
-                overall_field_extractor = simulation_extractor["Overall Field"]
-
                 point_source_order = self.config.get_setting("simulation_parameters.point_source_order", [])
                 
+                point_sensor_results = {}
+
                 for i in range(num_sensors):
                     if i >= len(point_source_order):
                         self._log(f"    - WARNING: Not enough entries in 'point_source_order' config for sensor {i+1}. Skipping.", log_type='warning')
                         continue
                         
                     corner_name = point_source_order[i]
-                    sensor_name = f"Point Sensor {i+1}"
+                    sensor_name = f"Point Sensor Entity {i+1}"
                     full_sensor_name = f"{sensor_name} ({corner_name})"
 
                     try:
-                        em_sensor_extractor = overall_field_extractor.GetSensor(full_sensor_name)
+                        # In recent S4L versions, point sensors are directly under the main extractor
+                        em_sensor_extractor = simulation_extractor[full_sensor_name]
                         if not em_sensor_extractor:
                             self._log(f"    - WARNING: Could not find sensor extractor for '{full_sensor_name}'", log_type='warning')
                             continue
@@ -390,41 +480,46 @@ class ResultsExtractor(LoggingMixin):
 
                     self.document.AllAlgorithms.Add(em_sensor_extractor)
                     
-                    # Ensure the output port exists before accessing it
                     if "EM E(t)" not in em_sensor_extractor.Outputs:
-                        self._log(f"    - WARNING: 'EM E(t)' output not found for sensor '{sensor_name}'", log_type='warning')
+                        self._log(f"    - WARNING: 'EM E(t)' output not found for sensor '{full_sensor_name}'", log_type='warning')
                         self.document.AllAlgorithms.Remove(em_sensor_extractor)
                         continue
 
-                    inputs = [em_sensor_extractor.Outputs["EM E(t)"]]
-                    plot_viewer = self.analysis.viewers.PlotViewer(inputs=inputs)
-                    plot_viewer.UpdateAttributes()
-                    self.document.AllAlgorithms.Add(plot_viewer)
-                    
-                    # The plot data is now available through the viewer
-                    plot = plot_viewer.Plot
-                    if not plot or plot.NumberOfCurves == 0:
-                        self._log(f"    - WARNING: No data curves found for sensor '{sensor_name_pattern}'", log_type='warning')
-                        self.document.AllAlgorithms.Remove(plot_viewer)
-                        self.document.AllAlgorithms.Remove(em_sensor_extractor)
-                        continue
+                    em_output = em_sensor_extractor.Outputs["EM E(t)"]
+                    em_output.Update()
 
-                    curve = plot.GetCurve(0)
-                    x_data = np.array(curve.X)
-                    y_data = np.array(curve.Y)
-                    
-                    label = re.sub(r'Point Sensor Entity \d+ \((.*?)\)', r'\1', em_sensor_extractor.Name).replace('_', ' ').title()
-                    ax.plot(x_data, y_data, label=label)
-                    
-                    self._log(f"    - Plotted data for sensor: {label}", log_type='verbose')
+                    time_axis = em_output.Data.Axis
+                    ex_data = em_output.Data.GetComponent(0)
+                    ey_data = em_output.Data.GetComponent(1)
+                    ez_data = em_output.Data.GetComponent(2)
 
-                    # Clean up algorithms to prevent clutter
-                    self.document.AllAlgorithms.Remove(plot_viewer)
+                    label = corner_name.replace('_', ' ').title()
+                    
+                    if time_axis is not None and time_axis.size > 0:
+                        # For plotting, let's plot the magnitude
+                        e_mag = np.sqrt(ex_data**2 + ey_data**2 + ez_data**2)
+                        ax.plot(time_axis, e_mag, label=label)
+                        self._log(f"    - Plotted data for sensor: {label}", log_type='verbose')
+
+                        point_sensor_results[label] = {
+                            'time_s': time_axis.tolist(),
+                            'Ex_V_m': ex_data.tolist(),
+                            'Ey_V_m': ey_data.tolist(),
+                            'Ez_V_m': ez_data.tolist(),
+                            'E_mag_V_m': e_mag.tolist()
+                        }
+                        self._log(f"    - Saved raw data for sensor: {label}", log_type='verbose')
+                    else:
+                        self._log(f"    - WARNING: No data found for sensor '{full_sensor_name}'", log_type='warning')
+
                     self.document.AllAlgorithms.Remove(em_sensor_extractor)
 
+                if point_sensor_results:
+                    results_data['point_sensor_data'] = point_sensor_results
+                
                 ax.set_xlabel("Time (s)")
-                ax.set_ylabel("E-Field (V/m)")
-                ax.set_title(f"Point Sensor E-Field vs. Time ({self.frequency_mhz} MHz)")
+                ax.set_ylabel("|E-Field| (V/m)")
+                ax.set_title(f"Point Sensor E-Field Magnitude vs. Time ({self.frequency_mhz} MHz)")
                 ax.legend()
 
                 results_dir = os.path.join(self.config.base_dir, 'results', self.study_type, self.phantom_name, f"{self.frequency_mhz}MHz", self.placement_name)

@@ -3,36 +3,23 @@
     "study_type": "far_field",
     "execution_control": {
         "do_setup": true,
-        "do_run": true,
+        "do_run": false,
         "do_extract": false,
         "only_write_input_file": true,
         "batch_run": false
     },
     "manual_isolve": true,
     "phantoms": [
-        "eartha"
+        "thelonious"
     ],
     "frequencies_mhz": [
-        450,
-        700,
-        835,
-        1450,
-        2140,
-        2450,
-        3500,
-        5200,
-        5800
+        835
     ],
     "far_field_setup": {
         "type": "environmental",
         "environmental": {
             "incident_directions": [
-                "x_pos",
-                "x_neg",
-                "y_pos",
-                "y_neg",
-                "z_pos",
-                "z_neg"
+                "x_pos"
             ],
             "polarizations": [
                 "theta",

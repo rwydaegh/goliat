@@ -111,7 +111,7 @@ class FarFieldSetup(BaseSetup):
         """
         self._log(f"Applying common settings to {simulation.Name}...", log_type='progress')
         
-        material_setup = MaterialSetup(self.config, simulation, None, self.verbose_logger, self.progress_logger, free_space=False)
+        material_setup = MaterialSetup(self.config, simulation, None, self.phantom_name, self.verbose_logger, self.progress_logger, free_space=False)
         material_setup.assign_materials(phantom_only=True)
 
         gridding_setup = GriddingSetup(self.config, simulation, None, None, self.verbose_logger, self.progress_logger, frequency_mhz=self.frequency_mhz)

@@ -170,6 +170,14 @@ class FarFieldStudy(BaseStudy):
                                     progress = self.profiler.get_weighted_progress("extract", 1.0)
                                     self.gui.update_overall_progress(int(progress), 100)
                                     self.gui.update_stage_progress("Extracting Results", len(all_simulations), len(all_simulations))
+                    except Exception as e:
+                        error_msg = f"  ERROR: An error occurred while processing frequency {freq}MHz for phantom '{phantom_name}': {e}"
+                        self._log(error_msg, log_type='error')
+                        self.verbose_logger.error(traceback.format_exc())
+                        # Ensure the project is closed even if an error occurs within the frequency loop
+                        if self.project_manager and hasattr(self.project_manager.document, 'IsOpen') and self.project_manager.document.IsOpen():
+                            self.project_manager.close()
+                        continue # Continue to the next frequency
                     finally:
                         # Ensure the project is closed after each frequency to release resources.
                         if self.project_manager and hasattr(self.project_manager.document, 'IsOpen') and self.project_manager.document.IsOpen():

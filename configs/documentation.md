@@ -30,6 +30,17 @@ The framework is controlled by a hierarchical JSON configuration system. A study
 | `simulation_parameters.excitation_type` | string | `"Harmonic"` | The excitation type for the simulation. Usually everything is done harmonically at one frequency. Only for free-space antenna simulations is a Guassian frequency-sweep useful to determine resonances. |
 | `simulation_parameters.bandwidth_mhz` | number | `50.0` | The bandwidth in MHz for the simulation. Only relevant for Gaussian simulations. |
 
+## Credentials
+
+oSPARC API credentials are no longer stored in configuration files for security reasons. Instead, they are loaded from environment variables:
+
+- `OSPARC_API_KEY`: Your oSPARC API key
+- `OSPARC_API_SECRET`: Your oSPARC API secret  
+- `OSPARC_API_SERVER`: The oSPARC API server URL (typically `https://api.sim4life.science`)
+- `OSPARC_API_VERSION`: The API version (typically `v0`)
+
+These should be set in a `.env` file in the project root.
+
 ## `far_field_config.json`
 
 | Key | Type | Example Value | Description |

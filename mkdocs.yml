@@ -1,0 +1,52 @@
+site_name: GOLIAT Documentation
+theme:
+  name: material
+  features:
+  - navigation.tabs
+  - navigation.sections
+  - toc.integrate
+  - navigation.top
+  - search.suggest
+  - search.highlight
+  - content.tabs.link
+  palette:
+  - scheme: default
+    toggle:
+      icon: material/toggle-switch-off-outline
+      name: Switch to dark mode
+  - scheme: slate
+    toggle:
+      icon: material/toggle-switch
+      name: Switch to light mode
+nav:
+- Home: index.md
+- Architecture: architecture_overview.md
+- Guides:
+  - Coloring rules: COLORING_RULES.md
+  - Legacy GUI/Profiling/Logger: old_good_GUI-Profiling-Logger.md
+- API Reference: api.md
+- UML Diagram: uml.md
+plugins:
+- search
+- mkdocstrings:
+    handlers:
+      python:
+        options:
+          show_root_heading: true
+          show_source: false
+          members_order: source
+          docstring_style: google
+          filters:
+          - '!^_'
+          - ^__init__$
+markdown_extensions:
+- admonition
+- toc:
+    permalink: true
+- footnotes
+- attr_list
+- pymdownx.details
+- pymdownx.snippets
+- pymdownx.superfences
+- pymdownx.highlight
+- pymdownx.tabbed

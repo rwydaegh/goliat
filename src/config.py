@@ -1,5 +1,9 @@
 import json
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 def deep_merge(source, destination):
     """
@@ -32,20 +36,17 @@ class Config:
     def _resolve_config_path(self, config_filename, base_path):
         """
         Resolves the absolute path to the configuration file.
+        - If a full path is given, it's used directly.
+        - If a filename without '.json' is given, it's assumed to be in 'configs/'.
         """
-        if os.path.isabs(config_filename):
-            return config_filename
-        
-        # Check if the file exists relative to the base_path
-        prospective_path = os.path.join(base_path, config_filename)
-        if os.path.exists(prospective_path):
-            return prospective_path
-
-        # If a relative path with directory components is given
-        if os.path.dirname(config_filename):
+        # If a full path is given, use it as is.
+        if os.path.isabs(config_filename) or os.path.dirname(config_filename):
             return os.path.join(self.base_dir, config_filename)
+
+        # If just a name is given, assume it's in the 'configs' directory.
+        if not config_filename.endswith('.json'):
+            config_filename += '.json'
         
-        # If only a filename is given, assume it's in the 'configs' directory
         return os.path.join(self.base_dir, 'configs', config_filename)
 
     def get_setting(self, path, default=None):
@@ -99,7 +100,7 @@ class Config:
 
     def get_phantom_config(self, phantom_name):
         """Returns the configuration for a specific phantom."""
-        return self.config.get("phantoms", {}).get(phantom_name)
+        return self.config.get("phantom_definitions", {}).get(phantom_name)
 
     def get_phantom_placements(self, phantom_name):
         """Returns the placement configuration for a specific phantom."""
@@ -163,8 +164,24 @@ class Config:
         return self.config.get("server", None)
 
     def get_osparc_credentials(self):
-        """Returns the osparc credentials."""
-        return self.config.get("osparc_credentials", {})
+        """Returns the osparc credentials from environment variables."""
+        credentials = {
+            "api_key": os.getenv("OSPARC_API_KEY"),
+            "api_secret": os.getenv("OSPARC_API_SECRET"),
+            "api_server": os.getenv("OSPARC_API_SERVER"),
+            "api_version": os.getenv("OSPARC_API_VERSION", "v0")
+        }
+        
+        # Check for missing credentials and provide helpful error message
+        missing = [key for key, value in credentials.items() if value is None and key != "api_version"]
+        if missing:
+            raise ValueError(
+                f"Missing oSPARC credentials: {', '.join(missing)}. "
+                "Please create a .env file in the project root with your oSPARC API credentials. "
+                "See README.md for setup instructions."
+            )
+        
+        return credentials
 
     def get_only_write_input_file(self):
         """
