@@ -39,6 +39,10 @@ def main():
     if not args.skip_startup:
         run_full_startup(base_dir)
 
+    # Ensure Sim4Life is running in the main thread before any GUI components are created
+    from src.utils import ensure_s4l_running
+    ensure_s4l_running()
+
     # Now that dependencies are installed, we can import the other modules
     from src.gui_manager import ProgressGUI
     from PySide6.QtWidgets import QApplication
@@ -56,6 +60,5 @@ def main():
     sys.exit(app.exec())
 
 if __name__ == "__main__":
-    # This is crucial for multiprocessing to work correctly on Windows
-    multiprocessing.freeze_support()
+    # multiprocessing.freeze_support() is no longer needed with QThread
     main()

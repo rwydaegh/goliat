@@ -73,8 +73,7 @@ class FarFieldStudy(BaseStudy):
                 for j, freq in enumerate(frequencies):
                     try:
                         # Check for a stop signal from the GUI at the start of each major iteration.
-                        if self._check_for_stop_signal():
-                            raise StudyCancelledError()
+                        self._check_for_stop_signal()
 
                         # Create a new, clean project for each frequency to avoid performance degradation.
                         self.project_manager.create_or_open_project(phantom_name, freq)
@@ -119,7 +118,7 @@ class FarFieldStudy(BaseStudy):
                                             self.gui.update_overall_progress(int(progress), 100)
                                             self.gui.update_stage_progress("Setup", setup_index, total_setups)
                                
-                                # Save the project after the setup phase is complete for this frequency
+                                # Save the project after the entire setup phase for this project is complete.
                                 self._log("  - Saving project after setup phase...", level='progress')
                                 self.project_manager.save()
                         else:
@@ -205,16 +204,3 @@ class FarFieldStudy(BaseStudy):
             except Exception as e:
                 self._log(f"    - ERROR: Failed to extract results for simulation '{sim.Name}': {e}", level='progress')
                 traceback.print_exc()
-
-    def _check_for_stop_signal(self):
-        """Checks the queue for a stop signal from the GUI without blocking."""
-        if not self.gui or not hasattr(self.gui, 'queue'):
-            return False
-        try:
-            msg = self.gui.queue.get_nowait()
-            if msg.get('type') == 'stop':
-                self._log("--- Study manually stopped by user ---", level='progress')
-                return True
-        except Empty:
-            return False
-        return False

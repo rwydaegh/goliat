@@ -1,10 +1,8 @@
 import sys
 import time
-import multiprocessing
 import logging
 import traceback
-from queue import Empty
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import QTimer, QObject, Signal, QThread
 from PySide6.QtGui import QIcon, QAction
 from PySide6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QProgressBar,
                                  QLabel, QTextEdit, QGridLayout, QPushButton,
@@ -15,72 +13,93 @@ from src.studies.far_field_study import FarFieldStudy
 from src.utils import format_time, ensure_s4l_running
 from src.logging_manager import setup_loggers, shutdown_loggers
 
-def study_process_wrapper(queue, config_filename, execution_control):
+class StudyWorker(QObject):
     """
-    This function runs in a separate process and executes the study.
-    It communicates with the main GUI process via a queue.
+    This worker runs the study in a separate thread.
+    It communicates with the main GUI thread via signals.
     """
-    # Configure logging for this process to write to the same files
-    progress_logger, verbose_logger, _ = setup_loggers()
-    
-    try:
-        ensure_s4l_running()
+    status_updated = Signal(str)
+    overall_progress_updated = Signal(int, int)
+    stage_progress_updated = Signal(str, int, int)
+    animation_started = Signal(float, int)
+    animation_ended = Signal()
+    timing_updated = Signal(float, float)
+    profiler_updated = Signal(object)
+    study_ready = Signal(object)  # Signal to pass the ready study object to the main thread
+    finished = Signal()
 
-        class QueueGUI:
-            def __init__(self, queue):
-                self.queue = queue
-                self.profiler = None
+    def __init__(self, config_filename):
+        super().__init__()
+        self.config_filename = config_filename
+        self._is_stopped = False
 
-            def log(self, message, level='verbose'):
-                """Logs a message by sending it to the GUI if it's a progress message."""
-                # Also log to the actual file/console from the worker process
-                if level == 'progress':
-                    self.queue.put({'type': 'status', 'message': message})
+    def run(self):
+        """
+        Prepares the study object and passes it to the main thread for execution.
+        The actual study logic runs on the main thread to avoid S4L API conflicts.
+        """
+        try:
+            # This class now acts as a bridge, so it needs access to the worker's signals
+            class SignalGUI:
+                def __init__(self, worker):
+                    self.worker = worker
+                    self.profiler = None
 
-            def update_overall_progress(self, current_step, total_steps):
-                self.queue.put({'type': 'overall_progress', 'current': current_step, 'total': total_steps})
+                def log(self, message, level='verbose'):
+                    if level == 'progress':
+                        self.worker.status_updated.emit(message)
 
-            def update_stage_progress(self, stage_name, current_step, total_steps):
-                self.queue.put({'type': 'stage_progress', 'name': stage_name, 'current': current_step, 'total': total_steps})
+                def update_overall_progress(self, current_step, total_steps):
+                    self.worker.overall_progress_updated.emit(current_step, total_steps)
 
-            def start_stage_animation(self, task_name, end_value):
-                estimate = self.profiler.get_subtask_estimate(task_name)
-                self.queue.put({'type': 'start_animation', 'estimate': estimate, 'end_value': end_value})
+                def update_stage_progress(self, stage_name, current_step, total_steps):
+                    self.worker.stage_progress_updated.emit(stage_name, current_step, total_steps)
 
-            def end_stage_animation(self):
-                self.queue.put({'type': 'end_animation'})
-                
-            def update_timing(self, elapsed_sec, eta_sec):
-                self.queue.put({'type': 'timing', 'elapsed': elapsed_sec, 'eta': eta_sec})
+                def start_stage_animation(self, task_name, end_value):
+                    estimate = self.profiler.get_subtask_estimate(task_name)
+                    self.worker.animation_started.emit(estimate, end_value)
 
-            def update_profiler(self):
-                self.queue.put({'type': 'profiler_object', 'obj': self.profiler})
+                def end_stage_animation(self):
+                    self.worker.animation_ended.emit()
+                    
+                def update_timing(self, elapsed_sec, eta_sec):
+                    self.worker.timing_updated.emit(elapsed_sec, eta_sec)
 
-        from src.config import Config
-        import os
-        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-        config = Config(base_dir, config_filename)
-        study_type = config.get_setting('study_type')
+                def update_profiler(self):
+                    self.worker.profiler_updated.emit(self.profiler)
 
-        if study_type == 'near_field':
-            study = NearFieldStudy(config_filename=config_filename, gui=QueueGUI(queue))
-        elif study_type == 'far_field':
-            study = FarFieldStudy(config_filename=config_filename, gui=QueueGUI(queue))
-        else:
-            queue.put({'type': 'status', 'message': f"Error: Unknown or missing study type '{study_type}' in {config_filename}"})
-            return
+                def process_events(self):
+                    # This is called from the main thread now, so we can process events.
+                    QApplication.processEvents()
+
+            from src.config import Config
+            import os
+            base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+            config = Config(base_dir, self.config_filename)
+            study_type = config.get_setting('study_type')
+
+            if study_type == 'near_field':
+                study = NearFieldStudy(config_filename=self.config_filename, gui=SignalGUI(self))
+            elif study_type == 'far_field':
+                study = FarFieldStudy(config_filename=self.config_filename, gui=SignalGUI(self))
+            else:
+                self.status_updated.emit(f"Error: Unknown or missing study type '{study_type}' in {self.config_filename}")
+                self.finished.emit()
+                return
             
-        study.gui.profiler = study.profiler
-        queue.put({'type': 'profiler_object', 'obj': study.profiler})
-        study.run()
-        queue.put({'type': 'finished'})
-    except Exception as e:
-        progress_logger.error(f"FATAL ERROR in study process: {e}\n{traceback.format_exc()}")
-        queue.put({'type': 'status', 'message': f"FATAL ERROR: Check verbose log for details."})
-        queue.put({'type': 'finished'}) # Still signal finished to unblock GUI
-    finally:
-        # This is crucial for ensuring logs are written to disk.
-        shutdown_loggers()
+            study.gui.profiler = study.profiler
+            self.profiler_updated.emit(study.profiler)
+            
+            # Pass the created study object to the main thread
+            self.study_ready.emit(study)
+
+        except Exception as e:
+            logging.getLogger('progress').error(f"FATAL ERROR during study setup in worker thread: {e}\n{traceback.format_exc()}")
+            self.status_updated.emit("FATAL ERROR: Check verbose log for details.")
+            self.finished.emit()
+
+    def stop(self):
+        self._is_stopped = True
 
 
 class ProgressGUI(QWidget):
@@ -107,41 +126,14 @@ class ProgressGUI(QWidget):
         self.animation_end_value = 0
         self.total_steps_for_stage = 0
 
-        self.queue = multiprocessing.Queue()
         self.profiler = None  # Placeholder for the profiler object
-        from src.config import Config
-        import os
-        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-        config = Config(base_dir, self.config_filename)
-        self.study_type = config.get_setting('study_type')
-
-        if not self.study_type:
-            self.update_status(f"FATAL ERROR: 'study_type' not found in {self.config_filename}")
-            return
-
-        # The study needs to be instantiated here to get the execution_control settings
-        if self.study_type == 'near_field':
-            study = NearFieldStudy(config_filename=self.config_filename)
-        else:
-            study = FarFieldStudy(config_filename=self.config_filename)
         
-        execution_control = study.config.get_setting('execution_control')
-
-        self.process = multiprocessing.Process(
-            target=study_process_wrapper,
-            args=(self.queue, self.config_filename, execution_control)
-        )
-
-        self.queue_timer = QTimer(self)
-        self.queue_timer.timeout.connect(self.process_queue)
-        self.queue_timer.start(100)
+        self.setup_worker_thread()
 
         self.clock_timer = QTimer(self)
         self.clock_timer.timeout.connect(self.update_clock)
         # We start the clock timer after receiving the profiler object
         # to avoid a race condition where the clock ticks before the profiler exists.
-        
-        self.process.start()
 
     def init_ui(self):
         self.setWindowTitle("Simulation Progress")
@@ -221,8 +213,35 @@ class ProgressGUI(QWidget):
         self.show()
         self.tray_icon.hide()
 
+    def setup_worker_thread(self):
+        """Sets up and starts the worker thread for the study."""
+        self.thread = QThread()
+        self.worker = StudyWorker(self.config_filename)
+        self.worker.moveToThread(self.thread)
+        self.thread.setParent(self) # Set parent to ensure proper cleanup
+
+        # Connect worker signals to GUI slots
+        self.worker.status_updated.connect(self.update_status)
+        self.worker.overall_progress_updated.connect(self.update_overall_progress)
+        self.worker.stage_progress_updated.connect(self.update_stage_progress)
+        self.worker.animation_started.connect(self.start_stage_animation)
+        self.worker.animation_ended.connect(self.end_stage_animation)
+        self.worker.timing_updated.connect(self.update_timing)
+        self.worker.profiler_updated.connect(self.on_profiler_updated)
+        self.worker.study_ready.connect(self.start_study)  # Connect the new signal
+        self.worker.finished.connect(self.study_finished)
+
+        # Connect thread signals
+        self.thread.started.connect(self.worker.run)
+        # The worker now emits 'finished' from the main thread after study.run() completes
+        # self.worker.finished.connect(self.thread.quit)
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.thread.finished.connect(self.thread.deleteLater)
+
+        self.thread.start()
+
     def stop_study(self):
-        """Logs the stop message and closes the application."""
+        """Requests the worker thread to stop and disables buttons."""
         message = "--- Study manually stopped by user ---"
         self.progress_logger.info(message)
         self.verbose_logger.info(message)
@@ -230,46 +249,31 @@ class ProgressGUI(QWidget):
         self.stop_button.setEnabled(False)
         self.tray_button.setEnabled(False)
         
-        # Forcefully terminate the worker process first
-        if self.process.is_alive():
-            self.process.terminate()
-            self.process.join(timeout=3)
-            
-        # Now, explicitly shut down the loggers to write the final message
-        shutdown_loggers()
-        
-        # Close the GUI window
-        QTimer.singleShot(100, self.close)
+        if self.thread.isRunning():
+            self.worker.stop()  # Signal the worker to stop
+            self.thread.quit()   # Ask the event loop to quit
+            self.thread.wait(5000) # Wait for 5 seconds for clean exit
 
-    def process_queue(self):
-        while not self.queue.empty():
-            try:
-                msg = self.queue.get_nowait()
-                msg_type = msg.get('type')
+    def on_profiler_updated(self, profiler_obj):
+        """Receives the profiler object from the worker thread."""
+        self.profiler = profiler_obj
+        if not self.clock_timer.isActive():
+            self.clock_timer.start(1000)
 
-                if msg_type == 'status':
-                    self.update_status(msg['message'])
-                elif msg_type == 'overall_progress':
-                    self.update_overall_progress(msg['current'], msg['total'])
-                elif msg_type == 'stage_progress':
-                    self.update_stage_progress(msg['name'], msg['current'], msg['total'])
-                elif msg_type == 'start_animation':
-                    self.start_stage_animation(msg['estimate'], msg['end_value'])
-                elif msg_type == 'end_animation':
-                    self.end_stage_animation()
-                elif msg_type == 'timing':
-                    # This is now mostly deprecated in favor of the GUI's internal clock,
-                    # but we keep it for any direct calls that might still exist.
-                    self.update_timing(msg['elapsed'], msg['eta'])
-                elif msg_type == 'profiler_object':
-                    self.profiler = msg['obj']
-                    # Start the clock timer only after we have the profiler
-                    if not self.clock_timer.isActive():
-                        self.clock_timer.start(1000)
-                elif msg_type == 'finished':
-                    self.study_finished()
-            except Empty:
-                break
+    def start_study(self, study_instance):
+        """
+        This slot is executed on the main GUI thread.
+        It runs the study, which contains the blocking S4L API calls.
+        """
+        try:
+            study_instance.run()
+        except Exception as e:
+            logging.getLogger('progress').error(f"FATAL ERROR in study execution: {e}\n{traceback.format_exc()}")
+            self.update_status("FATAL ERROR: Check verbose log for details.")
+        finally:
+            # Manually emit finished and quit the thread
+            self.worker.finished.emit()
+            self.thread.quit()
 
     def update_overall_progress(self, current_step, total_steps):
         if total_steps > 0:
@@ -382,7 +386,6 @@ class ProgressGUI(QWidget):
             self.eta_label.setText("Time Remaining: N/A")
 
     def study_finished(self):
-        self.queue_timer.stop()
         self.clock_timer.stop()
         self.end_stage_animation()
         self.update_status("--- Study Finished ---")
@@ -399,18 +402,13 @@ class ProgressGUI(QWidget):
         """
         if self.tray_icon.isVisible():
             self.tray_icon.hide()
-            
-        if self.process.is_alive():
-            self.progress_logger.warning("GUI closed unexpectedly. Terminating worker process.")
-            self.process.terminate()
-            self.process.join(timeout=3)
-            
-        # This is crucial to ensure all log files are properly closed.
+
+        # The thread is now a child of the QWidget, so Qt will handle its cleanup.
+        # We just need to ensure the loggers are shut down.
         shutdown_loggers()
         event.accept()
 
 if __name__ == '__main__':
-    multiprocessing.freeze_support()
     # Setup loggers for the main process
     setup_loggers()
     app = QApplication(sys.argv)

@@ -3,21 +3,17 @@
     "study_type": "far_field",
     "study_name": "Today's Far-Field run",
     "execution_control": {
-        "do_setup": true,
+        "do_setup": false,
         "do_run": true,
-        "do_extract": true
+        "do_extract": false
     },
-    "manual_isolve": true,
+    "manual_isolve": false,
+    "server": "medium",
     "phantoms": [
         "eartha"
     ],
     "frequencies_mhz": [
-        450,
-        788,
-        1126,
-        1464,
-        1802,
-        2140
+        450
     ],
     "far_field_setup": {
         "type": "environmental",

@@ -29,7 +29,9 @@ class NearFieldStudy(BaseStudy):
             self._log("All execution phases (setup, run, extract) are disabled. Nothing to do.")
             return
 
-        phantoms = self.config.get_setting('phantoms', {}).keys()
+        phantoms = self.config.get_setting('phantoms', [])
+        if isinstance(phantoms, dict):
+            phantoms = phantoms.keys()
         frequencies = self.config.get_setting('antenna_config', {}).keys()
         all_scenarios = self.config.get_setting('placement_scenarios', {})
 
@@ -65,8 +67,10 @@ class NearFieldStudy(BaseStudy):
                             enabled_placements.append(f"{scenario_name}_{pos_name}_{orient_name}")
 
             for freq_str in frequencies:
+                self._check_for_stop_signal()
                 freq = int(freq_str)
                 for placement_name in enabled_placements:
+                    self._check_for_stop_signal()
                     simulation_count += 1
                     self._log(f"\n--- Processing Simulation {simulation_count}/{total_simulations}: {phantom_name}, {freq}MHz, {placement_name} ---", level='progress')
                     self._run_placement(phantom_name, freq, placement_name, do_setup, do_run, do_extract)
@@ -94,6 +98,7 @@ class NearFieldStudy(BaseStudy):
                         self._log(f"ERROR: Setup failed for {placement_name}. Cannot proceed.", level='progress')
                         return
                     
+                    # The first save is now critical after setup is complete.
                     self.project_manager.save()
                     if self.gui:
                         progress = self.profiler.get_weighted_progress("setup", 1.0)

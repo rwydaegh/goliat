@@ -80,8 +80,18 @@ def main():
 
     if study_type == 'near_field':
         study = NearFieldStudy(config_filename=config_filename, gui=ConsoleLogger())
+        # Manually set up the project path for the no-gui version
+        phantom_name = config.get_setting('phantoms')[0]
+        frequency_mhz = list(config.get_setting('antenna_config').keys())[0]
+        # A placement name is required for near-field studies
+        placement_name = "front_of_eyes_center_vertical" # A default, adjust if needed
+        study.project_manager.create_or_open_project(phantom_name, frequency_mhz, placement_name)
     elif study_type == 'far_field':
         study = FarFieldStudy(config_filename=config_filename, gui=ConsoleLogger())
+        # Manually set up the project path for the no-gui version
+        phantom_name = config.get_setting('phantoms')[0]
+        frequency_mhz = config.get_setting('frequencies_mhz')[0]
+        study.project_manager.create_or_open_project(phantom_name, frequency_mhz)
     else:
         print(f"Error: Unknown or missing study type '{study_type}' in {config_filename}")
         return

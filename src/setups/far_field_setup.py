@@ -124,10 +124,10 @@ class FarFieldSetup(BaseSetup):
 
         self._setup_solver_settings(simulation)
 
-        self._finalize_setup(simulation, self.frequency_mhz)
+        self._finalize_setup(self.project_manager, simulation, self.frequency_mhz)
         self._log("Common settings applied.", level='verbose')
 
-    def _finalize_setup(self, simulation, frequency_mhz):
+    def _finalize_setup(self, project_manager, simulation, frequency_mhz):
         """
         Gathers all necessary entities for a far-field simulation and calls the shared
         finalization method from the base class.
@@ -142,4 +142,4 @@ class FarFieldSetup(BaseSetup):
         
         all_simulation_parts = phantom_entities + [bbox_entity] + point_sensor_entities
         
-        super()._finalize_setup(simulation, all_simulation_parts, frequency_mhz)
+        super()._finalize_setup(project_manager, simulation, all_simulation_parts, frequency_mhz)

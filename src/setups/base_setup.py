@@ -154,7 +154,7 @@ class BaseSetup(LoggingMixin):
             self._log(f"  - Added point sensor at {corner_coords} ({corner_name})")
 
     @profile
-    def _finalize_setup(self, simulation, all_simulation_parts, frequency_mhz):
+    def _finalize_setup(self, project_manager, simulation, all_simulation_parts, frequency_mhz):
         """
         Performs the final voxelization and grid update for a simulation.
         This is a shared method for both Near-Field and Far-Field setups.
@@ -198,5 +198,6 @@ class BaseSetup(LoggingMixin):
             self._log(f"--- Exported Material Properties to {output_path} ---", level='progress')
 
         simulation.UpdateGrid()
+        project_manager.save()
         simulation.CreateVoxels()
         self._log("    - Finalizing setup complete.")

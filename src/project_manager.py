@@ -1,6 +1,7 @@
 import os
 import h5py
 import logging
+import s4l_v1.model as s4l_model
 from .utils import open_project
 from .logging_manager import LoggingMixin
 
@@ -87,7 +88,8 @@ class ProjectManager(LoggingMixin):
         if do_setup:
             self._log("Execution control: 'do_setup' is true. Creating a new project.")
             self.create_new()
-            self.save()
+            # NOTE: Do not save immediately. The project is unstable until content is added.
+            # The calling study is responsible for the first save.
         else:
             self._log("Execution control: 'do_setup' is false. Attempting to open existing project.")
             if not os.path.exists(self.project_path):
@@ -142,6 +144,14 @@ class ProjectManager(LoggingMixin):
         
         self._log("Creating a new empty project in memory.")
         self.document.New()
+
+        # In S4L v9.0, the modeling environment must be initialized by creating a
+        # geometric entity after creating a new document. The project should not
+        # be saved until it is populated by the setup script.
+        self._log("Initializing model by creating and deleting a dummy block...")
+        dummy_block = s4l_model.CreateSolidBlock(s4l_model.Vec3(0,0,0), s4l_model.Vec3(1,1,1))
+        dummy_block.Delete()
+        self._log("Model initialized, ready for population.")
 
     def open(self):
         """

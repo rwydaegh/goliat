@@ -147,3 +147,7 @@ class Config:
         Returns the line_profiling settings from the main config.
         """
         return self.get_setting('line_profiling', {})
+
+    def get_server(self):
+        """Returns the server name."""
+        return self.config.get("server", None)

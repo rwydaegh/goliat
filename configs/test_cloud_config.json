@@ -1,0 +1,12 @@
+{
+    "extends": "base_config.json",
+    "study_name": "Cloud Simulation Test",
+    "study_type": "near_field",
+    "server": "MyCloudServerName",
+    "phantoms": {
+        "thelonious": {
+            "placements": ["front_of_eyes"]
+        }
+    },
+    "frequencies_mhz": [700]
+}

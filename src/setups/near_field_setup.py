@@ -74,7 +74,7 @@ class NearFieldSetup(BaseSetup):
         sim_bbox_name = f"{self.placement_name.lower()}_simulation_bbox"
         self._add_point_sensors(simulation, sim_bbox_name)
 
-        self._finalize_setup(simulation, antenna_components)
+        self._finalize_setup(project_manager, simulation, antenna_components)
         
         self._log("Full simulation setup complete.", 'progress')
         return simulation
@@ -213,7 +213,7 @@ class NearFieldSetup(BaseSetup):
         
         return simulation
 
-    def _finalize_setup(self, simulation, antenna_components):
+    def _finalize_setup(self, project_manager, simulation, antenna_components):
         all_antenna_parts = list(antenna_components.values())
         point_sensor_entities = [e for e in self.model.AllEntities() if "Point Entity" in e.Name]
 
@@ -223,4 +223,4 @@ class NearFieldSetup(BaseSetup):
             phantom_entities = [e for e in self.model.AllEntities() if isinstance(e, self.XCoreModeling.TriangleMesh)]
             all_simulation_parts = phantom_entities + all_antenna_parts + point_sensor_entities
         
-        super()._finalize_setup(simulation, all_simulation_parts, self.frequency_mhz)
+        super()._finalize_setup(project_manager, simulation, all_simulation_parts, self.frequency_mhz)

@@ -7,7 +7,18 @@
     "simulation_parameters": {
         "global_auto_termination": "GlobalAutoTerminationUserDefined",
         "convergence_level_dB": -15,
-        "simulation_time_multiplier": 5
+        "simulation_time_multiplier": 5,
+        "number_of_point_sensors": 2,
+        "point_source_order": [
+            "lower_left_bottom",
+            "top_right_up",
+            "lower_right_bottom",
+            "top_left_up",
+            "lower_left_up",
+            "top_right_bottom",
+            "lower_right_up",
+            "top_left_bottom"
+        ]
     },
     "gridding_parameters": {
         "global_gridding": {
@@ -32,15 +43,5 @@
     },
     "verbose": false,
     "manual_isolve": true,
-    "download_email": "example@example.com",
-    "point_source_order": [
-        "lower_left_bottom",
-        "top_right_up",
-        "lower_right_bottom",
-        "top_left_up",
-        "lower_left_up",
-        "top_right_bottom",
-        "lower_right_up",
-        "top_left_bottom"
-    ]
+    "download_email": "example@example.com"
 }

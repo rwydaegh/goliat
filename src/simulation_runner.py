@@ -64,6 +64,20 @@ class SimulationRunner(LoggingMixin):
             return
 
         with self.study.subtask("run_simulation_total"):
+            server_name = self.config.get_server()
+            server_id = None
+            if server_name:
+                self._log(f"Attempting to use server: {server_name}", level='progress')
+                import s4l_v1.simulation
+                available_servers = s4l_v1.simulation.GetAvailableServers()
+                for server in available_servers:
+                    if server_name.lower() in server.lower():
+                        server_id = server
+                        self._log(f"Found matching server: {server}", level='progress')
+                        break
+                if not server_id:
+                    raise RuntimeError(f"Server '{server_name}' not found.")
+
             try:
                 if hasattr(simulation, "WriteInputFile"):
                     with self.study.subtask("run_write_input_file"):
@@ -74,10 +88,13 @@ class SimulationRunner(LoggingMixin):
                 if self.config.get_manual_isolve():
                     self._run_isolve_manual(simulation)
                 else:
-                    simulation.RunSimulation(wait=True)
+                    simulation.RunSimulation(wait=True, server_id=server_id)
                     self._log("Simulation finished.", level='progress')
+
             except Exception as e:
                 self._log(f"An error occurred during simulation run: {e}", level='progress')
+                if server_id:
+                    self._log("If you are running on the cloud, please ensure you are logged into Sim4Life via the GUI.", level='progress')
                 traceback.print_exc()
 
         return simulation

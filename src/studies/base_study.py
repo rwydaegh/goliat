@@ -31,8 +31,15 @@ class BaseStudy(LoggingMixin):
         self.line_profiler = None
         
         self.project_manager = ProjectManager(self.config, self.verbose_logger, self.progress_logger, self.gui)
-        self.stop_requested = False
 
+    def _check_for_stop_signal(self):
+        """Checks if the GUI has requested a stop and keeps the GUI responsive."""
+        if self.gui:
+            if hasattr(self.gui, '_is_stopped') and self.gui._is_stopped:
+                raise StudyCancelledError()
+            # Process GUI events to keep it from freezing
+            if hasattr(self.gui, 'process_events'):
+                self.gui.process_events()
 
     def subtask(self, task_name, instance_to_profile=None):
         """

@@ -40,7 +40,7 @@ A typical run follows these steps:
 
 ### 2.2. Key Supporting Components
 
--   **GUI & Logging**: A [`GuiManager`](src/gui_manager.py:86) provides a real-time progress window using PySide6, running the study in a separate process to keep the UI responsive. The [`LoggingManager`](src/logging_manager.py:5) sets up detailed logs for debugging and high-level progress tracking.
+-   **GUI & Logging**: A [`GuiManager`](src/gui_manager.py:86) provides a real-time progress window using PySide6. It uses a `QThread` to run the study in the background, ensuring the UI remains responsive and stable. The [`LoggingManager`](src/logging_manager.py:5) sets up detailed logs for debugging and high-level progress tracking.
 -   **Utilities**: The [`utils.py`](src/utils.py:1) module contains a [`Profiler`](src/utils.py:18) that learns from past runs to provide increasingly accurate ETA estimates for studies.
 
 This separation of concerns ensures that each part of the process is self-contained, making the framework easier to maintain and extend.
@@ -82,7 +82,7 @@ The project is organized into a modular and scalable structure:
 
 ### Prerequisites
 
-Ensure you have **Sim4Life v8.2.0.16876** installed and licensed.
+Ensure you have **Sim4Life v9.0** or later installed and licensed.
 
 ### Running a Study
 

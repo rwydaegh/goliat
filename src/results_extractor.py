@@ -365,21 +365,37 @@ class ResultsExtractor(LoggingMixin):
                 fig, ax = plt.subplots()
                 ax.grid(True, which='major', axis='y', linestyle='--')
 
-                for i in range(1, num_sensors + 1):
-                    sensor_name_pattern = f"Point Sensor {i}"
-                    
-                    em_sensor_extractor = None
-                    for key in simulation_extractor.Keys():
-                        if sensor_name_pattern in key:
-                            em_sensor_extractor = simulation_extractor[key]
-                            break
-                    
-                    if not em_sensor_extractor:
-                        self._log(f"    - WARNING: Could not find sensor extractor for '{sensor_name_pattern}'")
+                # In S4L v9, we need to get the sensor extractor from the 'Overall Field'
+                overall_field_extractor = simulation_extractor["Overall Field"]
+
+                point_source_order = self.config.get_setting("simulation_parameters.point_source_order", [])
+                
+                for i in range(num_sensors):
+                    if i >= len(point_source_order):
+                        self._log(f"    - WARNING: Not enough entries in 'point_source_order' config for sensor {i+1}. Skipping.")
+                        continue
+                        
+                    corner_name = point_source_order[i]
+                    sensor_name = f"Point Sensor {i+1}"
+                    full_sensor_name = f"{sensor_name} ({corner_name})"
+
+                    try:
+                        em_sensor_extractor = overall_field_extractor.GetSensor(full_sensor_name)
+                        if not em_sensor_extractor:
+                            self._log(f"    - WARNING: Could not find sensor extractor for '{full_sensor_name}'")
+                            continue
+                    except Exception as e:
+                        self._log(f"    - WARNING: Could not retrieve sensor '{full_sensor_name}'. Error: {e}")
                         continue
 
                     self.document.AllAlgorithms.Add(em_sensor_extractor)
                     
+                    # Ensure the output port exists before accessing it
+                    if "EM E(t)" not in em_sensor_extractor.Outputs:
+                        self._log(f"    - WARNING: 'EM E(t)' output not found for sensor '{sensor_name}'")
+                        self.document.AllAlgorithms.Remove(em_sensor_extractor)
+                        continue
+
                     inputs = [em_sensor_extractor.Outputs["EM E(t)"]]
                     plot_viewer = self.analysis.viewers.PlotViewer(inputs=inputs)
                     plot_viewer.UpdateAttributes()

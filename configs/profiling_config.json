@@ -15,8 +15,8 @@
             "extract_input_power": 0.9690000000409782,
             "extract_sar_statistics": 2.327999999979511
         },
-        "avg_setup_time": 50.89100000006147,
-        "avg_setup_simulation": 33.063000000081956,
+        "avg_setup_time": 18.75,
+        "avg_setup_simulation": 18.735000000335276,
         "avg_extract_time": 33.125,
         "avg_run_write_input_file": 14.437999999849126,
         "avg_run_isolve_execution": 588.4840000001714,
@@ -40,16 +40,16 @@
             "extract_input_power": 0.08973333329583208,
             "extract_sar_statistics": 4.38540000001279
         },
-        "avg_setup_time": 44.10899999993853,
-        "avg_setup_simulation": 30.6875,
-        "avg_extract_time": 32.640000000130385,
-        "avg_run_write_input_file": 14.652500000025611,
+        "avg_setup_time": 33.34399999957532,
+        "avg_setup_simulation": 28.453000000678003,
+        "avg_extract_time": 38.688000000081956,
+        "avg_run_write_input_file": 5.531000000424683,
         "avg_run_isolve_execution": 79.06649999989895,
         "avg_run_wait_for_results": 5.019250000070315,
         "avg_run_reload_project": 11.746499999950174,
-        "avg_run_simulation_total": 110.49649999995017,
-        "avg_extract_input_power": 0.00375000003259629,
-        "avg_extract_sar_statistics": 12.332000000111293,
-        "avg_extract_point_sensor_data": 0.13675000006332994
+        "avg_run_simulation_total": 0.015999999828636646,
+        "avg_extract_input_power": 0.0,
+        "avg_extract_sar_statistics": 15.42200000025332,
+        "avg_extract_point_sensor_data": 0.8119999999180436
     }
 }
