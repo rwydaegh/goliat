@@ -1,9 +1,7 @@
-# Simulation results and logs
+data/
 results/
+plots/
 PythonAPIReference/
-*.smash
-*.smash_Results/
-*.log
 
 # Python cache
 __pycache__/
@@ -12,6 +10,5 @@ __pycache__/
 # IDE and OS files
 .vscode/
 .DS_Store
-
-# Data files that are not part of the repository
-data/
+# Temporary Excel files
+~$*.xlsx

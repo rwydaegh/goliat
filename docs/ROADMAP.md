@@ -1,46 +1,88 @@
-# Project Roadmap: Near-Field Simulation Framework
+# TODO
 
-This document outlines the development roadmap for the GOLIAT near-field simulation framework.
+-   **Expand "by_cheek" Scenario**: The current implementation for the "by_cheek" placement only includes a single orientation. This needs to be expanded to include all three required alignments (Base, Up, and Down) as specified in the `docs/smartphone_positioning.md` document to ensure full compliance with the study's requirements.
 
-## Phase 1: Core Framework and Validation (Complete)
+---
 
--   [x] **Project Scaffolding:** Establish a robust, class-based directory structure separating configuration, source code, and data.
--   [x] **Configuration Management:** Implement a `Config` class to load and manage all simulation and phantom parameters from JSON files.
--   [x] **Antenna Abstraction:** Create an `Antenna` class to handle frequency-dependent property selection.
--   [x] **Single Project Workflow:** Develop the `NearFieldProject` class to handle the setup, execution, and result extraction for a single simulation case.
--   [x] **Initial Validation:** Debug and validate the end-to-end workflow for a single test case (`Thelonius`, 700MHz, `front_of_eyes`).
--   [x] **Logging Control:** Implement targeted suppression of verbose Sim4Life engine logs for a cleaner and more readable output.
--   [x] **Documentation:** Create a comprehensive `README.md` detailing the project setup and execution.
+# Strategic Project Roadmap
 
-## Phase 2: Campaign Automation and Full Phantom Support
+This document outlines the strategic, theme-based development roadmap for the GOLIAT near-field simulation framework.
 
--   [ ] **Full Campaign Automation:**
-    -   [ ] Implement the `NearFieldStudy` class to iterate through all phantoms, frequencies, and placements defined in the configuration files.
-    -   [ ] Add robust progress tracking and logging for large-scale simulation campaigns.
--   [ ] **Eartha Phantom Integration:**
-    -   [ ] Add `eartha.sab` to the `data/phantoms` directory.
-    -   [ ] Create a complete configuration profile for Eartha in `phantoms_config.json`, including bounding box definitions and antenna placements.
-    -   [ ] Validate the simulation workflow for the Eartha phantom.
--   [ ] **Advanced Result Extraction:**
-    -   [ ] Implement logic to extract SAR values for all required organs and tissues.
-    -   [ ] Add functionality to calculate and save whole-body, head, and trunk SAR.
-    -   [ ] Implement the power normalization calculation to report results for a 1 W/kg reference.
+## Guiding Principles
 
-## Phase 3: Version Control and CI/CD
+*   **Modularity & Maintainability**: The codebase should be easy to understand, modify, and extend.
+*   **Reproducibility & Accuracy**: The scientific results must be accurate and reproducible.
+*   **Automation & Efficiency**: The workflow should be as automated and efficient as possible to handle large-scale simulation campaigns.
 
--   [ ] **GitHub Integration:**
-    -   [ ] Initialize a private Git repository for the `near_field` project.
-    -   [ ] Create a remote repository on `github.ugent.be`.
-    -   [ ] Push the initial project structure and source code.
--   [ ] **Continuous Integration:**
-    -   [ ] Set up a CI pipeline (e.g., using GitHub Actions) to run automated checks on new commits.
-    -   [ ] Implement basic linting and code style checks.
-    -   [ ] (Optional) Develop a small-scale, non-graphical test suite that can run in a CI environment to verify core logic without a full Sim4Life license.
+## Development Phases & Themes
 
-## Phase 4: Enhancements and Future Work
+```mermaid
+gantt
+    title Improved Project Roadmap
+    dateFormat  YYYY-Q
+    axisFormat %Y-Q%
+    
+    section "Phase 1: Foundational Robustness & Scalability"
+    Codebase Refactoring          :done,    crit, des1, 2025-Q3, 2025-Q3
+    Full Campaign Automation      :active,  crit, des2, 2025-Q3, 2025-Q4
+    Full 'Eartha' Phantom Support :         crit, des3, 2025-Q4, 2025-Q4
 
--   [ ] **Data Analysis and Visualization:**
-    -   [ ] Develop scripts to aggregate results from all simulations into a single data structure (e.g., Pandas DataFrame).
-    -   [ ] Create plotting functions to visualize key results and comparisons.
--   [ ] **Parameter Sweeping:** Enhance the `NearFieldStudy` class to support sweeping over additional parameters (e.g., antenna distance, orientation angles).
--   [ ] **Error Handling and Recovery:** Improve the framework's resilience to individual simulation failures within a large campaign.
+    section "Phase 2: Data Integrity & Analysis"
+    Comprehensive Results Extraction : crit, des4, 2025-Q4, 2026-Q1
+    Power Normalization              : crit, des5, 2026-Q1, 2026-Q1
+    Data Aggregation & Visualization :      des6, 2026-Q1, 2026-Q2
+
+    section "Phase 3: Developer Experience & Automation"
+    Version Control & CI/CD Setup : des7, 2026-Q2, 2026-Q2
+    Enhanced Documentation        : des8, 2026-Q2, 2026-Q3
+```
+
+---
+
+### **Phase 1: Foundational Robustness & Scalability**
+
+*Goal: Solidify the core architecture to ensure it is robust, scalable, and ready for large-scale simulation campaigns.*
+
+*   **Task 1: Codebase Refactoring (Completed)**
+    *   **Description**: Refactor the `NearFieldProject` "God Class" into smaller, specialized components to improve modularity and maintainability, as detailed in `docs/REFACTORING_PLAN.md`.
+    *   **Status**: Done.
+
+*   **Task 2: Full Campaign Automation**
+    *   **Description**: Fully implement and test the `NearFieldStudy` class to reliably iterate through all phantoms, frequencies, and placements defined in the configuration files. This includes adding robust progress tracking and error handling for individual simulation failures.
+    *   **Status**: In Progress.
+
+*   **Task 3: Full 'Eartha' Phantom Support**
+    *   **Description**: Integrate the Eartha phantom into the simulation workflow. This involves adding its model file, creating a complete configuration profile in `phantoms_config.json`, and validating the end-to-end simulation process.
+    *   **Status**: Not Started.
+
+---
+
+### **Phase 2: Data Integrity & Analysis**
+
+*Goal: Ensure all required scientific outputs are generated accurately and provide tools for comprehensive analysis.*
+
+*   **Task 4: Comprehensive Results Extraction**
+    *   **Description**: Enhance the `ResultsExtractor` to parse all required SAR metrics as specified in `context/what we need.md`, including whole-body, head, and trunk SAR, plus psSAR10g for skin, eyes, and brain.
+    *   **Status**: Not Started.
+
+*   **Task 5: Power Normalization**
+    *   **Description**: Implement the final power normalization calculation to report all SAR results for a normalized applied power that induces a peak spatial-average SAR (psSAR10g) of 1 W/kg.
+    *   **Status**: Not Started.
+
+*   **Task 6: Data Aggregation & Visualization**
+    *   **Description**: Develop Python scripts (e.g., using Pandas and Matplotlib/Seaborn) to aggregate the results from all individual simulation JSON files into a single, master dataset. Create functions to generate plots for analysis and comparison.
+    *   **Status**: Not Started.
+
+---
+
+### **Phase 3: Developer Experience & Automation**
+
+*Goal: Streamline the development and deployment process using modern best practices.*
+
+*   **Task 7: Version Control & CI/CD Setup**
+    *   **Description**: Initialize a Git repository, push the project to a remote host (e.g., GitHub), and set up a basic Continuous Integration (CI) pipeline. The CI pipeline should run linters and code formatters automatically.
+    *   **Status**: Not Started.
+
+*   **Task 8: Enhanced Documentation**
+    *   **Description**: Improve the project documentation by adding API-level docstrings to all classes and methods. Create a `CONTRIBUTING.md` file to guide future development.
+    *   **Status**: Not Started.
