@@ -15,6 +15,20 @@ class Config:
         self.phantoms_config = self._load_json(self.phantoms_config_path)
         self.material_mapping = self._load_json(self.material_mapping_path)
 
+    def get_setting(self, path, default=None):
+        """
+        Retrieves a setting from the simulation configuration using a path-like string.
+        Example path: "simulation_parameters/number_of_point_sources"
+        """
+        keys = path.split('/')
+        current_config = self.simulation_config
+        for key in keys:
+            if isinstance(current_config, dict) and key in current_config:
+                current_config = current_config[key]
+            else:
+                return default
+        return current_config
+
     def _load_json(self, path):
         """Loads a JSON file."""
         if not os.path.exists(path):

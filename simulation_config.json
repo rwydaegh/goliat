@@ -4,9 +4,18 @@
     "convergence_level_dB": -15,
     "global_gridding": 0.5,
     "freespace_antenna_bbox_expansion_mm": [20, 20, 20],
-    "excitation_type": "Gaussian",
-    "bandwidth_mhz": 50.0,
-    "simulation_time_multiplier": 5
+    "simulation_time_multiplier": 1,
+    "number_of_point_sources": 2,
+    "point_source_order": [
+      "lower_left_bottom",
+      "top_right_up",
+      "lower_right_bottom",
+      "top_left_up",
+      "lower_left_up",
+      "top_right_bottom",
+      "lower_right_up",
+      "top_left_bottom"
+    ]
   },
   "antenna_config": {
     "700": {

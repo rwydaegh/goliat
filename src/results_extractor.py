@@ -20,8 +20,10 @@ class ResultsExtractor:
         
         import s4l_v1.document
         import s4l_v1.analysis
+        import s4l_v1.units as units
         self.document = s4l_v1.document
         self.analysis = s4l_v1.analysis
+        self.units = units
 
     def _log(self, message):
         if self.verbose:
@@ -122,7 +124,7 @@ class ResultsExtractor:
             inputs = [em_sensor_extractor.Outputs["EM E(x,y,z,f0)"]]
             sar_stats_evaluator = self.analysis.em_evaluators.SarStatisticsEvaluator(inputs=inputs)
             sar_stats_evaluator.PeakSpatialAverageSAR = True
-            sar_stats_evaluator.AveragingMass = 10.0
+            sar_stats_evaluator.AveragingMass = 10.0, self.units.Unit("g")
             self.document.AllAlgorithms.Add(sar_stats_evaluator)
             sar_stats_evaluator.Update()
 

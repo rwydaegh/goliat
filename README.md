@@ -130,3 +130,10 @@ The strategic development roadmap is outlined in [`docs/IMPROVED_ROADMAP.md`](do
 ## 7. Context and Reference Materials
 
 The `context/` directory contains key reference documents for the project, including the original near-field study (`Near-field_GOLIAT.pdf`) and a summary of the required deliverables (`what we need.md`). See [`context/README.md`](context/README.md) for more details.
+## 8. Known Issues
+
+### SIBC Performance with CUDA
+
+**NOTE/TODO:** There is a known performance issue with the SIBC (Surface Impedance Boundary Condition) implementation when using the CUDA backend for GPU acceleration. This can lead to significantly longer simulation times or convergence problems.
+
+A potential solution is to switch the solver to use the **Acceleware** backend instead of CUDA, as it has been observed to handle SIBC more efficiently. This can typically be configured within the Sim4Life solver settings.
