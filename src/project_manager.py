@@ -1,5 +1,6 @@
 import os
 import h5py
+import logging
 from .utils import open_project
 
 class ProjectCorruptionError(Exception):
@@ -10,16 +11,26 @@ class ProjectManager:
     """
     Handles the lifecycle of the .smash project file.
     """
-    def __init__(self, config, verbose=True):
+    def __init__(self, config, verbose_logger, progress_logger, gui=None):
         self.config = config
-        self.verbose = verbose
+        self.verbose_logger = verbose_logger
+        self.progress_logger = progress_logger
+        self.gui = gui
         self.project_path = None
+        self.execution_control = self.config.get_setting('execution_control', {'do_setup': True, 'do_run': True, 'do_extract': True})
         import s4l_v1.document
         self.document = s4l_v1.document
 
-    def _log(self, message):
-        if self.verbose:
-            print(message)
+    def _log(self, message, level='verbose'):
+        """Logs a message to the appropriate logger."""
+        if level == 'progress':
+            self.progress_logger.info(message)
+            if self.gui:
+                self.gui.log(message, level='progress')
+        else:
+            self.verbose_logger.info(message)
+            if self.gui and level != 'progress':
+                self.gui.log(message, level='verbose')
 
     def _is_valid_smash_file(self):
         """
@@ -44,10 +55,9 @@ class ProjectManager:
             self._log(f"  - HDF5 format error in {self.project_path}: {e}")
             return False
 
-    def create_or_open_project(self, phantom_name, frequency_mhz, placement_name=None, skip_load=False):
+    def create_or_open_project(self, phantom_name, frequency_mhz, placement_name=None):
         """
-        Creates or opens a project. Handles different naming conventions for
-        near-field and far-field studies.
+        Creates or opens a project based on the 'do_setup' execution control flag.
         """
         # Determine study type from the config filename
         if "near_field" in os.path.basename(self.config.config_path):
@@ -60,7 +70,6 @@ class ProjectManager:
 
         else:  # far_field
             study_dir = 'far_field'
-            # A project per phantom and frequency for far-field.
             project_dir = os.path.join(self.config.base_dir, 'results', study_dir, phantom_name.lower(), f"{frequency_mhz}MHz")
             project_filename = f"far_field_{phantom_name.lower()}_{frequency_mhz}MHz.smash"
 
@@ -68,22 +77,25 @@ class ProjectManager:
         self.project_path = os.path.join(project_dir, project_filename)
         self._log(f"Project path set to: {self.project_path}")
 
-        if skip_load:
+        do_setup = self.execution_control.get('do_setup', True)
+
+        if do_setup:
+            self._log("Execution control: 'do_setup' is true. Creating a new project.")
+            self.create_new()
+            self.save()
+        else:
+            self._log("Execution control: 'do_setup' is false. Attempting to open existing project.")
             if os.path.exists(self.project_path):
                 try:
                     self.open()
                 except ProjectCorruptionError:
-                    # Error is logged in open(), just ensure we don't proceed
                     if self.document and hasattr(self.document, 'IsOpen') and self.document.IsOpen():
                         self.document.Close()
+                    raise  # Re-raise the exception to halt the study
             else:
-                self._log(f"WARNING: Project file not found at {self.project_path}. Cannot open.")
-                if self.document and hasattr(self.document, 'IsOpen') and self.document.IsOpen():
-                    self.document.Close()
-        else:
-            # Always create a new project to avoid issues with corrupted files from previous runs.
-            self.create_new()
-            self.save()
+                error_msg = f"ERROR: 'do_setup' is false, but project file not found at {self.project_path}. Cannot proceed."
+                self._log(error_msg)
+                raise FileNotFoundError(error_msg)
 
     def create_new(self):
         """
@@ -108,14 +120,23 @@ class ProjectManager:
         """
         self._log(f"Validating project file: {self.project_path}")
         if not self._is_valid_smash_file():
-            self._log(f"ERROR: Project file {self.project_path} is corrupted. Skipping open.")
+            self._log(f"ERROR: Project file {self.project_path} is corrupted (h5py check).")
             raise ProjectCorruptionError(f"File is not a valid HDF5 file: {self.project_path}")
 
-        self._log(f"Opening project: {self.project_path}")
-        open_project(self.project_path)
-        # After opening, the document object is new, so we need to get a fresh reference
-        import s4l_v1.document
-        self.document = s4l_v1.document
+        self._log(f"Opening project with Sim4Life: {self.project_path}")
+        try:
+            open_project(self.project_path)
+            # After opening, the document object is new, so we need to get a fresh reference
+            import s4l_v1.document
+            self.document = s4l_v1.document
+        except Exception as e:
+            # Catching a broad exception because the underlying Sim4Life error is not specific
+            self._log(f"ERROR: Sim4Life failed to open project file, it is likely corrupted: {e}")
+            # Close the document if it was partially opened, to release locks
+            import s4l_v1.document
+            if s4l_v1.document and hasattr(s4l_v1.document, 'IsOpen') and s4l_v1.document.IsOpen():
+                s4l_v1.document.Close()
+            raise ProjectCorruptionError(f"Sim4Life could not open corrupted file: {self.project_path}")
 
     def save(self):
         """

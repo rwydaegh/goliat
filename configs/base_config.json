@@ -1,4 +1,9 @@
 {
+    "execution_control": {
+        "do_setup": true,
+        "do_run": true,
+        "do_extract": false
+    },
     "simulation_parameters": {
         "global_auto_termination": "GlobalAutoTerminationUserDefined",
         "convergence_level_dB": -15,

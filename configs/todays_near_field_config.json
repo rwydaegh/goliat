@@ -1,0 +1,45 @@
+{
+    "extends": "base_config.json",
+    "manual_isolve": true,
+    "simulation_parameters": {
+      "global_gridding": 3.0,
+      "number_of_point_sources": 2
+    },
+    "antenna_config": {
+      "700": {
+        "center_frequency": 700,
+        "target_power_mW": 267,
+        "model_type": "PIFA",
+        "source_name": "Lines 1",
+        "materials": {
+          "Extrude 1": "Copper",
+          "component1:Battery": "Copper",
+          "component1:Patch": "Copper",
+          "component1:ShortingPin": "Copper",
+          "component1:Substrate": "Rogers RT/duroid 5880"
+        },
+        "gridding": {
+          "automatic": ["component1:Substrate", "Lines 1"]
+        }
+      }
+    },
+    "placement_scenarios": {
+      "by_cheek": {
+        "positions": {
+          "base": [0, 0, 0]
+        },
+        "orientations": {
+          "base": [],
+          "up": [{"axis": "X", "angle_deg": 10}]
+        }
+      }
+    },
+    "phantoms": {
+      "thelonius": {
+        "placements": {
+          "do_by_cheek": true,
+          "distance_from_cheek": 8
+        }
+      }
+    }
+  }

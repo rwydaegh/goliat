@@ -2,6 +2,7 @@ import os
 import sys
 import subprocess
 import pkg_resources
+import logging
 
 def check_and_install_packages(requirements_path):
     """
@@ -18,13 +19,13 @@ def check_and_install_packages(requirements_path):
             missing_packages.append(package)
 
     if missing_packages:
-        print(f"Missing packages: {', '.join(missing_packages)}")
-        print("Installing missing packages...")
-        python_exe = r"C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe"
+        logging.getLogger('verbose').info(f"Missing packages: {', '.join(missing_packages)}")
+        logging.getLogger('verbose').info("Installing missing packages...")
+        python_exe = sys.executable
         subprocess.check_call([python_exe, '-m', 'pip', 'install', *missing_packages])
-        print("All missing packages installed.")
+        logging.getLogger('verbose').info("All missing packages installed.")
     else:
-        print("All required packages are already installed.")
+        logging.getLogger('verbose').info("All required packages are already installed.")
 
 def prepare_data(base_dir):
     """
@@ -34,25 +35,25 @@ def prepare_data(base_dir):
     
     data_dir = os.path.join(base_dir, 'data')
     if not os.path.exists(data_dir):
-        print("Data directory not found. Downloading and extracting data...")
+        logging.getLogger('verbose').info("Data directory not found. Downloading and extracting data...")
         download_and_extract_data(base_dir)
     else:
-        print("Data directory already exists. Skipping download.")
+        logging.getLogger('verbose').info("Data directory already exists. Skipping download.")
 
     centered_dir = os.path.join(data_dir, 'antennas', 'centered')
     if not os.path.exists(centered_dir) or not os.listdir(centered_dir):
-        print("Centered antenna directory is empty. Preparing antennas...")
+        logging.getLogger('verbose').info("Centered antenna directory is empty. Preparing antennas...")
         prepare_antennas_script = os.path.join(base_dir, 'scripts', 'prepare_antennas.py')
-        python_exe = r"C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe"
+        python_exe = sys.executable
         subprocess.run([python_exe, prepare_antennas_script], check=True)
     else:
-        print("Centered antennas already exist. Skipping preparation.")
+        logging.getLogger('verbose').info("Centered antennas already exist. Skipping preparation.")
 
 def run_full_startup(base_dir):
     """
     Runs all startup checks and preparations.
     """
-    print("--- Running Project Startup ---")
+    logging.getLogger('verbose').info("--- Running Project Startup ---")
     
     # 1. Install Packages
     requirements_path = os.path.join(base_dir, 'requirements.txt')
@@ -61,4 +62,4 @@ def run_full_startup(base_dir):
     # 2. Prepare Data
     prepare_data(base_dir)
     
-    print("--- Startup Complete ---")
+    logging.getLogger('verbose').info("--- Startup Complete ---")

@@ -1,31 +1,22 @@
 import numpy as np
+from .base_setup import BaseSetup
 
-class GriddingSetup:
-    def __init__(self, config, simulation, placement_name, antenna, verbose=True):
-        self.config = config
+class GriddingSetup(BaseSetup):
+    def __init__(self, config, simulation, placement_name, antenna, verbose_logger, progress_logger):
+        super().__init__(config, verbose_logger, progress_logger)
         self.simulation = simulation
         self.placement_name = placement_name
         self.antenna = antenna
-        self.verbose = verbose
         
-        import s4l_v1.model
-        import s4l_v1.simulation.emfdtd
         import s4l_v1.units
-
-        self.model = s4l_v1.model
-        self.emfdtd = s4l_v1.simulation.emfdtd
         self.units = s4l_v1.units
-
-    def _log(self, message):
-        if self.verbose:
-            print(message)
 
     def setup_gridding(self, antenna_components=None):
         """
         Sets up the gridding for the simulation. If antenna_components are provided,
         it will also set up the subgrids for the antenna.
         """
-        self._log("Setting up gridding...")
+        self._log("Setting up gridding...", level='verbose')
         self._setup_main_grid()
         if antenna_components:
             self._setup_subgrids(antenna_components)
@@ -59,7 +50,7 @@ class GriddingSetup:
         global_grid_res_mm = self.config.get_setting("simulation_parameters/global_gridding", 5.0)
 
         manual_grid_sim_bbox.MaxStep = np.array([global_grid_res_mm] * 3)
-        self._log(f"  - Global grid set with resolution {global_grid_res_mm} mm.")
+        self._log(f"  - Global grid set with resolution {global_grid_res_mm} mm.", level='verbose')
 
     def _setup_subgrids(self, antenna_components):
         # Antenna-specific gridding
@@ -91,8 +82,8 @@ class GriddingSetup:
                     geom_res = resolution.get(grid_type, [1.0, 1.0, 1.0])
                     
                     if self.placement_name == "by_cheek":
-                        oriented_res = [res[1], res[0], res[2]]
-                        oriented_geom_res = [geom_res[1], geom_res[0], geom_res[2]]
+                        oriented_res = [res, res, res]
+                        oriented_geom_res = [geom_res, geom_res, geom_res]
                     else:
                         oriented_res = res
                         oriented_geom_res = geom_res

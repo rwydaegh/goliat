@@ -9,8 +9,8 @@ class FarFieldSetup(BaseSetup):
     """
     Configures a single far-field simulation for a specific direction and polarization.
     """
-    def __init__(self, config, phantom_name, frequency_mhz, direction_name, polarization_name, project_manager, verbose=True):
-        super().__init__(config, verbose)
+    def __init__(self, config, phantom_name, frequency_mhz, direction_name, polarization_name, project_manager, verbose_logger, progress_logger):
+        super().__init__(config, verbose_logger, progress_logger)
         self.phantom_name = phantom_name
         self.frequency_mhz = frequency_mhz
         self.direction_name = direction_name
@@ -23,7 +23,7 @@ class FarFieldSetup(BaseSetup):
         """
         Executes the full sequence of setup steps for a single far-field simulation.
         """
-        self._log(f"--- Setting up single Far-Field sim ---")
+        self._log(f"--- Setting up single Far-Field sim ---", level='verbose')
         
         # The phantom is now loaded once per project in the study.
         # This setup will just add a simulation to the currently open project.
@@ -40,7 +40,7 @@ class FarFieldSetup(BaseSetup):
         Creates the EM FDTD simulation entity and its plane wave source.
         """
         sim_name = f"EM_FDTD_{self.phantom_name}_{self.frequency_mhz}MHz_{self.direction_name}_{self.polarization_name}"
-        self._log(f"  - Creating simulation: {sim_name}")
+        self._log(f"  - Creating simulation: {sim_name}", level='verbose')
         
         simulation = self.emfdtd.Simulation()
         simulation.Name = sim_name
@@ -82,10 +82,10 @@ class FarFieldSetup(BaseSetup):
         bbox_name = "far_field_simulation_bbox"
         existing_bbox = next((e for e in self.model.AllEntities() if hasattr(e, 'Name') and e.Name == bbox_name), None)
         if existing_bbox:
-            self._log("Found existing simulation bounding box.")
+            self._log("Found existing simulation bounding box.", level='verbose')
             return existing_bbox
 
-        self._log("Creating simulation bounding box for far-field...")
+        self._log("Creating simulation bounding box for far-field...", level='verbose')
         import XCoreModeling
         phantom_entities = [e for e in self.model.AllEntities() if isinstance(e, XCoreModeling.TriangleMesh)]
         if not phantom_entities:
@@ -100,19 +100,19 @@ class FarFieldSetup(BaseSetup):
 
         sim_bbox = XCoreModeling.CreateWireBlock(self.model.Vec3(sim_bbox_min), self.model.Vec3(sim_bbox_max))
         sim_bbox.Name = bbox_name
-        self._log(f"  - Created far-field simulation BBox with {padding_mm}mm padding.")
+        self._log(f"  - Created far-field simulation BBox with {padding_mm}mm padding.", level='verbose')
         return sim_bbox
 
     def _apply_common_settings(self, simulation):
         """
         Applies common material, gridding, and solver settings to the simulation.
         """
-        self._log(f"Applying common settings to {simulation.Name}...")
+        self._log(f"Applying common settings to {simulation.Name}...", level='verbose')
         
-        material_setup = MaterialSetup(self.config, simulation, None, self.verbose, free_space=False)
+        material_setup = MaterialSetup(self.config, simulation, None, self.verbose_logger, self.progress_logger, free_space=False)
         material_setup.assign_materials(phantom_only=True)
 
-        gridding_setup = GriddingSetup(self.config, simulation, None, None, self.verbose)
+        gridding_setup = GriddingSetup(self.config, simulation, None, None, self.verbose_logger, self.progress_logger)
         gridding_setup.setup_gridding()
 
         self._add_point_sensors(simulation, "far_field_simulation_bbox")
@@ -120,7 +120,7 @@ class FarFieldSetup(BaseSetup):
         self._setup_solver_settings(simulation)
 
         self._finalize_setup(simulation)
-        self._log("Common settings applied.")
+        self._log("Common settings applied.", level='verbose')
 
     def _finalize_setup(self, simulation):
         """

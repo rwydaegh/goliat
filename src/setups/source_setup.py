@@ -1,21 +1,15 @@
-class SourceSetup:
-    def __init__(self, config, simulation, frequency_mhz, antenna, verbose=True, free_space=False):
-        self.config = config
+from .base_setup import BaseSetup
+
+class SourceSetup(BaseSetup):
+    def __init__(self, config, simulation, frequency_mhz, antenna, verbose_logger, progress_logger, free_space=False):
+        super().__init__(config, verbose_logger, progress_logger)
         self.simulation = simulation
         self.frequency_mhz = frequency_mhz
         self.antenna = antenna
-        self.verbose = verbose
         self.free_space = free_space
         
-        import s4l_v1.simulation.emfdtd
         import s4l_v1.units
-
-        self.emfdtd = s4l_v1.simulation.emfdtd
         self.units = s4l_v1.units
-
-    def _log(self, message):
-        if self.verbose:
-            print(message)
 
     def setup_source_and_sensors(self, antenna_components):
         """

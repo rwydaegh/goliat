@@ -1,10 +1,10 @@
 import os
+from .base_setup import BaseSetup
 
-class PhantomSetup:
-    def __init__(self, config, phantom_name, verbose=True):
-        self.config = config
+class PhantomSetup(BaseSetup):
+    def __init__(self, config, phantom_name, verbose_logger, progress_logger):
+        super().__init__(config, verbose_logger, progress_logger)
         self.phantom_name = phantom_name
-        self.verbose = verbose
         
         import s4l_v1.model
         import s4l_v1.data
@@ -15,8 +15,7 @@ class PhantomSetup:
         self.XCoreModeling = XCoreModeling
 
     def _log(self, message):
-        if self.verbose:
-            print(message)
+        self.verbose_logger.info(message)
 
     def ensure_phantom_is_loaded(self):
         """

@@ -1,30 +1,35 @@
 import numpy as np
+import logging
 
 class BaseSetup:
     """
     Abstract base class for all simulation setups (Near-Field, Far-Field).
     """
-    def __init__(self, config, verbose=True):
+    def __init__(self, config, verbose_logger, progress_logger):
         """
         Initializes the base setup.
         
         Args:
             config (Config): The configuration object for the study.
-            verbose (bool): Flag to enable/disable detailed logging.
+            verbose_logger (logging.Logger): Logger for verbose output.
+            progress_logger (logging.Logger): Logger for progress updates.
         """
         self.config = config
-        self.verbose = verbose
+        self.verbose_logger = verbose_logger
+        self.progress_logger = progress_logger
         import s4l_v1
         self.s4l_v1 = s4l_v1
         self.emfdtd = self.s4l_v1.simulation.emfdtd
         self.model = self.s4l_v1.model
 
-    def _log(self, message):
+    def _log(self, message, level='verbose'):
         """
-        Prints a message to the console if verbose mode is enabled.
+        Logs a message to the appropriate logger.
         """
-        if self.verbose:
-            print(message)
+        if level == 'progress':
+            self.progress_logger.info(message)
+        else:
+            self.verbose_logger.info(message)
 
     def _apply_simulation_time_and_termination(self, simulation, sim_bbox_entity, frequency_mhz):
         """
@@ -67,14 +72,16 @@ class BaseSetup:
         solver = simulation.SolverSettings
 
         # Setup Kernel
-        kernel_type = solver_settings.get("kernel", "CUDA")
-        kernel_enum = solver.Kernel.enum
-        kernel_to_set = next((k.name for k in kernel_enum if k.name.lower() == kernel_type.lower()), None)
-        if kernel_to_set:
-            solver.Kernel = getattr(kernel_enum, kernel_to_set)
-            self._log(f"    - Solver kernel set to: {kernel_to_set}")
+        kernel_type = solver_settings.get("kernel", "CUDA").lower()
+        
+        if kernel_type == "acceleware":
+            solver.Kernel = solver.Kernel.enum.AXware
+            self._log(f"    - Solver kernel set to: AXware")
+        elif kernel_type == "cuda":
+            solver.Kernel = solver.Kernel.enum.Cuda
+            self._log(f"    - Solver kernel set to: Cuda")
         else:
-            self._log(f"    - Warning: Invalid solver kernel '{kernel_type}'. Using default.")
+            self._log(f"    - Warning: Unknown solver kernel '{kernel_type}'. Using default (Software).", level='progress')
 
         # Setup Boundary Conditions
         excitation_type = self.config.get_excitation_type()
@@ -126,14 +133,14 @@ class BaseSetup:
         bbox_min, bbox_max = self.model.GetBoundingBox([sim_bbox_entity])
         
         corner_map = {
-            "lower_left_bottom": (bbox_min[0], bbox_min[1], bbox_min[2]),
-            "lower_right_bottom": (bbox_max[0], bbox_min[1], bbox_min[2]),
-            "lower_left_up": (bbox_min[0], bbox_max[1], bbox_min[2]),
-            "lower_right_up": (bbox_max[0], bbox_max[1], bbox_min[2]),
-            "top_left_bottom": (bbox_min[0], bbox_min[1], bbox_max[2]),
-            "top_right_bottom": (bbox_max[0], bbox_min[1], bbox_max[2]),
-            "top_left_up": (bbox_min[0], bbox_max[1], bbox_max[2]),
-            "top_right_up": (bbox_max[0], bbox_max[1], bbox_max[2])
+            "lower_left_bottom": (bbox_min, bbox_min, bbox_min),
+            "lower_right_bottom": (bbox_max, bbox_min, bbox_min),
+            "lower_left_up": (bbox_min, bbox_max, bbox_min),
+            "lower_right_up": (bbox_max, bbox_max, bbox_min),
+            "top_left_bottom": (bbox_min, bbox_min, bbox_max),
+            "top_right_bottom": (bbox_max, bbox_min, bbox_max),
+            "top_left_up": (bbox_min, bbox_max, bbox_max),
+            "top_right_up": (bbox_max, bbox_max, bbox_max)
         }
 
         point_source_order = self.config.get_setting("simulation_parameters/point_source_order", list(corner_map.keys()))

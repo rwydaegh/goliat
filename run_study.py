@@ -1,15 +1,18 @@
 import argparse
 import os
 import sys
+import multiprocessing
 
 # Ensure the project root directory is in the Python path
 base_dir = os.path.dirname(os.path.abspath(__file__))
 if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
-from src.studies.near_field_study import NearFieldStudy
-from src.studies.far_field_study import FarFieldStudy
 from src.startup import run_full_startup
+from src.gui_manager import ProgressGUI
+from PySide6.QtWidgets import QApplication
+from src.logging_manager import setup_loggers, shutdown_loggers
+import atexit
 
 def main():
     """
@@ -28,38 +31,48 @@ def main():
         help="Skip the startup checks for dependencies and data."
     )
     parser.add_argument(
-        '--verbose',
+        '--no-gui',
         action='store_true',
-        help="Enable detailed logging output."
+        help="Run the study without the GUI."
     )
     parser.add_argument(
-        '--setup-only',
-        action='store_true',
-        help="Only run the setup phase, do not run the simulation."
-    )
-    parser.add_argument(
-        '--extract-only',
-        action='store_true',
-        help="Only run the extraction phase, skipping setup and simulation."
+        '--config',
+        type=str,
+        default=None,
+        help="Path to a custom configuration file."
     )
 
     args = parser.parse_args()
 
+    config_filename = args.config if args.config else f"{args.study_type}_config.json"
+
+    # Setup logging and ensure it's shut down on exit
+    setup_loggers()
+    atexit.register(shutdown_loggers)
+
     if not args.skip_startup:
         run_full_startup(base_dir)
 
-    if args.study_type == 'near_field':
-        config_file = "near_field_config.json"
-        study = NearFieldStudy(config_filename=config_file, verbose=args.verbose)
-    elif args.study_type == 'far_field':
-        config_file = "far_field_config.json"
-        study = FarFieldStudy(config_filename=config_file, verbose=args.verbose)
+    if not args.no_gui:
+        # The GUI now handles the study execution in a separate process
+        app = QApplication(sys.argv)
+        # The GUI needs to be updated to handle the custom config path
+        # For now, we assume it will use the default if args.config is None
+        gui = ProgressGUI(args.study_type, config_filename=config_filename)
+        gui.show()
+        sys.exit(app.exec())
     else:
-        # This case should not be reachable due to 'choices' in argparse
-        print(f"Error: Unknown study type '{args.study_type}'")
-        sys.exit(1)
-        
-    study.run(setup_only=args.setup_only, extract_only=args.extract_only)
+        # For command-line execution, run the study directly
+        if args.study_type == 'near_field':
+            from src.studies.near_field_study import NearFieldStudy
+            study = NearFieldStudy(config_filename=config_filename, verbose=True)
+            study.run()
+        elif args.study_type == 'far_field':
+            from src.studies.far_field_study import FarFieldStudy
+            study = FarFieldStudy(config_filename=config_filename, verbose=True)
+            study.run()
 
 if __name__ == "__main__":
+    # This is crucial for multiprocessing to work correctly on Windows
+    multiprocessing.freeze_support()
     main()

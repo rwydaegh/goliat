@@ -1,0 +1,17 @@
+{
+    "phase_weights": {
+        "setup": 0.299,
+        "run": 0.596,
+        "extract": 0.105
+    },
+    "subtask_estimates": {
+        "setup_simulation": 27.765500000095926,
+        "run_write_input_file": 18.984999999869615,
+        "run_isolve_execution": 0.28100000019185245,
+        "run_wait_for_results": 5.031500000040978,
+        "run_reload_project": 13.077999999979511,
+        "run_simulation_total": 62.21849999995902,
+        "extract_input_power": 0.47915148735046387,
+        "extract_sar_statistics": 4.096198797225952
+    }
+}

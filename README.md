@@ -30,6 +30,9 @@ The framework is built on a modular, class-based architecture designed for flexi
 -   **`ProjectManager`**: Handles the lifecycle of the Sim4Life (`.smash`) project file.
 -   **`SimulationRunner`**: Manages the execution of the simulation, with support for the Sim4Life API or the standalone `iSolve.exe` solver.
 -   **`ResultsExtractor`**: Handles post-processing, extracting raw data, calculating statistics, and saving reports. It is designed to handle the different outputs from near-field and far-field simulations.
+-   **`GUIManager`**: Provides a real-time progress GUI using PySide6, allowing users to monitor study progress, view logs, and cancel the execution.
+-   **`LoggingManager`**: Sets up and manages file-based and console logging for diagnostics and progress tracking.
+-   **`Profiler`**: A utility class within `utils.py` that tracks execution time, learns from past runs, and provides accurate ETA estimates for the study.
 
 This separation of concerns allows for easy extension and maintenance of the codebase.
 
@@ -63,6 +66,8 @@ The project is organized into a modular and scalable structure:
 │   │   └── far_field_study.py
 │   ├── antenna.py
 │   ├── config.py
+│   ├── gui_manager.py
+│   ├── logging_manager.py
 │   ├── project_manager.py
 │   ├── results_extractor.py
 │   ├── simulation_runner.py
@@ -88,30 +93,40 @@ Ensure you have **Sim4Life v8.2 or later** installed and licensed.
 
 ### Running a Study
 
-To run a simulation campaign, execute the main script with the desired study type.
+To run a simulation campaign, execute the `run_study.py` script. By default, this will launch an interactive GUI.
 
-*Note: These commands require the Sim4Life Python interpreter. If the `python` command on your system does not point to it, you must use the full path to the interpreter.*
-
-**Run a near-field study:**
-```bash
-python run_study.py near_field
-```
-
-**Run a far-field study:**
+**Example:**
 ```bash
 python run_study.py far_field
 ```
 
-If needed, use the full path to the interpreter:
+This command starts the far-field study and opens the GUI, which provides:
+- Real-time progress bars for the overall study and current stage.
+- Detailed logs for both progress and verbose diagnostics.
+- An estimated time remaining (ETA) for the entire study.
+- A "Cancel" button to gracefully stop the execution.
+
+#### Command-Line Operation
+
+For headless operation or scripting, use the `--no-gui` flag. You can also specify a custom configuration file.
+
+**Run without GUI:**
 ```bash
-"C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe" run_study.py far_field
+python run_study.py far_field --no-gui
 ```
+
+**Run with a custom configuration:**
+```bash
+python run_study.py far_field --config "configs/todays_far_field_config.json"
+```
+
+*Note: These commands require the Sim4Life Python interpreter. If the `python` command on your system does not point to it, you must use the full path to the interpreter, e.g., `"C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe" run_study.py far_field`.*
 
 The script will automatically perform all necessary setup steps:
 1.  **Install Dependencies**: Checks and installs missing Python packages from `requirements.txt`.
 2.  **Download Data**: Downloads and extracts required data (phantoms, antennas) into the `data/` directory.
 3.  **Prepare Antennas**: Processes raw antenna models for simulation.
-4.  **Run Simulations**: Proceeds with the full simulation campaign as defined in the specified configuration file.
+4.  **Run Simulations**: Proceeds with the full simulation campaign as defined in the configuration file. The execution flow (setup, run, extract) is controlled by the `"execution_control"` block in `configs/base_config.json`.
 
 ### Analyzing Results
 
@@ -142,8 +157,11 @@ The simulation is controlled by JSON files located in the `configs/` directory.
 
 ### Key Configuration Parameters
 
+-   `"execution_control"`: (object) A block in `configs/base_config.json` that controls which major phases of the study are executed.
+    -   `"do_setup"`: (boolean) If `true`, the framework will set up the simulation scene, creating the necessary geometries, sources, and simulation objects.
+    -   `"do_run"`: (boolean) If `true`, the framework will execute the simulation(s).
+    -   `"do_extract"`: (boolean) If `true`, the framework will run the post-processing and extract results from the completed simulation(s).
 -   `"manual_isolve"`: (boolean) Set to `true` to run the simulation using the standalone `iSolve.exe` solver instead of the integrated Sim4Life solver. This is useful for running on machines without a full Sim4Life UI license.
--   `"excitation_type"`: (string) The type of signal used to excite the antenna (e.g., `"Gaussian"`, `"Harmonic"`).
 -   See the respective `_config.json` files for domain-specific parameters.
 
 ## 6. Roadmap & Future Features

@@ -2,6 +2,8 @@ import os
 import re
 import json
 import pickle
+import logging
+import traceback
 import pandas as pd
 import numpy as np
 
@@ -9,15 +11,18 @@ class ResultsExtractor:
     """
     Handles all post-processing and data extraction tasks.
     """
-    def __init__(self, config, simulation, phantom_name, frequency_mhz, placement_name, study_type, verbose=True, free_space=False):
+    def __init__(self, config, simulation, phantom_name, frequency_mhz, placement_name, study_type, verbose_logger, progress_logger, free_space=False, gui=None, study=None):
         self.config = config
         self.simulation = simulation
         self.phantom_name = phantom_name
         self.frequency_mhz = frequency_mhz
         self.placement_name = placement_name
         self.study_type = study_type
-        self.verbose = verbose
+        self.verbose_logger = verbose_logger
+        self.progress_logger = progress_logger
         self.free_space = free_space
+        self.gui = gui
+        self.study = study
         
         import s4l_v1.document
         import s4l_v1.analysis
@@ -26,9 +31,15 @@ class ResultsExtractor:
         self.analysis = s4l_v1.analysis
         self.units = units
 
-    def _log(self, message):
-        if self.verbose:
-            print(message)
+    def _log(self, message, level='verbose'):
+        if level == 'progress':
+            self.progress_logger.info(message)
+            if self.gui:
+                self.gui.log(message, level='progress')
+        else:
+            self.verbose_logger.info(message)
+            if self.gui and level != 'progress':
+                self.gui.log(message, level='verbose')
 
     def extract(self):
         """
@@ -43,10 +54,14 @@ class ResultsExtractor:
         simulation_extractor = self.simulation.Results()
 
         # Extract Input Power
+        if self.gui:
+            self.gui.update_stage_progress("Extracting Power", 50, 100)
         self._extract_input_power(simulation_extractor, results_data)
 
         # Extract SAR Statistics
         if not self.free_space:
+            if self.gui:
+                self.gui.update_stage_progress("Extracting SAR", 100, 100)
             self._extract_sar_statistics(simulation_extractor, results_data)
         else:
             self._log("  - Skipping SAR statistics for free-space simulation.")
@@ -65,6 +80,7 @@ class ResultsExtractor:
     def _extract_input_power(self, simulation_extractor, results_data):
         """Extracts the input power from the simulation."""
         self._log("  - Extracting input power...")
+        self.study.profiler.start_subtask("extract_input_power")
         try:
             input_power_extractor = simulation_extractor["Input Power"]
             self.document.AllAlgorithms.Add(input_power_extractor)
@@ -114,11 +130,16 @@ class ResultsExtractor:
                     else:
                         self._log("  - WARNING: Could not extract input power values.")
         except Exception as e:
-            self._log(f"  - ERROR: An exception occurred during input power extraction: {e}")
+            self._log(f"  - ERROR: An exception occurred during input power extraction: {e}", level='progress')
+            traceback.print_exc()
+        finally:
+            elapsed = self.study.profiler.end_subtask()
+            self._log(f"  - Input power extraction took {elapsed:.2f}s", level='progress')
 
     def _extract_sar_statistics(self, simulation_extractor, results_data):
         """Extracts SAR statistics for all tissues."""
         self._log("  - Extracting SAR statistics for all tissues...")
+        self.study.profiler.start_subtask("extract_sar_statistics")
         try:
             em_sensor_extractor = simulation_extractor["Overall Field"]
             em_sensor_extractor.FrequencySettings.ExtractedFrequency = u"All"
@@ -133,13 +154,25 @@ class ResultsExtractor:
             self.document.AllAlgorithms.Add(sar_stats_evaluator)
             sar_stats_evaluator.Update()
 
-            stats_output = sar_stats_evaluator.Outputs[0]
-            results = stats_output.Data
+            stats_output = sar_stats_evaluator.Outputs
+            self._log(f"  - DEBUG: stats_output type: {type(stats_output)}")
+            self._log(f"  - DEBUG: stats_output attributes: {dir(stats_output)}")
+            
+            results = None
+            if len(stats_output) > 0:
+                # The results are in the first output port of the evaluator
+                results_wrapper = stats_output.item_at(0)
+                if hasattr(results_wrapper, 'Data'):
+                    results = results_wrapper.Data
+                else:
+                    self._log("  - ERROR: AlgorithmOutput object does not have a .Data attribute.")
+            else:
+                self._log("  - ERROR: No output ports found in the SAR Statistics Evaluator.")
 
             # IMPORTANT: Clean up the algorithm to avoid issues when processing multiple simulations in the same project
             self.document.AllAlgorithms.Remove(sar_stats_evaluator)
 
-            if not (results and results.NumberOfRows() > 0 and results.NumberOfColumns() > 0):
+            if not (results and hasattr(results, 'NumberOfRows') and results.NumberOfRows() > 0 and results.NumberOfColumns() > 0):
                 self._log("  - WARNING: No SAR statistics data found.")
                 return
 
@@ -167,18 +200,22 @@ class ResultsExtractor:
                 mass_averaged_sar = all_regions_row['Mass-Averaged SAR'].iloc[0]
                 if self.study_type == 'near_field':
                     sar_key = 'head_SAR' if self.placement_name.lower() in ['front_of_eyes', 'by_cheek'] else 'trunk_SAR'
-                    results_data[sar_key] = mass_averaged_sar
+                    results_data[sar_key] = float(mass_averaged_sar)
                 else:
-                    results_data['whole_body_sar'] = mass_averaged_sar
+                    results_data['whole_body_sar'] = float(mass_averaged_sar)
 
                 peak_sar_col_name = 'Peak Spatial-Average SAR[IEEE/IEC62704-1] (10g)'
                 if peak_sar_col_name in all_regions_row.columns:
-                    results_data['peak_sar_10g_W_kg'] = all_regions_row[peak_sar_col_name].iloc[0]
+                    results_data['peak_sar_10g_W_kg'] = float(all_regions_row[peak_sar_col_name].iloc[0])
 
             self._save_reports(df, tissue_groups, group_sar_stats, results_data)
 
         except Exception as e:
-            self._log(f"  - ERROR: An unexpected error during all-tissue SAR statistics extraction: {e}")
+            self._log(f"  - ERROR: An unexpected error during all-tissue SAR statistics extraction: {e}", level='progress')
+            traceback.print_exc()
+        finally:
+            elapsed = self.study.profiler.end_subtask()
+            self._log(f"  - SAR statistics extraction took {elapsed:.2f}s", level='progress')
 
     def _define_tissue_groups(self, available_tissues):
         """Defines tissue groups based on keywords."""

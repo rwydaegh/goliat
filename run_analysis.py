@@ -2,10 +2,13 @@ import os
 import argparse
 import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend before importing pyplot
+import logging
 
 from src.config import Config
 from src.analysis.analyzer import Analyzer
 from src.analysis.strategies import NearFieldAnalysisStrategy, FarFieldAnalysisStrategy
+from src.logging_manager import setup_loggers, shutdown_loggers
+import atexit
 
 def main():
     """
@@ -16,12 +19,16 @@ def main():
     parser.add_argument('--config', type=str, required=True, help="Path to the configuration file.")
     args = parser.parse_args()
 
+    # Setup logging and ensure it's shut down on exit
+    setup_loggers()
+    atexit.register(shutdown_loggers)
+
     base_dir = os.path.abspath(os.path.dirname(__file__))
     config = Config(base_dir, config_filename=args.config)
     
     phantoms = config.get_setting('phantoms', [])
     if not phantoms:
-        print("No phantoms found in the configuration file.")
+        logging.getLogger('progress').error("No phantoms found in the configuration file.")
         return
 
     for phantom_name in phantoms:

@@ -1,14 +1,14 @@
 import os
 import numpy as np
+from .base_setup import BaseSetup
 
-class PlacementSetup:
-    def __init__(self, config, phantom_name, frequency_mhz, placement_name, antenna, verbose=True, free_space=False):
-        self.config = config
+class PlacementSetup(BaseSetup):
+    def __init__(self, config, phantom_name, frequency_mhz, placement_name, antenna, verbose_logger, progress_logger, free_space=False):
+        super().__init__(config, verbose_logger, progress_logger)
         self.phantom_name = phantom_name
         self.frequency_mhz = frequency_mhz
         self.placement_name = placement_name
         self.antenna = antenna
-        self.verbose = verbose
         self.free_space = free_space
 
         # Parse the detailed placement name, e.g., "front_of_eyes_center_vertical"
@@ -42,17 +42,8 @@ class PlacementSetup:
             self.position_name = "default"
             self.orientation_name = "default"
         
-        import s4l_v1.model
-        import XCoreModeling
         import XCoreMath
-
-        self.model = s4l_v1.model
-        self.XCoreModeling = XCoreModeling
         self.XCoreMath = XCoreMath
-
-    def _log(self, message):
-        if self.verbose:
-            print(message)
 
     def place_antenna(self):
         """

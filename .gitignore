@@ -12,3 +12,4 @@ __pycache__/
 .DS_Store
 # Temporary Excel files
 ~$*.xlsx
+logs/

@@ -5,30 +5,17 @@
         "thelonius"
     ],
     "frequencies_mhz": [
-        450,
-        700,
-        835,
-        1450,
-        2140,
-        2450,
-        3500,
-        5200,
-        5800
+        450
     ],
     "far_field_setup": {
         "type": "environmental",
         "environmental": {
             "incident_directions": [
                 "x_pos",
-                "x_neg",
-                "y_pos",
-                "y_neg",
-                "z_pos",
-                "z_neg"
+                "y_pos"
             ],
             "polarizations": [
-                "theta",
-                "phi"
+                "theta"
             ]
         },
         "auto_induced": {

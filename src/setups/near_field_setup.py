@@ -13,8 +13,8 @@ class NearFieldSetup(BaseSetup):
     Configures the entire simulation environment within Sim4Life by coordinating
     specialized setup modules.
     """
-    def __init__(self, config, phantom_name, frequency_mhz, placement_name, antenna, verbose=True, free_space=False):
-        super().__init__(config, verbose)
+    def __init__(self, config, phantom_name, frequency_mhz, placement_name, antenna, verbose_logger, progress_logger, free_space=False):
+        super().__init__(config, verbose_logger, progress_logger)
         self.phantom_name = phantom_name
         self.frequency_mhz = frequency_mhz
         self.placement_name = placement_name
@@ -35,25 +35,21 @@ class NearFieldSetup(BaseSetup):
         self.document = self.s4l_v1.document
         self.XCoreModeling = XCoreModeling
 
-    def _log(self, message):
-        if self.verbose:
-            print(message)
-
     def run_full_setup(self, project_manager):
         """
         Executes the full sequence of setup steps.
         """
-        self._log("Running full simulation setup...")
+        self._log("Running full simulation setup...", 'progress')
 
         # Create or open the project file. This is the first step.
         project_manager.create_or_open_project(self.phantom_name, self.frequency_mhz, self.placement_name)
         
         if not self.free_space:
-            phantom_setup = PhantomSetup(self.config, self.phantom_name, self.verbose)
+            phantom_setup = PhantomSetup(self.config, self.phantom_name, self.verbose_logger, self.progress_logger)
             phantom_setup.ensure_phantom_is_loaded()
             self._setup_bounding_boxes()
 
-        placement_setup = PlacementSetup(self.config, self.phantom_name, self.frequency_mhz, self.placement_name, self.antenna, self.verbose, self.free_space)
+        placement_setup = PlacementSetup(self.config, self.phantom_name, self.frequency_mhz, self.placement_name, self.antenna, self.verbose_logger, self.progress_logger, self.free_space)
         placement_setup.place_antenna()
 
         self._create_simulation_bbox()
@@ -62,13 +58,13 @@ class NearFieldSetup(BaseSetup):
         
         antenna_components = self._get_antenna_components()
 
-        material_setup = MaterialSetup(self.config, simulation, self.antenna, self.verbose, self.free_space)
+        material_setup = MaterialSetup(self.config, simulation, self.antenna, self.verbose_logger, self.progress_logger, self.free_space)
         material_setup.assign_materials(antenna_components)
 
-        gridding_setup = GriddingSetup(self.config, simulation, self.placement_name, self.antenna, self.verbose)
+        gridding_setup = GriddingSetup(self.config, simulation, self.placement_name, self.antenna, self.verbose_logger, self.progress_logger)
         gridding_setup.setup_gridding(antenna_components)
 
-        source_setup = SourceSetup(self.config, simulation, self.frequency_mhz, self.antenna, self.verbose, self.free_space)
+        source_setup = SourceSetup(self.config, simulation, self.frequency_mhz, self.antenna, self.verbose_logger, self.progress_logger, self.free_space)
         source_setup.setup_source_and_sensors(antenna_components)
 
         sim_bbox_name = f"{self.placement_name.lower()}_simulation_bbox"
@@ -76,7 +72,7 @@ class NearFieldSetup(BaseSetup):
 
         self._finalize_setup(simulation, antenna_components)
         
-        self._log("Full simulation setup complete.")
+        self._log("Full simulation setup complete.", 'progress')
         return simulation
 
     def _get_antenna_components(self):
@@ -109,7 +105,7 @@ class NearFieldSetup(BaseSetup):
         """
         Creates the head and trunk bounding boxes.
         """
-        self._log("Setting up bounding boxes...")
+        self._log("Setting up bounding boxes...", 'verbose')
         all_entities = self.model.AllEntities()
         
         phantom_config = self.config.get_phantom_config(self.phantom_name.lower())
@@ -121,7 +117,7 @@ class NearFieldSetup(BaseSetup):
         
         entities_to_delete = [e for e in all_entities if hasattr(e, 'Name') and e.Name in [head_bbox_name, trunk_bbox_name]]
         for entity in entities_to_delete:
-            self._log(f"  - Deleting existing entity: {entity.Name}")
+            self._log(f"  - Deleting existing entity: {entity.Name}", 'verbose')
             entity.Delete()
         
         all_entities = self.model.AllEntities()
@@ -142,7 +138,7 @@ class NearFieldSetup(BaseSetup):
         head_bbox_max_vec = self.model.Vec3(head_x_max, bbox_max[1], bbox_max[2])
         head_bbox = self.XCoreModeling.CreateWireBlock(head_bbox_min_vec, head_bbox_max_vec)
         head_bbox.Name = head_bbox_name
-        self._log("  - Head BBox created.")
+        self._log("  - Head BBox created.", 'verbose')
 
         # Trunk BBox
         trunk_z_sep = phantom_config['trunk_z_separation']
@@ -151,7 +147,7 @@ class NearFieldSetup(BaseSetup):
         trunk_bbox_max_vec = self.model.Vec3(bbox_max[0], chest_y_ext, head_y_sep)
         trunk_bbox = self.XCoreModeling.CreateWireBlock(trunk_bbox_min_vec, trunk_bbox_max_vec)
         trunk_bbox.Name = trunk_bbox_name
-        self._log("  - Trunk BBox created.")
+        self._log("  - Trunk BBox created.", 'verbose')
 
     def _create_simulation_bbox(self):
         if self.free_space:
@@ -162,7 +158,7 @@ class NearFieldSetup(BaseSetup):
             sim_bbox_max = np.array(antenna_bbox_max) + np.array(expansion)
             sim_bbox = self.XCoreModeling.CreateWireBlock(self.model.Vec3(sim_bbox_min), self.model.Vec3(sim_bbox_max))
             sim_bbox.Name = "freespace_simulation_bbox"
-            self._log(f"  - Created free-space simulation BBox.")
+            self._log(f"  - Created free-space simulation BBox.", 'verbose')
         else:
             antenna_bbox_entity = next((e for e in self.model.AllEntities() if hasattr(e, 'Name') and "Antenna bounding box" in e.Name), None)
             if self.base_placement_name in ['front_of_eyes', 'by_cheek']:
@@ -175,13 +171,13 @@ class NearFieldSetup(BaseSetup):
             combined_bbox_min, combined_bbox_max = self.model.GetBoundingBox([bbox_to_combine, antenna_bbox_entity])
             sim_bbox = self.XCoreModeling.CreateWireBlock(combined_bbox_min, combined_bbox_max)
             sim_bbox.Name = f"{self.placement_name.lower()}_simulation_bbox"
-            self._log(f"  - Combined BBox created for {self.placement_name}.")
+            self._log(f"  - Combined BBox created for {self.placement_name}.", 'verbose')
 
     def _setup_simulation_entity(self):
         """
         Creates and configures the base EM-FDTD simulation entity.
         """
-        self._log("Setting up simulation entity...")
+        self._log("Setting up simulation entity...", 'verbose')
         
         if self.document.AllSimulations:
             for sim in list(self.document.AllSimulations):

@@ -10,7 +10,7 @@ The initial analysis reveals a strong dependency of the Specific Absorption Rate
 
 In the "by_belly" scenario, where the device is positioned near the abdomen, the trunk absorbs the majority of the radiated energy. The frequency response, however, is not linear. As shown below, the average trunk SAR peaks at **1450 MHz**, reaching 1.18 mW/kg. This suggests a potential resonant effect between the device and the torso at this frequency.
 
-![Average Normalized SAR for Scenario: by_belly](plots/average_sar_bar_by_belly.png)
+![Average Normalized SAR for Scenario: by_belly](./plots/average_sar_bar_by_belly.png)
 
 ### 1.2. The "Front of Eyes" Scenario: A 700 MHz Hotspot
 
@@ -18,7 +18,7 @@ The "front_of_eyes" scenario presents a more alarming picture. The head is the p
 
 Equally intriguing is the sharp dip in head SAR at 835 MHz. This dramatic drop suggests a complex interaction between the antenna's radiation pattern and the head's anatomy at this specific frequency, which could be a key area for future mitigation studies.
 
-![Average Normalized SAR for Scenario: front_of_eyes](plots/average_sar_bar_front_of_eyes.png)
+![Average Normalized SAR for Scenario: front_of_eyes](./plots/average_sar_bar_front_of_eyes.png)
 
 ### 1.3. Localized SAR (psSAR10g) Distributions: The Story of the Outliers
 
@@ -26,12 +26,12 @@ The boxplots showing the distribution of 10-gram peak spatial-average SAR (psSAR
 
 For the **brain** in the "front_of_eyes" scenario, while the median SAR is modest, the presence of extreme outliers at 700 MHz (reaching up to 80 mW/kg) is a major concern. This indicates that specific device orientations can lead to exceptionally high localized SAR values, far exceeding the average. A similar, though less extreme, pattern is visible for the **eyes**.
 
-![Distribution of Normalized psSAR10g Brain for Scenario: front_of_eyes](plots/boxplot_psSAR10g_brain_front_of_eyes.png)
-![Distribution of Normalized psSAR10g Eyes for Scenario: front_of_eyes](plots/boxplot_psSAR10g_eyes_front_of_eyes.png)
+![Distribution of Normalized psSAR10g Brain for Scenario: front_of_eyes](./plots/boxplot_psSAR10g_brain_front_of_eyes.png)
+![Distribution of Normalized psSAR10g Eyes for Scenario: front_of_eyes](./plots/boxplot_psSAR10g_eyes_front_of_eyes.png)
 
 In the "by_belly" scenario, the **skin** is the most affected tissue, with a broad peak in psSAR10g between 1450 MHz and 2450 MHz. The wide distribution and numerous outliers suggest a high sensitivity to the precise placement of the device on the torso.
 
-![Distribution of Normalized psSAR10g Skin for Scenario: by_belly](plots/boxplot_psSAR10g_skin_by_belly.png)
+![Distribution of Normalized psSAR10g Skin for Scenario: by_belly](./plots/boxplot_psSAR10g_skin_by_belly.png)
 
 ### 1.4. The Critical Role of Antenna Technology
 
@@ -64,8 +64,8 @@ The initial findings, while informative, naturally lead to a series of deeper qu
 
 The line plots of average psSAR10g provide a dynamic view of how different tissues are affected across the frequency spectrum.
 
-![Average Normalized psSAR10g for Scenario: front_of_eyes](plots/pssar10g_line_front_of_eyes.png)
-![Average Normalized psSAR10g for Scenario: by_belly](plots/pssar10g_line_by_belly.png)
+![Average Normalized psSAR10g for Scenario: front_of_eyes](./plots/pssar10g_line_front_of_eyes.png)
+![Average Normalized psSAR10g for Scenario: by_belly](./plots/pssar10g_line_by_belly.png)
 
 In the "front_of_eyes" scenario, the brain, eyes, and skin all show significant exposure, with their relative contributions changing with frequency. In contrast, for the "by_belly" scenario, the "Eyes" data line disappears for frequencies above 1450 MHz. A deep code audit revealed the precise cause: for these simulations, the SAR in the eye tissues is so negligible that the simulation solver does not record any values for them. The data extraction script (`results_extractor.py`) correctly finds no eye tissues to process and, as a result, does not create an "eyes_group" entry in the output file. When the data is later compiled, these missing entries are represented as `NaN` (Not a Number), causing the plotting library to stop drawing the line. This is not a bug, but rather a feature of the data pipeline that confirms the SAR in the eyes is effectively zero in these scenarios.
 
@@ -73,8 +73,8 @@ In the "front_of_eyes" scenario, the brain, eyes, and skin all show significant 
 
 A visual comparison of the two primary heatmaps reveals the crucial difference between peak and average SAR.
 
-![Peak Spatial-Average SAR 10g (mW/kg)](plots/heatmap_pssar10g_summary.png)
-![Min, Avg, and Max SAR (mW/kg) per Tissue](plots/heatmap_sar_summary.png)
+![Peak Spatial-Average SAR 10g (mW/kg)](./plots/heatmap_pssar10g_summary.png)
+![Min, Avg, and Max SAR (mW/kg) per Tissue](./plots/heatmap_sar_summary.png)
 
 The `psSAR10g` heatmap (left) appears "noisy" or "speckled." This is because `psSAR10g` is, by definition, a measure of the **highest SAR value in a small, localized 10-gram volume of tissue**. It is highly sensitive to local "hotspots," causing individual tissue values to vary dramatically.
 
@@ -90,7 +90,7 @@ Our analysis reveals a strong, predictive linear relationship between the overal
 
 This model has a high coefficient of determination (R² = 0.9783), indicating that it explains over 97% of the variance in the data. This strong linear fit, visualized below, provides a powerful predictive tool. For a given average head SAR, we can now reliably estimate the peak SAR in the eyes, a critical organ for dosimetric assessment.
 
-![Correlation between Head SAR and Eye psSAR10g with Linear Fit](plots/correlation_head_vs_eye_sar.png)
+![Correlation between Head SAR and Eye psSAR10g with Linear Fit](./plots/correlation_head_vs_eye_sar.png)
 
 ### 3.2. The Physics of SAR Penetration Depth
 
@@ -98,7 +98,7 @@ Our analysis confirms that the ratio of brain SAR to skin SAR decreases signific
 
 At lower frequencies (e.g., 700 MHz), the electromagnetic waves have a longer wavelength and can penetrate deeper into biological tissues before their energy is absorbed. As the frequency increases (e.g., to 5800 MHz), the wavelength becomes shorter, and the energy is absorbed much more rapidly in the superficial layers of the body, primarily the skin. This is why the brain-to-skin SAR ratio is orders of magnitude lower at higher frequencies.
 
-![SAR Penetration Depth](plots/penetration_ratio_vs_frequency.png)
+![SAR Penetration Depth](./plots/penetration_ratio_vs_frequency.png)
 
 ## 4. Synthesis and Future Directions
 

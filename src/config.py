@@ -22,9 +22,11 @@ class Config:
         self.base_dir = base_dir
         self.config_path = self._resolve_config_path(config_filename)
         self.material_mapping_path = os.path.join(self.base_dir, 'material_name_mapping.json')
+        self.profiling_config_path = os.path.join(self.base_dir, 'configs', 'profiling_config.json')
         
         self.config = self._load_config_with_inheritance(self.config_path)
         self.material_mapping = self._load_json(self.material_mapping_path)
+        self.profiling_config = self._load_json(self.profiling_config_path)
 
     def _resolve_config_path(self, config_filename):
         """
@@ -43,9 +45,9 @@ class Config:
     def get_setting(self, path, default=None):
         """
         Retrieves a setting from the configuration using a path-like string.
-        Example path: "simulation_parameters/number_of_point_sources"
+        Example path: "simulation_parameters.number_of_point_sources"
         """
-        keys = path.split('/')
+        keys = path.split('.')
         current_config = self.config
         for key in keys:
             if isinstance(current_config, dict) and key in current_config:
@@ -134,3 +136,11 @@ class Config:
     def get_placement_scenario(self, scenario_name):
         """Returns the definition for a specific placement scenario."""
         return self.config.get("placement_scenarios", {}).get(scenario_name)
+
+    def get_profiling_weights(self):
+        """Returns the profiling weights."""
+        return self.profiling_config.get("phase_weights", {})
+
+    def get_profiling_subtask_estimates(self):
+        """Returns the subtask time estimates."""
+        return self.profiling_config.get("subtask_estimates", {})

@@ -1,30 +1,23 @@
-class MaterialSetup:
-    def __init__(self, config, simulation, antenna, verbose=True, free_space=False):
-        self.config = config
+from .base_setup import BaseSetup
+
+class MaterialSetup(BaseSetup):
+    def __init__(self, config, simulation, antenna, verbose_logger, progress_logger, free_space=False):
+        super().__init__(config, verbose_logger, progress_logger)
         self.simulation = simulation
         self.antenna = antenna
-        self.verbose = verbose
         self.free_space = free_space
         
-        import s4l_v1.simulation.emfdtd
         import s4l_v1.materials.database
         import XCoreModeling
-        import s4l_v1.model
 
-        self.emfdtd = s4l_v1.simulation.emfdtd
         self.database = s4l_v1.materials.database
         self.XCoreModeling = XCoreModeling
-        self.model = s4l_v1.model
-
-    def _log(self, message):
-        if self.verbose:
-            print(message)
 
     def assign_materials(self, antenna_components=None, phantom_only=False):
         """
         Assigns materials to the simulation entities.
         """
-        self._log("Assigning materials...")
+        self._log("Assigning materials...", level='verbose')
         
         # Background material
         background_settings = self.simulation.raw.BackgroundMaterialSettings()
