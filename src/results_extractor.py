@@ -6,7 +6,6 @@ import re
 import traceback
 
 import matplotlib.pyplot as plt
-import scienceplots
 import numpy as np
 import pandas as pd
 
@@ -493,7 +492,7 @@ class ResultsExtractor(LoggingMixin):
             )
             phantom_groups = material_mapping["_tissue_groups"]
             tissue_groups = {}
-            
+
             for group_name, tissue_list in phantom_groups.items():
                 s4l_names_in_group = set(tissue_list)
                 # NOTE: Both available_tissues and s4l_names_in_group contain config keys,
@@ -728,7 +727,7 @@ class ResultsExtractor(LoggingMixin):
                     return
 
                 plt.ioff()
-                plt.style.use('science')
+                plt.style.use("science")
                 plt.rcParams.update({"text.usetex": False})
                 fig, ax = plt.subplots()
                 ax.grid(True, which="major", axis="y", linestyle="--")
