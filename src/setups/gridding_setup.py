@@ -2,11 +2,12 @@ import numpy as np
 from .base_setup import BaseSetup
 
 class GriddingSetup(BaseSetup):
-    def __init__(self, config, simulation, placement_name, antenna, verbose_logger, progress_logger):
+    def __init__(self, config, simulation, placement_name, antenna, verbose_logger, progress_logger, frequency_mhz=None):
         super().__init__(config, verbose_logger, progress_logger)
         self.simulation = simulation
         self.placement_name = placement_name
         self.antenna = antenna
+        self.frequency_mhz = frequency_mhz
         
         import s4l_v1.units
         self.units = s4l_v1.units
@@ -27,14 +28,15 @@ class GriddingSetup(BaseSetup):
         """
         Sets up the main grid based on the overall simulation bounding box.
         """
-        sim_params = self.config.get_simulation_parameters()
-        
+        gridding_params = self.config.get_gridding_parameters()
+        gridding_mode = gridding_params.get("gridding_mode", "manual")
+
         # Determine the name of the simulation bounding box
         if self.simulation.Name.endswith("_freespace"):
             sim_bbox_name = "freespace_simulation_bbox"
         elif self.placement_name:
-             sim_bbox_name = f"{self.placement_name.lower()}_simulation_bbox"
-        else: # Far-field case
+            sim_bbox_name = f"{self.placement_name.lower()}_simulation_bbox"
+        else:  # Far-field case
             sim_bbox_name = "far_field_simulation_bbox"
 
         # Find the bounding box entity
@@ -43,14 +45,41 @@ class GriddingSetup(BaseSetup):
         if not sim_bbox_entity:
             raise RuntimeError(f"Could not find simulation bounding box: '{sim_bbox_name}'")
 
-        # Apply global grid settings
-        self.simulation.GlobalGridSettings.BoundingBox = self.model.GetBoundingBox([sim_bbox_entity])
-        manual_grid_sim_bbox = self.simulation.AddManualGridSettings([sim_bbox_entity])
-        
-        global_grid_res_mm = self.config.get_setting("simulation_parameters/global_gridding", 5.0)
+        if gridding_mode == "automatic":
+            self._log("  - Using automatic gridding.")
+            auto_grid_settings = self.simulation.AddAutomaticGridSettings([sim_bbox_entity])
+            
+            # Set refinement based on config, with a default value
+            refinement_level = gridding_params.get("refinement", "AutoRefinementDefault")
+            auto_grid_settings.AutoRefinement = refinement_level
+            
+            self._log(f"  - Automatic gridding set with refinement level: {refinement_level}", level='verbose')
 
-        manual_grid_sim_bbox.MaxStep = np.array([global_grid_res_mm] * 3)
-        self._log(f"  - Global grid set with resolution {global_grid_res_mm} mm.", level='verbose')
+        elif gridding_mode == "manual":
+            self._log("  - Using manual gridding.")
+            manual_grid_sim_bbox = self.simulation.AddManualGridSettings([sim_bbox_entity])
+            
+            global_grid_res_mm = None
+            log_source = "default"
+
+            # Try to get per-frequency gridding first
+            if self.frequency_mhz:
+                per_freq_gridding = self.config.get_setting("gridding_parameters.global_gridding_per_frequency")
+                if per_freq_gridding and isinstance(per_freq_gridding, dict):
+                    freq_key = str(int(self.frequency_mhz))
+                    if freq_key in per_freq_gridding:
+                        global_grid_res_mm = per_freq_gridding[freq_key]
+                        log_source = f"frequency-specific ({self.frequency_mhz}MHz)"
+
+            # Fallback to global gridding if per-frequency is not found
+            if global_grid_res_mm is None:
+                global_grid_res_mm = self.config.get_setting("simulation_parameters.global_gridding", 5.0)
+                log_source = "global"
+
+            manual_grid_sim_bbox.MaxStep = (np.array([global_grid_res_mm] * 3), self.units.MilliMeters)
+            self._log(f"  - Global grid set with {log_source} resolution: {global_grid_res_mm} mm.", level='verbose')
+        else:
+            raise ValueError(f"Unsupported gridding_mode: {gridding_mode}")
 
     def _setup_subgrids(self, antenna_components):
         # Antenna-specific gridding

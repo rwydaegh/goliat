@@ -112,17 +112,17 @@ class FarFieldSetup(BaseSetup):
         material_setup = MaterialSetup(self.config, simulation, None, self.verbose_logger, self.progress_logger, free_space=False)
         material_setup.assign_materials(phantom_only=True)
 
-        gridding_setup = GriddingSetup(self.config, simulation, None, None, self.verbose_logger, self.progress_logger)
+        gridding_setup = GriddingSetup(self.config, simulation, None, None, self.verbose_logger, self.progress_logger, frequency_mhz=self.frequency_mhz)
         gridding_setup.setup_gridding()
 
         self._add_point_sensors(simulation, "far_field_simulation_bbox")
 
         self._setup_solver_settings(simulation)
 
-        self._finalize_setup(simulation)
+        self._finalize_setup(simulation, self.frequency_mhz)
         self._log("Common settings applied.", level='verbose')
 
-    def _finalize_setup(self, simulation):
+    def _finalize_setup(self, simulation, frequency_mhz):
         """
         Gathers all necessary entities for a far-field simulation and calls the shared
         finalization method from the base class.
@@ -137,4 +137,4 @@ class FarFieldSetup(BaseSetup):
         
         all_simulation_parts = phantom_entities + [bbox_entity] + point_sensor_entities
         
-        super()._finalize_setup(simulation, all_simulation_parts)
+        super()._finalize_setup(simulation, all_simulation_parts, frequency_mhz)

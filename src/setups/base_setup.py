@@ -1,5 +1,7 @@
 import numpy as np
 import logging
+import os
+import pickle
 
 class BaseSetup:
     """
@@ -167,7 +169,7 @@ class BaseSetup:
             simulation.Add(point_sensor, [point_entity])
             self._log(f"  - Added point sensor at {corner_coords} ({corner_name})")
 
-    def _finalize_setup(self, simulation, all_simulation_parts):
+    def _finalize_setup(self, simulation, all_simulation_parts, frequency_mhz):
         """
         Performs the final voxelization and grid update for a simulation.
         This is a shared method for both Near-Field and Far-Field setups.
@@ -181,6 +183,34 @@ class BaseSetup:
         old_log_level = XCore.SetLogLevel(XCore.eLogCategory.Nothing)
         simulation.UpdateAllMaterials()
         XCore.SetLogLevel(old_log_level)
+
+        if self.config.get_setting('export_material_properties'):
+            self._log("--- Extracting Material Properties ---", level='progress')
+            material_properties = []
+            for settings in simulation.AllSettings:
+                if isinstance(settings, self.emfdtd.MaterialSettings):
+                    try:
+                        self._log(f"  - Material: '{settings.Name}'")
+                        self._log(f"    - Relative Permittivity: {settings.ElectricProps.RelativePermittivity:.4f}")
+                        self._log(f"    - Electric Conductivity (S/m): {settings.ElectricProps.Conductivity:.4f}")
+                        self._log(f"    - Mass Density (kg/m^3): {settings.MassDensity:.2f}")
+                        material_properties.append({
+                            'Name': settings.Name,
+                            'RelativePermittivity': settings.ElectricProps.RelativePermittivity,
+                            'Conductivity': settings.ElectricProps.Conductivity,
+                            'MassDensity': settings.MassDensity
+                        })
+                    except Exception as e:
+                        self._log(f"    - Could not extract properties for '{settings.Name}': {e}")
+            self._log("--- Finished Extracting Material Properties ---", level='progress')
+
+            output_dir = "analysis/cpw/data"
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+            output_path = os.path.join(output_dir, f"material_properties_{frequency_mhz}.pkl")
+            with open(output_path, 'wb') as f:
+                pickle.dump(material_properties, f)
+            self._log(f"--- Exported Material Properties to {output_path} ---", level='progress')
 
         simulation.UpdateGrid()
         simulation.CreateVoxels()

@@ -13,3 +13,7 @@ __pycache__/
 # Temporary Excel files
 ~$*.xlsx
 logs/
+
+# Analysis files
+analysis/cpw/data/
+analysis/cpw/plots/

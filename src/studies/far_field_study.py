@@ -15,17 +15,15 @@ class FarFieldStudy(BaseStudy):
     """
     Manages a far-field simulation study, including setup, execution, and results extraction.
     """
-    def __init__(self, config_filename="far_field_config.json", verbose=True, gui=None):
-        super().__init__(config_filename, verbose, gui)
-        self.project_manager = ProjectManager(self.config, self.verbose_logger, self.progress_logger, gui=self.gui)
+    def __init__(self, config_filename="far_field_config.json", gui=None):
+        super().__init__('far_field', config_filename, gui)
 
-    def run(self):
+    def _run_study(self):
         """
         Executes the entire far-field study by iterating through each simulation case,
         creating a separate project for each.
         """
         self._log(f"--- Starting Far-Field Study: {self.config.get_setting('study_name')} ---", level='progress')
-        ensure_s4l_running()
 
         do_setup = self.config.get_setting('execution_control.do_setup', True)
         do_run = self.config.get_setting('execution_control.do_run', True)
@@ -48,35 +46,50 @@ class FarFieldStudy(BaseStudy):
         sims_per_project = len(incident_directions) * len(polarizations)
         total_simulations = total_projects * sims_per_project
         
-        # Inform the profiler about the total number of simulations for accurate ETA
+        # Inform the profiler about the total number of simulations and projects for accurate ETA
         self.profiler.set_total_simulations(total_simulations)
+        self.profiler.set_project_scope(total_projects)
         
+        # Give the profiler a hint about the first phase to avoid an initial "N/A" for ETA
+        if do_setup:
+            self.profiler.current_phase = 'setup'
+        elif do_run:
+            self.profiler.current_phase = 'run'
+        elif do_extract:
+            self.profiler.current_phase = 'extract'
+
         if self.gui:
             self.gui.update_overall_progress(0, 100) # Initialize GUI progress
 
         current_sim_count = 0
         
-        try:
-            for i, phantom_name in enumerate(phantoms):
-                for j, freq in enumerate(frequencies):
-                    # Check for a stop signal from the GUI at the start of each major iteration.
-                    if self._check_for_stop_signal():
-                        raise StudyCancelledError()
+        for i, phantom_name in enumerate(phantoms):
+            try:
+                # One phantom setup object can be reused for all frequencies
+                phantom_setup = PhantomSetup(self.config, phantom_name, self.verbose_logger, self.progress_logger)
 
-                    project_index = i * len(frequencies) + j + 1
-                    self._log(f"\n--- Processing Project {project_index}/{total_projects}: {phantom_name}, {freq}MHz ---", level='progress')
-                    current_sim_count_in_project = 0
-                    
+                for j, freq in enumerate(frequencies):
                     try:
+                        # Check for a stop signal from the GUI at the start of each major iteration.
+                        if self._check_for_stop_signal():
+                            raise StudyCancelledError()
+
+                        # Create a new, clean project for each frequency to avoid performance degradation.
                         self.project_manager.create_or_open_project(phantom_name, freq)
+                        
+                        # The phantom must be loaded into each new project.
+                        phantom_setup.ensure_phantom_is_loaded()
+
+                        project_index = i * len(frequencies) + j + 1
+                        self.profiler.set_current_project(project_index)
+                        self.profiler.completed_phases.clear() # Reset for the new project
+
+                        self._log(f"\n--- Processing Frequency {j+1}/{len(frequencies)}: {freq}MHz for Phantom '{phantom_name}' ---", level='progress')
                         
                         all_simulations = []
                         # 1. Setup Phase
                         if do_setup:
                             with profile(self, "setup"):
-                                phantom_setup = PhantomSetup(self.config, phantom_name, self.verbose_logger, self.progress_logger)
-                                phantom_setup.ensure_phantom_is_loaded()
-                                
                                 total_setups = len(incident_directions) * len(polarizations)
                                 if self.gui:
                                     self.gui.update_stage_progress("Setup", 0, total_setups)
@@ -108,12 +121,30 @@ class FarFieldStudy(BaseStudy):
                                             self.gui.update_overall_progress(int(progress), 100)
                                             self.gui.update_stage_progress("Setup", setup_index, total_setups)
                         else:
-                            # If not setting up, load simulations from the existing project
+                            # If not setting up, filter simulations from the existing project based on the config
                             import s4l_v1.document
-                            all_simulations = [(sim, "_".join(sim.Name.split('_')[4:-1]), sim.Name.split('_')[-1]) for sim in s4l_v1.document.AllSimulations]
+                            all_sims_in_doc = list(s4l_v1.document.AllSimulations)
+                            
+                            # Get the desired simulation names from the config
+                            config_directions = self.config.get_setting('far_field_setup.environmental.incident_directions', [])
+                            config_polarizations = self.config.get_setting('far_field_setup.environmental.polarizations', [])
+                            
+                            # Reconstruct the expected simulation names from the config
+                            expected_sim_names = [f"EM_FDTD_{phantom_name}_{freq}MHz_{d}_{p}" for d in config_directions for p in config_polarizations]
+                            
+                            # Filter the simulations from the document
+                            sims_to_process = [sim for sim in all_sims_in_doc if sim.Name in expected_sim_names]
+                            
+                            # Recreate the all_simulations tuple structure
+                            all_simulations = []
+                            for sim in sims_to_process:
+                                parts = sim.Name.split('_')
+                                direction_name = "_".join(parts[4:-1])
+                                polarization_name = parts[-1]
+                                all_simulations.append((sim, direction_name, polarization_name))
 
                         if not all_simulations:
-                            self._log("  ERROR: No simulations found or created for this frequency. Skipping.", level='progress')
+                            self._log("  ERROR: No matching simulations found in the project for the current configuration. Skipping.", level='progress')
                             continue
 
                         # 2. Run Phase
@@ -132,57 +163,39 @@ class FarFieldStudy(BaseStudy):
                                 if self.gui:
                                     self.gui.update_stage_progress("Extracting Results", 0, len(all_simulations))
                                 self.project_manager.reload_project()
-                                self._extract_results_for_project(phantom_name, freq)
+                                self._extract_results_for_project(phantom_name, freq, all_simulations)
                                 if self.gui:
                                     progress = self.profiler.get_weighted_progress("extract", 1.0)
                                     self.gui.update_overall_progress(int(progress), 100)
                                     self.gui.update_stage_progress("Extracting Results", len(all_simulations), len(all_simulations))
-
-                    except StudyCancelledError:
-                        # This is not an error, but a signal to stop. Re-raise it to be caught by the outer loop.
-                        raise
-                    except Exception as e:
-                        self._log(f"  ERROR: An error occurred while processing {freq}MHz: {e}", level='progress')
-                        traceback.print_exc()
                     finally:
+                        # Ensure the project is closed after each frequency to release resources.
                         if self.project_manager and hasattr(self.project_manager.document, 'IsOpen') and self.project_manager.document.IsOpen():
                             self.project_manager.close()
-        except StudyCancelledError:
-            self._log("--- Study execution cancelled by user. ---", level='progress')
-            # The 'finally' block will handle cleanup.
-        finally:
-            if self.project_manager and hasattr(self.project_manager.document, 'IsOpen') and self.project_manager.document.IsOpen():
-                self.project_manager.close()
-            # Save the learned estimates at the very end
-            self.profiler.save_estimates()
 
-        self._log("\n--- Far-Field Study Finished ---", level='progress')
+            except StudyCancelledError:
+                # This is not an error, but a signal to stop. Re-raise it to be caught by the outer loop.
+                raise
+            except Exception as e:
+                self._log(f"  ERROR: An error occurred while processing phantom '{phantom_name}': {e}", level='progress')
+                traceback.print_exc()
 
-    def _extract_results_for_project(self, phantom_name, freq):
-        import s4l_v1.document
-        
-        all_sims_in_doc = list(s4l_v1.document.AllSimulations)
-        if not all_sims_in_doc:
-            self._log("  - No simulations found in the project document.")
+    def _extract_results_for_project(self, phantom_name, freq, simulations_to_extract):
+        """
+        Extracts results for a given list of simulations.
+        """
+        if not simulations_to_extract:
+            self._log("  - No matching simulations to extract based on the current configuration.")
             return
 
-        self._log(f"  - Found {len(all_sims_in_doc)} simulations in the project.")
-        for sim in all_sims_in_doc:
+        self._log(f"  - Extracting results for {len(simulations_to_extract)} simulation(s) matching the configuration.")
+        for sim, direction_name, polarization_name in simulations_to_extract:
             if self._check_for_stop_signal():
                 raise StudyCancelledError()
             try:
-                sim_name = sim.Name
-                # Expected name format: EM_FDTD_thelonius_450MHz_x_pos_theta
-                parts = sim_name.split('_')
-                if len(parts) < 7:
-                    self._log(f"    - WARNING: Could not parse simulation name '{sim_name}'. Skipping.")
-                    continue
-                
-                direction_name = "_".join(parts[4:-1])
-                polarization_name = parts[-1]
                 placement_name = f"environmental_{direction_name}_{polarization_name}"
                 
-                self._log(f"    - Extracting from simulation: {sim_name}", level='progress')
+                self._log(f"    - Extracting from simulation: {sim.Name}", level='progress')
                 extractor = ResultsExtractor(self.config, sim, phantom_name, freq, placement_name, 'far_field', self.verbose_logger, self.progress_logger, gui=self.gui, study=self)
                 extractor.extract()
             except Exception as e:

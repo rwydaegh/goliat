@@ -83,69 +83,46 @@ The project is organized into a modular and scalable structure:
 
 *Note: The `data` and `results` directories are not included in the repository and should be created locally.*
 
-## 4. Automated Workflow
-
-The framework is designed for a fully automated, "one-click" execution.
+## 4. How to Run
 
 ### Prerequisites
 
-Ensure you have **Sim4Life v8.2 or later** installed and licensed.
+Ensure you have **Sim4Life v8.2.0.16876** installed and licensed.
 
 ### Running a Study
 
-To run a simulation campaign, execute the `run_study.py` script. By default, this will launch an interactive GUI.
+All commands **must** be executed with the Python interpreter included with Sim4Life.
 
-**Example:**
+**Path to Python:** `C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe`
+
+---
+
+**Example: Run a Far-Field Study with a custom config**
+
+This is the most common use case for testing.
+
 ```bash
-python run_study.py far_field
+"C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe" run_study.py far_field --config "configs/todays_far_field_config.json"
 ```
 
-This command starts the far-field study and opens the GUI, which provides:
-- Real-time progress bars for the overall study and current stage.
-- Detailed logs for both progress and verbose diagnostics.
-- An estimated time remaining (ETA) for the entire study.
-- A "Cancel" button to gracefully stop the execution.
+---
 
-#### Command-Line Operation
+#### Other Examples
 
-For headless operation or scripting, use the `--no-gui` flag. You can also specify a custom configuration file.
-
-**Run without GUI:**
+**Run a full far-field study with GUI:**
 ```bash
-python run_study.py far_field --no-gui
+"C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe" run_study.py far_field
 ```
 
-**Run with a custom configuration:**
+**Run a full near-field study:**
 ```bash
-python run_study.py far_field --config "configs/todays_far_field_config.json"
+"C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe" run_study.py near_field
 ```
 
-*Note: These commands require the Sim4Life Python interpreter. If the `python` command on your system does not point to it, you must use the full path to the interpreter, e.g., `"C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe" run_study.py far_field`.*
-
-The script will automatically perform all necessary setup steps:
-1.  **Install Dependencies**: Checks and installs missing Python packages from `requirements.txt`.
-2.  **Download Data**: Downloads and extracts required data (phantoms, antennas) into the `data/` directory.
-3.  **Prepare Antennas**: Processes raw antenna models for simulation.
-4.  **Run Simulations**: Proceeds with the full simulation campaign as defined in the configuration file. The execution flow (setup, run, extract) is controlled by the `"execution_control"` block in `configs/base_config.json`.
-
-### Analyzing Results
-
-After a study has been run, the results can be analyzed to generate reports and plots.
-
-**Run analysis for a study:**
-```bash
-python run_analysis.py <study_type> --config <path_to_config>
-```
-
--   `<study_type>`: The type of study to analyze (`near_field` or `far_field`).
--   `<path_to_config>`: The path to the configuration file used for the study (e.g., `configs/far_field_config.json`).
-
-**Example:**
-```bash
-"C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe" run_analysis.py far_field --config "configs/far_field_config.json"
-```
-
-This will process the simulation outputs, calculate summary statistics, and save detailed reports and plots to the `results/` and `plots/` directories, respectively.
+The script will automatically perform all necessary setup steps on the first run:
+1.  **Install Dependencies**: From `requirements.txt`.
+2.  **Download Data**: Phantoms and antennas.
+3.  **Prepare Antennas**: Processes antenna models.
 
 ## 5. Configuration
 

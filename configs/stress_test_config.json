@@ -1,5 +1,6 @@
 {
     "extends": "base_config.json",
+    "study_name": "Far-Field Stress Test",
     "execution_control": {
         "do_setup": true,
         "do_run": true,
@@ -14,11 +15,7 @@
         700,
         835,
         1450,
-        2140,
-        2450,
-        3500,
-        5200,
-        5800
+        2140
     ],
     "far_field_setup": {
         "type": "environmental",
@@ -26,37 +23,26 @@
             "incident_directions": [
                 "x_pos",
                 "x_neg",
-                "y_pos",
-                "y_neg",
-                "z_pos",
-                "z_neg"
+                "y_pos"
             ],
             "polarizations": [
-                "theta",
-                "phi"
+                "theta"
             ]
-        },
-        "auto_induced": {
-            "grid_resolution_deg": 15
         }
     },
     "simulation_parameters": {
         "bbox_padding_mm": 50,
         "simulation_bbox_points": 8,
-        "number_of_point_sources": 2
+        "global_gridding": 5.0
     },
     "gridding_parameters": {
-        "gridding_mode": "automatic",
+        "gridding_mode": "manual",
         "global_gridding_per_frequency": {
-            "450": 8.021,
-            "700": 5.158,
-            "835": 4.325,
-            "1450": 2.494,
-            "2140": 1.694,
-            "2450": 1.482,
-            "3500": 1.043,
-            "5200": 0.712,
-            "5800": 0.642
+            "450": 15.0,
+            "700": 10.0,
+            "835": 8.0,
+            "1450": 4.0,
+            "2140": 3.0
         }
     }
 }

@@ -3,14 +3,15 @@ import os
 
 def deep_merge(source, destination):
     """
-    Recursively merges two dictionaries.
+    Recursively merges two dictionaries, with values from the source overriding
+    those in the destination.
     """
     for key, value in source.items():
-        if isinstance(value, dict):
-            # Get or create the nested dictionary in destination
-            node = destination.setdefault(key, {})
-            deep_merge(value, node)
+        if isinstance(value, dict) and key in destination and isinstance(destination[key], dict):
+            # If both are dicts, recurse
+            deep_merge(value, destination[key])
         else:
+            # Otherwise, source overrides destination
             destination[key] = value
     return destination
 
@@ -66,8 +67,8 @@ class Config:
             base_config_path = self._resolve_config_path(config["extends"])
             base_config = self._load_config_with_inheritance(base_config_path)
             
-            # Merge the base configuration into the current one
-            config = deep_merge(base_config, config)
+            # Merge the current configuration into the base, with the current overriding the base.
+            config = deep_merge(config, base_config)
             
         return config
 
@@ -113,10 +114,6 @@ class Config:
         """Returns the component names for a specific antenna model."""
         return self.config.get("antenna_config", {}).get("components", {}).get(antenna_model_type)
 
-    def get_verbose(self):
-        """Returns the verbose flag."""
-        return self.config.get("verbose", True)
-
     def get_manual_isolve(self):
         """Returns the manual_isolve flag."""
         return self.config.get("manual_isolve", False)
@@ -137,10 +134,10 @@ class Config:
         """Returns the definition for a specific placement scenario."""
         return self.config.get("placement_scenarios", {}).get(scenario_name)
 
-    def get_profiling_weights(self):
-        """Returns the profiling weights."""
-        return self.profiling_config.get("phase_weights", {})
-
-    def get_profiling_subtask_estimates(self):
-        """Returns the subtask time estimates."""
-        return self.profiling_config.get("subtask_estimates", {})
+    def get_profiling_config(self, study_type):
+        """
+        Returns the specific profiling configuration for the given study type.
+        """
+        if study_type not in self.profiling_config:
+            raise ValueError(f"Profiling configuration not defined for study type: {study_type}")
+        return self.profiling_config[study_type]

@@ -36,10 +36,14 @@
     },
     "phantoms": {
       "thelonius": {
-        "placements": {
-          "do_by_cheek": true,
-          "distance_from_cheek": 8
-        }
-      }
+              "head_y_separation": 0,
+              "trunk_z_separation": 0,
+              "chest_extension": 100,
+              "back_of_head": 0,
+              "placements": {
+                "do_by_cheek": true,
+                "distance_from_cheek": 8
+              }
+            }
     }
   }

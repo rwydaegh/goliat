@@ -9,8 +9,6 @@ if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
 from src.startup import run_full_startup
-from src.gui_manager import ProgressGUI
-from PySide6.QtWidgets import QApplication
 from src.logging_manager import setup_loggers, shutdown_loggers
 import atexit
 
@@ -31,11 +29,6 @@ def main():
         help="Skip the startup checks for dependencies and data."
     )
     parser.add_argument(
-        '--no-gui',
-        action='store_true',
-        help="Run the study without the GUI."
-    )
-    parser.add_argument(
         '--config',
         type=str,
         default=None,
@@ -44,33 +37,25 @@ def main():
 
     args = parser.parse_args()
 
-    config_filename = args.config if args.config else f"{args.study_type}_config.json"
-
     # Setup logging and ensure it's shut down on exit
     setup_loggers()
     atexit.register(shutdown_loggers)
 
+    # Run startup checks before importing other modules that might have dependencies
     if not args.skip_startup:
         run_full_startup(base_dir)
 
-    if not args.no_gui:
-        # The GUI now handles the study execution in a separate process
-        app = QApplication(sys.argv)
-        # The GUI needs to be updated to handle the custom config path
-        # For now, we assume it will use the default if args.config is None
-        gui = ProgressGUI(args.study_type, config_filename=config_filename)
-        gui.show()
-        sys.exit(app.exec())
-    else:
-        # For command-line execution, run the study directly
-        if args.study_type == 'near_field':
-            from src.studies.near_field_study import NearFieldStudy
-            study = NearFieldStudy(config_filename=config_filename, verbose=True)
-            study.run()
-        elif args.study_type == 'far_field':
-            from src.studies.far_field_study import FarFieldStudy
-            study = FarFieldStudy(config_filename=config_filename, verbose=True)
-            study.run()
+    # Now that dependencies are installed, we can import the other modules
+    from src.gui_manager import ProgressGUI
+    from PySide6.QtWidgets import QApplication
+
+    config_filename = args.config if args.config else f"{args.study_type}_config.json"
+
+    # The GUI now handles the study execution in a separate process
+    app = QApplication(sys.argv)
+    gui = ProgressGUI(args.study_type, config_filename=config_filename)
+    gui.show()
+    sys.exit(app.exec())
 
 if __name__ == "__main__":
     # This is crucial for multiprocessing to work correctly on Windows

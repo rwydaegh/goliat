@@ -12,16 +12,14 @@ class NearFieldStudy(BaseStudy):
     """
     Manages and runs a full near-field simulation campaign.
     """
-    def __init__(self, config_filename="near_field_config.json", verbose=True, gui=None):
-        super().__init__(config_filename, verbose, gui)
-        self.project_manager = ProjectManager(self.config, self.verbose_logger, self.progress_logger, gui=self.gui)
+    def __init__(self, config_filename="near_field_config.json", gui=None):
+        super().__init__('near_field', config_filename, gui)
 
-    def run(self):
+    def _run_study(self):
         """
         Runs the entire simulation campaign based on the configuration.
         """
         self._log(f"--- Starting Near-Field Study: {self.config.get_setting('study_name')} ---", level='progress')
-        ensure_s4l_running()
 
         do_setup = self.config.get_setting('execution_control.do_setup', True)
         do_run = self.config.get_setting('execution_control.do_run', True)
@@ -52,35 +50,26 @@ class NearFieldStudy(BaseStudy):
             self.gui.update_overall_progress(0, 100)
 
         simulation_count = 0
-        try:
-            for phantom_name in phantoms:
-                placements_config = self.config.get_phantom_placements(phantom_name)
-                if not placements_config:
-                    continue
-                
-                enabled_placements = []
-                for scenario_name, scenario_details in all_scenarios.items():
-                    if placements_config.get(f"do_{scenario_name}"):
-                        positions = scenario_details.get('positions', {})
-                        orientations = scenario_details.get('orientations', {})
-                        for pos_name in positions.keys():
-                            for orient_name in orientations.keys():
-                                enabled_placements.append(f"{scenario_name}_{pos_name}_{orient_name}")
+        for phantom_name in phantoms:
+            placements_config = self.config.get_phantom_placements(phantom_name)
+            if not placements_config:
+                continue
+            
+            enabled_placements = []
+            for scenario_name, scenario_details in all_scenarios.items():
+                if placements_config.get(f"do_{scenario_name}"):
+                    positions = scenario_details.get('positions', {})
+                    orientations = scenario_details.get('orientations', {})
+                    for pos_name in positions.keys():
+                        for orient_name in orientations.keys():
+                            enabled_placements.append(f"{scenario_name}_{pos_name}_{orient_name}")
 
-                for freq_str in frequencies:
-                    freq = int(freq_str)
-                    for placement_name in enabled_placements:
-                        simulation_count += 1
-                        self._log(f"\n--- Processing Simulation {simulation_count}/{total_simulations}: {phantom_name}, {freq}MHz, {placement_name} ---", level='progress')
-                        self._run_placement(phantom_name, freq, placement_name, do_setup, do_run, do_extract)
-        
-        except Exception as e:
-            self._log(f"--- A critical error occurred during the study: {e} ---", level='progress')
-            traceback.print_exc()
-        finally:
-            self.project_manager.cleanup()
-            self.profiler.save_estimates()
-            self._log("\n--- Near-Field Study Finished ---", level='progress')
+            for freq_str in frequencies:
+                freq = int(freq_str)
+                for placement_name in enabled_placements:
+                    simulation_count += 1
+                    self._log(f"\n--- Processing Simulation {simulation_count}/{total_simulations}: {phantom_name}, {freq}MHz, {placement_name} ---", level='progress')
+                    self._run_placement(phantom_name, freq, placement_name, do_setup, do_run, do_extract)
 
     def _run_placement(self, phantom_name, freq, placement_name, do_setup, do_run, do_extract):
         """

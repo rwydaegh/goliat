@@ -1,45 +1,32 @@
 import os
 import logging
 from src.config import Config
-from src.utils import Profiler
+from src.utils import Profiler, ensure_s4l_running, StudyCancelledError
+import traceback
+from src.project_manager import ProjectManager
 
 class BaseStudy:
     """
     Abstract base class for all studies (Near-Field, Far-Field).
     """
-    def __init__(self, config_filename, verbose=True, gui=None):
-        """
-        Initializes the study by loading its configuration.
-        
-        Args:
-            config_filename (str): The name of the configuration file in the 'configs' directory.
-            verbose (bool): Flag to enable/disable detailed logging.
-            gui (ProgressGUI, optional): The GUI object for progress updates. Defaults to None.
-        """
-        self.base_dir = self._find_base_dir()
-        self.config = Config(self.base_dir, config_filename)
-        self.verbose = verbose
+    def __init__(self, study_type, config_filename=None, gui=None):
+        self.study_type = study_type
         self.gui = gui
-        self.progress_logger = logging.getLogger('progress')
         self.verbose_logger = logging.getLogger('verbose')
-        self.profiler = Profiler(self.config)
-
-    def _find_base_dir(self):
-        """
-        Finds the project's base directory by searching upwards from the current file.
-        This makes the script runnable from different locations.
-        """
-        start_path = os.path.abspath(__file__)
-        current_path = start_path
-        while True:
-            # Assumes base directory is the one containing 'src' and 'configs'
-            if os.path.basename(os.path.dirname(current_path)) == 'src' and 'configs' in os.listdir(os.path.dirname(os.path.dirname(current_path))):
-                return os.path.dirname(os.path.dirname(current_path))
-            parent_path = os.path.dirname(current_path)
-            if parent_path == current_path:
-                # Fallback for safety, though the above should work
-                return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-            current_path = parent_path
+        self.progress_logger = logging.getLogger('progress')
+        
+        self.base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        
+        self.config = Config(self.base_dir, config_filename if config_filename else f"{self.study_type}_config.json")
+        
+        # Get study-specific profiling config
+        profiling_config = self.config.get_profiling_config(self.study_type)
+        execution_control = self.config.get_setting('execution_control', {'do_setup': True, 'do_run': True, 'do_extract': True})
+        
+        self.profiler = Profiler(execution_control, profiling_config, self.study_type, self.config.profiling_config_path)
+        
+        self.project_manager = ProjectManager(self.config, self.verbose_logger, self.progress_logger, self.gui)
+        self.stop_requested = False
 
     def _log(self, message, level='verbose'):
         """
@@ -49,7 +36,7 @@ class BaseStudy:
         if self.gui:
             # The GUI's log method will handle both logging to file and updating the status window
             self.gui.log(message, level=level)
-        elif self.verbose:
+        else:
             # If no GUI, log directly to the appropriate logger
             if level == 'progress':
                 self.progress_logger.info(message)
@@ -80,7 +67,24 @@ class BaseStudy:
             self.gui.end_stage_animation()
 
     def run(self):
+        """Main method to run the study."""
+        ensure_s4l_running()
+        try:
+            self._run_study()
+        except StudyCancelledError:
+            self._log("--- Study execution cancelled by user. ---", level='progress')
+        except Exception as e:
+            self._log(f"--- FATAL ERROR in study: {e} ---", level='progress')
+            self.verbose_logger.error(traceback.format_exc())
+        finally:
+            self._log(f"\n--- {self.__class__.__name__} Finished ---", level='progress')
+            self.profiler.save_estimates()
+            self.project_manager.cleanup()
+            if self.gui:
+                self.gui.update_profiler() # Send final profiler state
+
+    def _run_study(self):
         """
         This method must be implemented by subclasses to execute the specific study.
         """
-        raise NotImplementedError("The 'run' method must be implemented by a subclass.")
+        raise NotImplementedError("The '_run_study' method must be implemented by a subclass.")

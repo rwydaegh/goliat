@@ -153,10 +153,8 @@ class ResultsExtractor:
             sar_stats_evaluator.UpdateAttributes()
             self.document.AllAlgorithms.Add(sar_stats_evaluator)
             sar_stats_evaluator.Update()
-
+ 
             stats_output = sar_stats_evaluator.Outputs
-            self._log(f"  - DEBUG: stats_output type: {type(stats_output)}")
-            self._log(f"  - DEBUG: stats_output attributes: {dir(stats_output)}")
             
             results = None
             if len(stats_output) > 0:
@@ -246,6 +244,7 @@ class ResultsExtractor:
             results_dir = os.path.join(self.config.base_dir, 'results', 'near_field', self.phantom_name, f"{self.frequency_mhz}MHz", self.placement_name)
         else:
             results_dir = os.path.join(self.config.base_dir, 'results', 'far_field', self.phantom_name, f"{self.frequency_mhz}MHz", self.placement_name)
+        os.makedirs(results_dir, exist_ok=True)
         
         pickle_data = {
             'detailed_sar_stats': df,
@@ -253,8 +252,10 @@ class ResultsExtractor:
             'grouped_sar_stats': group_sar_stats,
             'summary_results': summary_results
         }
-        with open(os.path.join(results_dir, 'sar_stats_all_tissues.pkl'), 'wb') as f:
+        pickle_filepath = os.path.join(results_dir, 'sar_stats_all_tissues.pkl')
+        with open(pickle_filepath, 'wb') as f:
             pickle.dump(pickle_data, f)
+        self._log(f"  - Pickle report saved to: {pickle_filepath}")
 
         html_content = df.to_html(index=False, border=1)
         html_content += "<h2>Tissue Group Composition</h2>"
@@ -262,5 +263,7 @@ class ResultsExtractor:
         html_content += "<h2>Grouped SAR Statistics</h2>"
         html_content += pd.DataFrame.from_dict(group_sar_stats, orient='index').to_html()
         
-        with open(os.path.join(results_dir, 'sar_stats_all_tissues.html'), 'w', encoding='utf-8') as f:
+        html_filepath = os.path.join(results_dir, 'sar_stats_all_tissues.html')
+        with open(html_filepath, 'w', encoding='utf-8') as f:
             f.write(html_content)
+        self._log(f"  - HTML report saved to: {html_filepath}")

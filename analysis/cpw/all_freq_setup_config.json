@@ -1,26 +1,31 @@
 {
     "extends": "base_config.json",
-    "study_name": "Far-Field Validation Run",
     "execution_control": {
         "do_setup": true,
-        "do_run": true,
-        "do_extract": true
+        "do_run": false,
+        "do_extract": false
     },
-    "export_material_properties": false,
+    "export_material_properties": true,
     "manual_isolve": true,
     "phantoms": [
         "thelonius"
     ],
     "frequencies_mhz": [
+        450,
+        700,
+        835,
+        1450,
+        2140,
         2450,
-        4000
+        3500,
+        5200,
+        5800
     ],
     "far_field_setup": {
         "type": "environmental",
         "environmental": {
             "incident_directions": [
-                "x_pos",
-                "y_pos"
+                "x_pos"
             ],
             "polarizations": [
                 "theta"
@@ -32,9 +37,5 @@
         "simulation_bbox_points": 8,
         "global_gridding": 10.0,
         "number_of_point_sources": 2
-    },
-    "gridding_parameters": {
-        "gridding_mode": "automatic",
-        "refinement": "AutoRefinementDefault"
     }
 }

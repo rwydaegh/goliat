@@ -17,11 +17,13 @@ class Profiler:
     """
     A profiler to track execution time, estimate remaining time, and calculate weighted progress.
     """
-    def __init__(self, config):
-        self.config = config
-        self.execution_control = self.config.get_setting('execution_control', {'do_setup': True, 'do_run': True, 'do_extract': True})
+    def __init__(self, execution_control, profiling_config, study_type, config_path):
+        self.execution_control = execution_control
+        self.profiling_config = profiling_config
+        self.study_type = study_type
+        self.config_path = config_path
         self.phase_weights = self._get_active_phase_weights()
-        self.subtask_estimates = self.config.get_profiling_subtask_estimates()
+        self.subtask_estimates = self.profiling_config.get("subtask_estimates", {})
         self.start_time = time.monotonic()
         self.stage_start_time = None
         self.completed_stages = 0
@@ -31,16 +33,19 @@ class Profiler:
         self.current_phase_progress = 0
         self.completed_phases = set()
         self.current_phase = None
+        self.total_projects = 1
+        self.current_project_index = 1
         # Use a defaultdict to store lists of times for each named subtask
         self.subtask_times = defaultdict(list)
         # Stack to manage nested subtasks
         self.subtask_stack = []
+        self.phase_durations = {}
 
     def _get_active_phase_weights(self):
         """
         Filters and normalizes phase weights based on execution_control settings.
         """
-        all_weights = self.config.get_profiling_weights()
+        all_weights = self.profiling_config.get("phase_weights", {})
         active_weights = {}
         
         if self.execution_control.get('do_setup'):
@@ -60,6 +65,14 @@ class Profiler:
     def set_total_simulations(self, count):
         """Sets the total number of simulations for the entire study."""
         self.total_simulations = count
+
+    def set_project_scope(self, count):
+        """Sets the total number of projects for the entire study."""
+        self.total_projects = count if count > 0 else 1
+
+    def set_current_project(self, index):
+        """Sets the current project number (1-based)."""
+        self.current_project_index = index
 
     def start_stage(self, phase_name, total_stages=None):
         self.current_phase = phase_name
@@ -86,6 +99,7 @@ class Profiler:
             # We do NOT complete the phase here. It's completed manually after the loop.
         else:
             # For 'setup' and 'extract', ending the stage means ending the phase.
+            self.phase_durations[self.current_phase] = stage_duration
             self.completed_phases.add(self.current_phase)
             self.current_phase = None
         
@@ -94,6 +108,7 @@ class Profiler:
     def complete_run_phase(self):
         """Manually marks the 'run' phase as complete."""
         if self.current_phase == 'run':
+            self.phase_durations['run'] = self.time_for_completed_stages
             self.completed_phases.add('run')
             self.current_phase = None
 
@@ -117,10 +132,10 @@ class Profiler:
 
     def save_estimates(self):
         """
-        Calculates the average time for each subtask and saves the updated
-        estimates back to the profiling configuration file.
+        Calculates the average time for each subtask and the relative weight of each phase,
+        then saves the updated estimates back to the profiling configuration file.
         """
-        # Create a new dictionary for the updated estimates
+        # --- 1. Update Subtask Estimates ---
         updated_estimates = {}
         for task_name, times in self.subtask_times.items():
             if times:
@@ -131,21 +146,61 @@ class Profiler:
             if task_name not in updated_estimates:
                 updated_estimates[task_name] = estimate
 
-        # Reload the full config, update it, and save it back
-        full_config = self.config.profiling_config
-        full_config['subtask_estimates'] = updated_estimates
+        # --- 2. Update Phase Weights ---
+        total_study_time = sum(self.phase_durations.values())
+        updated_weights = self.phase_weights.copy() # Start with existing weights
+
+        if total_study_time > 0:
+            # Calculate new weights only for phases that actually ran
+            for phase, duration in self.phase_durations.items():
+                updated_weights[phase] = duration / total_study_time
         
-        with open(self.config.profiling_config_path, 'w') as f:
+        # Normalize the weights to ensure they sum to 1
+        total_weight = sum(updated_weights.values())
+        if total_weight > 0:
+            final_weights = {phase: weight / total_weight for phase, weight in updated_weights.items()}
+        else:
+            final_weights = updated_weights
+
+        # --- 3. Save to File ---
+        try:
+            with open(self.config_path, 'r') as f:
+                full_config = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            # If the file doesn't exist or is empty, create a new structure
+            full_config = {}
+
+        # Ensure the study type key exists
+        if self.study_type not in full_config:
+            full_config[self.study_type] = {}
+            
+        full_config[self.study_type]['subtask_estimates'] = updated_estimates
+        full_config[self.study_type]['phase_weights'] = final_weights
+        
+        # Save the full config back
+        with open(self.config_path, 'w') as f:
             json.dump(full_config, f, indent=4)
 
     def get_weighted_progress(self, phase_name, phase_progress):
-        """Calculates the overall progress based on phase weights."""
-        total_progress = 0
+        """
+        Calculates the overall progress based on phase weights and project progress.
+        """
+        # Progress from already completed projects (current_project_index is 1-based)
+        progress_from_completed_projects = (self.current_project_index - 1) / self.total_projects if self.total_projects > 0 else 0
+
+        # Progress within the current project
+        current_project_phase_progress = 0
         for phase, weight in self.phase_weights.items():
             if phase == phase_name:
-                total_progress += weight * phase_progress
+                current_project_phase_progress += weight * phase_progress
             elif phase in self.completed_phases:
-                total_progress += weight
+                current_project_phase_progress += weight
+        
+        # The progress of the current project contributes only its fraction of the total
+        progress_from_current_project = current_project_phase_progress / self.total_projects if self.total_projects > 0 else 0
+
+        total_progress = progress_from_completed_projects + progress_from_current_project
+        
         return total_progress * 100
 
     def get_time_remaining(self, current_stage_progress=0):
@@ -162,36 +217,44 @@ class Profiler:
         }
 
         # 1. Time for the current, in-progress phase
-        if self.current_phase and self.current_phase not in self.completed_phases:
+        if self.current_phase and self.current_phase not in self.completed_phases and self.stage_start_time is not None:
+            # Always use real-time progress to estimate the current phase's total time.
+            # This is more accurate than historical estimates and works on the first run.
+            elapsed_in_phase = time.monotonic() - self.stage_start_time
+            
             if self.current_phase == 'run':
-                if self.completed_stages > 0:
-                    avg_time_per_stage = self.time_for_completed_stages / self.completed_stages
-                    remaining_stages = self.total_stages - self.completed_stages
-                    # Time for the rest of the current stage being processed by SimulationRunner
-                    time_for_current_stage = avg_time_per_stage * (1 - current_stage_progress)
-                    # Time for all future stages in this phase
-                    time_for_future_stages = avg_time_per_stage * (remaining_stages - 1) if remaining_stages > 0 else 0
-                    total_remaining_sec += time_for_current_stage + time_for_future_stages
+                # Calculate progress within the 'run' phase itself
+                progress_of_run_phase = (self.completed_stages + current_stage_progress) / self.total_stages if self.total_stages > 0 else 0
+                
+                if progress_of_run_phase > 0.01: # Avoid division by zero
+                    # Project total time for the entire 'run' phase based on current progress
+                    projected_total_time_for_run = elapsed_in_phase / progress_of_run_phase
+                    remaining_time_for_run = projected_total_time_for_run - elapsed_in_phase
+                    total_remaining_sec += remaining_time_for_run
                 else:
-                    # Use historical estimate if no stages are complete yet
+                    # Fallback to historical estimate if we have no progress yet
                     run_estimate_per_stage = self.subtask_estimates.get(phase_subtask_map['run'], 0)
-                    total_run_estimate = run_estimate_per_stage * self.total_stages
-                    # Estimate remaining based on progress of the very first stage
-                    progress_of_total_run = current_stage_progress / self.total_stages if self.total_stages > 0 else 0
-                    total_remaining_sec += total_run_estimate * (1.0 - progress_of_total_run)
+                    total_remaining_sec += run_estimate_per_stage * self.total_stages
+
             else:  # For 'setup' and 'extract'
-                subtask_name = phase_subtask_map.get(self.current_phase)
-                if subtask_name:
-                    phase_estimate = self.subtask_estimates.get(subtask_name, 0)
-                    # If estimate is 0 (e.g., first run), extrapolate from current progress
-                    if phase_estimate == 0 and current_stage_progress > 0.01 and self.stage_start_time:
-                        elapsed = time.monotonic() - self.stage_start_time
-                        phase_estimate = elapsed / current_stage_progress
-                    
-                    total_remaining_sec += phase_estimate * (1.0 - current_stage_progress)
+                if current_stage_progress > 0.01: # Avoid division by zero
+                    projected_total_time_for_phase = elapsed_in_phase / current_stage_progress
+                    remaining_time_for_phase = projected_total_time_for_phase - elapsed_in_phase
+                    total_remaining_sec += remaining_time_for_phase
+                else:
+                    # Fallback to historical estimate
+                    subtask_name = phase_subtask_map.get(self.current_phase)
+                    if subtask_name:
+                        total_remaining_sec += self.subtask_estimates.get(subtask_name, 0)
 
         # 2. Add estimates for all future, un-started phases
-        future_phases = self.phase_weights.keys() - self.completed_phases - {self.current_phase}
+        # If we are in a phase, future_phases are the ones after it.
+        # If we are BETWEEN phases (current_phase is None), future_phases are all non-completed ones.
+        if self.current_phase:
+            future_phases = self.phase_weights.keys() - self.completed_phases - {self.current_phase}
+        else:
+            future_phases = self.phase_weights.keys() - self.completed_phases
+            
         for phase in future_phases:
             subtask_name = phase_subtask_map.get(phase)
             if not subtask_name:
@@ -252,8 +315,13 @@ def profile(study, phase_name):
         elapsed = time.monotonic() - start_time
         study._log(f"--- Finished: {phase_name} (took {elapsed:.2f}s) ---")
         
+        # For 'setup' and 'extract', ending the stage means ending the phase.
+        # For 'run', the phase is completed manually after the simulation loop.
         if phase_name != 'run':
             study.profiler.end_stage()
+        else:
+            # This ensures the 'run' phase duration is recorded correctly
+            study.profiler.complete_run_phase()
         
         if study.gui:
             study.gui.update_profiler()

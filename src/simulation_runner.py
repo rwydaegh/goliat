@@ -5,8 +5,9 @@ import subprocess
 import time
 import logging
 import traceback
+import threading
+from queue import Queue, Empty
 from .utils import open_project, non_blocking_sleep
-from PySide6.QtWidgets import QApplication
 
 class SimulationRunner:
     """
@@ -120,8 +121,10 @@ class SimulationRunner:
         return simulation
 
     def _run_isolve_manual(self, simulation):
-        """Finds iSolve.exe from the parent Sim4Life directory and runs it."""
-        
+        """
+        Finds iSolve.exe, runs it in a non-blocking way, and logs its output in real-time.
+        """
+        # --- 1. Setup: Find paths and prepare command ---
         python_path = sys.executable
         s4l_root = os.path.dirname(os.path.dirname(python_path))
         isolve_path = os.path.join(s4l_root, "Solvers", "iSolve.exe")
@@ -143,25 +146,44 @@ class SimulationRunner:
 
         command = [isolve_path, "-i", input_file_path]
         show_output = self.config.get_solver_settings().get('show_solver_output', True)
-        
+
+        # --- 2. Non-blocking reader thread setup ---
+        def reader_thread(pipe, queue):
+            """Reads lines from a pipe and puts them on a queue."""
+            try:
+                for line in iter(pipe.readline, ''):
+                    queue.put(line)
+            finally:
+                pipe.close()
+
         try:
             self.study.profiler.start_subtask("run_isolve_execution")
             
-            if show_output:
-                process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
-                for line in iter(process.stdout.readline, ''):
-                    # Log solver output directly to the verbose logger, not to the GUI
-                    self.verbose_logger.info(line.strip())
-                    if self.gui:
-                        QApplication.processEvents()
-                process.stdout.close()
-                return_code = process.wait()
-            else:
-                result = subprocess.run(command, capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
-                return_code = result.returncode
-                if return_code != 0:
-                    self.verbose_logger.info(result.stdout)
-                    self.verbose_logger.info(result.stderr)
+            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
+            
+            output_queue = Queue()
+            thread = threading.Thread(target=reader_thread, args=(process.stdout, output_queue))
+            thread.daemon = True
+            thread.start()
+
+            # --- 3. Main loop: Monitor process and log output without blocking ---
+            while process.poll() is None:
+                try:
+                    # Read all available lines from the queue
+                    while True:
+                        line = output_queue.get_nowait()
+                        self.verbose_logger.info(line.strip())
+                except Empty:
+                    # No new output, sleep briefly to prevent a busy-wait
+                    time.sleep(0.1)
+            
+            # Process has finished, get the return code
+            return_code = process.returncode
+            # Make sure the reader thread has finished and read all remaining output
+            thread.join()
+            while not output_queue.empty():
+                line = output_queue.get_nowait()
+                self.verbose_logger.info(line.strip())
 
             elapsed = self.study.profiler.end_subtask()
 
@@ -172,6 +194,7 @@ class SimulationRunner:
             else:
                 self._log(f"  - Done in {elapsed:.2f}s.", level='progress')
 
+            # --- 4. Post-simulation steps ---
             self.study.profiler.start_subtask("run_wait_for_results")
             self._log("Waiting for 5 seconds to ensure results are written to disk...", level='progress')
             non_blocking_sleep(5)
@@ -191,14 +214,6 @@ class SimulationRunner:
                 raise RuntimeError(f"Could not find simulation '{sim_name}' after re-opening project.")
             self._log("Project reloaded and results are available.", level='progress')
 
-        except subprocess.CalledProcessError as e:
-            error_message = (
-                f"iSolve.exe failed with return code {e.returncode}.\n"
-                "Check the console output above for more details."
-            )
-            self._log(error_message, level='progress')
-            traceback.print_exc()
-            raise RuntimeError(error_message)
         except Exception as e:
             self._log(f"An unexpected error occurred while running iSolve.exe: {e}", level='progress')
             traceback.print_exc()

@@ -5,39 +5,23 @@
         "do_run": true,
         "do_extract": true
     },
+    "export_material_properties": false,
     "manual_isolve": true,
     "phantoms": [
         "thelonius"
     ],
     "frequencies_mhz": [
-        450,
-        700,
-        835,
-        1450,
-        2140,
-        2450,
-        3500,
-        5200,
         5800
     ],
     "far_field_setup": {
         "type": "environmental",
         "environmental": {
             "incident_directions": [
-                "x_pos",
-                "x_neg",
-                "y_pos",
-                "y_neg",
-                "z_pos",
-                "z_neg"
+                "x_pos"
             ],
             "polarizations": [
-                "theta",
-                "phi"
+                "theta"
             ]
-        },
-        "auto_induced": {
-            "grid_resolution_deg": 15
         }
     },
     "simulation_parameters": {

@@ -15,7 +15,7 @@ from src.studies.far_field_study import FarFieldStudy
 from src.utils import format_time, ensure_s4l_running
 from src.logging_manager import setup_loggers, shutdown_loggers
 
-def study_process_wrapper(queue, study_type, config_filename, verbose, execution_control):
+def study_process_wrapper(queue, study_type, config_filename, execution_control):
     """
     This function runs in a separate process and executes the study.
     It communicates with the main GUI process via a queue.
@@ -60,9 +60,9 @@ def study_process_wrapper(queue, study_type, config_filename, verbose, execution
                 self.queue.put({'type': 'profiler_object', 'obj': self.profiler})
 
         if study_type == 'near_field':
-            study = NearFieldStudy(config_filename=config_filename, verbose=verbose, gui=QueueGUI(queue))
+            study = NearFieldStudy(config_filename=config_filename, gui=QueueGUI(queue))
         elif study_type == 'far_field':
-            study = FarFieldStudy(config_filename=config_filename, verbose=verbose, gui=QueueGUI(queue))
+            study = FarFieldStudy(config_filename=config_filename, gui=QueueGUI(queue))
         else:
             queue.put({'type': 'status', 'message': f"Error: Unknown study type '{study_type}'"})
             return
@@ -109,15 +109,15 @@ class ProgressGUI(QWidget):
         self.profiler = None  # Placeholder for the profiler object
         # The study needs to be instantiated here to get the execution_control settings
         if self.study_type == 'near_field':
-            study = NearFieldStudy(config_filename=self.config_filename, verbose=False)
+            study = NearFieldStudy(config_filename=self.config_filename)
         else:
-            study = FarFieldStudy(config_filename=self.config_filename, verbose=False)
+            study = FarFieldStudy(config_filename=self.config_filename)
         
         execution_control = study.config.get_setting('execution_control')
 
         self.process = multiprocessing.Process(
             target=study_process_wrapper,
-            args=(self.queue, self.study_type, self.config_filename, True, execution_control)
+            args=(self.queue, self.study_type, self.config_filename, execution_control)
         )
 
         self.queue_timer = QTimer(self)
@@ -353,12 +353,19 @@ class ProgressGUI(QWidget):
         if self.profiler and self.profiler.current_phase:
             current_stage_progress_ratio = self.stage_progress_bar.value() / 1000.0
             eta_sec = self.profiler.get_time_remaining(current_stage_progress=current_stage_progress_ratio)
+            overall_progress = self.overall_progress_bar.value() / 10.0
 
             if eta_sec is not None:
                 self.eta_label.setText(f"Time Remaining: {format_time(eta_sec)}")
-                
             else:
                 self.eta_label.setText("Time Remaining: N/A")
+
+            # # Debug log as requested, using WARNING to make it stand out
+            # self.verbose_logger.warning(
+            #     f"GUI_Tick: Elapsed={format_time(elapsed_sec)}, "
+            #     f"ETA={format_time(eta_sec) if eta_sec is not None else 'N/A'}, "
+            #     f"Overall_Progress={overall_progress:.1f}%"
+            # )
         else:
             self.eta_label.setText("Time Remaining: N/A")
 
