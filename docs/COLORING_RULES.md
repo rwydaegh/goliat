@@ -1,6 +1,6 @@
 # Coloring Rules for Terminal Output
 
-This document outlines the rules for colorizing terminal output using the `colorama` library. The goal is to improve readability and draw the user's attention to the most critical information. All colors are defined in the `COLOR_MAP` dictionary in [`src/colors.py`](src/colors.py:1) to ensure consistency and ease of maintenance.
+This document outlines the rules for colorizing terminal output using the `colorama` library. The goal is to improve readability and draw the user's attention to the most critical information. All colors are defined in the `COLOR_MAP` dictionary in [`src/colors.py`](https://github.com/rwydaegh/goliat/blob/master/src/colors.py) to ensure consistency and ease of maintenance.
 
 ## How to Use
 

@@ -1,6 +1,6 @@
 # UML Diagrams
 
-These diagrams are generated from the Python sources under `src/` using Pyreverse (from Pylint). The generator script is [`scripts/generate_uml.py`](scripts/generate_uml.py).
+These diagrams are generated from the Python sources under `src/` using Pyreverse (from Pylint). The generator script is [`scripts/generate_uml.py`](https://github.com/rwydaegh/goliat/blob/master/scripts/generate_uml.py).
 
 - Class diagram (PlantUML): [classes.puml](classes.puml)
 - Packages diagram (PlantUML): [packages_GOLIAT.puml](packages_GOLIAT.puml)

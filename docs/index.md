@@ -8,7 +8,7 @@
 
     Get up and running with GOLIAT in minutes
 
-    [:octicons-arrow-right-24: Installation Guide](README.md)
+    [:octicons-arrow-right-24: Installation Guide](https://github.com/rwydaegh/goliat#how-to-run)
 
 -   :material-cog:{ .lg .middle } __Configuration__
 
@@ -16,7 +16,7 @@
 
     Learn how to configure your simulations
 
-    [:octicons-arrow-right-24: Configuration Guide](configs/documentation.md)
+    [:octicons-arrow-right-24: Configuration Guide](configuration.md)
 
 -   :material-api:{ .lg .middle } __API Reference__
 
@@ -83,7 +83,8 @@ Comprehensive post-processing capabilities:
 
 ## Quick Links
 
-- [Installation & Setup](README.md)
+- [Installation & Setup](https://github.com/rwydaegh/goliat#how-to-run)
+- [Configuration Guide](configuration.md)
 - [API Reference](api.md)
 - [Architecture Overview](architecture_overview.md)
 - [UML Diagrams](uml.md)
