@@ -22,7 +22,7 @@ def download_and_extract_data(base_dir):
 
     # Download the folder content
     print(f"Downloading data from {gdrive_url} into {data_dir}...")
-    gdown.download_folder(gdrive_url, output=data_dir, quiet=False)
+    gdown.download_folder(gdrive_url, output=data_dir, quiet=False, fuzzy=True)
 
     print("Data download complete.")
 

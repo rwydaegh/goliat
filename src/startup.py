@@ -34,11 +34,12 @@ def prepare_data(base_dir):
     from scripts.download_data import download_and_extract_data
     
     data_dir = os.path.join(base_dir, 'data')
-    if not os.path.exists(data_dir):
-        logging.getLogger('verbose').info("Data directory not found. Downloading and extracting data...", extra={'log_type': 'info'})
+    phantoms_dir = os.path.join(data_dir, 'phantoms')
+    if not os.path.exists(phantoms_dir) or len(os.listdir(phantoms_dir)) < 4:
+        logging.getLogger('verbose').info("Phantoms directory is missing or incomplete. Downloading phantoms...", extra={'log_type': 'info'})
         download_and_extract_data(base_dir)
     else:
-        logging.getLogger('verbose').info("Data directory already exists. Skipping download.", extra={'log_type': 'info'})
+        logging.getLogger('verbose').info("Phantoms already exist. Skipping download.", extra={'log_type': 'info'})
 
     centered_dir = os.path.join(data_dir, 'antennas', 'centered')
     if not os.path.exists(centered_dir) or not os.listdir(centered_dir):
