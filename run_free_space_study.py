@@ -1,62 +1,116 @@
 import os
 import sys
-from src.startup import run_full_startup
+import json
+import tempfile
+import traceback
+
+# Ensure the src directory is in the Python path
+base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+if base_dir not in sys.path:
+    sys.path.insert(0, base_dir)
+
+from src.startup import check_and_install_packages, run_full_startup
+from src.config import Config
+from src.studies.near_field_study import NearFieldStudy
+from src.logging_manager import setup_loggers, shutdown_loggers
+
+class ConsoleLogger:
+    """A console-based logger for headless script execution."""
+    def __init__(self, progress_logger, verbose_logger):
+        self.progress_logger = progress_logger
+        self.verbose_logger = verbose_logger
+
+    def log(self, message, level='verbose', log_type='default'):
+        if level == 'progress':
+            self.progress_logger.info(message)
+        else:
+            self.verbose_logger.info(message)
+
+    def update_overall_progress(self, current, total): pass
+    def update_stage_progress(self, name, current, total): pass
+    def start_stage_animation(self, task_name, end_value): pass
+    def end_stage_animation(self): pass
+    def update_profiler(self): pass
+    def is_stopped(self): return False
+
+def create_temp_config(base_config, frequency_mhz):
+    """Creates a temporary configuration for a single free-space run."""
+    
+    # Deep copy the base configuration
+    config_data = json.loads(json.dumps(base_config.config))
+
+    # Override for a single free-space simulation
+    config_data['study_name'] = f"Free-Space Validation {frequency_mhz}MHz"
+    config_data['phantoms'] = {
+        "freespace": {
+            "do_front_of_eyes_center_vertical": True
+        }
+    }
+    config_data['antenna_config'] = {
+        str(frequency_mhz): base_config.get_antenna_config().get(str(frequency_mhz))
+    }
+    config_data['placement_scenarios'] = {
+        "front_of_eyes_center_vertical": {
+            "positions": {"center": [0, 0, 0]},
+            "orientations": {"vertical": [0, 0, 0]}
+        }
+    }
+    # Ensure we do a full run
+    config_data['execution_control'] = {
+        "do_setup": True,
+        "do_run": True,
+        "do_extract": True
+    }
+
+    # Write to a temporary file
+    temp_file = tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.json', dir=os.path.join(base_dir, 'configs'))
+    json.dump(config_data, temp_file, indent=4)
+    temp_file.close()
+    return temp_file.name
 
 def main():
     """
     Runs a free-space simulation for each available frequency to validate
     the antenna models and the core simulation pipeline.
     """
-    base_dir = os.path.abspath(os.path.dirname(__file__))
+    check_and_install_packages(os.path.join(base_dir, 'requirements.txt'))
+    progress_logger, verbose_logger, _ = setup_loggers()
     
-    # Add the project root to the Python path
-    sys.path.insert(0, base_dir)
-    
-    # Run all startup checks and preparations
-    run_full_startup(base_dir)
+    try:
+        run_full_startup(base_dir)
 
-    from src.config import Config
-    from src.study import NearFieldStudy
+        # Load the base near-field config to get all frequencies
+        base_config = Config(base_dir, "configs/near_field_config.json")
+        frequency_bands = base_config.get_antenna_config().keys()
+        sorted_frequencies = sorted([int(f) for f in frequency_bands])
 
-    config = Config(base_dir)
-    study = NearFieldStudy(config)
+        console_logger = ConsoleLogger(progress_logger, verbose_logger)
 
-    # Get all available frequency bands from the antenna configuration
-    frequency_bands = config.get_antenna_config().keys()
-    sorted_frequencies = sorted([int(f) for f in frequency_bands])
+        progress_logger.info("--- Starting Full Free-Space Simulation Study ---", extra={'log_type': 'header'})
 
-    print("--- Starting Full Free-Space Simulation Study ---")
-    for freq_band in sorted_frequencies:
-        print(f"\n--- Running Free-Space Simulation for {freq_band} MHz ---")
+        for freq in sorted_frequencies:
+            progress_logger.info(f"\n--- Running Free-Space Simulation for {freq} MHz ---", extra={'log_type': 'header'})
+            temp_config_path = None
+            try:
+                temp_config_path = create_temp_config(base_config, freq)
+                
+                # Instantiate and run the study with the temporary config
+                study = NearFieldStudy(config_filename=temp_config_path, gui=console_logger)
+                study.run()
 
-        antenna_config = config.get_antenna_config().get(str(freq_band))
-        if not antenna_config:
-            print(f"  - WARNING: No antenna configuration found for frequency: {freq_band} MHz. Skipping.")
-            continue
+            except Exception as e:
+                progress_logger.error(f"  - ERROR: An error occurred during the {freq} MHz simulation: {e}")
+                verbose_logger.error(traceback.format_exc())
+                continue # Continue to the next simulation
+            finally:
+                # Clean up the temporary config file
+                if temp_config_path and os.path.exists(temp_config_path):
+                    os.remove(temp_config_path)
 
-        center_frequency = antenna_config.get("center_frequency")
-        if not center_frequency:
-            print(f"  - WARNING: 'center_frequency' not defined for {freq_band} MHz. Skipping.")
-            continue
+        progress_logger.info("\n--- All Free-Space Simulations Finished ---", extra={'log_type': 'success'})
 
-        project_name = f"freespace_{freq_band}MHz_validation"
-        
-        try:
-            study.run_single(
-                project_name=project_name,
-                phantom_name="freespace",
-                frequency_mhz=center_frequency,
-                placement_name="origin",
-                free_space=True,
-                setup_only=False,
-                extract_only=False
-            )
-        except Exception as e:
-            print(f"  - ERROR: An error occurred during the {freq_band} MHz simulation: {e}")
-            # Continue to the next simulation
-            continue
-
-    print("\n--- All Free-Space Simulations Finished ---")
+    finally:
+        shutdown_loggers()
 
 if __name__ == "__main__":
     main()

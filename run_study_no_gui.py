@@ -1,104 +1,127 @@
-import argparse
 import os
 import sys
-import multiprocessing
+import argparse
+import traceback
 
-# Ensure the project root directory is in the Python path
-base_dir = os.path.dirname(os.path.abspath(__file__))
+# Ensure the src directory is in the Python path
+base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
-from src.startup import run_full_startup
+# --- Early Startup: Install Dependencies ---
+from src.startup import check_and_install_packages
+check_and_install_packages(os.path.join(base_dir, 'requirements.txt'))
+# --- End Early Startup ---
+
 from src.logging_manager import setup_loggers, shutdown_loggers
-from src.studies.far_field_study import FarFieldStudy
-from src.studies.near_field_study import NearFieldStudy
-from src.utils import ensure_s4l_running
-import atexit
+from src.startup import run_full_startup
+from src.studies.base_study import StudyCancelledError
+from src.config import Config
+from src.osparc_batch.runner import main as run_osparc_batch
+
+class ConsoleLogger:
+    """A console-based logger to substitute for the GUI."""
+    def __init__(self, progress_logger, verbose_logger):
+        self.progress_logger = progress_logger
+        self.verbose_logger = verbose_logger
+
+    def log(self, message, level='verbose', log_type='default'):
+        if level == 'progress':
+            self.progress_logger.info(message)
+        else:
+            self.verbose_logger.info(message)
+
+    def update_overall_progress(self, current_step, total_steps):
+        self.progress_logger.info(f"Overall Progress: {current_step}/{total_steps}")
+
+    def update_stage_progress(self, stage_name, current_step, total_steps):
+        self.progress_logger.info(f"Stage '{stage_name}': {current_step}/{total_steps}")
+
+    def start_stage_animation(self, task_name, end_value):
+        self.progress_logger.info(f"Starting: {task_name}")
+
+    def end_stage_animation(self):
+        pass
+
+    def update_profiler(self):
+        pass
+
+    def fatal_error(self, message):
+        self.progress_logger.error(f"FATAL ERROR: {message}")
+
+    def is_stopped(self):
+        return False # No GUI to stop it
 
 def main():
     """
-    Main entry point for running simulation studies without the GUI.
+    Main entry point for running a study without a GUI.
     """
-    parser = argparse.ArgumentParser(description="Run near-field or far-field simulation studies without a GUI.")
-    parser.add_argument(
-        '--skip-startup',
-        action='store_true',
-        help="Skip the startup checks for dependencies and data."
-    )
-    parser.add_argument(
-        '--config',
-        type=str,
-        default=None,
-        help="Path to a custom configuration file."
-    )
-
+    parser = argparse.ArgumentParser(description="Run a dosimetric assessment study without a GUI.")
+    parser.add_argument('--config', type=str, default="configs/todays_far_field_config.json", help='Path to the configuration file.')
+    parser.add_argument('--pid', type=str, default=None, help='The process ID for logging.')
     args = parser.parse_args()
+    config_filename = args.config
+    process_id = args.pid
 
-    # Setup logging and ensure it's shut down on exit
-    progress_logger, verbose_logger, main_log_file = setup_loggers()
-    atexit.register(shutdown_loggers)
+    # Clean up any stale lock files
+    lock_files = [f for f in os.listdir(base_dir) if f.endswith('.lock')]
+    for lock_file in lock_files:
+        lock_file_path = os.path.join(base_dir, lock_file)
+        try:
+            os.remove(lock_file_path)
+            print(f"Removed stale lock file: {lock_file_path}")
+        except OSError as e:
+            print(f"Error removing stale lock file {lock_file_path}: {e}")
 
-    # Run startup checks
-    if not args.skip_startup:
+    progress_logger, verbose_logger, _ = setup_loggers(process_id=process_id)
+
+    try:
+        config = Config(base_dir, config_filename)
+        execution_control = config.get_setting('execution_control', {})
+
+        if execution_control.get('batch_run'):
+            run_osparc_batch(config_filename)
+            return
+
+        from src.studies.near_field_study import NearFieldStudy
+        from src.studies.far_field_study import FarFieldStudy
+        from src.profiler import Profiler
+
         run_full_startup(base_dir)
+        
+        study_type = config.get_setting('study_type')
+        
+        profiling_config_data = config.get_profiling_config(study_type)
+        profiler = Profiler(
+            execution_control=config.get_setting('execution_control'),
+            profiling_config=profiling_config_data,
+            study_type=study_type,
+            config_path=config.profiling_config_path
+        )
 
-    # Ensure Sim4Life is running
-    ensure_s4l_running()
+        console_logger = ConsoleLogger(progress_logger, verbose_logger)
 
-    config_filename = args.config if args.config else "todays_near_field_config.json"
+        if study_type == 'near_field':
+            study = NearFieldStudy(config_filename=config_filename, gui=console_logger)
+        elif study_type == 'far_field':
+            study = FarFieldStudy(config_filename=config_filename, gui=console_logger)
+        else:
+            raise ValueError(f"Unknown or missing study type '{study_type}' in {config_filename}")
+        
+        study.profiler = profiler
+        study.run()
 
-    # A simple console-based logger to substitute for the GUI
-    class ConsoleLogger:
-        def log(self, message, level='verbose'):
-            if level == 'progress':
-                progress_logger.info(message)
-                print(message)
-            else:
-                verbose_logger.info(message)
+    except StudyCancelledError:
+        progress_logger.info("--- Study manually stopped by user ---")
+    except Exception as e:
+        error_msg = f"FATAL ERROR in study process: {e}"
+        progress_logger.error(error_msg)
+        tb_str = traceback.format_exc()
+        verbose_logger.error(f"Traceback:\n{tb_str}")
+        print(error_msg)
+        print(f"Traceback:\n{tb_str}")
+    finally:
+        shutdown_loggers()
 
-        def update_overall_progress(self, current_step, total_steps):
-            pass  # Not implemented for console
-
-        def update_stage_progress(self, stage_name, current_step, total_steps):
-            pass  # Not implemented for console
-            
-        def start_stage_animation(self, task_name, end_value):
-            pass
-
-        def end_stage_animation(self):
-            pass
-
-        def update_profiler(self):
-            pass # Not implemented for console
-
-        def update_profiler(self):
-            pass # Not implemented for console
-
-    from src.config import Config
-    config = Config(base_dir, config_filename=config_filename)
-    study_type = config.get_setting('study_type')
-
-    if study_type == 'near_field':
-        study = NearFieldStudy(config_filename=config_filename, gui=ConsoleLogger())
-        # Manually set up the project path for the no-gui version
-        phantom_name = config.get_setting('phantoms')[0]
-        frequency_mhz = list(config.get_setting('antenna_config').keys())[0]
-        # A placement name is required for near-field studies
-        placement_name = "front_of_eyes_center_vertical" # A default, adjust if needed
-        study.project_manager.create_or_open_project(phantom_name, frequency_mhz, placement_name)
-    elif study_type == 'far_field':
-        study = FarFieldStudy(config_filename=config_filename, gui=ConsoleLogger())
-        # Manually set up the project path for the no-gui version
-        phantom_name = config.get_setting('phantoms')[0]
-        frequency_mhz = config.get_setting('frequencies_mhz')[0]
-        study.project_manager.create_or_open_project(phantom_name, frequency_mhz)
-    else:
-        print(f"Error: Unknown or missing study type '{study_type}' in {config_filename}")
-        return
-
-    study.run()
-
-if __name__ == "__main__":
-    # This is crucial for multiprocessing to work correctly on Windows
-    multiprocessing.freeze_support()
+if __name__ == '__main__':
     main()
