@@ -1,95 +1,52 @@
-# GOLIAT Project Documentation
+# Welcome to GOLIAT
 
-<div class="grid cards" markdown>
+GOLIAT is an automated Python framework for near-field and far-field dosimetric assessments using the Sim4Life simulation platform. It streamlines EMF exposure simulations for research and compliance.
 
--   :material-clock-fast:{ .lg .middle } __Quick Start__
+<div class="mdx-container mdx-grid" markdown>
+  - ### Quick Start
+    Get running in minutes with installation and your first simulation.
+    > [Get Started](quick_start.md)
 
-    ---
+  - ### User Guide
+    Understand workflows for near-field and far-field studies.
+    > [Read Guide](user_guide.md)
 
-    Get up and running with GOLIAT in minutes
+  - ### Tutorials
+    Hands-on examples from basic runs to advanced batching.
+    > [View Tutorials](tutorials/basic.md)
 
-    [:octicons-arrow-right-24: Installation Guide](https://github.com/rwydaegh/goliat#how-to-run)
+  - ### Configuration
+    Customize simulations with JSON configs.
+    > [Configure](configuration.md)
 
--   :material-cog:{ .lg .middle } __Configuration__
+  - ### API Reference
+    Detailed docs for classes and functions.
+    > [API Docs](api.md)
 
-    ---
-
-    Learn how to configure your simulations
-
-    [:octicons-arrow-right-24: Configuration Guide](configuration.md)
-
--   :material-api:{ .lg .middle } __API Reference__
-
-    ---
-
-    Complete API documentation for all modules
-
-    [:octicons-arrow-right-24: API Docs](api.md)
-
--   :material-chart-timeline:{ .lg .middle } __Architecture__
-
-    ---
-
-    Understand the system design and workflow
-
-    [:octicons-arrow-right-24: Architecture Overview](architecture_overview.md)
-
+  - ### Architecture
+    Overview of the system design.
+    > [Architecture](architecture_overview.md)
 </div>
 
 ## Overview
 
-GOLIAT is a robust and automated Python framework for conducting both **near-field** and **far-field** dosimetric assessments using the Sim4Life simulation platform.
+GOLIAT automates dosimetric assessments for the GOLIAT project, calculating SAR in digital human phantoms from device or environmental EMF exposure. Key features:
 
-The framework is designed to be:
+- Modular scene building (phantoms, antennas, plane waves).
+- Local or cloud execution (iSolve/oSPARC).
+- Results extraction and analysis (SAR metrics, plots).
+- GUI for progress tracking.
 
-- **Modular** - Clean separation of concerns with well-defined components
-- **Scalable** - Handle large simulation matrices efficiently
-- **Reproducible** - Consistent results across different runs
-- **User-friendly** - Real-time GUI with progress tracking
+Start with the [Quick Start](quick_start.md) to run your first simulation.
 
-## Key Features
+## Why GOLIAT?
 
-### 🎯 Near-Field Studies
-Conduct SAR simulations with device antennas placed close to phantom models, supporting various:
+- **Efficiency**: Handles setup, runs, and analysis in one tool.
+- **Reproducible**: Config-driven for consistent results.
+- **Scalable**: Local parallel or cloud batching for large studies.
+- **Accessible**: Plain-language docs for newcomers.
 
-- Device placements and orientations
-- Multiple frequency bands
-- Child and adult phantom models
-- Automated antenna positioning
+For issues, see [Troubleshooting](troubleshooting.md). Contribute via [Developer Guide](developer_guide.md).
 
-### 🌐 Far-Field Studies
-Perform whole-body exposure simulations from incident plane waves:
-
-- Multiple incident directions
-- Various polarizations
-- Environmental and auto-induced scenarios
-- Comprehensive SAR analysis
-
-### 🚀 Cloud Computing
-Scale your simulations with integrated oSPARC support:
-
-- Batch job submission
-- Automated result downloading
-- Real-time progress monitoring
-- Parallel execution
-
-### 📊 Advanced Analysis
-Comprehensive post-processing capabilities:
-
-- Tissue-specific SAR calculations
-- Whole-body and organ-level metrics
-- Automated report generation
-- Statistical analysis and visualization
-
-## Quick Links
-
-- [Installation & Setup](https://github.com/rwydaegh/goliat#how-to-run)
-- [Configuration Guide](configuration.md)
-- [API Reference](api.md)
-- [Architecture Overview](architecture_overview.md)
-- [UML Diagrams](uml.md)
-- [GitHub Repository](https://github.com/rwydaegh/goliat)
-
-## Support
-
-For questions, issues, or contributions, please visit the [GitHub repository](https://github.com/rwydaegh/goliat).
+---
+*Last updated: {date}*

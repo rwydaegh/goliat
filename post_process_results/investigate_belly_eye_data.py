@@ -17,15 +17,15 @@ def investigate_belly_eye_data():
 
     with open(results_pickle_path, 'rb') as f:
         cached_data = pickle.load(f)
-    
+
     results_df = cached_data['summary_results']
     print("Data loaded successfully.")
 
     # --- 2. Isolate and inspect the specific data ---
     belly_df = results_df[results_df['scenario'] == 'by_belly'].copy()
-    
+
     eye_sar_by_freq = belly_df.groupby('frequency_mhz')['psSAR10g_eyes'].agg(['mean', 'sum', 'count', 'max'])
-    
+
     print("\n--- Aggregated 'psSAR10g_eyes' data for 'by_belly' scenario ---")
     print(eye_sar_by_freq.to_string())
 

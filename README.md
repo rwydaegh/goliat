@@ -1,239 +1,235 @@
-# GOLIAT automatic simulation code
+<div align="center">
 
-[![Documentation](https://img.shields.io/badge/docs-latest-blue.svg?style=for-the-badge&logo=read-the-docs&logoColor=white)](https://rwydaegh.github.io/goliat/)
-[![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.11+-blue.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+# GOLIAT
 
-This project provides a robust and automated Python framework for conducting both **near-field** and **far-field** dosimetric assessments for the GOLIAT project, using the Sim4Life simulation platform.
+### Effortless EMF Dosimetry Simulations
 
-The framework is designed to be modular, scalable, and reproducible, handling a large matrix of simulation parameters to replicate and extend the studies detailed in the GOLIAT project documents.
+**Automated near-field and far-field SAR assessments using Sim4Life**
 
-## 1. Project Goal
+[![Documentation](https://img.shields.io/badge/docs-latest-blue.svg)](https://rwydaegh.github.io/goliat/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.11+-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg?logo=pytest)](.github/workflows/test.yml)
 
-The primary objective is to perform a comprehensive dosimetric assessment for the **thelonious** and **Eartha** child voxel phantoms across a wide range of frequencies and exposure scenarios. This includes:
-- **Near-Field:** SAR simulations with device antennas placed close to the phantom.
-- **Far-Field:** Whole-body exposure simulations from incident plane waves, covering both environmental and auto-induced scenarios.
+[📚 Documentation](https://rwydaegh.github.io/goliat/) • [🚀 Quick Start](#-quick-start) • [💡 Examples](#-usage-examples) • [🤝 Contributing](#-contributing)
 
-### Key Deliverables
+</div>
 
-The required outputs include whole-body SAR, head SAR, trunk SAR, and psSAR10g in various tissues, calculated for normalized applied power.
+---
 
-## 2. Architecture
+## 🎯 What is GOLIAT?
 
-The framework is designed around a clear, modular workflow that proceeds from configuration to results. The core logic is orchestrated by **Study** classes, which manage the entire simulation lifecycle.
+GOLIAT is a Python framework that **automates electromagnetic field (EMF) dosimetry simulations** from start to finish. Calculate Specific Absorption Rate (SAR) in digital human phantoms with minimal manual intervention—whether you're simulating a phone call (near-field) or environmental exposure (far-field).
 
-### 2.1. Workflow Overview
+**Perfect for**: Researchers, compliance engineers, and anyone studying EMF exposure in biological tissues.
 
-A typical run follows these steps:
+### Why GOLIAT?
 
-1.  **Configuration Loading**: The [`Config`](src/config.py:18) class loads a study-specific JSON file (e.g., [`near_field_config.json`](configs/near_field_config.json:1)). It intelligently merges this with a [`base_config.json`](configs/base_config.json:1) using an `extends` keyword, allowing for shared settings and specific overrides.
+- ⚡ **Zero manual scene building** – Phantoms, antennas, and materials load automatically
+- 🔄 **Reproducible** – Configuration-driven workflow ensures consistent results
+- ☁️ **Cloud-ready** – Scale from local testing to 100s of parallel cloud simulations
+- 📊 **Analysis built-in** – Get publication-ready plots and detailed SAR reports
+- 🎨 **GUI included** – Monitor progress in real-time with ETA tracking
 
-2.  **Study Orchestration**: A high-level **Study** class ([`NearFieldStudy`](src/studies/near_field_study.py) or [`FarFieldStudy`](src/studies/far_field_study.py)) takes control. It iterates through the defined simulation matrix (e.g., phantoms, frequencies, placements). This class is the main driver, calling all other components in sequence.
+## ✨ Key Features
 
-3.  **Project Management**: For each individual simulation run, the [`ProjectManager`](src/project_manager.py:11) handles the Sim4Life project file (`.smash`). Based on the `execution_control` config, it either creates a fresh project (deleting the old one) or opens an existing one for re-running or post-processing. It also includes validation checks to prevent working with corrupted or locked files.
+<table>
+<tr>
+<td width="50%">
 
-4.  **Scene Setup**: A **Setup** class ([`NearFieldSetup`](src/setups/near_field_setup.py) or [`FarFieldSetup`](src/setups/far_field_setup.py)) builds the simulation scene. This is where the primary differences between study types emerge:
-    *   **Near-Field**: The setup involves importing a specific antenna CAD model, which acts as the source of the EMF, and placing it at a precise distance and orientation relative to the phantom (e.g., 8mm from the cheek). This can also be run as a "free-space" simulation without a phantom to characterize the antenna alone.
-    *   **Far-Field**: The setup defines one or more **plane wave** sources with specific incident directions (e.g., `x_pos`) and polarizations (e.g., `theta`). It does not involve placing a device.
+### 🎯 Near-Field Simulations
+Simulate devices near the body (phones, wearables). Automatic antenna placement with customizable positions and orientations.
 
-5.  **Simulation Execution**: The [`SimulationRunner`](src/simulation_runner.py:13) executes the simulation. It supports three modes:
-    *   **Local Manual Run**: It generates the solver input file and waits for the user to manually launch `iSolve.exe`. This is the default for GUI-based runs.
-    *   **Local Automated Run**: It directly invokes the standalone `iSolve.exe` solver and waits for it to complete.
-    *   **Cloud Run**: It submits the simulation to a specified cloud-based oSPARC server using the oSPARC API. This is controlled by the `server` setting in the configuration and oSPARC credentials stored in environment variables.
+### 🏗️ Modular Architecture
+Plug-and-play components for phantoms, materials, gridding, and sources. Extend easily for custom scenarios.
 
-6.  **Results Extraction**: After the simulation completes, the [`ResultsExtractor`](src/results_extractor.py:11) performs post-processing. The extracted data differs significantly by study type:
-    *   **Near-Field**: Results are stored in a dedicated folder for each unique combination of `phantom/frequency/placement`. The extractor calculates whole-body, head, or trunk SAR, as well as psSAR10g for specific tissue groups like the eyes and brain.
-    *   **Far-Field**: Results are stored per `phantom/frequency`, but contain data for multiple simulations (one for each incident direction and polarization). The extractor generates comprehensive reports that aggregate SAR data across all these scenarios.
+### 📊 Built-in Analysis
+Extract whole-body SAR, localized peaks (10g), and tissue-specific metrics. Auto-generate heatmaps and statistical reports.
 
-### 2.2. Key Supporting Components
+</td>
+<td width="50%">
 
--   **GUI & Multiprocessing**: A [`GuiManager`](src/gui_manager.py:86) provides a real-time progress window using PySide6. To ensure the UI remains responsive and stable, the entire study is executed in a separate process using Python's `multiprocessing` module. Communication between the GUI and the study process is handled via queues and events.
--   **Logging**: The [`LoggingManager`](src/logging_manager.py:5) sets up detailed logs for debugging and high-level progress tracking. It now features colored output for improved readability in the console.
--   **Utilities**: The [`utils.py`](src/utils.py:1) module contains a [`Profiler`](src/utils.py:18) that learns from past runs to provide increasingly accurate ETA estimates for studies.
+### 🌐 Far-Field Simulations
+Environmental exposure from plane waves. Supports 6 incident directions and multiple polarizations per frequency.
 
-This separation of concerns ensures that each part of the process is self-contained, making the framework easier to maintain and extend.
+### 🚀 Dual Execution Modes
+- **Local**: iSolve for quick testing and debugging
+- **Cloud**: oSPARC for large-scale batch processing (up to 61 parallel jobs)
 
-## 3. Project Structure
+### 🖥️ Real-time Monitoring
+Interactive GUI with progress bars, ETA estimation, and live logs. Optional headless mode for automation.
 
-The project is organized into a modular and scalable structure:
+</td>
+</tr>
+</table>
 
-```
-.
-├── configs/
-│   ├── base_config.json
-│   ├── far_field_config.json
-│   └── near_field_config.json
-├── docs/
-├── scripts/
-├── analysis/
-├── src/
-│   ├── analysis/
-│   ├── setups/
-│   ├── studies/
-│   ├── antenna.py
-│   ├── config.py
-│   ├── gui_manager.py
-│   ├── logging_manager.py
-│   ├── project_manager.py
-│   ├── results_extractor.py
-│   ├── simulation_runner.py
-│   ├── startup.py
-│   └── utils.py
-├── run_study.py
-└── requirements.txt
-```
+## ⚡ Quick Start
 
-*Note: The `data`, `results`, and `logs` directories are not included in the repository and will be created locally.*
-
-## 4. How to Run
-
-### Prerequisites
-
-Ensure you have **Sim4Life v8.2.2** or later installed and licensed.
-
-For cloud-based oSPARC simulations, create a `.env` file in the project root with your credentials:
-```
-OSPARC_API_KEY="your_api_key"
-OSPARC_API_SECRET="your_api_secret"
-OSPARC_API_SERVER="https://api.sim4life.science"
-OSPARC_API_VERSION="v0"
-```
-
-### Running a Study
-
-To simplify running studies, you can source a local `.bashrc` file to add the Sim4Life Python executable to your shell's `PATH` for the current session.
-
-**1. One-Time Setup**
-
-If your Sim4Life installation path is different from the default, update the `.bashrc` file in the project's root directory with the correct path.
-
-**2. Activate the Environment**
-
-Before running a study, source the `.bashrc` file to update your `PATH`:
+**Prerequisites**: [Sim4Life](https://zmt.swiss/) 8.2.2+ with a valid license.
 
 ```bash
+# 1. Clone and navigate
+git clone https://github.com/rwydaegh/goliat.git
+cd goliat
+
+# 2. Install dependencies (uses Sim4Life's Python)
 source .bashrc
+pip install -r requirements.txt
+
+# 3. Run your first simulation
+python run_study.py --config configs/near_field_config.json
 ```
 
-**3. Run the Study**
+✅ That's it! The GUI will launch, download required phantoms/antennas, and run the simulation. Results appear in `results/` with JSON metrics and plots.
 
-The study is now launched through a graphical user interface (GUI).
+📖 **New to GOLIAT?** Follow the [📘 Quick Start Tutorial](https://rwydaegh.github.io/goliat/quick_start.html) for a step-by-step walkthrough.
+
+---
+
+## 💡 Usage Examples
+
+### Example 1: Near-Field Phone Simulation
+
+```python
+# Run a 700 MHz phone-to-cheek simulation
+python run_study.py --config configs/near_field_config.json
+```
+
+**What happens:**
+- Loads "thelonious" (6-year-old) phantom
+- Places PIFA antenna 8mm from cheek
+- Runs FDTD solver (5-10 min on GPU)
+- Extracts head SAR, brain peak SAR (psSAR10g), power balance
+- Generates heatmaps in `results/near_field/thelonious/700MHz/by_cheek/`
+
+### Example 2: Far-Field Environmental Exposure
+
+```python
+# Plane wave exposure from 6 directions at 900 MHz
+python run_study.py --config configs/far_field_config.json
+```
+
+**What happens:**
+- Simulates waves from x/y/z axes (± directions)
+- Tests theta and phi polarizations (12 sims total)
+- Calculates whole-body average SAR
+- Outputs statistical summaries and boxplots
+
+### Example 3: Cloud Batch Processing
+
+```json
+// In config: enable oSPARC batching
+"execution_control": {
+  "batch_run": true
+}
+```
 
 ```bash
-python run_study.py
+# Submit 100+ sims to cloud in parallel
+python run_study.py --config configs/large_study.json
 ```
 
-This will open the main application window. From there, you can:
-1.  **Load a Configuration**: Use the "Load Config" button to select a study file (e.g., `configs/near_field_config.json`).
-2.  **Start the Study**: Click "Run Study" to begin the simulation process.
-3.  **Monitor Progress**: The GUI will display real-time progress, logs, and ETA estimates.
+Supports up to 61 concurrent jobs with auto-retry on failures.
 
-The script will automatically perform all necessary setup steps on the first run:
-1.  **Install Dependencies**: From `requirements.txt`.
-2.  **Download Data**: Phantoms and antennas.
-3.  **Prepare Antennas**: Processes antenna models.
+---
 
-## 5. oSPARC Batch Run
+## 📸 Screenshots
 
-For large-scale studies, this framework supports batch submissions to oSPARC, allowing for massively parallel simulations. This is ideal for scenarios where you need to run hundreds or thousands of simulations efficiently.
+<details>
+<summary>🖥️ <b>Click to see GOLIAT in action</b></summary>
 
-The process is designed in three stages to ensure a smooth workflow:
+### Interactive GUI
+Real-time progress tracking with phase-based ETA estimation.
 
-1.  **Input File Generation**: First, you generate all the necessary solver input files (`.h5`). This is done locally. In your configuration file (e.g., `configs/todays_far_field_config.json`), modify the `execution_control` section as follows:
+![GOLIAT GUI](docs/img/gui.png)
 
-    ```json
-    "execution_control": {
-        "do_setup": true,
-        "only_write_input_file": true,
-        "do_run": false,
-        "do_extract": false,
-        "batch_run": false
-    }
-    ```
+### Analysis Results
+Auto-generated SAR heatmaps by tissue and frequency.
 
-    Then, run the study: `python run_study.py --config configs/your_config.json`. The framework will prepare all simulation input files without running the simulations.
+![Results Plot](docs/img/results_plot.png)
 
-2.  **Batch Submission to oSPARC**: Once the input files are generated, you can submit them to oSPARC in a batch. Update the `execution_control` to enable `batch_run`:
+</details>
 
-    ```json
-    "execution_control": {
-        "batch_run": true
-    }
-    ```
+---
 
-    Now, execute the study script again: `python run_study.py --config configs/your_config.json`. This will launch a GUI that monitors the progress of all your oSPARC jobs in real-time. It will handle job submission, status polling, and result downloads automatically.
+## 🏛️ How It Works
 
-3.  **Post-Processing and Analysis**: After all oSPARC jobs have completed and the results are downloaded, the final step is to analyze the outputs. Disable the `batch_run` and enable `do_extract` in your configuration:
+GOLIAT follows a simple **5-stage pipeline**:
 
-    ```json
-    "execution_control": {
-        "do_setup": false,
-        "do_run": false,
-        "do_extract": true,
-        "batch_run": false
-    }
-    ```
+```mermaid
+graph LR
+    A[📝 Config] --> B[🎬 Setup]
+    B --> C[⚡ Simulate]
+    C --> D[📊 Extract]
+    D --> E[📈 Analyze]
 
-    Run the study one last time: `python run_study.py --config configs/your_config.json`. This will process all the downloaded results and generate the final SAR (Specific Absorption Rate) reports and any other required analyses.
-
-## 5. Configuration
-
-The framework is controlled by a hierarchical JSON configuration system. A study-specific config (e.g., [`near_field_config.json`](configs/near_field_config.json:1)) inherits settings from a [`base_config.json`](configs/base_config.json:1) and can override them. This allows for a high degree of flexibility and avoids repetition.
-
-The most important parameters are:
-- **`extends`**: Defines the parent configuration file.
-- **`study_type`**: Determines the simulation type (`"near_field"` or `"far_field"`).
-- **`execution_control`**: A set of booleans (`do_setup`, `do_run`, `do_extract`) that control which parts of the workflow are executed. This is useful for re-running only a specific part of a study.
-- **`phantoms`** and **`frequencies_mhz`**: The lists that define the core matrix of the study.
-
-For a complete and detailed list of all available configuration parameters, please see the **[Configuration Documentation](configs/documentation.md)**.
-
-## 6. Parallel Execution
-
-For running large studies, the framework now includes a unified script for splitting a single large configuration file into multiple smaller ones and running them in parallel. This is useful for taking advantage of multiple machine cores.
-
-### 6.1. Splitting and Running in Parallel
-
-The `run_parallel_studies.py` script, located in the root directory, handles both the splitting of the configuration file and the execution of the parallel studies.
-
-**Usage:**
-
-To split a configuration and immediately run the studies:
-```bash
-python run_parallel_studies.py --config configs/your_config.json --num-splits 4
+    style A fill:#4CAF50
+    style E fill:#4CAF50
+    style B fill:#2196F3
+    style C fill:#FF9800
+    style D fill:#9C27B0
 ```
 
-This command will first create a new directory named `configs/your_config_parallel/` containing four new configuration files, each with a subset of the original phantoms or frequencies. It will then automatically launch a separate `run_study.py` process for each of these new configuration files.
+1. **Config**: Load JSON with study parameters (phantoms, frequencies, placements)
+2. **Setup**: Auto-build Sim4Life scene (load models, assign materials, set grid)
+3. **Simulate**: Run FDTD solver (local or cloud)
+4. **Extract**: Pull SAR, power balance, point sensors from results
+5. **Analyze**: Generate CSVs, plots, statistical summaries
 
-The splitting logic is as follows:
-- **2 splits**: Divides the phantoms into two halves.
-- **4 splits**: Creates a separate config for each of the first four phantoms.
-- **8 splits**: Splits by the first two phantoms, and also splits the frequency list in half for each phantom.
+Each stage is modular—swap in custom phantoms, antennas, or analysis strategies.
 
-If you have already split the configuration files and want to run the studies from the existing directory, you can use the `--skip-split` flag:
+🔗 [**Detailed Architecture Guide**](https://rwydaegh.github.io/goliat/architecture_overview.html)
 
-```bash
-python run_parallel_studies.py --config configs/your_config.json --skip-split
-```
+---
 
-This will skip the splitting step and directly run the studies using the configuration files found in `configs/your_config_parallel/`.
+## 📚 Documentation
 
-Each parallel process will launch its own GUI window, with the title indicating the process ID and the configuration file it is running, making it easy to track the progress of each job.
+| Resource | Description |
+|----------|-------------|
+| [📘 Quick Start](https://rwydaegh.github.io/goliat/quick_start.html) | Get running in 5 minutes |
+| [📖 User Guide](https://rwydaegh.github.io/goliat/user_guide.html) | Workflows and concepts explained |
+| [🎓 Tutorials](https://rwydaegh.github.io/goliat/tutorials/basic.html) | Step-by-step examples (basic → advanced) |
+| [⚙️ Configuration](https://rwydaegh.github.io/goliat/configuration.html) | All config options with examples |
+| [🔧 API Reference](https://rwydaegh.github.io/goliat/api.html) | Class and function details |
+| [🐛 Troubleshooting](https://rwydaegh.github.io/goliat/troubleshooting.html) | Common issues and solutions |
+| [👨‍💻 Developer Guide](https://rwydaegh.github.io/goliat/developer_guide.html) | Extend GOLIAT or contribute |
 
-## 7. Documentation
+---
 
-This project is documented using [MkDocs](https://www.mkdocs.org/) and the [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/) theme.
+## 🤝 Contributing
 
-The documentation includes:
+Contributions are welcome! We follow a standard fork-and-PR workflow:
 
-*   A high-level **[Architecture Overview](docs/architecture_overview.md)**
-*   A detailed **[API Reference](docs/api/index.md)**
-*   A **[UML Class Diagram](docs/classes.puml)**
+1. **Fork** the repo and create a feature branch
+2. **Make changes** following our code style (Black, type hints)
+3. **Add tests** for new features
+4. **Submit a PR** with a clear description
 
-To view the documentation, run the following command from the project root:
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines, code style rules, and how to run tests locally.
 
-```bash
-mkdocs serve
-```
+**Quick links**: [Code of Conduct](CODE_OF_CONDUCT.md) • [Developer Guide](https://rwydaegh.github.io/goliat/developer_guide.html)
 
-Then, open your web browser and navigate to `http://127.0.0.1:8000/`.
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License** – see [LICENSE](LICENSE) for details.
+
+---
+
+## 🔗 Links
+
+- 📚 [**Full Documentation**](https://rwydaegh.github.io/goliat/)
+- 🐛 [**Report an Issue**](https://github.com/rwydaegh/goliat/issues)
+- 💬 [**Discussions**](https://github.com/rwydaegh/goliat/discussions)
+- 📦 [**Releases**](https://github.com/rwydaegh/goliat/releases)
+
+---
+
+<div align="center">
+
+**Built with ❤️ for the EMF dosimetry community**
+
+⭐ **Star this repo if GOLIAT helps your research!**
+
+</div>

@@ -1,36 +1,54 @@
-import os
-import logging
 import importlib
-from line_profiler import LineProfiler
-from src.config import Config
-from src.profiler import Profiler
-from src.utils import ensure_s4l_running, StudyCancelledError, profile_subtask
+import logging
+import os
 import traceback
-from src.project_manager import ProjectManager
+
+from line_profiler import LineProfiler
+
+from src.config import Config
 from src.logging_manager import LoggingMixin
+from src.profiler import Profiler
+from src.project_manager import ProjectManager
+from src.utils import StudyCancelledError, ensure_s4l_running, profile_subtask
+
 
 class BaseStudy(LoggingMixin):
     """
     Abstract base class for all studies (Near-Field, Far-Field).
     """
+
     def __init__(self, study_type, config_filename=None, gui=None, profiler=None):
         self.study_type = study_type
         self.gui = gui
-        self.verbose_logger = logging.getLogger('verbose')
-        self.progress_logger = logging.getLogger('progress')
-        
-        self.base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        
-        self.config = Config(self.base_dir, config_filename if config_filename else f"{self.study_type}_config.json")
-        
+        self.verbose_logger = logging.getLogger("verbose")
+        self.progress_logger = logging.getLogger("progress")
+
+        self.base_dir = os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        )
+
+        self.config = Config(
+            self.base_dir,
+            config_filename if config_filename else f"{self.study_type}_config.json",
+        )
+
         # Get study-specific profiling config
         profiling_config = self.config.get_profiling_config(self.study_type)
-        execution_control = self.config.get_setting('execution_control', {'do_setup': True, 'do_run': True, 'do_extract': True})
-        
-        self.profiler = Profiler(execution_control, profiling_config, self.study_type, self.config.profiling_config_path)
+        execution_control = self.config.get_setting(
+            "execution_control", {"do_setup": True, "do_run": True, "do_extract": True}
+        )
+
+        self.profiler = Profiler(
+            execution_control,
+            profiling_config,
+            self.study_type,
+            self.config.profiling_config_path,
+        )
         self.line_profiler = None
-        
-        self.project_manager = ProjectManager(self.config, self.verbose_logger, self.progress_logger, self.gui)
+
+        self.project_manager = ProjectManager(
+            self.config, self.verbose_logger, self.progress_logger, self.gui
+        )
 
     def _check_for_stop_signal(self):
         """Checks if the GUI has requested a stop."""
@@ -60,52 +78,77 @@ class BaseStudy(LoggingMixin):
         try:
             self._run_study()
         except StudyCancelledError:
-            self._log("--- Study execution cancelled by user. ---", level='progress', log_type='warning')
+            self._log(
+                "--- Study execution cancelled by user. ---",
+                level="progress",
+                log_type="warning",
+            )
         except Exception as e:
-            self._log(f"--- FATAL ERROR in study: {e} ---", level='progress', log_type='fatal')
+            self._log(
+                f"--- FATAL ERROR in study: {e} ---", level="progress", log_type="fatal"
+            )
             self.verbose_logger.error(traceback.format_exc())
         finally:
-            self._log(f"\n--- {self.__class__.__name__} Finished ---", level='progress', log_type='success')
+            self._log(
+                f"\n--- {self.__class__.__name__} Finished ---",
+                level="progress",
+                log_type="success",
+            )
             self.profiler.save_estimates()
             self.project_manager.cleanup()
             if self.gui:
-                self.gui.update_profiler() # Send final profiler state
+                self.gui.update_profiler()  # Send final profiler state
 
     def _run_study(self):
         """
         This method must be implemented by subclasses to execute the specific study.
         """
-        raise NotImplementedError("The '_run_study' method must be implemented by a subclass.")
+        raise NotImplementedError(
+            "The '_run_study' method must be implemented by a subclass."
+        )
 
     def _setup_line_profiler(self, subtask_name, instance):
         """
         Sets up the line profiler for a specific subtask if configured.
         """
         line_profiling_config = self.config.get_line_profiling_config()
-        
-        if not line_profiling_config.get("enabled", False) or subtask_name not in line_profiling_config.get("subtasks", {}):
+
+        if not line_profiling_config.get(
+            "enabled", False
+        ) or subtask_name not in line_profiling_config.get("subtasks", {}):
             return None, lambda func: func
 
-        self._log(f"  - Setting up line profiler for subtask: {subtask_name}", level='verbose', log_type='verbose')
-        
+        self._log(
+            f"  - Setting up line profiler for subtask: {subtask_name}",
+            level="verbose",
+            log_type="verbose",
+        )
+
         lp = LineProfiler()
         functions_to_profile = line_profiling_config["subtasks"][subtask_name]
 
         for func_path in functions_to_profile:
             try:
-                module_path, class_name, func_name = func_path.rsplit('.', 2)
-                
+                module_path, class_name, func_name = func_path.rsplit(".", 2)
+
                 # Dynamically import the module and get the class
                 module = importlib.import_module(module_path)
                 class_obj = getattr(module, class_name)
-                
+
                 # Get the function object from the class
                 func_to_add = getattr(class_obj, func_name)
-                
-                self._log(f"    - Adding function to profiler: {class_name}.{func_name} from {module_path}", log_type='verbose')
+
+                self._log(
+                    f"    - Adding function to profiler: {class_name}.{func_name} from {module_path}",
+                    log_type="verbose",
+                )
                 lp.add_function(func_to_add)
 
             except (ImportError, AttributeError, ValueError) as e:
-                self._log(f"  - WARNING: Could not find or parse function '{func_path}' for line profiling. Error: {e}", level='progress', log_type='warning')
-        
+                self._log(
+                    f"  - WARNING: Could not find or parse function '{func_path}' for line profiling. Error: {e}",
+                    level="progress",
+                    log_type="warning",
+                )
+
         return lp, lp.wrap_function

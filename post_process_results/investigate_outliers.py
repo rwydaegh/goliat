@@ -18,7 +18,7 @@ def investigate_outliers():
 
     with open(results_pickle_path, 'rb') as f:
         cached_data = pickle.load(f)
-    
+
     results_df = cached_data['summary_results']
     print("Data loaded successfully.")
 
@@ -32,9 +32,9 @@ def investigate_outliers():
         Q3 = foe_700_df[metric].quantile(0.75)
         IQR = Q3 - Q1
         outlier_threshold = Q3 + 1.5 * IQR
-        
+
         outliers = foe_700_df[foe_700_df[metric] > outlier_threshold]
-        
+
         print(f"\nOutliers for {metric} (Threshold > {outlier_threshold:.2f} mW/kg):")
         if not outliers.empty:
             print(outliers[['placement', metric]].sort_values(by=metric, ascending=False).to_string())
@@ -51,7 +51,7 @@ def investigate_outliers():
             continue # Skip 700 MHz as per the user's request
 
         freq_df = belly_df[belly_df['frequency_mhz'] == freq]
-        
+
         metric = 'psSAR10g_skin'
         Q1 = freq_df[metric].quantile(0.25)
         Q3 = freq_df[metric].quantile(0.75)

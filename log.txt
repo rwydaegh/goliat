@@ -519,4 +519,3 @@ COMPLETED: 194 | FAILED: 237
 
 Simadmin3@wicasim4 MINGW64 /e/users/rwydaegh/goliat (master)
 $
-

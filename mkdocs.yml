@@ -71,15 +71,17 @@ extra_css:
 
 nav:
   - Home: index.md
-  - Getting Started:
-    - Configuration: configuration.md
-  - Architecture:
-    - Overview: architecture_overview.md
-    - GUI & Profiling: old_good_GUI-Profiling-Logger.md
-  - Guides:
-    - Coloring Rules: COLORING_RULES.md
-    - UML Diagrams: uml.md
+  - Quick Start: quick_start.md
+  - User Guide: user_guide.md
+  - Tutorials:
+    - Basic: tutorials/basic.md
+    - Intermediate: tutorials/intermediate.md
+    - Advanced: tutorials/advanced.md
+  - Configuration: configuration.md
   - API Reference: api.md
+  - Developer Guide: developer_guide.md
+  - Architecture: architecture_overview.md
+  - Troubleshooting: troubleshooting.md
 
 plugins:
   - search:
@@ -140,8 +142,8 @@ markdown_extensions:
   - pymdownx.caret
   - pymdownx.details
   - pymdownx.emoji:
-      emoji_index: !!python/name:material.extensions.emoji.twemoji
-      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+      emoji_index: "!!python/name:material.extensions.emoji.twemoji"
+      emoji_generator: "!!python/name:material.extensions.emoji.to_svg"
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span
@@ -156,7 +158,7 @@ markdown_extensions:
       custom_fences:
         - name: mermaid
           class: mermaid
-          format: !!python/name:mermaid2.fence_mermaid_custom
+          format: "!!python/name:mermaid2.fence_mermaid_custom"
   - pymdownx.tabbed:
       alternate_style: true
       combine_header_slug: true

@@ -22,20 +22,20 @@ def run_new_analysis():
 
     with open(results_pickle_path, 'rb') as f:
         cached_data = pickle.load(f)
-    
+
     results_df = cached_data['summary_results']
-    
+
     print("Data loaded successfully.")
 
     # --- 2. Hypothesis 1: Correlation between Head SAR and Eye SAR ---
     print("\n--- Hypothesis 1: Analyzing Head vs. Eye SAR Correlation ---")
     front_of_eyes_df = results_df[results_df['scenario'] == 'front_of_eyes'].copy()
-    
+
     # Ensure both columns are numeric and drop rows with missing values for this analysis
     front_of_eyes_df['SAR_head'] = pd.to_numeric(front_of_eyes_df['SAR_head'], errors='coerce')
     front_of_eyes_df['psSAR10g_eyes'] = pd.to_numeric(front_of_eyes_df['psSAR10g_eyes'], errors='coerce')
     correlation_df = front_of_eyes_df.dropna(subset=['SAR_head', 'psSAR10g_eyes'])
-    
+
     correlation = correlation_df['SAR_head'].corr(correlation_df['psSAR10g_eyes'])
     print(f"Correlation between Head SAR and Eye psSAR10g for 'front_of_eyes': {correlation:.4f}")
 
@@ -54,7 +54,7 @@ def run_new_analysis():
     print("\n--- Hypothesis 2: Analyzing SAR Penetration Depth ---")
     penetration_df = results_df.copy()
     penetration_df['penetration_ratio'] = penetration_df['psSAR10g_brain'] / penetration_df['psSAR10g_skin']
-    
+
     avg_penetration_ratio = penetration_df.groupby(['scenario', 'frequency_mhz'])['penetration_ratio'].mean().reset_index()
 
     fig, ax = plt.subplots(figsize=(12, 7))

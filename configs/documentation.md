@@ -35,7 +35,7 @@ The framework is controlled by a hierarchical JSON configuration system. A study
 oSPARC API credentials are no longer stored in configuration files for security reasons. Instead, they are loaded from environment variables:
 
 - `OSPARC_API_KEY`: Your oSPARC API key
-- `OSPARC_API_SECRET`: Your oSPARC API secret  
+- `OSPARC_API_SECRET`: Your oSPARC API secret
 - `OSPARC_API_SERVER`: The oSPARC API server URL (typically `https://api.sim4life.science`)
 - `OSPARC_API_VERSION`: The API version (typically `v0`)
 

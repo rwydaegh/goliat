@@ -21,16 +21,16 @@ def run_data_integrity_checks():
 
     with open(results_pickle_path, 'rb') as f:
         cached_data = pickle.load(f)
-    
+
     results_df = cached_data['summary_results']
     print("Data loaded successfully.")
 
     # --- 2. Check for Missing Eye SAR Data ---
     print("\n--- Checking for Missing 'psSAR10g_eyes' Data ('front_of_eyes') ---")
     foe_df = results_df[results_df['scenario'] == 'front_of_eyes'].copy()
-    
+
     nan_eye_sar = foe_df[foe_df['psSAR10g_eyes'].isna()]
-    
+
     if not nan_eye_sar.empty:
         print("Found rows with NaN values for 'psSAR10g_eyes':")
         print(nan_eye_sar[['frequency_mhz', 'placement', 'psSAR10g_eyes']])
@@ -44,7 +44,7 @@ def run_data_integrity_checks():
     # --- 3. Fix Correlation Plot & Add Formula Fit ---
     print("\n--- Generating Corrected Correlation Plot with Linear Fit ---")
     plots_dir = 'post_process_results/plots'
-    
+
     front_of_eyes_df = results_df[results_df['scenario'] == 'front_of_eyes'].copy()
     front_of_eyes_df['SAR_head'] = pd.to_numeric(front_of_eyes_df['SAR_head'], errors='coerce')
     front_of_eyes_df['psSAR10g_eyes'] = pd.to_numeric(front_of_eyes_df['psSAR10g_eyes'], errors='coerce')
@@ -53,16 +53,16 @@ def run_data_integrity_checks():
     # Perform linear regression
     slope, intercept, r_value, p_value, std_err = stats.linregress(correlation_df['SAR_head'], correlation_df['psSAR10g_eyes'])
     r_squared = r_value**2
-    
+
     print(f"Linear Regression Fit: Eye_SAR = {slope:.2f} * Head_SAR + {intercept:.2f}")
     print(f"R-squared: {r_squared:.4f}")
 
     fig, ax = plt.subplots(figsize=(10, 6))
-    
+
     # Scatter plot with correct categorical legend
-    sns.scatterplot(data=correlation_df, x='SAR_head', y='psSAR10g_eyes', hue='frequency_mhz', 
+    sns.scatterplot(data=correlation_df, x='SAR_head', y='psSAR10g_eyes', hue='frequency_mhz',
                     palette='viridis', s=100, ax=ax)
-    
+
     # Plot the regression line
     x_vals = np.array(ax.get_xlim())
     y_vals = intercept + slope * x_vals
@@ -74,7 +74,7 @@ def run_data_integrity_checks():
     ax.legend()
     ax.grid(True)
     plt.tight_layout()
-    
+
     # Overwrite the old plot
     plot_path = os.path.join(plots_dir, 'correlation_head_vs_eye_sar.png')
     fig.savefig(plot_path)

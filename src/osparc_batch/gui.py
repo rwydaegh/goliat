@@ -1,16 +1,24 @@
-import sys
-import subprocess
-from PySide6.QtCore import Signal
-from PySide6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QPushButton, QHBoxLayout,
-                                 QSystemTrayIcon, QMenu, QTextEdit)
-from PySide6.QtGui import QAction
 import logging
+
+from PySide6.QtCore import Signal
+from PySide6.QtGui import QAction
+from PySide6.QtWidgets import (
+    QApplication,
+    QHBoxLayout,
+    QMenu,
+    QPushButton,
+    QSystemTrayIcon,
+    QVBoxLayout,
+    QWidget,
+)
 
 # --- 1. Set up Logging ---
 logger = logging.getLogger(__name__)
 
+
 class BatchGUI(QWidget):
     """A simple GUI for the oSPARC batch run."""
+
     print_progress_requested = Signal()
     stop_run_requested = Signal()
     cancel_jobs_requested = Signal()
@@ -20,6 +28,7 @@ class BatchGUI(QWidget):
         self.init_ui()
 
         logger.info("Initializing BatchGUI UI.")
+
     def init_ui(self):
         """Initializes the user interface components."""
         self.setWindowTitle("oSPARC Batch Runner")
@@ -28,16 +37,16 @@ class BatchGUI(QWidget):
         self.button_layout = QHBoxLayout()
         self.progress_button = QPushButton("Print Progress")
         self.progress_button.clicked.connect(self.print_progress_requested.emit)
-        
+
         self.force_stop_button = QPushButton("Force Stop")
         self.force_stop_button.clicked.connect(self.force_stop_run)
-        
+
         self.stop_and_cancel_button = QPushButton("Stop and Cancel Jobs")
         self.stop_and_cancel_button.clicked.connect(self.stop_and_cancel_jobs)
-        
+
         self.tray_button = QPushButton("Move to Tray")
         self.tray_button.clicked.connect(self.hide_to_tray)
-        
+
         self.button_layout.addWidget(self.progress_button)
         self.button_layout.addWidget(self.force_stop_button)
         self.button_layout.addWidget(self.stop_and_cancel_button)
@@ -79,7 +88,7 @@ class BatchGUI(QWidget):
         self.stop_and_cancel_button.setEnabled(False)
         self.cancel_jobs_requested.emit()
         # The worker will handle the rest, including quitting the app
-    
+
     def hide_to_tray(self):
         """Hide the main window and show the tray icon."""
         logger.info("Hiding window to system tray.")

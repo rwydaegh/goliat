@@ -1,54 +1,54 @@
-data/
-!data/material_name_mapping.json
+# IDE and OS specific
+.vscode/
+.roo/
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.lprof
+
+# Build and results
 results/
 plots/
 paper/
-PythonAPIReference/
-PythonAPIReference_old/
-#osparc_and_s4l_cloud_archive/
-Sim4Life_Manual_7.2.pdf
-Sim4Life_Introduction.pdf
-commit_message.txt
-*.lprof
-
-# Python cache
-__pycache__/
-*.pyc
-
-# IDE and OS files
-.vscode/
-.DS_Store
-# Temporary Excel files
-~$*.xlsx
-logs/
-
-# Analysis files
+site/
 analysis/cpw/data/
 analysis/cpw/plots/
-analysis/sensitivity_analysis/configs/
 analysis/sensitivity_analysis/plots/
 
-# Ignore all directories inside configs/, but keep files
-configs/*/
+# Data
+data/
+!data/material_name_mapping.json
 
-# Ignore generated files, but not in the analysis directory
+# Logs
+logs/
+commit_message.txt
+
+# Documentation
+PythonAPIReference/
+PythonAPIReference_old/
+Sim4Life_Manual_7.2.pdf
+Sim4Life_Introduction.pdf
+
+# Configs
+configs/*/
+analysis/sensitivity_analysis/configs/
+
+# Generated files
 *.csv
-#*.png
-#*.pdf
+*.zip
+*.lock
+# Keep specific generated files in analysis
 !analysis/**/*.csv
 !analysis/**/*.png
 !analysis/**/*.pdf
-*.zip
-# Lock files
-*.lock
-tmp_download/
+
+# Local environment
 .bashrc
 .setup_done
 .env
 
-# MkDocs build output
-site/
-
-# Personal notes and todos
+# Personal
 mindmap.md
 TODO.txt

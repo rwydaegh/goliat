@@ -1,5 +1,6 @@
 import os
 
+
 def check_log_files():
     """
     Loops through all files in logs/osparc_submission_logs,
@@ -17,7 +18,7 @@ def check_log_files():
         if filename.endswith(".log"):
             filepath = os.path.join(log_dir, filename)
             try:
-                with open(filepath, 'r', encoding='utf-8') as f:
+                with open(filepath, "r", encoding="utf-8") as f:
                     lines = f.readlines()
                     if lines:
                         last_line = lines[-1].strip()
@@ -36,6 +37,7 @@ def check_log_files():
             print(f"--- End of {file} ---")
     else:
         print("All log files checked contain 'moved' in the last line.")
+
 
 if __name__ == "__main__":
     check_log_files()

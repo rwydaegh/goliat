@@ -2,7 +2,7 @@
     "extends": "base_config.json",
     "study_type": "far_field",
     "execution_control": {
-        "do_setup": false,
+        "do_setup": true,
         "only_write_input_file": true,
         "do_run": false,
         "do_extract": true,

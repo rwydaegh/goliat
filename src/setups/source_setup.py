@@ -1,25 +1,38 @@
 from .base_setup import BaseSetup
 
+
 class SourceSetup(BaseSetup):
-    def __init__(self, config, simulation, frequency_mhz, antenna, verbose_logger, progress_logger, free_space=False):
+    def __init__(
+        self,
+        config,
+        simulation,
+        frequency_mhz,
+        antenna,
+        verbose_logger,
+        progress_logger,
+        free_space=False,
+    ):
         super().__init__(config, verbose_logger, progress_logger)
         self.simulation = simulation
         self.frequency_mhz = frequency_mhz
         self.antenna = antenna
         self.free_space = free_space
-        
+
         import s4l_v1.units
+
         self.units = s4l_v1.units
 
     def setup_source_and_sensors(self, antenna_components):
         """
         Sets up the excitation source and sensors.
         """
-        self._log("Setting up source and sensors...", log_type='progress')
-        
+        self._log("Setting up source and sensors...", log_type="progress")
+
         source_name = self.antenna.get_source_entity_name()
         if source_name not in antenna_components:
-             raise RuntimeError(f"Could not find source entity '{source_name}' in antenna group.")
+            raise RuntimeError(
+                f"Could not find source entity '{source_name}' in antenna group."
+            )
         source_entity = antenna_components[source_name]
 
         # Source setup
@@ -29,14 +42,18 @@ class SourceSetup(BaseSetup):
         excitation_enum = edge_source_settings.ExcitationType.enum
 
         if self.free_space:
-            self._log("  - Using Gaussian source for free-space simulation.", log_type='info')
-            excitation_type = 'gaussian'
+            self._log(
+                "  - Using Gaussian source for free-space simulation.", log_type="info"
+            )
+            excitation_type = "gaussian"
             edge_source_settings.ExcitationType = excitation_enum.Gaussian
             edge_source_settings.CenterFrequency = self.frequency_mhz, self.units.MHz
             edge_source_settings.Bandwidth = 50.0, self.units.MHz
         else:
-            self._log("  - Using Harmonic source for phantom simulation.", log_type='info')
-            excitation_type = 'harmonic'
+            self._log(
+                "  - Using Harmonic source for phantom simulation.", log_type="info"
+            )
+            excitation_type = "harmonic"
             edge_source_settings.ExcitationType = excitation_enum.Harmonic
             edge_source_settings.Frequency = self.frequency_mhz, self.units.MHz
             edge_source_settings.CenterFrequency = self.frequency_mhz, self.units.MHz
@@ -51,17 +68,26 @@ class SourceSetup(BaseSetup):
             far_field_sensor_settings = self.simulation.AddFarFieldSensorSettings()
 
             # Configure extracted frequencies for Gaussian source
-            if excitation_type.lower() == 'gaussian':
+            if excitation_type.lower() == "gaussian":
                 center_freq_hz = self.frequency_mhz * 1e6
                 bandwidth_hz = 50.0 * 1e6
                 start_freq_hz = center_freq_hz - (bandwidth_hz / 2)
                 end_freq_hz = center_freq_hz + (bandwidth_hz / 2)
-                
+
                 # Create a list of 21 frequencies, including the center frequency
                 num_samples = 21
-                extracted_frequencies_hz = [start_freq_hz + i * (bandwidth_hz / (num_samples - 1)) for i in range(num_samples)]
-                
-                far_field_sensor_settings.ExtractedFrequencies = extracted_frequencies_hz, self.units.Hz
-                self._log(f"  - Set extracted frequencies from {start_freq_hz/1e6} MHz to {end_freq_hz/1e6} MHz.", log_type='info')
+                extracted_frequencies_hz = [
+                    start_freq_hz + i * (bandwidth_hz / (num_samples - 1))
+                    for i in range(num_samples)
+                ]
+
+                far_field_sensor_settings.ExtractedFrequencies = (
+                    extracted_frequencies_hz,
+                    self.units.Hz,
+                )
+                self._log(
+                    f"  - Set extracted frequencies from {start_freq_hz/1e6} MHz to {end_freq_hz/1e6} MHz.",
+                    log_type="info",
+                )
 
         # Point sensors are now handled by the NearFieldSetup class.

@@ -1,211 +1,327 @@
 import os
+
 import h5py
-import logging
 import s4l_v1.model as s4l_model
-from .utils import open_project
+
 from .logging_manager import LoggingMixin
+from .utils import open_project
+
 
 class ProjectCorruptionError(Exception):
-    """Custom exception for corrupted project files."""
+    """Custom exception raised for errors related to corrupted or locked project files."""
+
     pass
+
 
 class ProjectManager(LoggingMixin):
     """
-    Handles the lifecycle of the .smash project file.
+    Manages the lifecycle of Sim4Life (.smash) project files.
+
+    This class handles the creation, opening, saving, and validation of
+    project files, ensuring robustness against file corruption and locks.
     """
+
     def __init__(self, config, verbose_logger, progress_logger, gui=None):
+        """
+        Initializes the ProjectManager.
+
+        Args:
+            config (Config): The main configuration object.
+            verbose_logger (logging.Logger): Logger for detailed output.
+            progress_logger (logging.Logger): Logger for high-level progress updates.
+            gui (QueueGUI, optional): The GUI proxy for inter-process communication.
+        """
         self.config = config
         self.verbose_logger = verbose_logger
         self.progress_logger = progress_logger
         self.gui = gui
         import s4l_v1.document
+
         self.document = s4l_v1.document
         self.project_path = None
-        self.execution_control = self.config.get_setting('execution_control', {'do_setup': True, 'do_run': True, 'do_extract': True})
-
+        self.execution_control = self.config.get_setting(
+            "execution_control", {"do_setup": True, "do_run": True, "do_extract": True}
+        )
 
     def _is_valid_smash_file(self):
         """
-        Checks if the project file is valid and not locked.
-        It first tries to rename the file to itself to check for a lock,
-        then uses h5py to check for basic HDF5 format corruption.
+        Checks if the project file is a valid, unlocked HDF5 file.
+
+        This method performs two checks:
+        1.  It attempts to rename the file to itself as a proxy for detecting file locks.
+        2.  It uses `h5py` to verify the file's basic HDF5 structure.
+
+        Returns:
+            bool: True if the file is valid and not locked, False otherwise.
         """
         if not self.project_path:
             return False
-        # Lock files can exist, preventing a check. If a lock file for the project exists,
-        # we can reasonably assume the file is locked and avoid the check.
-        lock_file_path = os.path.join(os.path.dirname(self.project_path), f".{os.path.basename(self.project_path)}.s4l_lock")
+        lock_file_path = os.path.join(
+            os.path.dirname(self.project_path),
+            f".{os.path.basename(self.project_path)}.s4l_lock",
+        )
         if os.path.exists(lock_file_path):
-            self._log(f"  - Lock file detected: {lock_file_path}. Assuming project is in use.", log_type='warning')
+            self._log(
+                f"  - Lock file detected: {lock_file_path}. Assuming project is in use.",
+                log_type="warning",
+            )
             return False
 
         try:
-            # 1. Check for file lock by trying to rename. This is a common Windows trick.
             os.rename(self.project_path, self.project_path)
         except OSError as e:
-            self._log(f"  - File lock detected on {self.project_path}: {e}", log_type='warning')
-            self._log(f"  - The file is likely being used by another process. Skipping.", log_type='warning')
+            self._log(
+                f"  - File lock detected on {self.project_path}: {e}",
+                log_type="warning",
+            )
+            self._log(
+                "  - The file is likely being used by another process. Skipping.",
+                log_type="warning",
+            )
             return False
 
         try:
-            # 2. Check for HDF5 format corruption.
-            with h5py.File(self.project_path, 'r') as f:
+            with h5py.File(self.project_path, "r"):
                 pass
             return True
         except OSError as e:
-            self._log(f"  - HDF5 format error in {self.project_path}: {e}", log_type='error')
+            self._log(
+                f"  - HDF5 format error in {self.project_path}: {e}", log_type="error"
+            )
             return False
 
     def create_or_open_project(self, phantom_name, frequency_mhz, placement_name=None):
         """
-        Creates or opens a project based on the 'do_setup' execution control flag.
+        Creates a new project or opens an existing one based on the 'do_setup' flag.
+
+        Args:
+            phantom_name (str): The name of the phantom model.
+            frequency_mhz (int): The simulation frequency in MHz.
+            placement_name (str, optional): The name of the placement scenario.
+
+        Raises:
+            ValueError: If required parameters are missing or `study_type` is unknown.
+            FileNotFoundError: If `do_setup` is false and the project file does not exist.
+            ProjectCorruptionError: If the project file is found to be corrupted.
         """
-        study_type = self.config.get_setting('study_type')
+        study_type = self.config.get_setting("study_type")
         if not study_type:
             raise ValueError("'study_type' not found in the configuration file.")
 
-        if study_type == 'near_field':
+        if study_type == "near_field":
             if not all([phantom_name, frequency_mhz, placement_name]):
-                raise ValueError("For near-field studies, phantom_name, frequency_mhz, and placement_name are required.")
-            
-            project_dir = os.path.join(self.config.base_dir, 'results', 'near_field', phantom_name.lower(), f"{frequency_mhz}MHz", placement_name)
+                raise ValueError(
+                    "For near-field studies, phantom_name, frequency_mhz, and placement_name are required."
+                )
+
+            project_dir = os.path.join(
+                self.config.base_dir,
+                "results",
+                "near_field",
+                phantom_name.lower(),
+                f"{frequency_mhz}MHz",
+                placement_name,
+            )
             project_filename = f"near_field_{phantom_name.lower()}_{frequency_mhz}MHz_{placement_name}.smash"
 
-        elif study_type == 'far_field':
-            project_dir = os.path.join(self.config.base_dir, 'results', 'far_field', phantom_name.lower(), f"{frequency_mhz}MHz")
-            project_filename = f"far_field_{phantom_name.lower()}_{frequency_mhz}MHz.smash"
-        
+        elif study_type == "far_field":
+            project_dir = os.path.join(
+                self.config.base_dir,
+                "results",
+                "far_field",
+                phantom_name.lower(),
+                f"{frequency_mhz}MHz",
+            )
+            project_filename = (
+                f"far_field_{phantom_name.lower()}_{frequency_mhz}MHz.smash"
+            )
+
         else:
             raise ValueError(f"Unknown study_type '{study_type}' in config.")
 
         os.makedirs(project_dir, exist_ok=True)
-        # Ensure path uses forward slashes for Sim4Life compatibility
-        self.project_path = os.path.join(project_dir, project_filename).replace('\\', '/')
-        self._log(f"Project path set to: {self.project_path}", log_type='info')
+        self.project_path = os.path.join(project_dir, project_filename).replace(
+            "\\", "/"
+        )
+        self._log(f"Project path set to: {self.project_path}", log_type="info")
 
-        do_setup = self.execution_control.get('do_setup', True)
+        do_setup = self.execution_control.get("do_setup", True)
 
         if do_setup:
-            self._log("Execution control: 'do_setup' is true. Creating a new project.", log_type='info')
+            self._log(
+                "Execution control: 'do_setup' is true. Creating a new project.",
+                log_type="info",
+            )
             self.create_new()
-            # NOTE: Do not save immediately. The project is unstable until content is added.
-            # The calling study is responsible for the first save.
         else:
-            self._log("Execution control: 'do_setup' is false. Attempting to open existing project.", log_type='info')
+            self._log(
+                "Execution control: 'do_setup' is false. Attempting to open existing project.",
+                log_type="info",
+            )
             if not os.path.exists(self.project_path):
-                # If the primary path doesn't exist, check for the old "thelonius" naming convention.
                 old_project_path = self.project_path.replace("thelonious", "thelonius")
                 if os.path.exists(old_project_path):
-                    self._log(f"Project not found at primary path, but found with old 'thelonius' naming: {old_project_path}", log_type='warning')
+                    self._log(
+                        f"Project not found at primary path, but found with old 'thelonius' naming: {old_project_path}",
+                        log_type="warning",
+                    )
                     self.project_path = old_project_path
                 else:
-                    error_msg = f"ERROR: 'do_setup' is false, but project file not found at {self.project_path} or with old naming. Cannot proceed."
-                    self._log(error_msg, log_type='fatal')
+                    error_msg = (
+                        f"ERROR: 'do_setup' is false, but project file not found at {self.project_path} "
+                        f"or with old naming. Cannot proceed."
+                    )
+                    self._log(error_msg, log_type="fatal")
                     raise FileNotFoundError(error_msg)
-            
+
             try:
                 self.open()
             except ProjectCorruptionError:
-                if self.document and hasattr(self.document, 'IsOpen') and self.document.IsOpen():
+                if (
+                    self.document
+                    and hasattr(self.document, "IsOpen")
+                    and self.document.IsOpen()
+                ):
                     self.document.Close()
-                raise  # Re-raise the exception to halt the study
+                raise
 
     def create_new(self):
         """
-        Creates a new empty project in memory, deleting any existing file.
-        The project is not saved to disk until save() is explicitly called.
+        Creates a new, empty project in memory.
+
+        This method first closes any open document to release file locks, then
+        deletes the existing project file and its associated cache files.
+        Finally, it creates a new, unsaved project in memory.
         """
-        # Close any currently open document to release file locks before deleting
-        if self.document and hasattr(self.document, 'IsOpen') and self.document.IsOpen():
-            self._log("Closing existing document before creating a new one to release file lock.", log_type='info')
+        if (
+            self.document
+            and hasattr(self.document, "IsOpen")
+            and self.document.IsOpen()
+        ):
+            self._log(
+                "Closing existing document before creating a new one to release file lock.",
+                log_type="info",
+            )
             self.document.Close()
 
         if self.project_path and os.path.exists(self.project_path):
-            self._log(f"Deleting existing project file at {self.project_path}", log_type='warning')
+            self._log(
+                f"Deleting existing project file at {self.project_path}",
+                log_type="warning",
+            )
             os.remove(self.project_path)
 
-            # Also delete associated cache files
             project_dir = os.path.dirname(self.project_path)
             project_filename_base = os.path.basename(self.project_path)
             for item in os.listdir(project_dir):
-                # Cache files start with the project name (or a dot) and are not the project itself.
-                # e.g. <project>.smash.s4l_cache or .<project>.smash.s4l_lock
-                is_cache_file = item.startswith(f".{project_filename_base}") or \
-                                (item.startswith(project_filename_base) and item != project_filename_base)
-                
+                is_cache_file = item.startswith(f".{project_filename_base}") or (
+                    item.startswith(project_filename_base)
+                    and item != project_filename_base
+                )
+
                 if is_cache_file:
                     item_path = os.path.join(project_dir, item)
                     if os.path.isfile(item_path):
-                        self._log(f"Deleting cache file: {item_path}", log_type='info')
+                        self._log(f"Deleting cache file: {item_path}", log_type="info")
                         try:
                             os.remove(item_path)
                         except OSError as e:
-                            self._log(f"Error deleting cache file {item_path}: {e}", log_type='error')
-        
-        self._log("Creating a new empty project in memory.", log_type='info')
+                            self._log(
+                                f"Error deleting cache file {item_path}: {e}",
+                                log_type="error",
+                            )
+
+        self._log("Creating a new empty project in memory.", log_type="info")
         self.document.New()
 
-        # In S4L v9.0, the modeling environment must be initialized by creating a
-        # geometric entity after creating a new document. The project should not
-        # be saved until it is populated by the setup script.
-        self._log("Initializing model by creating and deleting a dummy block...", log_type='verbose')
-        dummy_block = s4l_model.CreateSolidBlock(s4l_model.Vec3(0,0,0), s4l_model.Vec3(1,1,1))
+        self._log(
+            "Initializing model by creating and deleting a dummy block...",
+            log_type="verbose",
+        )
+        dummy_block = s4l_model.CreateSolidBlock(
+            s4l_model.Vec3(0, 0, 0), s4l_model.Vec3(1, 1, 1)
+        )
         dummy_block.Delete()
-        self._log("Model initialized, ready for population.", log_type='verbose')
+        self._log("Model initialized, ready for population.", log_type="verbose")
 
     def open(self):
         """
-        Opens an existing project after validating it.
-        """
-        self._log(f"Validating project file: {self.project_path}", log_type='info')
-        if not self._is_valid_smash_file():
-            self._log(f"ERROR: Project file {self.project_path} is corrupted or locked.", log_type='fatal')
-            raise ProjectCorruptionError(f"File is not a valid or accessible HDF5 file: {self.project_path}")
+        Opens an existing project after performing validation checks.
 
-        self._log(f"Opening project with Sim4Life: {self.project_path}", log_type='info')
+        Raises:
+            ProjectCorruptionError: If the project file is invalid, locked, or
+                                    cannot be opened by Sim4Life.
+        """
+        self._log(f"Validating project file: {self.project_path}", log_type="info")
+        if not self._is_valid_smash_file():
+            self._log(
+                f"ERROR: Project file {self.project_path} is corrupted or locked.",
+                log_type="fatal",
+            )
+            raise ProjectCorruptionError(
+                f"File is not a valid or accessible HDF5 file: {self.project_path}"
+            )
+
+        self._log(
+            f"Opening project with Sim4Life: {self.project_path}", log_type="info"
+        )
         try:
-            # The open_project utility calls s4l_v1.document.Open()
             open_project(self.project_path)
         except Exception as e:
-            # Catching a broad exception because the underlying Sim4Life error is not specific
-            self._log(f"ERROR: Sim4Life failed to open project file, it is likely corrupted: {e}", log_type='fatal')
-            # Close the document if it was partially opened, to release locks
-            if self.document and hasattr(self.document, 'IsOpen') and self.document.IsOpen():
+            self._log(
+                f"ERROR: Sim4Life failed to open project file, it is likely corrupted: {e}",
+                log_type="fatal",
+            )
+            if (
+                self.document
+                and hasattr(self.document, "IsOpen")
+                and self.document.IsOpen()
+            ):
                 self.document.Close()
-            raise ProjectCorruptionError(f"Sim4Life could not open corrupted file: {self.project_path}")
+            raise ProjectCorruptionError(
+                f"Sim4Life could not open corrupted file: {self.project_path}"
+            )
 
     def save(self):
         """
-        Saves the project to its file path using SaveAs.
+        Saves the currently active project to its designated file path.
+
+        Raises:
+            ValueError: If the project path has not been set.
         """
         if not self.project_path:
             raise ValueError("Project path is not set. Cannot save.")
-        
-        self._log(f"Saving project to {self.project_path}...", log_type='info')
+
+        self._log(f"Saving project to {self.project_path}...", log_type="info")
         self.document.SaveAs(self.project_path)
-        self._log("Project saved.", log_type='success')
+        self._log("Project saved.", log_type="success")
 
     def close(self):
-        """
-        Closes the Sim4Life document.
-        """
-        self._log("Closing project document...", log_type='info')
+        """Closes the currently active Sim4Life document."""
+        self._log("Closing project document...", log_type="info")
         self.document.Close()
 
     def cleanup(self):
-        """
-        Placeholder for any additional cleanup tasks.
-        Currently just closes the project.
-        """
-        if self.document and hasattr(self.document, 'IsOpen') and self.document.IsOpen():
+        """Performs cleanup operations, such as closing any open project."""
+        if (
+            self.document
+            and hasattr(self.document, "IsOpen")
+            and self.document.IsOpen()
+        ):
             self.close()
 
     def reload_project(self):
-        """Saves, closes, and re-opens the project to ensure results are loaded."""
-        if self.document and hasattr(self.document, 'IsOpen') and self.document.IsOpen():
-            self._log("Saving and reloading project to load results...", log_type='info')
+        """Saves, closes, and re-opens the project to load simulation results."""
+        if (
+            self.document
+            and hasattr(self.document, "IsOpen")
+            and self.document.IsOpen()
+        ):
+            self._log(
+                "Saving and reloading project to load results...", log_type="info"
+            )
             self.save()
             self.close()
-        
+
         self.open()
-        self._log("Project reloaded.", log_type='success')
+        self._log("Project reloaded.", log_type="success")

@@ -15,9 +15,19 @@ COLOR_MAP = {
     "highlight": Fore.YELLOW + Style.BRIGHT,
 }
 
+
 def get_color(log_type):
     """
-    Returns the color for a given log type.
-    Defaults to white if the type is not found.
+    Retrieves the colorama color code for a given log type.
+
+    This function looks up the log type in the global COLOR_MAP and returns the
+    corresponding colorama Fore object. If the log type is not found, it defaults
+    to white.
+
+    Args:
+        log_type (str): The type of log message (e.g., 'info', 'warning', 'error').
+
+    Returns:
+        str: The colorama color code for the log type.
     """
     return COLOR_MAP.get(log_type, Fore.WHITE)
