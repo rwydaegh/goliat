@@ -43,7 +43,10 @@ def main():
     from src.gui_manager import ProgressGUI
     from PySide6.QtWidgets import QApplication
 
-    config_filename = args.config if args.config else "todays_near_field_config.json"
+    if args.config:
+        config_filename = args.config
+    else:
+        config_filename = os.path.join("configs", "todays_near_field_config.json")
 
     # The GUI now handles the study execution in a separate process
     app = QApplication(sys.argv)

@@ -86,26 +86,32 @@ Ensure you have **Sim4Life v8.2.0.16876** installed and licensed.
 
 ### Running a Study
 
-All commands **must** be executed with the Python interpreter included with Sim4Life.
+To simplify running studies, you can source a local `.bashrc` file to add the Sim4Life Python executable to your shell's `PATH` for the current session.
 
-**Path to Python:** `"C:/Program Files/Sim4Life_8.2.0.16876/Python/python.exe"`
+**1. One-Time Setup**
 
----
+If your Sim4Life installation path is different from the default, update the `.bashrc` file in the project's root directory with the correct path.
 
-#### Other Examples
+**2. Activate the Environment**
 
-**Run a study:**
+Before running a study, source the `.bashrc` file to update your `PATH`:
 
-The GUI automatically launches when running `run_study.py`. It requires a configuration file
+```bash
+source .bashrc
+```
+
+**3. Run the Study**
+
+Now you can run studies using the `python` command directly.
 
 **Run a far-field study:**
 ```bash
-"C:/Program Files/Sim4Life_8.2.0.16876/Python/python.exe" run_study.py --config "configs/far_field_config.json"
+python run_study.py --config "configs/far_field_config.json"
 ```
 
 **Run a near-field study:**
 ```bash
-"C:/Program Files/Sim4Life_8.2.0.16876/Python/python.exe" run_study.py --config "configs/near_field_config.json"
+python run_study.py --config "configs/near_field_config.json"
 ```
 
 The script will automatically perform all necessary setup steps on the first run:

@@ -2,26 +2,14 @@
     "extends": "base_config.json",
     "study_type": "far_field",
     "study_name": "Today's Far-Field run",
-    "line_profiling": {
-        "enabled": true,
-        "subtasks": {
-            "setup_simulation": [
-                "src.setups.far_field_setup.FarFieldSetup.run_full_setup",
-                "src.setups.far_field_setup.FarFieldSetup._create_simulation_entity",
-                "src.setups.far_field_setup.FarFieldSetup._apply_common_settings",
-                "src.setups.far_field_setup.FarFieldSetup._finalize_setup",
-                "src.setups.base_setup.BaseSetup._finalize_setup"
-            ]
-        }
-    },
     "execution_control": {
         "do_setup": true,
-        "do_run": false,
-        "do_extract": false
+        "do_run": true,
+        "do_extract": true
     },
     "manual_isolve": true,
     "phantoms": [
-        "thelonious"
+        "eartha"
     ],
     "frequencies_mhz": [
         450,
@@ -48,7 +36,7 @@
     "simulation_parameters": {
         "bbox_padding_mm": 0,
         "simulation_bbox_points": 8,
-        "number_of_point_sources": 2
+        "number_of_point_sensors": 2
     },
     "gridding_parameters": {
         "global_gridding": {

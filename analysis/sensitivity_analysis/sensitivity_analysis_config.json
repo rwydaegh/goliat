@@ -1,0 +1,25 @@
+{
+  "base_config_path": "analysis/sensitivity_analysis/todays_far_field_config.json",
+  "results_dir": "analysis/sensitivity_analysis/results",
+  "analysis_fig_dir": "analysis/sensitivity_analysis/plots",
+  "config_dir": "analysis/sensitivity_analysis/configs",
+  "profiling_config_path": "analysis/sensitivity_analysis/profiling_config.json",
+  "sensitivity_parameters": [
+    {
+      "name": "simulation_time_multiplier",
+      "values": [3, 5, 7, 9]
+    }
+  ],
+  "output_variables": {
+    "whole_body_sar": {
+      "source_type": "json",
+      "file_path_template": "results/far_field/{phantom_name}/{frequency}MHz/{placement_name}/sar_results.json",
+      "json_path": "whole_body_sar"
+    },
+    "power_balance": {
+      "source_type": "json",
+      "file_path_template": "results/far_field/{phantom_name}/{frequency}MHz/{placement_name}/sar_results.json",
+      "json_path": "power_balance.Balance"
+    }
+  }
+}

@@ -2,6 +2,13 @@ import logging
 import os
 from datetime import datetime
 
+class ColorFormatter(logging.Formatter):
+    """
+    A custom formatter to display messages in white without the standard log prefix.
+    """
+    def format(self, record):
+        return f"{record.getMessage()}"
+
 def setup_loggers():
     """
     Sets up two loggers:
@@ -38,12 +45,13 @@ def setup_loggers():
     progress_log_filename = os.path.join(log_dir, f'{session_timestamp}.progress.log')
     main_log_filename = os.path.join(log_dir, f'{session_timestamp}.log')
 
-    # --- Formatter ---
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    # --- Formatters ---
+    file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    console_formatter = ColorFormatter()
 
     # --- Main Log File Handler (for both loggers) ---
     main_file_handler = logging.FileHandler(main_log_filename, mode='a')
-    main_file_handler.setFormatter(formatter)
+    main_file_handler.setFormatter(file_formatter)
 
     # --- Progress Logger ---
     progress_logger = logging.getLogger('progress')
@@ -54,7 +62,7 @@ def setup_loggers():
     
     # File handler for progress file
     progress_file_handler = logging.FileHandler(progress_log_filename, mode='a')
-    progress_file_handler.setFormatter(formatter)
+    progress_file_handler.setFormatter(file_formatter)
     progress_logger.addHandler(progress_file_handler)
     
     # Add main file handler
@@ -62,7 +70,7 @@ def setup_loggers():
     
     # Stream handler for progress (console output)
     progress_stream_handler = logging.StreamHandler()
-    progress_stream_handler.setFormatter(formatter)
+    progress_stream_handler.setFormatter(console_formatter)
     progress_logger.addHandler(progress_stream_handler)
     progress_logger.propagate = False
 
@@ -78,7 +86,7 @@ def setup_loggers():
 
     # Stream handler for verbose (console output)
     verbose_stream_handler = logging.StreamHandler()
-    verbose_stream_handler.setFormatter(formatter)
+    verbose_stream_handler.setFormatter(console_formatter)
     verbose_logger.addHandler(verbose_stream_handler)
     verbose_logger.propagate = False
 

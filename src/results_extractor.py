@@ -6,6 +6,8 @@ import logging
 import traceback
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+import scienceplots
 from .logging_manager import LoggingMixin
 
 class ResultsExtractor(LoggingMixin):
@@ -55,8 +57,15 @@ class ResultsExtractor(LoggingMixin):
             if self.gui:
                 self.gui.update_stage_progress("Extracting SAR", 100, 100)
             self._extract_sar_statistics(simulation_extractor, results_data)
+            self._extract_power_balance(simulation_extractor, results_data)
         else:
             self._log("  - Skipping SAR statistics for free-space simulation.")
+
+        # Extract Point Sensor Data if any
+        if self.config.get_setting("simulation_parameters.number_of_point_sensors", 0) > 0:
+            if self.gui:
+                self.gui.update_stage_progress("Extracting Point Sensors", 75, 100)
+            self._extract_point_sensor_data(simulation_extractor)
 
         # Save final results
         results_dir = os.path.join(self.config.base_dir, 'results', self.study_type, self.phantom_name, f"{self.frequency_mhz}MHz", self.placement_name)
@@ -71,6 +80,58 @@ class ResultsExtractor(LoggingMixin):
         self._log("  - Extracting input power...")
         with self.study.subtask("extract_input_power"):
             try:
+                # For far-field, we use a theoretical model
+                if self.study_type == 'far_field':
+                    self._log("  - Far-field study: using theoretical model for input power.")
+                    
+                    # Find the simulation bounding box entity
+                    import s4l_v1.model
+                    bbox_entity = next((e for e in s4l_v1.model.AllEntities() if hasattr(e, 'Name') and e.Name == "far_field_simulation_bbox"), None)
+                    if not bbox_entity:
+                        raise RuntimeError("Could not find 'far_field_simulation_bbox' entity in the project.")
+
+                    sim_bbox = s4l_v1.model.GetBoundingBox([bbox_entity])
+                    sim_min = np.array(sim_bbox[0])
+                    sim_max = np.array(sim_bbox[1])
+                    self._log(f"  - Bounding Box Min: {sim_min}, Max: {sim_max}", level='verbose')
+                    
+                    # Add padding from config
+                    padding_bottom = np.array(self.config.get_setting('gridding_parameters.padding.manual_bottom_padding_mm', [0,0,0]))
+                    padding_top = np.array(self.config.get_setting('gridding_parameters.padding.manual_top_padding_mm', [0,0,0]))
+                    
+                    total_min = sim_min - padding_bottom
+                    total_max = sim_max + padding_top
+                    
+                    # E-field is 1 V/m
+                    e_field_v_m = 1.0
+                    
+                    # Impedance of free space
+                    z0 = 377.0
+                    
+                    # Power density (W/m^2)
+                    power_density_w_m2 = (e_field_v_m**2) / (2 * z0)
+                    
+                    # The incident direction determines the area
+                    direction = self.placement_name.split('_')[1] # e.g., from "environmental_x_pos_theta"
+                    
+                    dims = total_max - total_min
+                    # area is in mm^2, convert to m^2
+                    if direction == 'x':
+                        area_m2 = (dims[1] * dims[2]) / 1e6
+                    elif direction == 'y':
+                        area_m2 = (dims[0] * dims[2]) / 1e6
+                    else: # z
+                        area_m2 = (dims[0] * dims[1]) / 1e6
+                    self._log(f"  - Calculated Area: {area_m2} m^2", level='verbose')
+                        
+                    total_input_power = power_density_w_m2 * area_m2
+                    
+                    results_data['input_power_W'] = total_input_power
+                    results_data['input_power_frequency_MHz'] = float(self.frequency_mhz)
+                    self._log(f"  - Calculated theoretical input power: {total_input_power:.4e} W")
+                    return
+
+                # For near-field, extract from the simulation
                 input_power_extractor = simulation_extractor["Input Power"]
                 self.document.AllAlgorithms.Add(input_power_extractor)
                 input_power_extractor.Update()
@@ -247,3 +308,115 @@ class ResultsExtractor(LoggingMixin):
         with open(html_filepath, 'w', encoding='utf-8') as f:
             f.write(html_content)
         self._log(f"  - HTML report saved to: {html_filepath}")
+
+    def _extract_power_balance(self, simulation_extractor, results_data):
+        """Extracts the power balance from the simulation."""
+        self._log("  - Extracting power balance...")
+        try:
+            em_sensor_extractor = simulation_extractor["Overall Field"]
+            power_balance_extractor = em_sensor_extractor.Outputs["Power Balance"]
+            power_balance_extractor.Update()
+
+            power_balance_data = {}
+            keys = power_balance_extractor.Data.DataSimpleDataCollection.Keys()
+            for key in keys:
+                # Skip logging the initial 'Balance' since we will recalculate it.
+                if key == 'Balance':
+                    continue
+                value = power_balance_extractor.Data.DataSimpleDataCollection.FieldValue(key, 0)
+                power_balance_data[key] = value
+                self._log(f"    - {key}: {value:.4e}")
+
+            # For far-field, the input power is theoretical, so we overwrite the 'Pin'
+            if self.study_type == 'far_field' and 'input_power_W' in results_data:
+                power_balance_data['Pin'] = results_data['input_power_W']
+                self._log(f"    - Overwriting Pin with theoretical value: {power_balance_data['Pin']:.4e} W")
+
+            pin = power_balance_data.get('Pin', 0.0)
+            diel_loss = power_balance_data.get('DielLoss', 0.0)
+            rad_power = power_balance_data.get('RadPower', 0.0)
+
+            if pin > 1e-9:
+                p_out = diel_loss + rad_power
+                balance = 100 * (p_out / pin)
+            else:
+                balance = float('nan')
+            
+            power_balance_data['Balance'] = balance
+            self._log(f"    - Final Balance: {balance:.2f}%")
+
+            results_data['power_balance'] = power_balance_data
+
+        except Exception as e:
+            self._log(f"  - WARNING: Could not extract power balance: {e}")
+            traceback.print_exc()
+
+    def _extract_point_sensor_data(self, simulation_extractor):
+        """Extracts point sensor data and plots it."""
+        self._log("  - Extracting point sensor data...")
+        with self.study.subtask("extract_point_sensor_data"):
+            try:
+                num_sensors = self.config.get_setting("simulation_parameters.number_of_point_sensors", 0)
+                if num_sensors == 0:
+                    return
+
+                plt.style.use('science')
+                plt.rcParams.update({"text.usetex": False})
+                fig, ax = plt.subplots()
+                ax.grid(True, which='major', axis='y', linestyle='--')
+
+                for i in range(1, num_sensors + 1):
+                    sensor_name_pattern = f"Point Sensor {i}"
+                    
+                    em_sensor_extractor = None
+                    for key in simulation_extractor.Keys():
+                        if sensor_name_pattern in key:
+                            em_sensor_extractor = simulation_extractor[key]
+                            break
+                    
+                    if not em_sensor_extractor:
+                        self._log(f"    - WARNING: Could not find sensor extractor for '{sensor_name_pattern}'")
+                        continue
+
+                    self.document.AllAlgorithms.Add(em_sensor_extractor)
+                    
+                    inputs = [em_sensor_extractor.Outputs["EM E(t)"]]
+                    plot_viewer = self.analysis.viewers.PlotViewer(inputs=inputs)
+                    plot_viewer.UpdateAttributes()
+                    self.document.AllAlgorithms.Add(plot_viewer)
+                    
+                    # The plot data is now available through the viewer
+                    plot = plot_viewer.Plot
+                    if not plot or plot.NumberOfCurves == 0:
+                        self._log(f"    - WARNING: No data curves found for sensor '{sensor_name_pattern}'")
+                        self.document.AllAlgorithms.Remove(plot_viewer)
+                        self.document.AllAlgorithms.Remove(em_sensor_extractor)
+                        continue
+
+                    curve = plot.GetCurve(0)
+                    x_data = np.array(curve.X)
+                    y_data = np.array(curve.Y)
+                    
+                    label = re.sub(r'Point Sensor Entity \d+ \((.*?)\)', r'\1', em_sensor_extractor.Name).replace('_', ' ').title()
+                    ax.plot(x_data, y_data, label=label)
+                    
+                    self._log(f"    - Plotted data for sensor: {label}")
+
+                    # Clean up algorithms to prevent clutter
+                    self.document.AllAlgorithms.Remove(plot_viewer)
+                    self.document.AllAlgorithms.Remove(em_sensor_extractor)
+
+                ax.set_xlabel("Time (s)")
+                ax.set_ylabel("E-Field (V/m)")
+                ax.set_title(f"Point Sensor E-Field vs. Time ({self.frequency_mhz} MHz)")
+                ax.legend()
+
+                results_dir = os.path.join(self.config.base_dir, 'results', self.study_type, self.phantom_name, f"{self.frequency_mhz}MHz", self.placement_name)
+                plot_filepath = os.path.join(results_dir, 'point_sensor_data.png')
+                plt.savefig(plot_filepath, dpi=300)
+                plt.close(fig)
+                self._log(f"  - Point sensor plot saved to: {plot_filepath}")
+
+            except Exception as e:
+                self._log(f"  - ERROR: An exception occurred during point sensor data extraction: {e}", level='progress')
+                traceback.print_exc()

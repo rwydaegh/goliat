@@ -36,6 +36,6 @@
         "bbox_padding_mm": 50,
         "simulation_bbox_points": 8,
         "global_gridding": 10.0,
-        "number_of_point_sources": 2
+        "number_of_point_sensors": 2
     }
 }

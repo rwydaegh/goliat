@@ -12,7 +12,7 @@ def run_new_analysis():
     print("--- Starting New Post-Processing Analysis ---")
 
     # --- 1. Load Data ---
-    results_pickle_path = 'results/near_field/thelonious/aggregated_results.pkl'
+    results_pickle_path = 'results/near_field/thelonius/aggregated_results.pkl'
     plots_dir = 'post_process_results/plots'
     os.makedirs(plots_dir, exist_ok=True)
 

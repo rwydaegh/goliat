@@ -1,6 +1,8 @@
 data/
 results/
 plots/
+paper/
+papers/far_field_old/
 PythonAPIReference/
 Sim4Life_Manual_7.2.pdf
 Sim4Life_Introduction.pdf
@@ -20,11 +22,13 @@ logs/
 # Analysis files
 analysis/cpw/data/
 analysis/cpw/plots/
+analysis/sensitivity_analysis/configs/
+analysis/sensitivity_analysis/plots/
 
 # Ignore generated files, but not in the analysis directory
 *.csv
-*.png
-*.pdf
+#*.png
+#*.pdf
 !analysis/**/*.csv
 !analysis/**/*.png
 !analysis/**/*.pdf

@@ -3,7 +3,8 @@ import logging
 import importlib
 from line_profiler import LineProfiler
 from src.config import Config
-from src.utils import Profiler, ensure_s4l_running, StudyCancelledError, profile_subtask
+from src.profiler import Profiler
+from src.utils import ensure_s4l_running, StudyCancelledError, profile_subtask
 import traceback
 from src.project_manager import ProjectManager
 from src.logging_manager import LoggingMixin
@@ -12,7 +13,7 @@ class BaseStudy(LoggingMixin):
     """
     Abstract base class for all studies (Near-Field, Far-Field).
     """
-    def __init__(self, study_type, config_filename=None, gui=None):
+    def __init__(self, study_type, config_filename=None, gui=None, profiler=None):
         self.study_type = study_type
         self.gui = gui
         self.verbose_logger = logging.getLogger('verbose')

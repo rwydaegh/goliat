@@ -12,7 +12,7 @@ The framework is controlled by a hierarchical JSON configuration system. A study
 | `simulation_parameters.global_auto_termination` | string | `"GlobalAutoTerminationUserDefined"` | Sets the FDTD solver's termination criteria. |
 | `simulation_parameters.convergence_level_dB` | number | `-15` | If the termination is set to user defined, this is the convergence level in dB. |
 | `simulation_parameters.simulation_time_multiplier` | number | `5` | To determine the simulation time, we compute the time it takes to traverse the longest diagonal at the speed of light, and multiply by this number. |
-| `simulation_parameters.number_of_point_sources` | number | `8` | Number of point sensors to place at the simulation bounding box corners for field monitoring. |
+| `simulation_parameters.number_of_point_sensors` | number | `8` | Number of point sensors to place at the simulation bounding box corners for field monitoring. |
 | `simulation_parameters.point_source_order` | array | `["lower_left_bottom", ...]` | Defines the specific order and location of the point sensors. |
 | `gridding_parameters.global_gridding.grid_mode` | string | `"automatic"` or `"manual"` | Sets the global gridding strategy. |
 | `gridding_parameters.global_gridding.refinement` | string | `"AutoRefinementDefault"` | The refinement level for automatic gridding, from very fine to coarse. |

@@ -1,6 +1,7 @@
 {
     "extends": "base_config.json",
     "study_type": "far_field",
+    "study_name": "Today's Far-Field run",
     "execution_control": {
         "do_setup": true,
         "do_run": true,
@@ -8,33 +9,19 @@
     },
     "manual_isolve": true,
     "phantoms": [
-        "thelonious"
+        "eartha"
     ],
     "frequencies_mhz": [
-        450,
-        700,
-        835,
-        1450,
-        2140,
-        2450,
-        3500,
-        5200,
-        5800
+        700
     ],
     "far_field_setup": {
         "type": "environmental",
         "environmental": {
             "incident_directions": [
-                "x_pos",
-                "x_neg",
-                "y_pos",
-                "y_neg",
-                "z_pos",
-                "z_neg"
+                "x_pos"
             ],
             "polarizations": [
-                "theta",
-                "phi"
+                "theta"
             ]
         },
         "auto_induced": {
@@ -42,22 +29,30 @@
         }
     },
     "simulation_parameters": {
-        "bbox_padding_mm": 50,
+        "bbox_padding_mm": 0,
         "simulation_bbox_points": 8,
         "number_of_point_sensors": 2
     },
     "gridding_parameters": {
-        "gridding_mode": "automatic",
+        "global_gridding": {
+            "grid_mode": "manual",
+            "manual_fallback_max_step_mm": 5.0
+        },
         "global_gridding_per_frequency": {
-            "450": 8.021,
-            "700": 5.158,
-            "835": 4.325,
-            "1450": 2.494,
-            "2140": 1.694,
-            "2450": 1.482,
-            "3500": 1.043,
-            "5200": 0.712,
-            "5800": 0.642
+            "450": 2.5,
+            "700": 2.5,
+            "835": 2.5,
+            "1450": 2.5,
+            "2140": 2.5,
+            "2450": 2.5,
+            "3500": 2.5,
+            "5200": 2.5,
+            "5800": 2.5
+        },
+        "padding": {
+            "padding_mode": "manual",
+            "manual_bottom_padding_mm": [15, 15, 15],
+            "manual_top_padding_mm": [15, 15, 15]
         }
     }
 }

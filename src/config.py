@@ -46,7 +46,7 @@ class Config:
     def get_setting(self, path, default=None):
         """
         Retrieves a setting from the configuration using a path-like string.
-        Example path: "simulation_parameters.number_of_point_sources"
+        Example path: "simulation_parameters.number_of_point_sensors"
         """
         keys = path.split('.')
         current_config = self.config

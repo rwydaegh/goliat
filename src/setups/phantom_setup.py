@@ -53,7 +53,7 @@ class PhantomSetup(BaseSetup):
 
             self._log(f"Local .sab file not found. Attempting to download '{self.phantom_name}'...")
             available_downloads = self.data.GetAvailableDownloads()
-            phantom_to_download = next((item for item in available_downloads if self.phantom_name in item.Name), None)
+            phantom_to_download = next((item for item in available_downloads if self.phantom_name.lower() in item.Name.lower()), None)
             
             if not phantom_to_download:
                 raise FileNotFoundError(f"Phantom '{self.phantom_name}' not found for download or in local files.")

@@ -123,35 +123,35 @@ class SimulationRunner(LoggingMixin):
         try:
             with self.study.subtask("run_isolve_execution"):
                 process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
-            
-            output_queue = Queue()
-            thread = threading.Thread(target=reader_thread, args=(process.stdout, output_queue))
-            thread.daemon = True
-            thread.start()
+                
+                output_queue = Queue()
+                thread = threading.Thread(target=reader_thread, args=(process.stdout, output_queue))
+                thread.daemon = True
+                thread.start()
 
-            # --- 3. Main loop: Monitor process and log output without blocking ---
-            while process.poll() is None:
-                try:
-                    # Read all available lines from the queue
-                    while True:
-                        line = output_queue.get_nowait()
-                        self.verbose_logger.info(line.strip())
-                except Empty:
-                    # No new output, sleep briefly to prevent a busy-wait
-                    time.sleep(0.1)
-            
-            # Process has finished, get the return code
-            return_code = process.returncode
-            # Make sure the reader thread has finished and read all remaining output
-            thread.join()
-            while not output_queue.empty():
-                line = output_queue.get_nowait()
-                self.verbose_logger.info(line.strip())
+                # --- 3. Main loop: Monitor process and log output without blocking ---
+                while process.poll() is None:
+                    try:
+                        # Read all available lines from the queue
+                        while True:
+                            line = output_queue.get_nowait()
+                            self.verbose_logger.info(line.strip())
+                    except Empty:
+                        # No new output, sleep briefly to prevent a busy-wait
+                        time.sleep(0.1)
+                
+                # Process has finished, get the return code
+                return_code = process.returncode
+                # Make sure the reader thread has finished and read all remaining output
+                thread.join()
+                while not output_queue.empty():
+                    line = output_queue.get_nowait()
+                    self.verbose_logger.info(line.strip())
 
-            if return_code != 0:
-                error_message = f"iSolve.exe failed with return code {return_code}."
-                self._log(error_message, level='progress')
-                raise RuntimeError(error_message)
+                if return_code != 0:
+                    error_message = f"iSolve.exe failed with return code {return_code}."
+                    self._log(error_message, level='progress')
+                    raise RuntimeError(error_message)
 
             # --- 4. Post-simulation steps ---
             with self.study.subtask("run_wait_for_results"):

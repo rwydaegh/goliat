@@ -60,7 +60,7 @@ class NearFieldSetup(BaseSetup):
         antenna_components = self._get_antenna_components()
 
         material_setup = MaterialSetup(self.config, simulation, self.antenna, self.verbose_logger, self.progress_logger, self.free_space)
-        material_setup.assign_materials(antenna_components, lock=lock)
+        material_setup.assign_materials(antenna_components)
 
         gridding_setup = GriddingSetup(self.config, simulation, self.placement_name, self.antenna, self.verbose_logger, self.progress_logger)
         gridding_setup.setup_gridding(antenna_components)
@@ -187,7 +187,7 @@ class NearFieldSetup(BaseSetup):
             for sim in list(self.document.AllSimulations):
                 self.document.AllSimulations.Remove(sim)
         
-        sim_name = f"EM_FDTD_{self.phantom_name}_{self.antenna.get_model_type()}_{self.placement_name}"
+        sim_name = f"EM_FDTD_{self.phantom_name}_{self.frequency_mhz}MHz_{self.placement_name}"
         if self.free_space:
             sim_name += "_freespace"
         simulation = self.emfdtd.Simulation()

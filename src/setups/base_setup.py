@@ -106,7 +106,7 @@ class BaseSetup(LoggingMixin):
 
     def _add_point_sensors(self, simulation, sim_bbox_entity_name):
         """Adds point sensors at the corners of the simulation bounding box."""
-        num_points = self.config.get_setting("simulation_parameters/number_of_point_sources", 0)
+        num_points = self.config.get_setting("simulation_parameters.number_of_point_sensors", 0)
         if num_points == 0:
             self._log("  - Skipping point sensor creation (0 points requested).")
             return
@@ -129,7 +129,7 @@ class BaseSetup(LoggingMixin):
             "top_right_up": (bbox_max, bbox_max, bbox_max)
         }
 
-        point_source_order = self.config.get_setting("simulation_parameters/point_source_order", list(corner_map.keys()))
+        point_source_order = self.config.get_setting("simulation_parameters.point_source_order", list(corner_map.keys()))
         
         for i in range(num_points):
             corner_name = point_source_order[i]
@@ -146,7 +146,7 @@ class BaseSetup(LoggingMixin):
                 self._log(f"  - Point sensor '{point_entity_name}' already exists. Skipping creation.")
                 continue
 
-            point_entity = self.model.CreatePoint(self.model.Vec3(corner_coords))
+            point_entity = self.model.CreatePoint(self.model.Vec3(corner_coords[0][0], corner_coords[1][1], corner_coords[2][2]))
             point_entity.Name = point_entity_name
             point_sensor = self.emfdtd.PointSensorSettings()
             point_sensor.Name = f"Point Sensor {i+1}"
