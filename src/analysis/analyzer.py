@@ -38,7 +38,7 @@ class Analyzer:
         results_df = pd.DataFrame(self.all_results)
         all_organ_results_df = pd.DataFrame(self.all_organ_results)
 
-        results_df = self._convert_units_and_cache(results_df)
+        results_df = self._convert_units_and_cache(results_df, all_organ_results_df)
         self._export_reports(results_df, all_organ_results_df)
         self._generate_plots(results_df, all_organ_results_df)
         
@@ -128,13 +128,23 @@ class Analyzer:
                 result_entry['SAR_trunk'] = np.nan
         return result_entry
 
-    def _convert_units_and_cache(self, results_df):
+    def _convert_units_and_cache(self, results_df, organ_results_df):
+        """Converts SAR units to mW/kg and caches both summary and organ-level results."""
         sar_columns = [col for col in results_df.columns if 'SAR' in col]
         results_df[sar_columns] = results_df[sar_columns] * 1000
+
         output_pickle_path = os.path.join(self.results_base_dir, "aggregated_results.pkl")
         os.makedirs(os.path.dirname(output_pickle_path), exist_ok=True)
-        results_df.to_pickle(output_pickle_path)
-        print(f"\n--- Aggregated results (in mW/kg) cached to: {output_pickle_path} ---")
+
+        # Cache both dataframes in a single pickle file for comprehensive reuse
+        cached_data = {
+            'summary_results': results_df,
+            'organ_results': organ_results_df
+        }
+        with open(output_pickle_path, 'wb') as f:
+            pickle.dump(cached_data, f)
+
+        print(f"\n--- Aggregated summary and organ results (in mW/kg) cached to: {output_pickle_path} ---")
         return results_df
 
     def _export_reports(self, results_df, all_organ_results_df):
