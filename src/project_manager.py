@@ -75,6 +75,9 @@ class ProjectManager:
         """
         self._log(f"Opening project: {self.project_path}")
         open_project(self.project_path)
+        # After opening, the document object is new, so we need to get a fresh reference
+        import s4l_v1.document
+        self.document = s4l_v1.document
 
     def save(self):
         """

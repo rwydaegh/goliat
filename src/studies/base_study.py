@@ -39,7 +39,7 @@ class BaseStudy:
         Prints a message to the console if verbose mode is enabled.
         """
         if self.verbose:
-            print(message)
+            print(message, flush=True)
 
     def run(self, setup_only=False):
         """
