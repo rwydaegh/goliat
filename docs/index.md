@@ -2,30 +2,56 @@
 
 GOLIAT is an automated Python framework for near-field and far-field dosimetric assessments using the Sim4Life simulation platform. It streamlines EMF exposure simulations for research and compliance.
 
-<div class="mdx-container mdx-grid" markdown>
-  - ### Quick Start
+<div class="grid cards" markdown>
+
+-   :material-rocket-launch-outline:{ .lg .middle } **Quick Start**
+
+    ---
+
     Get running in minutes with installation and your first simulation.
-    > [Get Started](quick_start.md)
 
-  - ### User Guide
+    [:octicons-arrow-right-24: Get Started](quick_start.md)
+
+-   :material-book-open-page-variant-outline:{ .lg .middle } **User Guide**
+
+    ---
+
     Understand workflows for near-field and far-field studies.
-    > [Read Guide](user_guide.md)
 
-  - ### Tutorials
+    [:octicons-arrow-right-24: Read Guide](user_guide.md)
+
+-   :material-school-outline:{ .lg .middle } **Tutorials**
+
+    ---
+
     Hands-on examples from basic runs to advanced batching.
-    > [View Tutorials](tutorials/basic.md)
 
-  - ### Configuration
+    [:octicons-arrow-right-24: View Tutorials](tutorials/basic.md)
+
+-   :material-cog-outline:{ .lg .middle } **Configuration**
+
+    ---
+
     Customize simulations with JSON configs.
-    > [Configure](configuration.md)
 
-  - ### API Reference
+    [:octicons-arrow-right-24: Configure](configuration.md)
+
+-   :material-api:{ .lg .middle } **API Reference**
+
+    ---
+
     Detailed docs for classes and functions.
-    > [API Docs](api.md)
 
-  - ### Architecture
+    [:octicons-arrow-right-24: API Docs](api.md)
+
+-   :material-sitemap-outline:{ .lg .middle } **Architecture**
+
+    ---
+
     Overview of the system design.
-    > [Architecture](architecture_overview.md)
+
+    [:octicons-arrow-right-24: Architecture](architecture_overview.md)
+
 </div>
 
 ## Overview
@@ -49,4 +75,3 @@ Start with the [Quick Start](quick_start.md) to run your first simulation.
 For issues, see [Troubleshooting](troubleshooting.md). Contribute via [Developer Guide](developer_guide.md).
 
 ---
-*Last updated: {date}*

@@ -18,6 +18,7 @@ def mock_pyside():
         yield
 
 
+@pytest.mark.skip_on_ci
 def test_progress_gui_initialization(mock_pyside):
     from src.gui_manager import ProgressGUI
 

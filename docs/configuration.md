@@ -120,7 +120,7 @@ Extends base for far-field specifics.
 |-----------|------|---------|-------------|
 | `frequencies_mhz` | array | `[450, 700]` | Frequencies MHz. |
 | `far_field_setup.type` | string | `"environmental"` | `"environmental"` (plane waves) or `"auto_induced"` (body-motion induced; limited). |
-| `far_field_setup.environmental.incident_directions` | array | `["x_pos", "y_neg"]` | Single-axis directions: `"x_pos"`, `"x_neg"`, `"y_pos"`, `"y_neg"`, `"z_pos"`, `"z_neg"`. No combinations like "xy_pos". |
+| `far_field_setup.environmental.incident_directions` | array | `["x_pos", "y_neg"]` | Single-axis directions: `"x_pos"`, `"x_neg"`, `"y_pos"`, `"y_neg"`, `"z_pos"`, `"z_neg"`. |
 | `far_field_setup.environmental.polarizations` | array | `["theta", "phi"]` | Polarizations: `"theta"` (vertical), `"phi"` (horizontal). |
 
 **Note**: Only 6 directions supported (x±, y±, z±). For environmental, 12 simulations per freq (6 × 2).
@@ -288,7 +288,6 @@ Create `configs/my_study.json`:
 
 Run: `python run_study.py --config configs/my_study.json`.
 
-For full details, see [User Guide](../user_guide.md).
+For full details, see [User Guide](user_guide.md).
 
 ---
-*Last updated: {date}*

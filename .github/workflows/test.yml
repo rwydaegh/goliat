@@ -4,11 +4,9 @@ on:
   push:
     branches:
       - master
-      - main
   pull_request:
     branches:
       - master
-      - main
 
 jobs:
   build-and-test:
@@ -42,4 +40,4 @@ jobs:
     - name: Run Pytest tests
       run: |
         export PYTHONPATH=$PYTHONPATH:./src
-        pytest tests/
+        pytest -m "not skip_on_ci" tests/

@@ -14,7 +14,8 @@ python-dotenv
 
 # Documentation
 mkdocs
-mkdocs-material
+mkdocs-material==9.5.3
+pymdown-extensions==10.7
 mkdocstrings[python]
 mkdocs-mermaid2-plugin
 mkdocs-git-revision-date-localized-plugin

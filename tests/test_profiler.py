@@ -12,6 +12,7 @@ def profiler_instance():
     )
 
 
+@pytest.mark.skip_on_ci
 def test_profiler_initialization(profiler_instance):
     assert profiler_instance.study_type == "near_field"
     assert "setup" in profiler_instance.phase_weights
@@ -19,12 +20,14 @@ def test_profiler_initialization(profiler_instance):
     assert "extract" in profiler_instance.phase_weights
 
 
+@pytest.mark.skip_on_ci
 def test_get_subtask_estimate(profiler_instance):
     profiler_instance.profiling_config["avg_my_task"] = 15.0
     assert profiler_instance.get_subtask_estimate("my_task") == 15.0
     assert profiler_instance.get_subtask_estimate("non_existent_task") == 1.0
 
 
+@pytest.mark.skip_on_ci
 def test_time_remaining(profiler_instance):
     profiler_instance.start_stage("setup")
     remaining = profiler_instance.get_time_remaining(current_stage_progress=0.5)

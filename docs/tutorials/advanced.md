@@ -136,7 +136,6 @@ python run_analysis.py --config configs/my_advanced.json
 - Parallel: "Lock file" – Delete stale `.lock` files in root.
 - Memory: Reduce splits if RAM low.
 
-For more config details, see [Configuration Guide](configuration.md).
+For more config details, see [Configuration Guide](../configuration.md).
 
 ---
-*Last updated: {date}*

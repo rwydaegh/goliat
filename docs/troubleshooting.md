@@ -116,7 +116,6 @@ This section addresses common issues encountered when using GOLIAT. Issues are g
 - For cloud: Monitor oSPARC dashboard for job details.
 - Still stuck? Open [GitHub Issue](https://github.com/rwydaegh/goliat/issues) with log snippet.
 
-See [User Guide](../user_guide.md) for workflows.
+See [User Guide](user_guide.md) for workflows.
 
 ---
-*Last updated: {date}*

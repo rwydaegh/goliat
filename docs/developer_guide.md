@@ -309,38 +309,64 @@ This integrated system of GUI, logging, profiling, and configuration management 
 
 ## Testing
 
-GOLIAT uses pytest for unit tests. No tests/ dir yet – add basic ones.
+GOLIAT uses `pytest` for testing, with tests located in the `tests/` directory.
 
-### Running Tests
+### Handling the `s4l_v1` Dependency
 
-Install pytest (in requirements.txt):
+Much of the codebase requires `s4l_v1`, a proprietary library available only within the Sim4Life Python environment on Windows. This prevents tests that rely on it from running in the Linux-based CI environment.
 
-```bash
-pip install pytest
-```
-
-Run:
+To manage this, tests requiring `s4l_v1` are marked with `@pytest.mark.skip_on_ci`. The CI pipeline is configured to exclude these marked tests, allowing it to validate platform-independent code while avoiding environment-specific failures.
 
 ```bash
-pytest src/ -v
+# Command used in .github/workflows/test.yml
+pytest -m "not skip_on_ci" tests/
 ```
 
-### Adding Tests
+### Local Testing Setup
 
-Create `tests/` dir. Example test_config.py:
+To run the complete test suite, your local development environment must use the Sim4Life Python interpreter.
+
+#### VS Code Configuration
+
+1.  Open the Command Palette (`Ctrl+Shift+P`).
+2.  Run the `Python: Select Interpreter` command.
+3.  Select `+ Enter interpreter path...` and find the `python.exe` in your Sim4Life installation directory (e.g., `C:\Program Files\Sim4Life\8.2\python\python.exe`).
+
+This configures VS Code to use the correct interpreter, which includes the `s4l_v1` library.
+
+### Running Tests Locally
+
+With the interpreter set, run the full test suite from the terminal.
+
+1.  **Install Dependencies**:
+    ```bash
+    pip install -r requirements.txt
+    ```
+2.  **Run Pytest**:
+    ```bash
+    # This executes all tests, including those skipped by CI
+    pytest tests/ -v
+    ```
+
+### Adding New Tests
+
+-   If a new test depends on `s4l_v1` (or imports a module that does), it must be decorated with `@pytest.mark.skip_on_ci`.
+-   If a test is self-contained and has no Sim4Life dependencies, it does not need the marker.
 
 ```python
 import pytest
-from src.config import Config
+from src.utils import format_time # This module has s4l_v1 dependencies
 
-def test_config_load():
-    config = Config(".")
-    assert config.get_setting("study_type") == "near_field"  # From default
+# This test requires the Sim4Life environment and will be skipped on CI.
+@pytest.mark.skip_on_ci
+def test_a_function_that_needs_s4l():
+    # ... test logic ...
+    pass
+
+# This test is self-contained and will run everywhere.
+def test_a_self_contained_function():
+    assert 2 + 2 == 4
 ```
-
-Focus on utils/config (no Sim4Life deps). For integration, mock s4l_v1.
-
-Run on src/: `pytest src/`.
 
 ## Extending the Framework
 
@@ -420,7 +446,6 @@ Run: `pre-commit run`.
 - License: MIT – see LICENSE.
 - Changelog: Update CHANGELOG.md for releases.
 
-For more, see [Contributing](contributing.md) (to create).
+For more, see [Contributing](/CONTRIBUTING.md).
 
 ---
-*Last updated: {date}*

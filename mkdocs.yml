@@ -9,6 +9,7 @@ edit_uri: edit/master/docs/
 
 theme:
   name: material
+  logo: img/logo.svg
   language: en
   features:
     - announce.dismiss
@@ -82,6 +83,11 @@ nav:
   - Developer Guide: developer_guide.md
   - Architecture: architecture_overview.md
   - Troubleshooting: troubleshooting.md
+  - Internals:
+    - Project Info: project_info.md
+    - Coloring Rules: COLORING_RULES.md
+    - GUI Profiling Logger: old_good_GUI-Profiling-Logger.md
+    - UML: uml.md
 
 plugins:
   - search:
@@ -153,3 +159,7 @@ markdown_extensions:
   - pymdownx.tasklist:
       custom_checkbox: true
   - pymdownx.tilde
+  - pymdownx.superfences
+  - pymdownx.emoji:
+      emoji_index: "material.extensions.emoji.twemoji"
+      emoji_generator: "material.extensions.emoji.to_svg"

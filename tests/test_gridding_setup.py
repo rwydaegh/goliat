@@ -23,6 +23,7 @@ def mock_config():
     return config
 
 
+@pytest.mark.skip_on_ci
 def test_gridding_setup_initialization(mock_config):
     setup = GriddingSetup(
         config=mock_config,

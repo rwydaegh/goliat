@@ -22,6 +22,7 @@ def mock_config():
     return config
 
 
+@pytest.mark.skip_on_ci
 def test_project_manager_initialization(mock_config):
     pm = ProjectManager(mock_config, MagicMock(), MagicMock())
     assert pm.config == mock_config

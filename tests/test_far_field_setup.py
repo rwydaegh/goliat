@@ -22,6 +22,7 @@ def mock_config():
     return config
 
 
+@pytest.mark.skip_on_ci
 def test_far_field_setup_initialization(mock_config):
     setup = FarFieldSetup(
         config=mock_config,

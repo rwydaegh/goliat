@@ -3,6 +3,7 @@ import pytest
 from src.utils import StudyCancelledError, format_time
 
 
+@pytest.mark.skip_on_ci
 def test_format_time():
     assert format_time(59) == "59s"
     assert format_time(60) == "1m 0s"
@@ -11,6 +12,7 @@ def test_format_time():
     assert format_time(3661) == "1h 1m 1s"
 
 
+@pytest.mark.skip_on_ci
 def test_study_cancelled_error():
     with pytest.raises(StudyCancelledError):
         raise StudyCancelledError("Test")

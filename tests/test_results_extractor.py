@@ -35,6 +35,7 @@ def mock_study():
     return study
 
 
+@pytest.mark.skip_on_ci
 def test_results_extractor_initialization(mock_config, mock_study):
     # This test only checks if the extractor can be initialized without errors.
     try:
@@ -55,6 +56,7 @@ def test_results_extractor_initialization(mock_config, mock_study):
         pytest.fail(f"ResultsExtractor initialization failed: {e}")
 
 
+@pytest.mark.skip_on_ci
 def test_extract_no_simulation(mock_config, mock_study):
     # Test the case where the simulation object is None
     extractor = ResultsExtractor(

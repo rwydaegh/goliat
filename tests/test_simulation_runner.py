@@ -29,6 +29,7 @@ def mock_study():
     return study
 
 
+@pytest.mark.skip_on_ci
 def test_simulation_runner_initialization(mock_config, mock_study):
     runner = SimulationRunner(
         config=mock_config,
@@ -42,6 +43,7 @@ def test_simulation_runner_initialization(mock_config, mock_study):
     assert runner is not None
 
 
+@pytest.mark.skip_on_ci
 def test_run_no_simulation(mock_config, mock_study):
     runner = SimulationRunner(
         config=mock_config,
