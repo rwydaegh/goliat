@@ -1,7 +1,7 @@
 {
     "execution_control": {
-        "do_setup": false,
-        "do_run": false,
+        "do_setup": true,
+        "do_run": true,
         "do_extract": true,
         "only_write_input_file": false
     },

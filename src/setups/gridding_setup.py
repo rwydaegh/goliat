@@ -17,12 +17,12 @@ class GriddingSetup(BaseSetup):
         Sets up the gridding for the simulation. If antenna_components are provided,
         it will also set up the subgrids for the antenna.
         """
-        self._log("Setting up gridding...", level='verbose')
+        self._log("Setting up gridding...", log_type='progress')
         self._setup_main_grid()
         if antenna_components:
             self._setup_subgrids(antenna_components)
         else:
-            self._log("  - No antenna components provided, skipping subgridding.")
+            self._log("  - No antenna components provided, skipping subgridding.", log_type='info')
 
     def _setup_main_grid(self):
         """
@@ -42,7 +42,7 @@ class GriddingSetup(BaseSetup):
             sim_bbox_name = "far_field_simulation_bbox"
 
         # Find the bounding box entity
-        self._log(f"  - Looking for global grid bounding box: '{sim_bbox_name}'")
+        self._log(f"  - Looking for global grid bounding box: '{sim_bbox_name}'", log_type='verbose')
         sim_bbox_entity = next((e for e in self.model.AllEntities() if hasattr(e, 'Name') and e.Name == sim_bbox_name), None)
         if not sim_bbox_entity:
             raise RuntimeError(f"Could not find simulation bounding box: '{sim_bbox_name}'")
@@ -51,7 +51,7 @@ class GriddingSetup(BaseSetup):
         self.simulation.GlobalGridSettings.BoundingBox = self.model.GetBoundingBox([sim_bbox_entity])
 
         if gridding_mode == "automatic":
-            self._log("  - Using automatic gridding.")
+            self._log("  - Using automatic gridding.", log_type='info')
             self.simulation.GlobalGridSettings.DiscretizationMode = 'Automatic'
             
             # Add the required grid object for the simulation box
@@ -73,10 +73,10 @@ class GriddingSetup(BaseSetup):
             # Apply the same setting to both the global and the added grid
             self.simulation.GlobalGridSettings.AutoRefinement = s4l_refinement_level
             added_grid_settings.AutoRefinement = s4l_refinement_level
-            self._log(f"  - Global and added automatic grid set with refinement level: {user_refinement_level} ({s4l_refinement_level})", level='verbose')
+            self._log(f"  - Global and added automatic grid set with refinement level: {user_refinement_level} ({s4l_refinement_level})", log_type='verbose')
 
         elif gridding_mode == "manual":
-            self._log("  - Using manual gridding.")
+            self._log("  - Using manual gridding.", log_type='info')
             self.simulation.GlobalGridSettings.DiscretizationMode = 'Manual'
             
             # Add the required grid object for the simulation box
@@ -104,7 +104,7 @@ class GriddingSetup(BaseSetup):
             # Apply the same setting to both the global and the added grid
             self.simulation.GlobalGridSettings.MaxStep = max_step_setting
             added_manual_grid.MaxStep = max_step_setting
-            self._log(f"  - Global and added manual grid set with {log_source} resolution: {global_grid_res_mm} mm.", level='verbose')
+            self._log(f"  - Global and added manual grid set with {log_source} resolution: {global_grid_res_mm} mm.", log_type='verbose')
         else:
             raise ValueError(f"Unsupported gridding_mode: {gridding_mode}")
 
@@ -114,7 +114,7 @@ class GriddingSetup(BaseSetup):
         global_grid_settings = self.simulation.GlobalGridSettings
 
         if padding_mode == "manual":
-            self._log("  - Using manual padding.")
+            self._log("  - Using manual padding.", log_type='info')
             global_grid_settings.PaddingMode = global_grid_settings.PaddingMode.enum.Manual
             
             bottom_padding = np.array(padding_params.get("manual_bottom_padding_mm", [0,0,0]))
@@ -122,15 +122,15 @@ class GriddingSetup(BaseSetup):
 
             global_grid_settings.BottomPadding = bottom_padding, self.units.MilliMeters
             global_grid_settings.TopPadding = top_padding, self.units.MilliMeters
-            self._log(f"    - Manual padding set: Bottom={bottom_padding}mm, Top={top_padding}mm")
+            self._log(f"    - Manual padding set: Bottom={bottom_padding}mm, Top={top_padding}mm", log_type='verbose')
         else:
-            self._log("  - Using automatic padding.")
+            self._log("  - Using automatic padding.", log_type='info')
             global_grid_settings.PaddingMode = global_grid_settings.PaddingMode.enum.Automatic
 
     def _setup_subgrids(self, antenna_components):
         # Antenna-specific gridding
         if not self.antenna:
-            self._log("  - No antenna provided, skipping subgridding.")
+            self._log("  - No antenna provided, skipping subgridding.", log_type='info')
             return
 
         antenna_config = self.antenna.get_config_for_frequency()

@@ -14,16 +14,16 @@ class PhantomSetup(BaseSetup):
         self.data = s4l_v1.data
         self.XCoreModeling = XCoreModeling
 
-    def _log(self, message):
-        self.verbose_logger.info(message)
+    def _log(self, message, log_type='default'):
+        self.verbose_logger.info(message, extra={'log_type': log_type})
 
     def ensure_phantom_is_loaded(self):
         """
         Ensures the phantom model is loaded into the current document.
         """
-        self._log("--- Running Phantom Check ---")
+        self._log("--- Running Phantom Check ---", log_type='header')
         all_entities = self.model.AllEntities()
-        self._log(f"Found {len(all_entities)} total entities in the project.")
+        self._log(f"Found {len(all_entities)} total entities in the project.", log_type='info')
         
         is_loaded = False
         for i, entity in enumerate(all_entities):
@@ -34,34 +34,34 @@ class PhantomSetup(BaseSetup):
                     is_loaded = True
                     break
             else:
-                self._log(f"  - Entity {i}: (No 'Name' attribute)")
+                self._log(f"  - Entity {i}: (No 'Name' attribute)", log_type='verbose')
 
         if is_loaded:
-            self._log("--- Phantom Check Result: Phantom model is already present. ---")
+            self._log("--- Phantom Check Result: Phantom model is already present. ---", log_type='success')
             return True
         else:
-            self._log("--- Phantom Check Result: Phantom not found in project. ---")
+            self._log("--- Phantom Check Result: Phantom not found in project. ---", log_type='warning')
 
         study_type = self.config.get_setting('study_type')
         if study_type == 'near_field' or study_type == 'far_field':
             sab_path = os.path.join(self.config.base_dir, 'data', 'phantoms', f"{self.phantom_name}.sab")
             if os.path.exists(sab_path):
-                self._log(f"Phantom not found in document. Importing from '{sab_path}'...")
+                self._log(f"Phantom not found in document. Importing from '{sab_path}'...", log_type='info')
                 self.XCoreModeling.Import(sab_path)
-                self._log("Phantom imported successfully.")
+                self._log("Phantom imported successfully.", log_type='success')
                 return True
 
-            self._log(f"Local .sab file not found. Attempting to download '{self.phantom_name}'...")
+            self._log(f"Local .sab file not found. Attempting to download '{self.phantom_name}'...", log_type='info')
             available_downloads = self.data.GetAvailableDownloads()
             phantom_to_download = next((item for item in available_downloads if self.phantom_name.lower() in item.Name.lower()), None)
             
             if not phantom_to_download:
                 raise FileNotFoundError(f"Phantom '{self.phantom_name}' not found for download or in local files.")
             
-            self._log(f"Found '{phantom_to_download.Name}'. Downloading...")
+            self._log(f"Found '{phantom_to_download.Name}'. Downloading...", log_type='info')
             download_email = self.config.get_setting('download_email', 'example@example.com')
             self.data.DownloadModel(phantom_to_download, email=download_email, directory=os.path.join(self.config.base_dir, 'data', 'phantoms'))
-            self._log("Phantom downloaded successfully. Please re-run the script to import the new .sab file.")
+            self._log("Phantom downloaded successfully. Please re-run the script to import the new .sab file.", log_type='success')
             return False
         else:
             raise ValueError(f"Unknown study type: {study_type}")

@@ -43,7 +43,8 @@ A typical run follows these steps:
 
 ### 2.2. Key Supporting Components
 
--   **GUI & Logging**: A [`GuiManager`](src/gui_manager.py:86) provides a real-time progress window using PySide6. It uses a `QThread` to run the study in the background, ensuring the UI remains responsive and stable. The [`LoggingManager`](src/logging_manager.py:5) sets up detailed logs for debugging and high-level progress tracking.
+-   **GUI & Multiprocessing**: A [`GuiManager`](src/gui_manager.py:86) provides a real-time progress window using PySide6. To ensure the UI remains responsive and stable, the entire study is executed in a separate process using Python's `multiprocessing` module. Communication between the GUI and the study process is handled via queues and events.
+-   **Logging**: The [`LoggingManager`](src/logging_manager.py:5) sets up detailed logs for debugging and high-level progress tracking. It now features colored output for improved readability in the console.
 -   **Utilities**: The [`utils.py`](src/utils.py:1) module contains a [`Profiler`](src/utils.py:18) that learns from past runs to provide increasingly accurate ETA estimates for studies.
 
 This separation of concerns ensures that each part of the process is self-contained, making the framework easier to maintain and extend.
@@ -75,7 +76,6 @@ The project is organized into a modular and scalable structure:
 │   ├── startup.py
 │   └── utils.py
 ├── run_study.py
-├── material_name_mapping.json
 └── requirements.txt
 ```
 
@@ -85,7 +85,7 @@ The project is organized into a modular and scalable structure:
 
 ### Prerequisites
 
-Ensure you have **Sim4Life v9.0** or later installed and licensed.
+Ensure you have **Sim4Life v8.2.2** or later installed and licensed.
 
 ### Running a Study
 
@@ -105,17 +105,16 @@ source .bashrc
 
 **3. Run the Study**
 
-Now you can run studies using the `python` command directly.
+The study is now launched through a graphical user interface (GUI).
 
-**Run a far-field study:**
 ```bash
-python run_study.py --config "configs/far_field_config.json"
+python run_study.py
 ```
 
-**Run a near-field study:**
-```bash
-python run_study.py --config "configs/near_field_config.json"
-```
+This will open the main application window. From there, you can:
+1.  **Load a Configuration**: Use the "Load Config" button to select a study file (e.g., `configs/near_field_config.json`).
+2.  **Start the Study**: Click "Run Study" to begin the simulation process.
+3.  **Monitor Progress**: The GUI will display real-time progress, logs, and ETA estimates.
 
 The script will automatically perform all necessary setup steps on the first run:
 1.  **Install Dependencies**: From `requirements.txt`.

@@ -19,14 +19,14 @@ class NearFieldStudy(BaseStudy):
         """
         Runs the entire simulation campaign based on the configuration.
         """
-        self._log(f"--- Starting Near-Field Study: {self.config.get_setting('study_name')} ---", level='progress')
+        self._log(f"--- Starting Near-Field Study: {self.config.get_setting('study_name')} ---", level='progress', log_type='header')
 
         do_setup = self.config.get_setting('execution_control.do_setup', True)
         do_run = self.config.get_setting('execution_control.do_run', True)
         do_extract = self.config.get_setting('execution_control.do_extract', True)
 
         if not do_setup and not do_run and not do_extract:
-            self._log("All execution phases (setup, run, extract) are disabled. Nothing to do.")
+            self._log("All execution phases (setup, run, extract) are disabled. Nothing to do.", log_type='warning')
             return
 
         phantoms = self.config.get_setting('phantoms', [])
@@ -72,7 +72,7 @@ class NearFieldStudy(BaseStudy):
                 for placement_name in enabled_placements:
                     self._check_for_stop_signal()
                     simulation_count += 1
-                    self._log(f"\n--- Processing Simulation {simulation_count}/{total_simulations}: {phantom_name}, {freq}MHz, {placement_name} ---", level='progress')
+                    self._log(f"\n--- Processing Simulation {simulation_count}/{total_simulations}: {phantom_name}, {freq}MHz, {placement_name} ---", level='progress', log_type='header')
                     self._run_placement(phantom_name, freq, placement_name, do_setup, do_run, do_extract)
 
     def _run_placement(self, phantom_name, freq, placement_name, do_setup, do_run, do_extract):
@@ -95,7 +95,7 @@ class NearFieldStudy(BaseStudy):
                         simulation = wrapper(setup.run_full_setup)(self.project_manager)
 
                     if not simulation:
-                        self._log(f"ERROR: Setup failed for {placement_name}. Cannot proceed.", level='progress')
+                        self._log(f"ERROR: Setup failed for {placement_name}. Cannot proceed.", level='progress', log_type='error')
                         return
                     
                     # The first save is now critical after setup is complete.
@@ -120,7 +120,7 @@ class NearFieldStudy(BaseStudy):
                     simulation = next((s for s in s4l_v1.document.AllSimulations if s.Name == sim_name_old), None)
 
             if not simulation:
-                self._log(f"ERROR: No simulation found or created for {placement_name}. Cannot proceed.", level='progress')
+                self._log(f"ERROR: No simulation found or created for {placement_name}. Cannot proceed.", level='progress', log_type='error')
                 return
 
             # 2. Run Simulation
@@ -159,7 +159,7 @@ class NearFieldStudy(BaseStudy):
                         self.gui.update_stage_progress("Extracting Results", 1, 1)
 
         except Exception as e:
-            self._log(f"ERROR: An error occurred during placement '{placement_name}': {e}", level='progress')
+            self._log(f"ERROR: An error occurred during placement '{placement_name}': {e}", level='progress', log_type='error')
             traceback.print_exc()
         finally:
             if self.project_manager and hasattr(self.project_manager.document, 'IsOpen') and self.project_manager.document.IsOpen():

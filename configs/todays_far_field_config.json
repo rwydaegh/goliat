@@ -3,12 +3,13 @@
     "study_type": "far_field",
     "execution_control": {
         "do_setup": true,
-        "do_run": true,
+        "do_run": false,
         "do_extract": false,
-        "only_write_input_file": true
+        "only_write_input_file": false
     },
     "manual_isolve": true,
     "phantoms": [
+        "thelonious",
         "eartha"
     ],
     "frequencies_mhz": [

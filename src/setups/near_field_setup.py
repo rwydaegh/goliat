@@ -40,7 +40,7 @@ class NearFieldSetup(BaseSetup):
         """
         Executes the full sequence of setup steps.
         """
-        self._log("Running full simulation setup...", 'progress')
+        self._log("Running full simulation setup...", log_type='progress')
 
         # Create or open the project file. This is the first step.
         project_manager.create_or_open_project(self.phantom_name, self.frequency_mhz, self.placement_name)
@@ -76,7 +76,7 @@ class NearFieldSetup(BaseSetup):
 
         self._finalize_setup(project_manager, simulation, antenna_components)
         
-        self._log("Full simulation setup complete.", 'progress')
+        self._log("Full simulation setup complete.", log_type='success')
         return simulation
 
     def _get_antenna_components(self):
@@ -109,7 +109,7 @@ class NearFieldSetup(BaseSetup):
         """
         Creates the head and trunk bounding boxes.
         """
-        self._log("Setting up bounding boxes...", 'verbose')
+        self._log("Setting up bounding boxes...", log_type='progress')
         all_entities = self.model.AllEntities()
         
         phantom_config = self.config.get_phantom_config(self.phantom_name.lower())
@@ -121,7 +121,7 @@ class NearFieldSetup(BaseSetup):
         
         entities_to_delete = [e for e in all_entities if hasattr(e, 'Name') and e.Name in [head_bbox_name, trunk_bbox_name]]
         for entity in entities_to_delete:
-            self._log(f"  - Deleting existing entity: {entity.Name}", 'verbose')
+            self._log(f"  - Deleting existing entity: {entity.Name}", log_type='verbose')
             entity.Delete()
         
         all_entities = self.model.AllEntities()
@@ -142,7 +142,7 @@ class NearFieldSetup(BaseSetup):
         head_bbox_max_vec = self.model.Vec3(head_x_max, bbox_max[1], bbox_max[2])
         head_bbox = self.XCoreModeling.CreateWireBlock(head_bbox_min_vec, head_bbox_max_vec)
         head_bbox.Name = head_bbox_name
-        self._log("  - Head BBox created.", 'verbose')
+        self._log("  - Head BBox created.", log_type='info')
 
         # Trunk BBox
         trunk_z_sep = phantom_config['trunk_z_separation']
@@ -151,7 +151,7 @@ class NearFieldSetup(BaseSetup):
         trunk_bbox_max_vec = self.model.Vec3(bbox_max[0], chest_y_ext, head_y_sep)
         trunk_bbox = self.XCoreModeling.CreateWireBlock(trunk_bbox_min_vec, trunk_bbox_max_vec)
         trunk_bbox.Name = trunk_bbox_name
-        self._log("  - Trunk BBox created.", 'verbose')
+        self._log("  - Trunk BBox created.", log_type='info')
 
     def _create_simulation_bbox(self):
         if self.free_space:
@@ -162,7 +162,7 @@ class NearFieldSetup(BaseSetup):
             sim_bbox_max = np.array(antenna_bbox_max) + np.array(expansion)
             sim_bbox = self.XCoreModeling.CreateWireBlock(self.model.Vec3(sim_bbox_min), self.model.Vec3(sim_bbox_max))
             sim_bbox.Name = "freespace_simulation_bbox"
-            self._log(f"  - Created free-space simulation BBox.", 'verbose')
+            self._log(f"  - Created free-space simulation BBox.", log_type='info')
         else:
             antenna_bbox_entity = next((e for e in self.model.AllEntities() if hasattr(e, 'Name') and "Antenna bounding box" in e.Name), None)
             if self.base_placement_name in ['front_of_eyes', 'by_cheek']:
@@ -175,13 +175,13 @@ class NearFieldSetup(BaseSetup):
             combined_bbox_min, combined_bbox_max = self.model.GetBoundingBox([bbox_to_combine, antenna_bbox_entity])
             sim_bbox = self.XCoreModeling.CreateWireBlock(combined_bbox_min, combined_bbox_max)
             sim_bbox.Name = f"{self.placement_name.lower()}_simulation_bbox"
-            self._log(f"  - Combined BBox created for {self.placement_name}.", 'verbose')
+            self._log(f"  - Combined BBox created for {self.placement_name}.", log_type='info')
 
     def _setup_simulation_entity(self):
         """
         Creates and configures the base EM-FDTD simulation entity.
         """
-        self._log("Setting up simulation entity...", 'verbose')
+        self._log("Setting up simulation entity...", log_type='progress')
         
         if self.document.AllSimulations:
             for sim in list(self.document.AllSimulations):

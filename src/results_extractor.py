@@ -39,9 +39,9 @@ class ResultsExtractor(LoggingMixin):
         """
         Extracts and saves the simulation results.
         """
-        self._log("Extracting results...")
+        self._log("Extracting results...", log_type='progress')
         if not self.simulation:
-            self._log("  - ERROR: Simulation object not found. Skipping result extraction.")
+            self._log("  - ERROR: Simulation object not found. Skipping result extraction.", log_type='error')
             return
 
         results_data = {}
@@ -59,7 +59,7 @@ class ResultsExtractor(LoggingMixin):
             self._extract_sar_statistics(simulation_extractor, results_data)
             self._extract_power_balance(simulation_extractor, results_data)
         else:
-            self._log("  - Skipping SAR statistics for free-space simulation.")
+            self._log("  - Skipping SAR statistics for free-space simulation.", log_type='info')
 
         # Extract Point Sensor Data if any
         if self.config.get_setting("simulation_parameters.number_of_point_sensors", 0) > 0:
@@ -73,16 +73,16 @@ class ResultsExtractor(LoggingMixin):
         results_filepath = os.path.join(results_dir, 'sar_results.json')
         with open(results_filepath, 'w') as f:
             json.dump(results_data, f, indent=4)
-        self._log(f"  - SAR results saved to: {results_filepath}")
+        self._log(f"  - SAR results saved to: {results_filepath}", log_type='info')
 
     def _extract_input_power(self, simulation_extractor, results_data):
         """Extracts the input power from the simulation."""
-        self._log("  - Extracting input power...")
+        self._log("  - Extracting input power...", log_type='progress')
         with self.study.subtask("extract_input_power"):
             try:
                 # For far-field, we use a theoretical model
                 if self.study_type == 'far_field':
-                    self._log("  - Far-field study: using theoretical model for input power.")
+                    self._log("  - Far-field study: using theoretical model for input power.", log_type='info')
                     
                     # Find the simulation bounding box entity
                     import s4l_v1.model
@@ -93,7 +93,7 @@ class ResultsExtractor(LoggingMixin):
                     sim_bbox = s4l_v1.model.GetBoundingBox([bbox_entity])
                     sim_min = np.array(sim_bbox[0])
                     sim_max = np.array(sim_bbox[1])
-                    self._log(f"  - Bounding Box Min: {sim_min}, Max: {sim_max}", level='verbose')
+                    self._log(f"  - Bounding Box Min: {sim_min}, Max: {sim_max}", log_type='verbose')
                     
                     # Add padding from config
                     padding_bottom = np.array(self.config.get_setting('gridding_parameters.padding.manual_bottom_padding_mm', [0,0,0]))
@@ -122,13 +122,13 @@ class ResultsExtractor(LoggingMixin):
                         area_m2 = (dims[0] * dims[2]) / 1e6
                     else: # z
                         area_m2 = (dims[0] * dims[1]) / 1e6
-                    self._log(f"  - Calculated Area: {area_m2} m^2", level='verbose')
+                    self._log(f"  - Calculated Area: {area_m2} m^2", log_type='verbose')
                         
                     total_input_power = power_density_w_m2 * area_m2
                     
                     results_data['input_power_W'] = total_input_power
                     results_data['input_power_frequency_MHz'] = float(self.frequency_mhz)
-                    self._log(f"  - Calculated theoretical input power: {total_input_power:.4e} W")
+                    self._log(f"  - Calculated theoretical input power: {total_input_power:.4e} W", log_type='highlight')
                     return
 
                 # For near-field, extract from the simulation
@@ -137,17 +137,17 @@ class ResultsExtractor(LoggingMixin):
                 input_power_extractor.Update()
 
                 if hasattr(input_power_extractor, 'GetPower'):
-                    self._log("  - Using GetPower() to extract input power.")
+                    self._log("  - Using GetPower() to extract input power.", log_type='info')
                     power_w, _ = input_power_extractor.GetPower(0)
                     results_data['input_power_W'] = float(power_w)
                     results_data['input_power_frequency_MHz'] = float(self.frequency_mhz)
                 else:
-                    self._log("  - GetPower() not available, falling back to manual extraction.")
+                    self._log("  - GetPower() not available, falling back to manual extraction.", log_type='warning')
                     input_power_output = input_power_extractor.Outputs["EM Input Power(f)"]
                     input_power_output.Update()
 
                     if hasattr(input_power_output, 'GetHarmonicData'):
-                        self._log("  - Harmonic data detected. Extracting single power value.")
+                        self._log("  - Harmonic data detected. Extracting single power value.", log_type='info')
                         power_complex = input_power_output.GetHarmonicData(0)
                         input_power_w = abs(power_complex)
                         frequency_at_value_mhz = self.frequency_mhz
@@ -178,14 +178,14 @@ class ResultsExtractor(LoggingMixin):
                             results_data['input_power_W'] = float(input_power_w)
                             results_data['input_power_frequency_MHz'] = float(frequency_at_value_mhz)
                         else:
-                            self._log("  - WARNING: Could not extract input power values.")
+                            self._log("  - WARNING: Could not extract input power values.", log_type='warning')
             except Exception as e:
-                self._log(f"  - ERROR: An exception occurred during input power extraction: {e}", level='progress')
+                self._log(f"  - ERROR: An exception occurred during input power extraction: {e}", level='progress', log_type='error')
                 traceback.print_exc()
 
     def _extract_sar_statistics(self, simulation_extractor, results_data):
         """Extracts SAR statistics for all tissues."""
-        self._log("  - Extracting SAR statistics for all tissues...")
+        self._log("  - Extracting SAR statistics for all tissues...", log_type='progress')
         with self.study.subtask("extract_sar_statistics"):
             try:
                 em_sensor_extractor = simulation_extractor["Overall Field"]
@@ -210,15 +210,15 @@ class ResultsExtractor(LoggingMixin):
                     if hasattr(results_wrapper, 'Data'):
                         results = results_wrapper.Data
                     else:
-                        self._log("  - ERROR: AlgorithmOutput object does not have a .Data attribute.")
+                        self._log("  - ERROR: AlgorithmOutput object does not have a .Data attribute.", log_type='error')
                 else:
-                    self._log("  - ERROR: No output ports found in the SAR Statistics Evaluator.")
+                    self._log("  - ERROR: No output ports found in the SAR Statistics Evaluator.", log_type='error')
 
                 # IMPORTANT: Clean up the algorithm to avoid issues when processing multiple simulations in the same project
                 self.document.AllAlgorithms.Remove(sar_stats_evaluator)
 
                 if not (results and hasattr(results, 'NumberOfRows') and results.NumberOfRows() > 0 and results.NumberOfColumns() > 0):
-                    self._log("  - WARNING: No SAR statistics data found.")
+                    self._log("  - WARNING: No SAR statistics data found.", log_type='warning')
                     return
 
                 columns = ["Tissue"] + [cap for cap in results.ColumnMainCaptions]
@@ -256,7 +256,7 @@ class ResultsExtractor(LoggingMixin):
                 self._save_reports(df, tissue_groups, group_sar_stats, results_data)
 
             except Exception as e:
-                self._log(f"  - ERROR: An unexpected error during all-tissue SAR statistics extraction: {e}", level='progress')
+                self._log(f"  - ERROR: An unexpected error during all-tissue SAR statistics extraction: {e}", level='progress', log_type='error')
                 traceback.print_exc()
 
     def _define_tissue_groups(self, available_tissues):
@@ -296,7 +296,7 @@ class ResultsExtractor(LoggingMixin):
         pickle_filepath = os.path.join(results_dir, 'sar_stats_all_tissues.pkl')
         with open(pickle_filepath, 'wb') as f:
             pickle.dump(pickle_data, f)
-        self._log(f"  - Pickle report saved to: {pickle_filepath}")
+        self._log(f"  - Pickle report saved to: {pickle_filepath}", log_type='info')
 
         html_content = df.to_html(index=False, border=1)
         html_content += "<h2>Tissue Group Composition</h2>"
@@ -307,11 +307,11 @@ class ResultsExtractor(LoggingMixin):
         html_filepath = os.path.join(results_dir, 'sar_stats_all_tissues.html')
         with open(html_filepath, 'w', encoding='utf-8') as f:
             f.write(html_content)
-        self._log(f"  - HTML report saved to: {html_filepath}")
+        self._log(f"  - HTML report saved to: {html_filepath}", log_type='info')
 
     def _extract_power_balance(self, simulation_extractor, results_data):
         """Extracts the power balance from the simulation."""
-        self._log("  - Extracting power balance...")
+        self._log("  - Extracting power balance...", log_type='progress')
         try:
             em_sensor_extractor = simulation_extractor["Overall Field"]
             power_balance_extractor = em_sensor_extractor.Outputs["Power Balance"]
@@ -325,12 +325,12 @@ class ResultsExtractor(LoggingMixin):
                     continue
                 value = power_balance_extractor.Data.DataSimpleDataCollection.FieldValue(key, 0)
                 power_balance_data[key] = value
-                self._log(f"    - {key}: {value:.4e}")
+                self._log(f"    - {key}: {value:.4e}", log_type='verbose')
 
             # For far-field, the input power is theoretical, so we overwrite the 'Pin'
             if self.study_type == 'far_field' and 'input_power_W' in results_data:
                 power_balance_data['Pin'] = results_data['input_power_W']
-                self._log(f"    - Overwriting Pin with theoretical value: {power_balance_data['Pin']:.4e} W")
+                self._log(f"    - Overwriting Pin with theoretical value: {power_balance_data['Pin']:.4e} W", log_type='info')
 
             pin = power_balance_data.get('Pin', 0.0)
             diel_loss = power_balance_data.get('DielLoss', 0.0)
@@ -343,17 +343,17 @@ class ResultsExtractor(LoggingMixin):
                 balance = float('nan')
             
             power_balance_data['Balance'] = balance
-            self._log(f"    - Final Balance: {balance:.2f}%")
+            self._log(f"    - Final Balance: {balance:.2f}%", log_type='highlight')
 
             results_data['power_balance'] = power_balance_data
 
         except Exception as e:
-            self._log(f"  - WARNING: Could not extract power balance: {e}")
+            self._log(f"  - WARNING: Could not extract power balance: {e}", log_type='warning')
             traceback.print_exc()
 
     def _extract_point_sensor_data(self, simulation_extractor):
         """Extracts point sensor data and plots it."""
-        self._log("  - Extracting point sensor data...")
+        self._log("  - Extracting point sensor data...", log_type='progress')
         with self.study.subtask("extract_point_sensor_data"):
             try:
                 num_sensors = self.config.get_setting("simulation_parameters.number_of_point_sensors", 0)
@@ -372,7 +372,7 @@ class ResultsExtractor(LoggingMixin):
                 
                 for i in range(num_sensors):
                     if i >= len(point_source_order):
-                        self._log(f"    - WARNING: Not enough entries in 'point_source_order' config for sensor {i+1}. Skipping.")
+                        self._log(f"    - WARNING: Not enough entries in 'point_source_order' config for sensor {i+1}. Skipping.", log_type='warning')
                         continue
                         
                     corner_name = point_source_order[i]
@@ -382,17 +382,17 @@ class ResultsExtractor(LoggingMixin):
                     try:
                         em_sensor_extractor = overall_field_extractor.GetSensor(full_sensor_name)
                         if not em_sensor_extractor:
-                            self._log(f"    - WARNING: Could not find sensor extractor for '{full_sensor_name}'")
+                            self._log(f"    - WARNING: Could not find sensor extractor for '{full_sensor_name}'", log_type='warning')
                             continue
                     except Exception as e:
-                        self._log(f"    - WARNING: Could not retrieve sensor '{full_sensor_name}'. Error: {e}")
+                        self._log(f"    - WARNING: Could not retrieve sensor '{full_sensor_name}'. Error: {e}", log_type='warning')
                         continue
 
                     self.document.AllAlgorithms.Add(em_sensor_extractor)
                     
                     # Ensure the output port exists before accessing it
                     if "EM E(t)" not in em_sensor_extractor.Outputs:
-                        self._log(f"    - WARNING: 'EM E(t)' output not found for sensor '{sensor_name}'")
+                        self._log(f"    - WARNING: 'EM E(t)' output not found for sensor '{sensor_name}'", log_type='warning')
                         self.document.AllAlgorithms.Remove(em_sensor_extractor)
                         continue
 
@@ -404,7 +404,7 @@ class ResultsExtractor(LoggingMixin):
                     # The plot data is now available through the viewer
                     plot = plot_viewer.Plot
                     if not plot or plot.NumberOfCurves == 0:
-                        self._log(f"    - WARNING: No data curves found for sensor '{sensor_name_pattern}'")
+                        self._log(f"    - WARNING: No data curves found for sensor '{sensor_name_pattern}'", log_type='warning')
                         self.document.AllAlgorithms.Remove(plot_viewer)
                         self.document.AllAlgorithms.Remove(em_sensor_extractor)
                         continue
@@ -416,7 +416,7 @@ class ResultsExtractor(LoggingMixin):
                     label = re.sub(r'Point Sensor Entity \d+ \((.*?)\)', r'\1', em_sensor_extractor.Name).replace('_', ' ').title()
                     ax.plot(x_data, y_data, label=label)
                     
-                    self._log(f"    - Plotted data for sensor: {label}")
+                    self._log(f"    - Plotted data for sensor: {label}", log_type='verbose')
 
                     # Clean up algorithms to prevent clutter
                     self.document.AllAlgorithms.Remove(plot_viewer)
@@ -431,8 +431,8 @@ class ResultsExtractor(LoggingMixin):
                 plot_filepath = os.path.join(results_dir, 'point_sensor_data.png')
                 plt.savefig(plot_filepath, dpi=300)
                 plt.close(fig)
-                self._log(f"  - Point sensor plot saved to: {plot_filepath}")
+                self._log(f"  - Point sensor plot saved to: {plot_filepath}", log_type='info')
 
             except Exception as e:
-                self._log(f"  - ERROR: An exception occurred during point sensor data extraction: {e}", level='progress')
+                self._log(f"  - ERROR: An exception occurred during point sensor data extraction: {e}", level='progress', log_type='error')
                 traceback.print_exc()

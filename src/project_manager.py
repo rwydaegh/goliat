@@ -36,15 +36,15 @@ class ProjectManager(LoggingMixin):
         # we can reasonably assume the file is locked and avoid the check.
         lock_file_path = os.path.join(os.path.dirname(self.project_path), f".{os.path.basename(self.project_path)}.s4l_lock")
         if os.path.exists(lock_file_path):
-            self._log(f"  - Lock file detected: {lock_file_path}. Assuming project is in use.")
+            self._log(f"  - Lock file detected: {lock_file_path}. Assuming project is in use.", log_type='warning')
             return False
 
         try:
             # 1. Check for file lock by trying to rename. This is a common Windows trick.
             os.rename(self.project_path, self.project_path)
         except OSError as e:
-            self._log(f"  - File lock detected on {self.project_path}: {e}")
-            self._log(f"  - The file is likely being used by another process. Skipping.")
+            self._log(f"  - File lock detected on {self.project_path}: {e}", log_type='warning')
+            self._log(f"  - The file is likely being used by another process. Skipping.", log_type='warning')
             return False
 
         try:
@@ -53,7 +53,7 @@ class ProjectManager(LoggingMixin):
                 pass
             return True
         except OSError as e:
-            self._log(f"  - HDF5 format error in {self.project_path}: {e}")
+            self._log(f"  - HDF5 format error in {self.project_path}: {e}", log_type='error')
             return False
 
     def create_or_open_project(self, phantom_name, frequency_mhz, placement_name=None):
@@ -81,26 +81,26 @@ class ProjectManager(LoggingMixin):
         os.makedirs(project_dir, exist_ok=True)
         # Ensure path uses forward slashes for Sim4Life compatibility
         self.project_path = os.path.join(project_dir, project_filename).replace('\\', '/')
-        self._log(f"Project path set to: {self.project_path}")
+        self._log(f"Project path set to: {self.project_path}", log_type='info')
 
         do_setup = self.execution_control.get('do_setup', True)
 
         if do_setup:
-            self._log("Execution control: 'do_setup' is true. Creating a new project.")
+            self._log("Execution control: 'do_setup' is true. Creating a new project.", log_type='info')
             self.create_new()
             # NOTE: Do not save immediately. The project is unstable until content is added.
             # The calling study is responsible for the first save.
         else:
-            self._log("Execution control: 'do_setup' is false. Attempting to open existing project.")
+            self._log("Execution control: 'do_setup' is false. Attempting to open existing project.", log_type='info')
             if not os.path.exists(self.project_path):
                 # If the primary path doesn't exist, check for the old "thelonius" naming convention.
                 old_project_path = self.project_path.replace("thelonious", "thelonius")
                 if os.path.exists(old_project_path):
-                    self._log(f"Project not found at primary path, but found with old 'thelonius' naming: {old_project_path}")
+                    self._log(f"Project not found at primary path, but found with old 'thelonius' naming: {old_project_path}", log_type='warning')
                     self.project_path = old_project_path
                 else:
                     error_msg = f"ERROR: 'do_setup' is false, but project file not found at {self.project_path} or with old naming. Cannot proceed."
-                    self._log(error_msg)
+                    self._log(error_msg, log_type='fatal')
                     raise FileNotFoundError(error_msg)
             
             try:
@@ -117,11 +117,11 @@ class ProjectManager(LoggingMixin):
         """
         # Close any currently open document to release file locks before deleting
         if self.document and hasattr(self.document, 'IsOpen') and self.document.IsOpen():
-            self._log("Closing existing document before creating a new one to release file lock.")
+            self._log("Closing existing document before creating a new one to release file lock.", log_type='info')
             self.document.Close()
 
         if self.project_path and os.path.exists(self.project_path):
-            self._log(f"Deleting existing project file at {self.project_path}")
+            self._log(f"Deleting existing project file at {self.project_path}", log_type='warning')
             os.remove(self.project_path)
 
             # Also delete associated cache files
@@ -136,39 +136,39 @@ class ProjectManager(LoggingMixin):
                 if is_cache_file:
                     item_path = os.path.join(project_dir, item)
                     if os.path.isfile(item_path):
-                        self._log(f"Deleting cache file: {item_path}")
+                        self._log(f"Deleting cache file: {item_path}", log_type='info')
                         try:
                             os.remove(item_path)
                         except OSError as e:
-                            self._log(f"Error deleting cache file {item_path}: {e}", level='error')
+                            self._log(f"Error deleting cache file {item_path}: {e}", log_type='error')
         
-        self._log("Creating a new empty project in memory.")
+        self._log("Creating a new empty project in memory.", log_type='info')
         self.document.New()
 
         # In S4L v9.0, the modeling environment must be initialized by creating a
         # geometric entity after creating a new document. The project should not
         # be saved until it is populated by the setup script.
-        self._log("Initializing model by creating and deleting a dummy block...")
+        self._log("Initializing model by creating and deleting a dummy block...", log_type='verbose')
         dummy_block = s4l_model.CreateSolidBlock(s4l_model.Vec3(0,0,0), s4l_model.Vec3(1,1,1))
         dummy_block.Delete()
-        self._log("Model initialized, ready for population.")
+        self._log("Model initialized, ready for population.", log_type='verbose')
 
     def open(self):
         """
         Opens an existing project after validating it.
         """
-        self._log(f"Validating project file: {self.project_path}")
+        self._log(f"Validating project file: {self.project_path}", log_type='info')
         if not self._is_valid_smash_file():
-            self._log(f"ERROR: Project file {self.project_path} is corrupted or locked.")
+            self._log(f"ERROR: Project file {self.project_path} is corrupted or locked.", log_type='fatal')
             raise ProjectCorruptionError(f"File is not a valid or accessible HDF5 file: {self.project_path}")
 
-        self._log(f"Opening project with Sim4Life: {self.project_path}")
+        self._log(f"Opening project with Sim4Life: {self.project_path}", log_type='info')
         try:
             # The open_project utility calls s4l_v1.document.Open()
             open_project(self.project_path)
         except Exception as e:
             # Catching a broad exception because the underlying Sim4Life error is not specific
-            self._log(f"ERROR: Sim4Life failed to open project file, it is likely corrupted: {e}")
+            self._log(f"ERROR: Sim4Life failed to open project file, it is likely corrupted: {e}", log_type='fatal')
             # Close the document if it was partially opened, to release locks
             if self.document and hasattr(self.document, 'IsOpen') and self.document.IsOpen():
                 self.document.Close()
@@ -181,15 +181,15 @@ class ProjectManager(LoggingMixin):
         if not self.project_path:
             raise ValueError("Project path is not set. Cannot save.")
         
-        self._log(f"Saving project to {self.project_path}...")
+        self._log(f"Saving project to {self.project_path}...", log_type='info')
         self.document.SaveAs(self.project_path)
-        self._log("Project saved.")
+        self._log("Project saved.", log_type='success')
 
     def close(self):
         """
         Closes the Sim4Life document.
         """
-        self._log("Closing project document...")
+        self._log("Closing project document...", log_type='info')
         self.document.Close()
 
     def cleanup(self):
@@ -203,9 +203,9 @@ class ProjectManager(LoggingMixin):
     def reload_project(self):
         """Saves, closes, and re-opens the project to ensure results are loaded."""
         if self.document and hasattr(self.document, 'IsOpen') and self.document.IsOpen():
-            self._log("Saving and reloading project to load results...")
+            self._log("Saving and reloading project to load results...", log_type='info')
             self.save()
             self.close()
         
         self.open()
-        self._log("Project reloaded.")
+        self._log("Project reloaded.", log_type='success')

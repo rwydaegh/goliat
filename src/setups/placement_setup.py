@@ -50,11 +50,11 @@ class PlacementSetup(BaseSetup):
         Places and orients the antenna by composing a single transformation matrix
         and applying it once.
         """
-        self._log(f"--- Starting Placement: {self.base_placement_name} - {self.position_name} - {self.orientation_name} ---")
+        self._log(f"--- Starting Placement: {self.base_placement_name} - {self.position_name} - {self.orientation_name} ---", log_type='header')
 
         placements_config = self.config.get_phantom_placements(self.phantom_name.lower())
         if not self.free_space and not placements_config.get(f"do_{self.base_placement_name}"):
-            self._log(f"Placement '{self.base_placement_name}' is disabled in the configuration.")
+            self._log(f"Placement '{self.base_placement_name}' is disabled in the configuration.", log_type='info')
             return
 
         base_target_point, orientation_rotations, position_offset = self._get_placement_details()
@@ -77,7 +77,7 @@ class PlacementSetup(BaseSetup):
         entities_to_transform = [antenna_group, bbox_entity] if bbox_entity else [antenna_group]
 
         # --- Transformation Composition ---
-        self._log("Composing final transformation...")
+        self._log("Composing final transformation...", log_type='progress')
         
         # Start with an identity transform
         final_transform = self.XCoreMath.Transform()
@@ -88,7 +88,7 @@ class PlacementSetup(BaseSetup):
 
         # Special rotation for 'by_cheek' to align with YZ plane
         if self.base_placement_name.startswith('by_cheek'):
-            self._log("Applying 'by_cheek' specific Z-rotation.")
+            self._log("Applying 'by_cheek' specific Z-rotation.", log_type='info')
             rot_z_cheek = self.XCoreMath.Rotation(self.XCoreMath.Vec3(0, 0, 1), np.deg2rad(-90))
             final_transform = rot_z_cheek * final_transform
 
@@ -109,11 +109,11 @@ class PlacementSetup(BaseSetup):
         final_transform = translation_transform * final_transform
 
         # --- Apply the single, composed transform ---
-        self._log("Applying final composed transform.")
+        self._log("Applying final composed transform.", log_type='progress')
         for entity in entities_to_transform:
             entity.ApplyTransform(final_transform)
         
-        self._log("--- Transformation Sequence Complete ---")
+        self._log("--- Transformation Sequence Complete ---", log_type='success')
 
     def _get_placement_details(self):
         """
@@ -176,7 +176,7 @@ class PlacementSetup(BaseSetup):
 
             # The phone should be perpendicular to this line, so add 90 degrees
             base_rotation_deg = angle_deg + 90
-            self._log(f"Calculated base rotation for cheek alignment: {base_rotation_deg:.2f} degrees around X-axis.")
+            self._log(f"Calculated base rotation for cheek alignment: {base_rotation_deg:.2f} degrees around X-axis.", log_type='info')
 
             # Add this as a new base rotation
             base_rotation = {"axis": "X", "angle_deg": base_rotation_deg}

@@ -19,7 +19,7 @@ class Plotter:
     def __init__(self, plots_dir):
         self.plots_dir = plots_dir
         os.makedirs(self.plots_dir, exist_ok=True)
-        print(f"--- Plots will be saved to '{self.plots_dir}' directory. ---")
+        logging.getLogger('progress').info(f"--- Plots will be saved to '{self.plots_dir}' directory. ---", extra={'log_type': 'info'})
 
     def plot_average_sar_bar(self, scenario_name, avg_results, progress_info):
         fig, ax = plt.subplots(figsize=(12, 7))
@@ -96,7 +96,7 @@ class Plotter:
     def plot_far_field_distribution_boxplot(self, results_df, metric='SAR_whole_body'):
         """Generates a boxplot for the distribution of a given metric in far-field results."""
         if metric not in results_df.columns or results_df[metric].dropna().empty:
-            print(f"  - WARNING: No data for metric '{metric}' to generate boxplot.")
+            logging.getLogger('progress').warning(f"  - WARNING: No data for metric '{metric}' to generate boxplot.", extra={'log_type': 'warning'})
             return
 
         fig, ax = plt.subplots(figsize=(12, 7))

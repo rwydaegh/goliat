@@ -1,13 +1,19 @@
 import logging
 import os
 from datetime import datetime
+from colorama import Fore, Style, init
+from .colors import get_color
 
 class ColorFormatter(logging.Formatter):
     """
-    A custom formatter to display messages in white without the standard log prefix.
+    A custom formatter that applies colors based on the log_type attribute
+    of a log record, and resets the style after each message.
     """
     def format(self, record):
-        return f"{record.getMessage()}"
+        log_type = getattr(record, 'log_type', 'default')
+        color = get_color(log_type)
+        message = record.getMessage()
+        return f"{color}{message}{Style.RESET_ALL}"
 
 def setup_loggers():
     """
@@ -15,6 +21,7 @@ def setup_loggers():
     1. 'progress': For high-level progress updates. Logs to console, a .progress.log file, and the main .log file.
     2. 'verbose': For detailed, verbose output. Logs to console and the main .log file.
     """
+    init(autoreset=True) # Initialize colorama
     log_dir = 'logs'
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
@@ -112,13 +119,22 @@ class LoggingMixin:
     It expects the inheriting class to have 'verbose_logger', 'progress_logger',
     and an optional 'gui' attribute.
     """
-    def _log(self, message, level='verbose'):
-        """Logs a message to the appropriate logger."""
+    def _log(self, message, level='verbose', log_type='default'):
+        """
+        Logs a message to the appropriate logger with a specified type for color-coding.
+        
+        Args:
+            message (str): The message to log.
+            level (str): The logging level ('progress' or 'verbose').
+            log_type (str): The type of log message for color-coding (e.g., 'info', 'warning', 'error').
+        """
+        extra = {'log_type': log_type}
+        
         if level == 'progress':
-            self.progress_logger.info(message)
+            self.progress_logger.info(message, extra=extra)
             if hasattr(self, 'gui') and self.gui:
                 self.gui.log(message, level='progress')
         else:
-            self.verbose_logger.info(message)
+            self.verbose_logger.info(message, extra=extra)
             if hasattr(self, 'gui') and self.gui and level != 'progress':
                 self.gui.log(message, level='verbose')

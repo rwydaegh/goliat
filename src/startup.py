@@ -19,13 +19,13 @@ def check_and_install_packages(requirements_path):
             missing_packages.append(package)
 
     if missing_packages:
-        logging.getLogger('verbose').info(f"Missing packages: {', '.join(missing_packages)}")
-        logging.getLogger('verbose').info("Installing missing packages...")
+        logging.getLogger('verbose').info(f"Missing packages: {', '.join(missing_packages)}", extra={'log_type': 'warning'})
+        logging.getLogger('verbose').info("Installing missing packages...", extra={'log_type': 'info'})
         python_exe = sys.executable
         subprocess.check_call([python_exe, '-m', 'pip', 'install', *missing_packages])
-        logging.getLogger('verbose').info("All missing packages installed.")
+        logging.getLogger('verbose').info("All missing packages installed.", extra={'log_type': 'success'})
     else:
-        logging.getLogger('verbose').info("All required packages are already installed.")
+        logging.getLogger('verbose').info("All required packages are already installed.", extra={'log_type': 'success'})
 
 def prepare_data(base_dir):
     """
@@ -35,25 +35,25 @@ def prepare_data(base_dir):
     
     data_dir = os.path.join(base_dir, 'data')
     if not os.path.exists(data_dir):
-        logging.getLogger('verbose').info("Data directory not found. Downloading and extracting data...")
+        logging.getLogger('verbose').info("Data directory not found. Downloading and extracting data...", extra={'log_type': 'info'})
         download_and_extract_data(base_dir)
     else:
-        logging.getLogger('verbose').info("Data directory already exists. Skipping download.")
+        logging.getLogger('verbose').info("Data directory already exists. Skipping download.", extra={'log_type': 'info'})
 
     centered_dir = os.path.join(data_dir, 'antennas', 'centered')
     if not os.path.exists(centered_dir) or not os.listdir(centered_dir):
-        logging.getLogger('verbose').info("Centered antenna directory is empty. Preparing antennas...")
+        logging.getLogger('verbose').info("Centered antenna directory is empty. Preparing antennas...", extra={'log_type': 'info'})
         prepare_antennas_script = os.path.join(base_dir, 'scripts', 'prepare_antennas.py')
         python_exe = sys.executable
         subprocess.run([python_exe, prepare_antennas_script], check=True)
     else:
-        logging.getLogger('verbose').info("Centered antennas already exist. Skipping preparation.")
+        logging.getLogger('verbose').info("Centered antennas already exist. Skipping preparation.", extra={'log_type': 'info'})
 
 def run_full_startup(base_dir):
     """
     Runs all startup checks and preparations.
     """
-    logging.getLogger('verbose').info("--- Running Project Startup ---")
+    logging.getLogger('verbose').info("--- Running Project Startup ---", extra={'log_type': 'header'})
     
     # 1. Install Packages
     requirements_path = os.path.join(base_dir, 'requirements.txt')
@@ -62,4 +62,4 @@ def run_full_startup(base_dir):
     # 2. Prepare Data
     prepare_data(base_dir)
     
-    logging.getLogger('verbose').info("--- Startup Complete ---")
+    logging.getLogger('verbose').info("--- Startup Complete ---", extra={'log_type': 'success'})

@@ -8,3 +8,6 @@ pytest
 scienceplots
 osparc-client
 PySide6
+osparc
+colorama
+colorama

@@ -30,11 +30,11 @@ class Analyzer:
         """
         Main method to run the full analysis pipeline using the selected strategy.
         """
-        print(f"--- Starting Results Analysis for Phantom: {self.phantom_name} ---")
+        logging.getLogger('progress').info(f"--- Starting Results Analysis for Phantom: {self.phantom_name} ---", extra={'log_type': 'header'})
         self.strategy.load_and_process_results(self)
 
         if not self.all_results:
-            print("--- No results found to analyze. ---")
+            logging.getLogger('progress').info("--- No results found to analyze. ---", extra={'log_type': 'warning'})
             return
 
         results_df = pd.DataFrame(self.all_results)
@@ -44,7 +44,7 @@ class Analyzer:
         self._export_reports(results_df, all_organ_results_df)
         self.strategy.generate_plots(self, self.plotter, results_df, all_organ_results_df)
         
-        print("--- Analysis Finished ---")
+        logging.getLogger('progress').info("--- Analysis Finished ---", extra={'log_type': 'success'})
 
     def _process_single_result(self, frequency_mhz, scenario_name, pos_name, orient_name):
         if self.strategy.__class__.__name__ == 'FarFieldAnalysisStrategy':
@@ -60,7 +60,7 @@ class Analyzer:
         if not (os.path.exists(pickle_path) and os.path.exists(json_path)):
             return
 
-        print(f"  - Processing: {frequency_mhz}MHz, {detailed_placement_name}")
+        logging.getLogger('progress').info(f"  - Processing: {frequency_mhz}MHz, {detailed_placement_name}", extra={'log_type': 'progress'})
         try:
             with open(pickle_path, 'rb') as f:
                 pickle_data = pickle.load(f)
@@ -77,7 +77,7 @@ class Analyzer:
             self.all_results.append(result_entry)
             self.all_organ_results.extend(organ_entries)
         except Exception as e:
-            print(f"    - ERROR: Could not process data for {detailed_placement_name} at {frequency_mhz}MHz: {e}")
+            logging.getLogger('progress').error(f"    - ERROR: Could not process data for {detailed_placement_name} at {frequency_mhz}MHz: {e}", extra={'log_type': 'error'})
 
     def _convert_units_and_cache(self, results_df, organ_results_df):
         """Converts SAR units to mW/kg and caches both summary and organ-level results."""
@@ -94,27 +94,27 @@ class Analyzer:
         with open(output_pickle_path, 'wb') as f:
             pickle.dump(cached_data, f)
 
-        print(f"\n--- Aggregated summary and organ results (in mW/kg) cached to: {output_pickle_path} ---")
+        logging.getLogger('progress').info(f"\n--- Aggregated summary and organ results (in mW/kg) cached to: {output_pickle_path} ---", extra={'log_type': 'success'})
         return results_df
 
     def _export_reports(self, results_df, all_organ_results_df):
         results_for_export = results_df.drop(columns=['input_power_w', 'scenario'])
-        print("\n--- Full Normalized Results per Simulation (in mW/kg) ---")
+        logging.getLogger('progress').info("\n--- Full Normalized Results per Simulation (in mW/kg) ---", extra={'log_type': 'header'})
         with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', 1000):
-            print(results_for_export.sort_values(by=['frequency_mhz', 'placement']))
+            logging.getLogger('progress').info(results_for_export.sort_values(by=['frequency_mhz', 'placement']))
         summary_stats = self.strategy.calculate_summary_stats(results_df)
-        print("\n--- Summary Statistics (Mean) of Normalized SAR per Scenario and Frequency (in mW/kg) ---")
+        logging.getLogger('progress').info("\n--- Summary Statistics (Mean) of Normalized SAR per Scenario and Frequency (in mW/kg) ---", extra={'log_type': 'header'})
         with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', 1000):
-            print(summary_stats)
+            logging.getLogger('progress').info(summary_stats)
         detailed_csv_path = os.path.join(self.results_base_dir, 'normalized_results_detailed.csv')
         summary_csv_path = os.path.join(self.results_base_dir, 'normalized_results_summary.csv')
         organ_csv_path = os.path.join(self.results_base_dir, 'normalized_results_organs.csv')
         results_for_export.to_csv(detailed_csv_path, index=False)
         summary_stats.to_csv(summary_csv_path)
         all_organ_results_df.to_csv(organ_csv_path, index=False)
-        print(f"\n--- Detailed results saved to: {detailed_csv_path} ---")
-        print(f"--- Summary statistics saved to: {summary_csv_path} ---")
-        print(f"--- Organ-level results saved to: {organ_csv_path} ---")
+        logging.getLogger('progress').info(f"\n--- Detailed results saved to: {detailed_csv_path} ---", extra={'log_type': 'success'})
+        logging.getLogger('progress').info(f"--- Summary statistics saved to: {summary_csv_path} ---", extra={'log_type': 'success'})
+        logging.getLogger('progress').info(f"--- Organ-level results saved to: {organ_csv_path} ---", extra={'log_type': 'success'})
 
     def _generate_plots(self, results_df, all_organ_results_df):
         """Generates all plots using the Plotter class."""

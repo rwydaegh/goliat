@@ -17,7 +17,7 @@ class MaterialSetup(BaseSetup):
         """
         Assigns materials to the simulation entities.
         """
-        self._log("Assigning materials...", level='verbose')
+        self._log("Assigning materials...", log_type='progress')
         
         # Background material
         background_settings = self.simulation.raw.BackgroundMaterialSettings()
@@ -37,7 +37,11 @@ class MaterialSetup(BaseSetup):
     def _assign_phantom_materials(self):
         all_entities = self.model.AllEntities()
         phantom_parts = [e for e in all_entities if isinstance(e, self.XCoreModeling.TriangleMesh)]
-        name_mapping = self.config.get_material_mapping()
+        
+        # Get the first phantom name from the config. This assumes one phantom per simulation.
+        phantom_name = self.config.get_setting("phantoms")[0]
+        name_mapping = self.config.get_material_mapping(phantom_name)
+
         material_groups = {}
         for part in phantom_parts:
             base_name = part.Name.split('(')[0].strip()
@@ -51,7 +55,7 @@ class MaterialSetup(BaseSetup):
                 self.simulation.LinkMaterialWithDatabase(material_settings, mat)
                 self.simulation.Add(material_settings, entities)
             except KeyError:
-                self._log(f"    - Warning: Could not find material '{material_name}' in IT'IS 4.2 database.")
+                self._log(f"    - Warning: Could not find material '{material_name}' in IT'IS 4.2 database.", log_type='warning')
 
     def _assign_antenna_materials(self, antenna_components):
         antenna_config = self.antenna.get_config_for_frequency()
@@ -66,23 +70,23 @@ class MaterialSetup(BaseSetup):
                 if "Copper" in mat_name and self.free_space and excitation_type.lower() == 'gaussian':
                     material_settings.Type = "PEC"
                     self.simulation.Add(material_settings, [entity])
-                    self._log("\n" + "="*80)
-                    self._log(f"  WARNING: Forcing material for '{comp_name}' to PEC.")
-                    self._log("           This is a required workaround because Sim4Life does not yet support")
-                    self._log("           Gaussian excitation with dispersive materials like Copper.")
-                    self._log("="*80 + "\n")
+                    self._log("\n" + "="*80, log_type='warning')
+                    self._log(f"  WARNING: Forcing material for '{comp_name}' to PEC.", log_type='warning')
+                    self._log("           This is a required workaround because Sim4Life does not yet support", log_type='warning')
+                    self._log("           Gaussian excitation with dispersive materials like Copper.", log_type='warning')
+                    self._log("="*80 + "\n", log_type='warning')
                 elif mat_name.lower() == 'pec':
                     material_settings.Type = "PEC"
                     self.simulation.Add(material_settings, [entity])
-                    self._log(f"  - Assigned 'PEC' to '{comp_name}'.")
+                    self._log(f"  - Assigned 'PEC' to '{comp_name}'.", log_type='info')
                 else:
                     try:
                         db_name = "IT'IS 4.2" if "Rogers" in mat_name else "Generic 1.1"
                         mat = self.database[db_name][mat_name]
                         self.simulation.LinkMaterialWithDatabase(material_settings, mat)
                         self.simulation.Add(material_settings, [entity])
-                        self._log(f"  - Assigned '{mat_name}' to '{comp_name}'.")
+                        self._log(f"  - Assigned '{mat_name}' to '{comp_name}'.", log_type='info')
                     except KeyError:
-                        self._log(f"    - Warning: Could not find material '{mat_name}' in database.")
+                        self._log(f"    - Warning: Could not find material '{mat_name}' in database.", log_type='warning')
             else:
-                self._log(f"    - Warning: Could not find component '{comp_name}' to assign material.")
+                self._log(f"    - Warning: Could not find component '{comp_name}' to assign material.", log_type='warning')

@@ -114,11 +114,11 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
     def calculate_summary_stats(self, results_df):
         placement_scenarios = self.config.get_setting("placement_scenarios", {})
         placements_per_scenario = {}
-        print("\n--- Calculating Total Possible Placements per Scenario ---")
+        logging.getLogger('progress').info("\n--- Calculating Total Possible Placements per Scenario ---", extra={'log_type': 'header'})
         for name, definition in placement_scenarios.items():
             total = len(definition.get("positions", {})) * len(definition.get("orientations", {}))
             placements_per_scenario[name] = total
-            print(f"- Scenario '{name}': {total} placements")
+            logging.getLogger('progress').info(f"- Scenario '{name}': {total} placements", extra={'log_type': 'info'})
         summary_stats = results_df.groupby(['scenario', 'frequency_mhz']).mean(numeric_only=True)
         completion_counts = results_df.groupby(['scenario', 'frequency_mhz']).size()
         summary_stats['progress'] = summary_stats.index.map(
@@ -131,7 +131,7 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
         summary_stats = self.calculate_summary_stats(results_df)
 
         for scenario_name in scenarios_with_results:
-            print(f"\n--- Generating plots for scenario: {scenario_name} ---")
+            logging.getLogger('progress').info(f"\n--- Generating plots for scenario: {scenario_name} ---", extra={'log_type': 'header'})
             scenario_results_df = results_df[results_df['scenario'] == scenario_name]
             scenario_summary_stats = summary_stats.loc[scenario_name]
             avg_results = scenario_summary_stats.drop(columns=['progress'])
@@ -201,7 +201,7 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
         return results_df.groupby('frequency_mhz').mean(numeric_only=True)
 
     def generate_plots(self, analyzer, plotter, results_df, all_organ_results_df):
-        print("\n--- Generating plots for far-field analysis ---")
+        logging.getLogger('progress').info("\n--- Generating plots for far-field analysis ---", extra={'log_type': 'header'})
         summary_stats = self.calculate_summary_stats(results_df)
         plotter.plot_whole_body_sar_bar(summary_stats)
         plotter.plot_peak_sar_line(summary_stats)
@@ -240,4 +240,4 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
             plotter.plot_peak_sar_heatmap(organ_sar_df, group_sar_summary, analyzer.tissue_group_definitions, value_col='avg_sar', title='Average SAR')
             plotter.plot_peak_sar_heatmap(organ_pssar_df, group_pssar_summary, analyzer.tissue_group_definitions, value_col='peak_sar_10g_mw_kg', title='Peak SAR 10g')
         else:
-            print("  - WARNING: No data found for tissue groups, skipping heatmaps.")
+            logging.getLogger('progress').warning("  - WARNING: No data found for tissue groups, skipping heatmaps.", extra={'log_type': 'warning'})

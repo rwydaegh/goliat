@@ -25,18 +25,18 @@ class FarFieldStudy(BaseStudy):
         Executes the entire far-field study by iterating through each simulation case,
         creating a separate project for each.
         """
-        self._log(f"--- Starting Far-Field Study: {self.config.get_setting('study_name')} ---", level='progress')
+        self._log(f"--- Starting Far-Field Study: {self.config.get_setting('study_name')} ---", level='progress', log_type='header')
 
         do_setup = self.config.get_setting('execution_control.do_setup', True)
         do_run = self.config.get_setting('execution_control.do_run', True)
         do_extract = self.config.get_setting('execution_control.do_extract', True)
 
         if not do_setup and not do_run and not do_extract:
-            self._log("All execution phases (setup, run, extract) are disabled in the config. Nothing to do.")
+            self._log("All execution phases (setup, run, extract) are disabled in the config. Nothing to do.", log_type='warning')
             return
 
         if not do_setup and do_run:
-            self._log("WARNING: Running simulations without setup is not a standard workflow and might lead to issues.")
+            self._log("WARNING: Running simulations without setup is not a standard workflow and might lead to issues.", log_type='warning')
 
         phantoms = self.config.get_setting('phantoms', [])
         frequencies = self.config.get_setting('frequencies_mhz', [])
@@ -85,7 +85,7 @@ class FarFieldStudy(BaseStudy):
                         self.profiler.set_current_project(project_index)
                         self.profiler.completed_phases.clear() # Reset for the new project
 
-                        self._log(f"\n--- Processing Frequency {j+1}/{len(frequencies)}: {freq}MHz for Phantom '{phantom_name}' ---", level='progress')
+                        self._log(f"\n--- Processing Frequency {j+1}/{len(frequencies)}: {freq}MHz for Phantom '{phantom_name}' ---", level='progress', log_type='header')
                         
                         all_simulations = []
                         # 1. Setup Phase
@@ -97,10 +97,9 @@ class FarFieldStudy(BaseStudy):
 
                                 for k, direction_name in enumerate(incident_directions):
                                     for l, polarization_name in enumerate(polarizations):
-                                        if self._check_for_stop_signal():
-                                            raise StudyCancelledError()
+                                        self._check_for_stop_signal()
                                         setup_index = k * len(polarizations) + l + 1
-                                        self._log(f"    - Setting up simulation {setup_index}/{total_setups}: {direction_name}_{polarization_name}", level='progress')
+                                        self._log(f"    - Setting up simulation {setup_index}/{total_setups}: {direction_name}_{polarization_name}", level='progress', log_type='progress')
                                         
                                         setup = FarFieldSetup(self.config, phantom_name, freq, direction_name, polarization_name, self.project_manager, self.verbose_logger, self.progress_logger)
                                         
@@ -111,7 +110,7 @@ class FarFieldStudy(BaseStudy):
                                         if simulation:
                                             all_simulations.append((simulation, direction_name, polarization_name))
                                         else:
-                                            self._log(f"    - Setup failed for {direction_name}_{polarization_name}", level='progress')
+                                            self._log(f"    - Setup failed for {direction_name}_{polarization_name}", level='progress', log_type='error')
 
                                         if self.gui:
                                             progress = self.profiler.get_weighted_progress("setup", setup_index / total_setups)
@@ -119,7 +118,7 @@ class FarFieldStudy(BaseStudy):
                                             self.gui.update_stage_progress("Setup", setup_index, total_setups)
                                
                                 # Save the project after the entire setup phase for this project is complete.
-                                self._log("  - Saving project after setup phase...", level='progress')
+                                self._log("  - Saving project after setup phase...", level='progress', log_type='progress')
                                 self.project_manager.save()
                         else:
                             # If not setting up, filter simulations from the existing project based on the config
@@ -147,7 +146,7 @@ class FarFieldStudy(BaseStudy):
                                 all_simulations.append((sim, direction_name, polarization_name))
 
                         if not all_simulations:
-                            self._log("  ERROR: No matching simulations found in the project for the current configuration. Skipping.", level='progress')
+                            self._log("  ERROR: No matching simulations found in the project for the current configuration. Skipping.", level='progress', log_type='error')
                             continue
 
                         # 2. Run Phase
@@ -180,7 +179,7 @@ class FarFieldStudy(BaseStudy):
                 # This is not an error, but a signal to stop. Re-raise it to be caught by the outer loop.
                 raise
             except Exception as e:
-                self._log(f"  ERROR: An error occurred while processing phantom '{phantom_name}': {e}", level='progress')
+                self._log(f"  ERROR: An error occurred while processing phantom '{phantom_name}': {e}", level='progress', log_type='error')
                 traceback.print_exc()
 
     def _extract_results_for_project(self, phantom_name, freq, simulations_to_extract):
@@ -188,19 +187,18 @@ class FarFieldStudy(BaseStudy):
         Extracts results for a given list of simulations.
         """
         if not simulations_to_extract:
-            self._log("  - No matching simulations to extract based on the current configuration.")
+            self._log("  - No matching simulations to extract based on the current configuration.", log_type='warning')
             return
 
-        self._log(f"  - Extracting results for {len(simulations_to_extract)} simulation(s) matching the configuration.")
+        self._log(f"  - Extracting results for {len(simulations_to_extract)} simulation(s) matching the configuration.", log_type='info')
         for sim, direction_name, polarization_name in simulations_to_extract:
-            if self._check_for_stop_signal():
-                raise StudyCancelledError()
+            self._check_for_stop_signal()
             try:
                 placement_name = f"environmental_{direction_name}_{polarization_name}"
                 
-                self._log(f"    - Extracting from simulation: {sim.Name}", level='progress')
+                self._log(f"    - Extracting from simulation: {sim.Name}", level='progress', log_type='progress')
                 extractor = ResultsExtractor(self.config, sim, phantom_name, freq, placement_name, 'far_field', self.verbose_logger, self.progress_logger, gui=self.gui, study=self)
                 extractor.extract()
             except Exception as e:
-                self._log(f"    - ERROR: Failed to extract results for simulation '{sim.Name}': {e}", level='progress')
+                self._log(f"    - ERROR: Failed to extract results for simulation '{sim.Name}': {e}", level='progress', log_type='error')
                 traceback.print_exc()

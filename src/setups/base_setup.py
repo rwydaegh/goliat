@@ -43,11 +43,11 @@ class BaseSetup(LoggingMixin):
         
         # Time Calculation
         time_multiplier = sim_params.get("simulation_time_multiplier", 5)
-        self._log(f"  - Using simulation time multiplier: {time_multiplier}")
+        self._log(f"  - Using simulation time multiplier: {time_multiplier}", log_type='info')
         
         bbox = self.model.GetBoundingBox([sim_bbox_entity])
         if not bbox or len(bbox) < 2:
-            self._log(f"  - ERROR: Could not get a valid bounding box for entity '{sim_bbox_entity.Name}'. Skipping time calculation.")
+            self._log(f"  - ERROR: Could not get a valid bounding box for entity '{sim_bbox_entity.Name}'. Skipping time calculation.", log_type='error')
             return
         bbox_min, bbox_max = bbox
         
@@ -56,11 +56,11 @@ class BaseSetup(LoggingMixin):
         time_to_travel_s = (time_multiplier * diagonal_length_m) / 299792458
         sim_time_periods = time_to_travel_s / (1 / (frequency_mhz * 1e6))
         simulation.SetupSettings.SimulationTime = sim_time_periods, self.s4l_v1.units.Periods
-        self._log(f"  - Simulation time set to {sim_time_periods:.2f} periods.")
+        self._log(f"  - Simulation time set to {sim_time_periods:.2f} periods.", log_type='info')
 
         # Termination Criteria
         term_level = sim_params.get("global_auto_termination", "GlobalAutoTerminationWeak")
-        self._log(f"  - Setting termination criteria to: {term_level}")
+        self._log(f"  - Setting termination criteria to: {term_level}", log_type='info')
         term_options = simulation.SetupSettings.GlobalAutoTermination.enum
         if hasattr(term_options, term_level):
             simulation.SetupSettings.GlobalAutoTermination = getattr(term_options, term_level)
@@ -68,11 +68,11 @@ class BaseSetup(LoggingMixin):
         if term_level == "GlobalAutoTerminationUserDefined":
             convergence_db = sim_params.get("convergence_level_dB", -30)
             simulation.SetupSettings.ConvergenceLevel = convergence_db
-            self._log(f"    - Convergence level set to: {convergence_db} dB")
+            self._log(f"    - Convergence level set to: {convergence_db} dB", log_type='info')
 
     def _setup_solver_settings(self, simulation):
         """ Configures solver settings, including kernel. """
-        self._log("  - Configuring solver settings...")
+        self._log("  - Configuring solver settings...", log_type='progress')
         solver_settings = self.config.get_solver_settings()
         if not solver_settings:
             return
@@ -84,13 +84,13 @@ class BaseSetup(LoggingMixin):
         
         if kernel_type == "acceleware":
             solver.Kernel = solver.Kernel.enum.AXware
-            self._log(f"    - Solver kernel set to: Acceleware (AXware)")
+            self._log(f"    - Solver kernel set to: Acceleware (AXware)", log_type='info')
         elif kernel_type == "cuda":
             solver.Kernel = solver.Kernel.enum.Cuda
-            self._log(f"    - Solver kernel set to: Cuda")
+            self._log(f"    - Solver kernel set to: Cuda", log_type='info')
         else:
             solver.Kernel = solver.Kernel.enum.Software
-            self._log(f"    - Solver kernel set to: Software")
+            self._log(f"    - Solver kernel set to: Software", log_type='info')
 
     def run_full_setup(self, project_manager):
         """
@@ -108,12 +108,12 @@ class BaseSetup(LoggingMixin):
         """Adds point sensors at the corners of the simulation bounding box."""
         num_points = self.config.get_setting("simulation_parameters.number_of_point_sensors", 0)
         if num_points == 0:
-            self._log("  - Skipping point sensor creation (0 points requested).")
+            self._log("  - Skipping point sensor creation (0 points requested).", log_type='info')
             return
 
         sim_bbox_entity = next((e for e in self.model.AllEntities() if sim_bbox_entity_name in e.Name), None)
         if not sim_bbox_entity:
-            self._log(f"  - WARNING: Could not find simulation bounding box '{sim_bbox_entity_name}' to add point sensors.")
+            self._log(f"  - WARNING: Could not find simulation bounding box '{sim_bbox_entity_name}' to add point sensors.", log_type='warning')
             return
         
         bbox_min, bbox_max = self.model.GetBoundingBox([sim_bbox_entity])
@@ -135,7 +135,7 @@ class BaseSetup(LoggingMixin):
             corner_name = point_source_order[i]
             corner_coords = corner_map.get(corner_name)
             if corner_coords is None:
-                self._log(f"  - WARNING: Invalid corner name '{corner_name}' in point_source_order. Skipping.")
+                self._log(f"  - WARNING: Invalid corner name '{corner_name}' in point_source_order. Skipping.", log_type='warning')
                 continue
 
             point_entity_name = f"Point Sensor Entity {i+1} ({corner_name})"
@@ -143,7 +143,7 @@ class BaseSetup(LoggingMixin):
             existing_entity = next((e for e in self.model.AllEntities() if hasattr(e, 'Name') and e.Name == point_entity_name), None)
             
             if existing_entity:
-                self._log(f"  - Point sensor '{point_entity_name}' already exists. Skipping creation.")
+                self._log(f"  - Point sensor '{point_entity_name}' already exists. Skipping creation.", log_type='info')
                 continue
 
             point_entity = self.model.CreatePoint(self.model.Vec3(corner_coords[0][0], corner_coords[1][1], corner_coords[2][2]))
@@ -151,7 +151,7 @@ class BaseSetup(LoggingMixin):
             point_sensor = self.emfdtd.PointSensorSettings()
             point_sensor.Name = f"Point Sensor {i+1}"
             simulation.Add(point_sensor, [point_entity])
-            self._log(f"  - Added point sensor at {corner_coords} ({corner_name})")
+            self._log(f"  - Added point sensor at {corner_coords} ({corner_name})", log_type='info')
 
     @profile
     def _finalize_setup(self, project_manager, simulation, all_simulation_parts, frequency_mhz):
@@ -159,7 +159,7 @@ class BaseSetup(LoggingMixin):
         Performs the final voxelization and grid update for a simulation.
         This is a shared method for both Near-Field and Far-Field setups.
         """
-        self._log("    - Finalizing setup...")
+        self._log("    - Finalizing setup...", log_type='progress')
         
         voxeler_settings = self.emfdtd.AutomaticVoxelerSettings()
         simulation.Add(voxeler_settings, all_simulation_parts)
@@ -170,15 +170,15 @@ class BaseSetup(LoggingMixin):
         XCore.SetLogLevel(old_log_level)
 
         if self.config.get_setting('export_material_properties'):
-            self._log("--- Extracting Material Properties ---", level='progress')
+            self._log("--- Extracting Material Properties ---", level='progress', log_type='header')
             material_properties = []
             for settings in simulation.AllSettings:
                 if isinstance(settings, self.emfdtd.MaterialSettings):
                     try:
-                        self._log(f"  - Material: '{settings.Name}'")
-                        self._log(f"    - Relative Permittivity: {settings.ElectricProps.RelativePermittivity:.4f}")
-                        self._log(f"    - Electric Conductivity (S/m): {settings.ElectricProps.Conductivity:.4f}")
-                        self._log(f"    - Mass Density (kg/m^3): {settings.MassDensity:.2f}")
+                        self._log(f"  - Material: '{settings.Name}'", log_type='info')
+                        self._log(f"    - Relative Permittivity: {settings.ElectricProps.RelativePermittivity:.4f}", log_type='verbose')
+                        self._log(f"    - Electric Conductivity (S/m): {settings.ElectricProps.Conductivity:.4f}", log_type='verbose')
+                        self._log(f"    - Mass Density (kg/m^3): {settings.MassDensity:.2f}", log_type='verbose')
                         material_properties.append({
                             'Name': settings.Name,
                             'RelativePermittivity': settings.ElectricProps.RelativePermittivity,
@@ -186,8 +186,8 @@ class BaseSetup(LoggingMixin):
                             'MassDensity': settings.MassDensity
                         })
                     except Exception as e:
-                        self._log(f"    - Could not extract properties for '{settings.Name}': {e}")
-            self._log("--- Finished Extracting Material Properties ---", level='progress')
+                        self._log(f"    - Could not extract properties for '{settings.Name}': {e}", log_type='warning')
+            self._log("--- Finished Extracting Material Properties ---", level='progress', log_type='header')
 
             output_dir = "analysis/cpw/data"
             if not os.path.exists(output_dir):
@@ -195,9 +195,9 @@ class BaseSetup(LoggingMixin):
             output_path = os.path.join(output_dir, f"material_properties_{frequency_mhz}.pkl")
             with open(output_path, 'wb') as f:
                 pickle.dump(material_properties, f)
-            self._log(f"--- Exported Material Properties to {output_path} ---", level='progress')
+            self._log(f"--- Exported Material Properties to {output_path} ---", level='progress', log_type='success')
 
         simulation.UpdateGrid()
         project_manager.save()
         simulation.CreateVoxels()
-        self._log("    - Finalizing setup complete.")
+        self._log("    - Finalizing setup complete.", log_type='success')

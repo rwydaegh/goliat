@@ -1,4 +1,5 @@
 data/
+!data/material_name_mapping.json
 results/
 plots/
 paper/
@@ -34,3 +35,4 @@ analysis/sensitivity_analysis/plots/
 !analysis/**/*.csv
 !analysis/**/*.png
 !analysis/**/*.pdf
+*.zip

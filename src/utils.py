@@ -109,7 +109,7 @@ class Profiler:
         finally:
             elapsed = time.monotonic() - start_time
             # We can just log the subtask time for now.
-            logging.getLogger('verbose').info(f"Subtask '{name}' took {elapsed:.2f}s")
+            logging.getLogger('verbose').info(f"Subtask '{name}' took {elapsed:.2f}s", extra={'log_type': 'verbose'})
 
 def format_time(seconds):
     """Formats seconds into a human-readable string (e.g., 1m 23s)."""
@@ -145,13 +145,13 @@ def profile(study, phase_name):
         if study.gui:
             study.gui.update_profiler()
 
-    study._log(f"--- Starting: {phase_name} ---")
+    study._log(f"--- Starting: {phase_name} ---", log_type='header')
     start_time = time.monotonic()
     try:
         yield
     finally:
         elapsed = time.monotonic() - start_time
-        study._log(f"--- Finished: {phase_name} (took {elapsed:.2f}s) ---")
+        study._log(f"--- Finished: {phase_name} (took {elapsed:.2f}s) ---", log_type='header')
         
         # For 'setup' and 'extract', ending the stage means ending the phase.
         # For 'run', the phase is completed manually after the simulation loop.
@@ -184,7 +184,7 @@ def profile_subtask(study, task_name, instance_to_profile=None):
         line_profiling_config.get("enabled", False) and
         task_name in line_profiling_config.get("subtasks", {})):
         
-        study._log(f"  - Activating line profiler for subtask: {task_name}", level='verbose')
+        study._log(f"  - Activating line profiler for subtask: {task_name}", level='verbose', log_type='verbose')
         lp, wrapper = study._setup_line_profiler(task_name, instance_to_profile)
 
     try:
@@ -198,11 +198,11 @@ def profile_subtask(study, task_name, instance_to_profile=None):
         subtask = study.profiler.subtask_stack.pop()
         elapsed = time.monotonic() - subtask['start_time']
         study.profiler.subtask_times[subtask['name']].append(elapsed)
-        study._log(f"    - Subtask '{task_name}' done in {elapsed:.2f}s", level='progress')
+        study._log(f"    - Subtask '{task_name}' done in {elapsed:.2f}s", level='progress', log_type='progress')
 
         # If the line profiler was active, print its stats
         if lp:
-            study._log(f"    - Line profiler stats for '{task_name}':", level='verbose')
+            study._log(f"    - Line profiler stats for '{task_name}':", level='verbose', log_type='verbose')
             s = io.StringIO()
             lp.print_stats(stream=s)
             study.verbose_logger.info(s.getvalue())
@@ -217,9 +217,9 @@ def ensure_s4l_running():
     from s4l_v1._api import application
     
     if application.get_app_safe() is None:
-        logging.getLogger('verbose').info("Starting Sim4Life application...")
+        logging.getLogger('verbose').info("Starting Sim4Life application...", extra={'log_type': 'info'})
         application.run_application(disable_ui_plugins=True)
-        logging.getLogger('verbose').info("Sim4Life application started.")
+        logging.getLogger('verbose').info("Sim4Life application started.", extra={'log_type': 'success'})
 
 def open_project(project_path):
     """
@@ -227,10 +227,10 @@ def open_project(project_path):
     """
     import s4l_v1.document
     if not os.path.exists(project_path):
-        logging.getLogger('verbose').info(f"Project file not found at {project_path}, creating a new one.")
+        logging.getLogger('verbose').info(f"Project file not found at {project_path}, creating a new one.", extra={'log_type': 'warning'})
         s4l_v1.document.New()
     else:
-        logging.getLogger('verbose').info(f"Opening project: {project_path}")
+        logging.getLogger('verbose').info(f"Opening project: {project_path}", extra={'log_type': 'info'})
         s4l_v1.document.Open(project_path)
 
 def delete_project_file(project_path):
@@ -238,7 +238,7 @@ def delete_project_file(project_path):
     Deletes the project file if it exists.
     """
     if os.path.exists(project_path):
-        logging.getLogger('verbose').info(f"Deleting existing project file: {project_path}")
+        logging.getLogger('verbose').info(f"Deleting existing project file: {project_path}", extra={'log_type': 'warning'})
         os.remove(project_path)
 
 @contextlib.contextmanager

@@ -22,7 +22,7 @@ class Config:
     def __init__(self, base_dir, config_filename="near_field_config.json"):
         self.base_dir = base_dir
         self.config_path = self._resolve_config_path(config_filename)
-        self.material_mapping_path = os.path.join(self.base_dir, 'material_name_mapping.json')
+        self.material_mapping_path = os.path.join(self.base_dir, 'data', 'material_name_mapping.json')
         self.profiling_config_path = os.path.join(self.base_dir, 'configs', 'profiling_config.json')
         
         self.config = self._load_config_with_inheritance(self.config_path)
@@ -102,9 +102,13 @@ class Config:
             return phantom_config.get("placements", {})
         return {}
 
-    def get_material_mapping(self):
-        """Returns the material name mapping."""
-        return self.material_mapping
+    def get_material_mapping(self, phantom_name):
+        """Returns the material name mapping for a specific phantom."""
+        if phantom_name in self.material_mapping:
+            return self.material_mapping[phantom_name]
+        else:
+            # Fallback to the old format or a default
+            return self.material_mapping
 
     def get_solver_settings(self):
         """Returns the solver settings."""

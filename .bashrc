@@ -2,4 +2,5 @@
 #export PATH="/d/Program Files/Sim4Life_8.2.0.16876/Python:$PATH"
 #export PATH="/d/Program Files/Sim4Life_9.0.0.18820/Python:$PATH"
 #export PATH="/c/Program Files/Sim4Life_8.2.0.16876/Python:$PATH"
-export PATH="/c/Program Files/Sim4Life_9.0.0.18820/Python:$PATH"
+#export PATH="/c/Program Files/Sim4Life_9.0.0.18820/Python:$PATH"
+export PATH="/c/Program Files/Sim4Life_8.2.2.18061/Python:$PATH"

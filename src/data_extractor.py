@@ -50,7 +50,7 @@ def get_parameter(source_config: Dict[str, Any], context: Dict[str, Any]) -> Any
         try:
             file_path = file_path_template.format(**context)
         except KeyError as e:
-            print(f"Error: Missing context for placeholder in file_path_template: {e}")
+            logging.getLogger('verbose').error(f"Error: Missing context for placeholder in file_path_template: {e}")
             return None
 
         json_path = source_config.get('json_path')
@@ -68,5 +68,5 @@ def get_parameter(source_config: Dict[str, Any], context: Dict[str, Any]) -> Any
     #     pass
 
     else:
-        print(f"Error: Unsupported source type '{source_type}'")
+        logging.getLogger('verbose').error(f"Error: Unsupported source type '{source_type}'")
         return None

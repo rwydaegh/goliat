@@ -33,13 +33,9 @@ class BaseStudy(LoggingMixin):
         self.project_manager = ProjectManager(self.config, self.verbose_logger, self.progress_logger, self.gui)
 
     def _check_for_stop_signal(self):
-        """Checks if the GUI has requested a stop and keeps the GUI responsive."""
-        if self.gui:
-            if hasattr(self.gui, '_is_stopped') and self.gui._is_stopped:
-                raise StudyCancelledError()
-            # Process GUI events to keep it from freezing
-            if hasattr(self.gui, 'process_events'):
-                self.gui.process_events()
+        """Checks if the GUI has requested a stop."""
+        if self.gui and self.gui.is_stopped():
+            raise StudyCancelledError("Study cancelled by user.")
 
     def subtask(self, task_name, instance_to_profile=None):
         """
@@ -64,12 +60,12 @@ class BaseStudy(LoggingMixin):
         try:
             self._run_study()
         except StudyCancelledError:
-            self._log("--- Study execution cancelled by user. ---", level='progress')
+            self._log("--- Study execution cancelled by user. ---", level='progress', log_type='warning')
         except Exception as e:
-            self._log(f"--- FATAL ERROR in study: {e} ---", level='progress')
+            self._log(f"--- FATAL ERROR in study: {e} ---", level='progress', log_type='fatal')
             self.verbose_logger.error(traceback.format_exc())
         finally:
-            self._log(f"\n--- {self.__class__.__name__} Finished ---", level='progress')
+            self._log(f"\n--- {self.__class__.__name__} Finished ---", level='progress', log_type='success')
             self.profiler.save_estimates()
             self.project_manager.cleanup()
             if self.gui:
@@ -90,7 +86,7 @@ class BaseStudy(LoggingMixin):
         if not line_profiling_config.get("enabled", False) or subtask_name not in line_profiling_config.get("subtasks", {}):
             return None, lambda func: func
 
-        self._log(f"  - Setting up line profiler for subtask: {subtask_name}", level='verbose')
+        self._log(f"  - Setting up line profiler for subtask: {subtask_name}", level='verbose', log_type='verbose')
         
         lp = LineProfiler()
         functions_to_profile = line_profiling_config["subtasks"][subtask_name]
@@ -106,10 +102,10 @@ class BaseStudy(LoggingMixin):
                 # Get the function object from the class
                 func_to_add = getattr(class_obj, func_name)
                 
-                self._log(f"    - Adding function to profiler: {class_name}.{func_name} from {module_path}")
+                self._log(f"    - Adding function to profiler: {class_name}.{func_name} from {module_path}", log_type='verbose')
                 lp.add_function(func_to_add)
 
             except (ImportError, AttributeError, ValueError) as e:
-                self._log(f"  - WARNING: Could not find or parse function '{func_path}' for line profiling. Error: {e}", level='progress')
+                self._log(f"  - WARNING: Could not find or parse function '{func_path}' for line profiling. Error: {e}", level='progress', log_type='warning')
         
         return lp, lp.wrap_function
