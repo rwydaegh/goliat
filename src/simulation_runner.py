@@ -1,6 +1,7 @@
 import os
 import glob
 import subprocess
+import time
 from .utils import open_project
 
 class SimulationRunner:
@@ -72,6 +73,9 @@ class SimulationRunner:
         try:
             subprocess.run(command, check=True)
             self._log("iSolve.exe completed successfully.")
+
+            self._log("Waiting for 5 seconds to ensure results are written to disk...")
+            time.sleep(5)
             
             self._log("Re-opening project to load results...")
             self.document.Close()

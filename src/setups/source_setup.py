@@ -45,6 +45,7 @@ class SourceSetup:
             excitation_type = 'harmonic'
             edge_source_settings.ExcitationType = excitation_enum.Harmonic
             edge_source_settings.Frequency = self.frequency_mhz, self.units.MHz
+            edge_source_settings.CenterFrequency = self.frequency_mhz, self.units.MHz
 
         self.simulation.Add(edge_source_settings, [source_entity])
 

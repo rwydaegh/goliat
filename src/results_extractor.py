@@ -124,7 +124,8 @@ class ResultsExtractor:
             inputs = [em_sensor_extractor.Outputs["EM E(x,y,z,f0)"]]
             sar_stats_evaluator = self.analysis.em_evaluators.SarStatisticsEvaluator(inputs=inputs)
             sar_stats_evaluator.PeakSpatialAverageSAR = True
-            sar_stats_evaluator.AveragingMass = 10.0, self.units.Unit("g")
+            sar_stats_evaluator.PeakSAR.TargetMass = 10.0, self.units.Unit("g")
+            sar_stats_evaluator.UpdateAttributes()
             self.document.AllAlgorithms.Add(sar_stats_evaluator)
             sar_stats_evaluator.Update()
 

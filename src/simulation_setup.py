@@ -181,10 +181,11 @@ class SimulationSetup:
             sim_name += "_freespace"
         simulation = self.emfdtd.Simulation()
         simulation.Name = sim_name
-        self.document.AllSimulations.Add(simulation)
-
+        
         import s4l_v1.units
         simulation.Frequency = self.frequency_mhz, s4l_v1.units.MHz
+
+        self.document.AllSimulations.Add(simulation)
         
         self._setup_solver_settings(simulation)
 
