@@ -18,12 +18,6 @@ def main():
     """
     parser = argparse.ArgumentParser(description="Run near-field or far-field simulation studies.")
     parser.add_argument(
-        'study_type',
-        type=str,
-        choices=['near_field', 'far_field'],
-        help="The type of study to run."
-    )
-    parser.add_argument(
         '--skip-startup',
         action='store_true',
         help="Skip the startup checks for dependencies and data."
@@ -49,11 +43,12 @@ def main():
     from src.gui_manager import ProgressGUI
     from PySide6.QtWidgets import QApplication
 
-    config_filename = args.config if args.config else f"{args.study_type}_config.json"
+    config_filename = args.config if args.config else "todays_near_field_config.json"
 
     # The GUI now handles the study execution in a separate process
     app = QApplication(sys.argv)
-    gui = ProgressGUI(args.study_type, config_filename=config_filename)
+    # The ProgressGUI will determine the study_type from the config file
+    gui = ProgressGUI(config_filename=config_filename)
     gui.show()
     sys.exit(app.exec())
 

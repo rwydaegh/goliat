@@ -5,3 +5,4 @@ gdown
 seaborn
 line-profiler
 pytest
+scienceplots

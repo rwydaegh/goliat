@@ -1,5 +1,6 @@
 {
     "extends": "base_config.json",
+    "study_type": "far_field",
     "execution_control": {
         "do_setup": true,
         "do_run": true,

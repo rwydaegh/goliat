@@ -15,7 +15,7 @@ from src.studies.far_field_study import FarFieldStudy
 from src.utils import format_time, ensure_s4l_running
 from src.logging_manager import setup_loggers, shutdown_loggers
 
-def study_process_wrapper(queue, study_type, config_filename, execution_control):
+def study_process_wrapper(queue, config_filename, execution_control):
     """
     This function runs in a separate process and executes the study.
     It communicates with the main GUI process via a queue.
@@ -56,12 +56,18 @@ def study_process_wrapper(queue, study_type, config_filename, execution_control)
             def update_profiler(self):
                 self.queue.put({'type': 'profiler_object', 'obj': self.profiler})
 
+        from src.config import Config
+        import os
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+        config = Config(base_dir, config_filename)
+        study_type = config.get_setting('study_type')
+
         if study_type == 'near_field':
             study = NearFieldStudy(config_filename=config_filename, gui=QueueGUI(queue))
         elif study_type == 'far_field':
             study = FarFieldStudy(config_filename=config_filename, gui=QueueGUI(queue))
         else:
-            queue.put({'type': 'status', 'message': f"Error: Unknown study type '{study_type}'"})
+            queue.put({'type': 'status', 'message': f"Error: Unknown or missing study type '{study_type}' in {config_filename}"})
             return
             
         study.gui.profiler = study.profiler
@@ -78,10 +84,9 @@ def study_process_wrapper(queue, study_type, config_filename, execution_control)
 
 
 class ProgressGUI(QWidget):
-    def __init__(self, study_type, config_filename=None):
+    def __init__(self, config_filename=None):
         super().__init__()
-        self.study_type = study_type
-        self.config_filename = config_filename if config_filename else f"{study_type}_config.json"
+        self.config_filename = config_filename
         self.start_time = time.monotonic()
         self.progress_logger = logging.getLogger('progress')
         self.verbose_logger = logging.getLogger('verbose')
@@ -104,6 +109,16 @@ class ProgressGUI(QWidget):
 
         self.queue = multiprocessing.Queue()
         self.profiler = None  # Placeholder for the profiler object
+        from src.config import Config
+        import os
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+        config = Config(base_dir, self.config_filename)
+        self.study_type = config.get_setting('study_type')
+
+        if not self.study_type:
+            self.update_status(f"FATAL ERROR: 'study_type' not found in {self.config_filename}")
+            return
+
         # The study needs to be instantiated here to get the execution_control settings
         if self.study_type == 'near_field':
             study = NearFieldStudy(config_filename=self.config_filename)
@@ -114,7 +129,7 @@ class ProgressGUI(QWidget):
 
         self.process = multiprocessing.Process(
             target=study_process_wrapper,
-            args=(self.queue, self.study_type, self.config_filename, execution_control)
+            args=(self.queue, self.config_filename, execution_control)
         )
 
         self.queue_timer = QTimer(self)
@@ -400,6 +415,6 @@ if __name__ == '__main__':
     setup_loggers()
     app = QApplication(sys.argv)
     # This is for standalone testing of the GUI, so we don't pass a custom config.
-    gui = ProgressGUI('far_field')
+    gui = ProgressGUI(config_filename='todays_far_field_config.json')
     gui.show()
     sys.exit(app.exec())

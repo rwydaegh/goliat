@@ -1,5 +1,6 @@
 {
     "extends": "base_config.json",
+    "study_type": "far_field",
     "study_name": "Today's Far-Field run",
     "line_profiling": {
         "enabled": true,
@@ -15,7 +16,7 @@
     },
     "execution_control": {
         "do_setup": true,
-        "do_run": true,
+        "do_run": false,
         "do_extract": false
     },
     "manual_isolve": true,
@@ -23,7 +24,12 @@
         "thelonious"
     ],
     "frequencies_mhz": [
-        450
+        450,
+        788,
+        1126,
+        1464,
+        1802,
+        2140
     ],
     "far_field_setup": {
         "type": "environmental",
@@ -32,8 +38,7 @@
                 "x_pos"
             ],
             "polarizations": [
-                "theta",
-                "phi"
+                "theta"
             ]
         },
         "auto_induced": {
@@ -51,15 +56,12 @@
             "manual_fallback_max_step_mm": 5.0
         },
         "global_gridding_per_frequency": {
-            "450": 4,
-            "700": 4,
-            "835": 4,
-            "1450": 2.494,
-            "2140": 1.694,
-            "2450": 1.482,
-            "3500": 1.043,
-            "5200": 0.712,
-            "5800": 0.642
+            "450": 2.5,
+            "788": 2.3,
+            "1126": 2.1,
+            "1464": 1.9,
+            "1802": 1.7,
+            "2140": 1.5
         },
         "padding": {
             "padding_mode": "manual",

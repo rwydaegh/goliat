@@ -16,25 +16,34 @@ As specified in [`context/what we need.md`](context/what%20we%20need.md:1), the 
 
 ## 2. Architecture
 
-The framework is built on a modular, class-based architecture designed for flexibility and maintainability. A `BaseStudy` class defines a common interface, which is then extended by specialized study classes that orchestrate the simulation process.
+The framework is designed around a clear, modular workflow that proceeds from configuration to results. The core logic is orchestrated by **Study** classes, which manage the entire simulation lifecycle.
 
--   **`studies/`**: Contains the high-level logic for managing simulation campaigns.
-    -   `base_study.py`: Abstract base class defining the common study interface.
-    -   `near_field_study.py`: Manages near-field SAR simulation campaigns.
-    -   `far_field_study.py`: Manages far-field exposure simulation campaigns.
--   **`setups/`**: Contains the logic for building the simulation scene in Sim4Life.
-    -   `base_setup.py`: Abstract base class for scene setup.
-    -   `near_field_setup.py`: Configures the scene for near-field simulations (e.g., antenna placement).
-    -   `far_field_setup.py`: Configures the scene for far-field simulations (e.g., plane wave sources).
--   **`Config`**: Manages all configurations from the JSON files in the `configs/` directory.
--   **`ProjectManager`**: Handles the lifecycle of the Sim4Life (`.smash`) project file.
--   **`SimulationRunner`**: Manages the execution of the simulation, with support for the Sim4Life API or the standalone `iSolve.exe` solver.
--   **`ResultsExtractor`**: Handles post-processing, extracting raw data, calculating statistics, and saving reports. It is designed to handle the different outputs from near-field and far-field simulations.
--   **`GUIManager`**: Provides a real-time progress GUI using PySide6, allowing users to monitor study progress, view logs, and cancel the execution.
--   **`LoggingManager`**: Sets up and manages file-based and console logging for diagnostics and progress tracking.
--   **`Profiler`**: A utility class within `utils.py` that tracks execution time, learns from past runs, and provides accurate ETA estimates for the study.
+### 2.1. Workflow Overview
 
-This separation of concerns allows for easy extension and maintenance of the codebase.
+A typical run follows these steps:
+
+1.  **Configuration Loading**: The [`Config`](src/config.py:18) class loads a study-specific JSON file (e.g., [`near_field_config.json`](configs/near_field_config.json:1)). It intelligently merges this with a [`base_config.json`](configs/base_config.json:1) using an `extends` keyword, allowing for shared settings and specific overrides.
+
+2.  **Study Orchestration**: A high-level **Study** class ([`NearFieldStudy`](src/studies/near_field_study.py) or [`FarFieldStudy`](src/studies/far_field_study.py)) takes control. It iterates through the defined simulation matrix (e.g., phantoms, frequencies, placements). This class is the main driver, calling all other components in sequence.
+
+3.  **Project Management**: For each individual simulation run, the [`ProjectManager`](src/project_manager.py:11) handles the Sim4Life project file (`.smash`). Based on the `execution_control` config, it either creates a fresh project (deleting the old one) or opens an existing one for re-running or post-processing. It also includes validation checks to prevent working with corrupted or locked files.
+
+4.  **Scene Setup**: A **Setup** class ([`NearFieldSetup`](src/setups/near_field_setup.py) or [`FarFieldSetup`](src/setups/far_field_setup.py)) builds the simulation scene. This is where the primary differences between study types emerge:
+    *   **Near-Field**: The setup involves importing a specific antenna CAD model, which acts as the source of the EMF, and placing it at a precise distance and orientation relative to the phantom (e.g., 8mm from the cheek). This can also be run as a "free-space" simulation without a phantom to characterize the antenna alone.
+    *   **Far-Field**: The setup defines one or more **plane wave** sources with specific incident directions (e.g., `x_pos`) and polarizations (e.g., `theta`). It does not involve placing a device.
+
+5.  **Simulation Execution**: The [`SimulationRunner`](src/simulation_runner.py:13) executes the simulation by invoking the standalone `iSolve.exe` solver.
+
+6.  **Results Extraction**: After the simulation completes, the [`ResultsExtractor`](src/results_extractor.py:11) performs post-processing. The extracted data differs significantly by study type:
+    *   **Near-Field**: Results are stored in a dedicated folder for each unique combination of `phantom/frequency/placement`. The extractor calculates whole-body, head, or trunk SAR, as well as psSAR10g for specific tissue groups like the eyes and brain.
+    *   **Far-Field**: Results are stored per `phantom/frequency`, but contain data for multiple simulations (one for each incident direction and polarization). The extractor generates comprehensive reports that aggregate SAR data across all these scenarios.
+
+### 2.2. Key Supporting Components
+
+-   **GUI & Logging**: A [`GuiManager`](src/gui_manager.py:86) provides a real-time progress window using PySide6, running the study in a separate process to keep the UI responsive. The [`LoggingManager`](src/logging_manager.py:5) sets up detailed logs for debugging and high-level progress tracking.
+-   **Utilities**: The [`utils.py`](src/utils.py:1) module contains a [`Profiler`](src/utils.py:18) that learns from past runs to provide increasingly accurate ETA estimates for studies.
+
+This separation of concerns ensures that each part of the process is self-contained, making the framework easier to maintain and extend.
 
 ## 3. Project Structure
 
@@ -43,27 +52,16 @@ The project is organized into a modular and scalable structure:
 ```
 .
 ├── configs/
-│   ├── near_field_config.json      # Configuration for near-field studies
-│   └── far_field_config.json       # Configuration for far-field studies
-├── data/
-│   ├── antennas/
-│   └── phantoms/
-├── results/
-│   ├── near_field/                 # Directory for near-field results
-│   └── far_field/                  # Directory for far-field results
+│   ├── base_config.json
+│   ├── far_field_config.json
+│   └── near_field_config.json
+├── docs/
 ├── scripts/
-│   ├── download_data.py
-│   └── prepare_antennas.py
+├── analysis/
 ├── src/
 │   ├── analysis/
 │   ├── setups/
-│   │   ├── base_setup.py
-│   │   ├── near_field_setup.py
-│   │   └── far_field_setup.py
 │   ├── studies/
-│   │   ├── base_study.py
-│   │   ├── near_field_study.py
-│   │   └── far_field_study.py
 │   ├── antenna.py
 │   ├── config.py
 │   ├── gui_manager.py
@@ -73,15 +71,12 @@ The project is organized into a modular and scalable structure:
 │   ├── simulation_runner.py
 │   ├── startup.py
 │   └── utils.py
-├── docs/
-│   └── Far_Field_Expansion_Plan.md # Strategic plan for the framework architecture
-├── run_study.py                    # Main entry point to run a simulation campaign
+├── run_study.py
 ├── material_name_mapping.json
-├── README.md
 └── requirements.txt
 ```
 
-*Note: The `data` and `results` directories are not included in the repository and should be created locally.*
+*Note: The `data`, `results`, and `logs` directories are not included in the repository and will be created locally.*
 
 ## 4. How to Run
 
@@ -97,26 +92,20 @@ All commands **must** be executed with the Python interpreter included with Sim4
 
 ---
 
-**Example: Run a Far-Field Study with a custom config**
-
-This is the most common use case for testing. **IMPORTANT**: For development and testing, always use a dedicated configuration file like `configs/todays_far_field_config.json`. Do NOT modify the main `configs/far_field_config.json` for temporary tests.
-
-```bash
-"C:/Program Files/Sim4Life_8.2.0.16876/Python/python.exe" run_study.py far_field --config "configs/todays_far_field_config.json"
-```
-
----
-
 #### Other Examples
 
-**Run a full far-field study with GUI:**
+**Run a study:**
+
+The GUI automatically launches when running `run_study.py`. It requires a configuration file
+
+**Run a far-field study:**
 ```bash
-"C:/Program Files/Sim4Life_8.2.0.16876/Python/python.exe" run_study.py far_field
+"C:/Program Files/Sim4Life_8.2.0.16876/Python/python.exe" run_study.py --config "configs/far_field_config.json"
 ```
 
-**Run a full near-field study:**
+**Run a near-field study:**
 ```bash
-"C:/Program Files/Sim4Life_8.2.0.16876/Python/python.exe" run_study.py near_field
+"C:/Program Files/Sim4Life_8.2.0.16876/Python/python.exe" run_study.py --config "configs/near_field_config.json"
 ```
 
 The script will automatically perform all necessary setup steps on the first run:
@@ -126,36 +115,12 @@ The script will automatically perform all necessary setup steps on the first run
 
 ## 5. Configuration
 
-The simulation is controlled by JSON files located in the `configs/` directory.
+The framework is controlled by a hierarchical JSON configuration system. A study-specific config (e.g., [`near_field_config.json`](configs/near_field_config.json:1)) inherits settings from a [`base_config.json`](configs/base_config.json:1) and can override them. This allows for a high degree of flexibility and avoids repetition.
 
--   **`configs/near_field_config.json`**: Defines parameters for near-field studies (e.g., antenna models, placements).
--   **`configs/far_field_config.json`**: Defines parameters for far-field studies (e.g., plane wave definitions).
--   **`material_name_mapping.json`**: Maps entity names from CAD models to Sim4Life material names.
+The most important parameters are:
+- **`extends`**: Defines the parent configuration file.
+- **`study_type`**: Determines the simulation type (`"near_field"` or `"far_field"`).
+- **`execution_control`**: A set of booleans (`do_setup`, `do_run`, `do_extract`) that control which parts of the workflow are executed. This is useful for re-running only a specific part of a study.
+- **`phantoms`** and **`frequencies_mhz`**: The lists that define the core matrix of the study.
 
-### Key Configuration Parameters
-
--   `"execution_control"`: (object) A block in `configs/base_config.json` that controls which major phases of the study are executed.
-    -   `"do_setup"`: (boolean) If `true`, the framework will set up the simulation scene, creating the necessary geometries, sources, and simulation objects.
-    -   `"do_run"`: (boolean) If `true`, the framework will execute the simulation(s).
-    -   `"do_extract"`: (boolean) If `true`, the framework will run the post-processing and extract results from the completed simulation(s).
--   `"manual_isolve"`: (boolean) Set to `true` to run the simulation using the standalone `iSolve.exe` solver instead of the integrated Sim4Life solver. This is useful for running on machines without a full Sim4Life UI license.
--   See the respective `_config.json` files for domain-specific parameters.
-
-## 6. Roadmap & Future Features
-
-The strategic development plan, which led to the current architecture, is detailed in [`docs/Far_Field_Expansion_Plan.md`](docs/Far_Field_Expansion_Plan.md). Future work includes:
--   Implementation of the auto-induced far-field scenario with MRT beamforming.
--   Comprehensive data aggregation and visualization tools for both study types.
--   Final power normalization calculations for all scenarios.
--   Version control and CI/CD pipeline setup.
-
-## 7. Context and Reference Materials
-
-The `context/` directory contains key reference documents for the project, including the original study definitions and a summary of the required deliverables. See [`context/README.md`](context/README.md) for more details.
-## 8. Known Issues
-
-### SIBC Performance with CUDA
-
-**NOTE/TODO:** There is a known performance issue with the SIBC (Surface Impedance Boundary Condition) implementation when using the CUDA backend for GPU acceleration. This can lead to significantly longer simulation times or convergence problems.
-
-A potential solution is to switch the solver to use the **Acceleware** backend instead of CUDA, as it has been observed to handle SIBC more efficiently. This can typically be configured within the Sim4Life solver settings.
+For a complete and detailed list of all available configuration parameters, please see the **[Configuration Documentation](configs/documentation.md)**.

@@ -59,19 +59,23 @@ class ProjectManager(LoggingMixin):
         """
         Creates or opens a project based on the 'do_setup' execution control flag.
         """
-        # Determine study type from the config filename
-        if "near_field" in os.path.basename(self.config.config_path):
-            study_dir = 'near_field'
+        study_type = self.config.get_setting('study_type')
+        if not study_type:
+            raise ValueError("'study_type' not found in the configuration file.")
+
+        if study_type == 'near_field':
             if not all([phantom_name, frequency_mhz, placement_name]):
                 raise ValueError("For near-field studies, phantom_name, frequency_mhz, and placement_name are required.")
             
-            project_dir = os.path.join(self.config.base_dir, 'results', study_dir, phantom_name.lower(), f"{frequency_mhz}MHz", placement_name)
+            project_dir = os.path.join(self.config.base_dir, 'results', 'near_field', phantom_name.lower(), f"{frequency_mhz}MHz", placement_name)
             project_filename = f"near_field_{phantom_name.lower()}_{frequency_mhz}MHz_{placement_name}.smash"
 
-        else:  # far_field
-            study_dir = 'far_field'
-            project_dir = os.path.join(self.config.base_dir, 'results', study_dir, phantom_name.lower(), f"{frequency_mhz}MHz")
+        elif study_type == 'far_field':
+            project_dir = os.path.join(self.config.base_dir, 'results', 'far_field', phantom_name.lower(), f"{frequency_mhz}MHz")
             project_filename = f"far_field_{phantom_name.lower()}_{frequency_mhz}MHz.smash"
+        
+        else:
+            raise ValueError(f"Unknown study_type '{study_type}' in config.")
 
         os.makedirs(project_dir, exist_ok=True)
         # Ensure path uses forward slashes for Sim4Life compatibility

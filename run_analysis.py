@@ -15,7 +15,6 @@ def main():
     Main entry point for the analysis script.
     """
     parser = argparse.ArgumentParser(description="Run analysis for near-field or far-field studies.")
-    parser.add_argument('study_type', type=str, choices=['near_field', 'far_field'], help="Type of study to analyze.")
     parser.add_argument('--config', type=str, required=True, help="Path to the configuration file.")
     args = parser.parse_args()
 
@@ -31,8 +30,13 @@ def main():
         logging.getLogger('progress').error("No phantoms found in the configuration file.")
         return
 
+    study_type = config.get_setting('study_type')
+    if not study_type:
+        logging.getLogger('progress').error("'study_type' not found in the configuration file.")
+        return
+
     for phantom_name in phantoms:
-        if args.study_type == 'near_field':
+        if study_type == 'near_field':
             strategy = NearFieldAnalysisStrategy(config, phantom_name)
         else:
             strategy = FarFieldAnalysisStrategy(config, phantom_name)

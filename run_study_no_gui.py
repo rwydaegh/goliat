@@ -21,12 +21,6 @@ def main():
     """
     parser = argparse.ArgumentParser(description="Run near-field or far-field simulation studies without a GUI.")
     parser.add_argument(
-        'study_type',
-        type=str,
-        choices=['near_field', 'far_field'],
-        help="The type of study to run."
-    )
-    parser.add_argument(
         '--skip-startup',
         action='store_true',
         help="Skip the startup checks for dependencies and data."
@@ -51,7 +45,7 @@ def main():
     # Ensure Sim4Life is running
     ensure_s4l_running()
 
-    config_filename = args.config if args.config else f"{args.study_type}_config.json"
+    config_filename = args.config if args.config else "todays_near_field_config.json"
 
     # A simple console-based logger to substitute for the GUI
     class ConsoleLogger:
@@ -80,12 +74,16 @@ def main():
         def update_profiler(self):
             pass # Not implemented for console
 
-    if args.study_type == 'near_field':
+    from src.config import Config
+    config = Config(base_dir, config_filename=config_filename)
+    study_type = config.get_setting('study_type')
+
+    if study_type == 'near_field':
         study = NearFieldStudy(config_filename=config_filename, gui=ConsoleLogger())
-    elif args.study_type == 'far_field':
+    elif study_type == 'far_field':
         study = FarFieldStudy(config_filename=config_filename, gui=ConsoleLogger())
     else:
-        print(f"Error: Unknown study type '{args.study_type}'")
+        print(f"Error: Unknown or missing study type '{study_type}' in {config_filename}")
         return
 
     study.run()

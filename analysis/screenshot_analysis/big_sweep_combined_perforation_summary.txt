@@ -1,0 +1,44 @@
+Combined Perforation Analysis Summary for: thelonious
+============================================================
+
+--- Frequency: 450MHz ---
+  - Total Aggregated Perforation: 90.95%
+  - Surface Color: RGB(191, 168, 153)
+  - Holes Color: RGB(189, 172, 101)
+
+--- Frequency: 700MHz ---
+  - Total Aggregated Perforation: 72.83%
+  - Surface Color: RGB(191, 168, 153)
+  - Holes Color: RGB(189, 172, 101)
+
+--- Frequency: 835MHz ---
+  - Total Aggregated Perforation: 59.01%
+  - Surface Color: RGB(191, 168, 153)
+  - Holes Color: RGB(189, 172, 101)
+
+--- Frequency: 1450MHz ---
+  - Total Aggregated Perforation: 13.03%
+  - Surface Color: RGB(191, 168, 153)
+  - Holes Color: RGB(189, 172, 101)
+
+--- Frequency: 2140MHz ---
+  - Total Aggregated Perforation: 1.04%
+  - Surface Color: RGB(191, 168, 153)
+  - Holes Color: RGB(189, 172, 101)
+
+--- Frequency: 2450MHz ---
+  - Total Aggregated Perforation: 0.00%
+  - Surface Color: RGB(191, 168, 153)
+  - Holes Color: RGB(191, 168, 150)
+
+--- Frequency: 3500MHz ---
+  - Total Aggregated Perforation: 0.00%
+  - Surface Color: RGB(191, 168, 153)
+  - Holes Color: RGB(191, 168, 150)
+
+--- Frequency: 5200MHz ---
+  - Total Aggregated Perforation: 0.00%
+  - Surface Color: RGB(191, 168, 153)
+  - Holes Color: RGB(191, 168, 150)
+
+============================================================

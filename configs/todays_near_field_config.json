@@ -1,5 +1,6 @@
 {
     "extends": "base_config.json",
+    "study_type": "near_field",
     "study_name": "Today's Near-Field run",
     "manual_isolve": true,
     "simulation_parameters": {

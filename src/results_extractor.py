@@ -59,10 +59,7 @@ class ResultsExtractor(LoggingMixin):
             self._log("  - Skipping SAR statistics for free-space simulation.")
 
         # Save final results
-        if self.study_type == 'near_field':
-            results_dir = os.path.join(self.config.base_dir, 'results', 'near_field', self.phantom_name, f"{self.frequency_mhz}MHz", self.placement_name)
-        else:
-            results_dir = os.path.join(self.config.base_dir, 'results', 'far_field', self.phantom_name, f"{self.frequency_mhz}MHz", self.placement_name)
+        results_dir = os.path.join(self.config.base_dir, 'results', self.study_type, self.phantom_name, f"{self.frequency_mhz}MHz", self.placement_name)
         os.makedirs(results_dir, exist_ok=True)
         results_filepath = os.path.join(results_dir, 'sar_results.json')
         with open(results_filepath, 'w') as f:
@@ -226,10 +223,7 @@ class ResultsExtractor(LoggingMixin):
 
     def _save_reports(self, df, tissue_groups, group_sar_stats, summary_results):
         """Saves detailed reports in Pickle and HTML format."""
-        if self.study_type == 'near_field':
-            results_dir = os.path.join(self.config.base_dir, 'results', 'near_field', self.phantom_name, f"{self.frequency_mhz}MHz", self.placement_name)
-        else:
-            results_dir = os.path.join(self.config.base_dir, 'results', 'far_field', self.phantom_name, f"{self.frequency_mhz}MHz", self.placement_name)
+        results_dir = os.path.join(self.config.base_dir, 'results', self.study_type, self.phantom_name, f"{self.frequency_mhz}MHz", self.placement_name)
         os.makedirs(results_dir, exist_ok=True)
         
         pickle_data = {

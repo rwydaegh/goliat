@@ -118,6 +118,10 @@ class FarFieldStudy(BaseStudy):
                                             progress = self.profiler.get_weighted_progress("setup", setup_index / total_setups)
                                             self.gui.update_overall_progress(int(progress), 100)
                                             self.gui.update_stage_progress("Setup", setup_index, total_setups)
+                               
+                                # Save the project after the setup phase is complete for this frequency
+                                self._log("  - Saving project after setup phase...", level='progress')
+                                self.project_manager.save()
                         else:
                             # If not setting up, filter simulations from the existing project based on the config
                             import s4l_v1.document

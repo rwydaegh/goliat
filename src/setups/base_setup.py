@@ -198,5 +198,5 @@ class BaseSetup(LoggingMixin):
             self._log(f"--- Exported Material Properties to {output_path} ---", level='progress')
 
         simulation.UpdateGrid()
-        simulation.CreateVoxels() # Saves the file to the document's FilePath
+        simulation.CreateVoxels()
         self._log("    - Finalizing setup complete.")

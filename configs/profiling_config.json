@@ -18,16 +18,15 @@
     },
     "far_field": {
         "phase_weights": {
-            "setup": 1.0,
-            "run": 0.0
+            "setup": 1.0
         },
         "subtask_estimates": {
-            "setup_simulation": 28.570499999972526,
-            "run_write_input_file": 18.804499999969266,
-            "run_isolve_execution": 0.008000000030733645,
+            "setup_simulation": 24.638000000000375,
+            "run_write_input_file": 3.89850000000024,
+            "run_isolve_execution": 0.17199999999866122,
+            "run_simulation_total": 8.57049999999981,
             "run_wait_for_results": 5.039000000047963,
             "run_reload_project": 13.710999999952037,
-            "run_simulation_total": 96.79699999996228,
             "extract_input_power": 0.08973333329583208,
             "extract_sar_statistics": 4.38540000001279
         }

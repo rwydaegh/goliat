@@ -20,3 +20,11 @@ logs/
 # Analysis files
 analysis/cpw/data/
 analysis/cpw/plots/
+
+# Ignore generated files, but not in the analysis directory
+*.csv
+*.png
+*.pdf
+!analysis/**/*.csv
+!analysis/**/*.png
+!analysis/**/*.pdf

@@ -42,22 +42,26 @@ class PhantomSetup(BaseSetup):
         else:
             self._log("--- Phantom Check Result: Phantom not found in project. ---")
 
-        sab_path = os.path.join(self.config.base_dir, 'data', 'phantoms', f"{self.phantom_name}.sab")
-        if os.path.exists(sab_path):
-            self._log(f"Phantom not found in document. Importing from '{sab_path}'...")
-            self.XCoreModeling.Import(sab_path)
-            self._log("Phantom imported successfully.")
-            return True
+        study_type = self.config.get_setting('study_type')
+        if study_type == 'near_field' or study_type == 'far_field':
+            sab_path = os.path.join(self.config.base_dir, 'data', 'phantoms', f"{self.phantom_name}.sab")
+            if os.path.exists(sab_path):
+                self._log(f"Phantom not found in document. Importing from '{sab_path}'...")
+                self.XCoreModeling.Import(sab_path)
+                self._log("Phantom imported successfully.")
+                return True
 
-        self._log(f"Local .sab file not found. Attempting to download '{self.phantom_name}'...")
-        available_downloads = self.data.GetAvailableDownloads()
-        phantom_to_download = next((item for item in available_downloads if self.phantom_name in item.Name), None)
-        
-        if not phantom_to_download:
-            raise FileNotFoundError(f"Phantom '{self.phantom_name}' not found for download or in local files.")
-        
-        self._log(f"Found '{phantom_to_download.Name}'. Downloading...")
-        download_email = self.config.get_setting('download_email', 'example@example.com')
-        self.data.DownloadModel(phantom_to_download, email=download_email, directory=os.path.join(self.config.base_dir, 'data', 'phantoms'))
-        self._log("Phantom downloaded successfully. Please re-run the script to import the new .sab file.")
-        return False
+            self._log(f"Local .sab file not found. Attempting to download '{self.phantom_name}'...")
+            available_downloads = self.data.GetAvailableDownloads()
+            phantom_to_download = next((item for item in available_downloads if self.phantom_name in item.Name), None)
+            
+            if not phantom_to_download:
+                raise FileNotFoundError(f"Phantom '{self.phantom_name}' not found for download or in local files.")
+            
+            self._log(f"Found '{phantom_to_download.Name}'. Downloading...")
+            download_email = self.config.get_setting('download_email', 'example@example.com')
+            self.data.DownloadModel(phantom_to_download, email=download_email, directory=os.path.join(self.config.base_dir, 'data', 'phantoms'))
+            self._log("Phantom downloaded successfully. Please re-run the script to import the new .sab file.")
+            return False
+        else:
+            raise ValueError(f"Unknown study type: {study_type}")
