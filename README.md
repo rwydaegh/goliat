@@ -1,5 +1,9 @@
 # GOLIAT automatic simulation code
 
+[![Documentation](https://img.shields.io/badge/docs-latest-blue.svg?style=for-the-badge&logo=read-the-docs&logoColor=white)](https://rwydaegh.github.io/goliat/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.11+-blue.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+
 This project provides a robust and automated Python framework for conducting both **near-field** and **far-field** dosimetric assessments for the GOLIAT project, using the Sim4Life simulation platform.
 
 The framework is designed to be modular, scalable, and reproducible, handling a large matrix of simulation parameters to replicate and extend the studies detailed in the GOLIAT project documents.

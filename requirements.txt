@@ -10,5 +10,12 @@ osparc-client
 PySide6
 osparc
 colorama
-colorama
 python-dotenv
+
+# Documentation
+mkdocs
+mkdocs-material
+mkdocstrings[python]
+mkdocs-mermaid2-plugin
+mkdocs-git-revision-date-localized-plugin
+mkdocs-minify-plugin

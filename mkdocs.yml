@@ -1,52 +1,165 @@
 site_name: GOLIAT Documentation
+site_description: Automated Python framework for near-field and far-field dosimetric assessments using Sim4Life
+site_author: rwydaegh
+site_url: https://rwydaegh.github.io/goliat/
+
+repo_name: rwydaegh/goliat
+repo_url: https://github.com/rwydaegh/goliat
+edit_uri: edit/master/docs/
+
 theme:
   name: material
+  language: en
   features:
-  - navigation.tabs
-  - navigation.sections
-  - toc.integrate
-  - navigation.top
-  - search.suggest
-  - search.highlight
-  - content.tabs.link
+    - announce.dismiss
+    - content.action.edit
+    - content.action.view
+    - content.code.annotate
+    - content.code.copy
+    - content.tabs.link
+    - content.tooltips
+    - header.autohide
+    - navigation.expand
+    - navigation.footer
+    - navigation.indexes
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
+    - navigation.prune
+    - navigation.sections
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+    - toc.integrate
   palette:
-  - scheme: default
-    toggle:
-      icon: material/toggle-switch-off-outline
-      name: Switch to dark mode
-  - scheme: slate
-    toggle:
-      icon: material/toggle-switch
-      name: Switch to light mode
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  font:
+    text: Roboto
+    code: Roboto Mono
+  icon:
+    logo: material/radioactive
+    repo: fontawesome/brands/github
+    edit: material/pencil
+    view: material/eye
+
+extra:
+  generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/rwydaegh/goliat
+  version:
+    provider: mike
+
+extra_css:
+  - stylesheets/extra.css
+
 nav:
-- Home: index.md
-- Architecture: architecture_overview.md
-- Guides:
-  - Coloring rules: COLORING_RULES.md
-  - Legacy GUI/Profiling/Logger: old_good_GUI-Profiling-Logger.md
-- API Reference: api.md
-- UML Diagram: uml.md
+  - Home: index.md
+  - Getting Started:
+    - Configuration: configuration.md
+  - Architecture:
+    - Overview: architecture_overview.md
+    - GUI & Profiling: old_good_GUI-Profiling-Logger.md
+  - Guides:
+    - Coloring Rules: COLORING_RULES.md
+    - UML Diagrams: uml.md
+  - API Reference: api.md
+
 plugins:
-- search
-- mkdocstrings:
-    handlers:
-      python:
-        options:
-          show_root_heading: true
-          show_source: false
-          members_order: source
-          docstring_style: google
-          filters:
-          - '!^_'
-          - ^__init__$
+  - search:
+      separator: '[\s\-,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+  - minify:
+      minify_html: true
+      minify_js: true
+      minify_css: true
+      htmlmin_opts:
+        remove_comments: true
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: timeago
+  - mermaid2:
+      arguments:
+        theme: |
+          ^(JSON.parse(__md_get("__palette").index == 1)) ? 'dark' : 'light'
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: google
+            docstring_options:
+              ignore_init_summary: true
+            merge_init_into_class: true
+            show_root_heading: true
+            show_source: true
+            show_category_heading: true
+            show_signature_annotations: true
+            separate_signature: true
+            line_length: 80
+            members_order: source
+            group_by_category: true
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            filters:
+              - "!^_"
+              - "^__init__$"
+
 markdown_extensions:
-- admonition
-- toc:
-    permalink: true
-- footnotes
-- attr_list
-- pymdownx.details
-- pymdownx.snippets
-- pymdownx.superfences
-- pymdownx.highlight
-- pymdownx.tabbed
+  # Python Markdown
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+      toc_depth: 4
+
+  # Python Markdown Extensions
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      check_paths: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:mermaid2.fence_mermaid_custom
+  - pymdownx.tabbed:
+      alternate_style: true
+      combine_header_slug: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
