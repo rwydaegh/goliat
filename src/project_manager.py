@@ -5,9 +5,10 @@ class ProjectManager:
     """
     Handles the lifecycle of the .smash project file.
     """
-    def __init__(self, project_path, verbose=True):
-        self.project_path = project_path
+    def __init__(self, config, verbose=True):
+        self.config = config
         self.verbose = verbose
+        self.project_path = None
         import s4l_v1.document
         self.document = s4l_v1.document
 
@@ -15,17 +16,45 @@ class ProjectManager:
         if self.verbose:
             print(message)
 
+    def create_or_open_project(self, phantom_name, frequency_mhz, placement_name=None, simulation_name_suffix=None):
+        """
+        Creates or opens a project. Handles different naming conventions for
+        near-field and far-field studies.
+        """
+        # Determine study type from the config filename
+        if "near_field" in os.path.basename(self.config.config_path):
+            study_dir = 'near_field'
+            if not all([phantom_name, frequency_mhz, placement_name]):
+                raise ValueError("For near-field studies, phantom_name, frequency_mhz, and placement_name are required.")
+            
+            project_dir = os.path.join(self.config.base_dir, 'results', study_dir, phantom_name.lower(), f"{frequency_mhz}MHz", placement_name)
+            project_filename = f"near_field_{phantom_name.lower()}_{frequency_mhz}MHz_{placement_name}.smash"
+
+        else:  # far_field
+            study_dir = 'far_field'
+            # A project per phantom and frequency for far-field.
+            project_dir = os.path.join(self.config.base_dir, 'results', study_dir, phantom_name.lower(), f"{frequency_mhz}MHz")
+            project_filename = f"far_field_{phantom_name.lower()}_{frequency_mhz}MHz.smash"
+
+        os.makedirs(project_dir, exist_ok=True)
+        self.project_path = os.path.join(project_dir, project_filename)
+        self._log(f"Project path set to: {self.project_path}")
+
+        # Always create a new project to avoid issues with corrupted files from previous runs.
+        self.create_new()
+        self.save()
+
     def create_new(self):
         """
-        Creates and saves a new empty project, deleting any existing one.
+        Creates a new empty project in memory, deleting any existing file.
+        The project is not saved to disk until save() is explicitly called.
         """
         if os.path.exists(self.project_path):
             self._log(f"Deleting existing project file at {self.project_path}")
             os.remove(self.project_path)
         
-        self._log("Creating and saving a new empty project.")
+        self._log("Creating a new empty project in memory.")
         self.document.New()
-        self.save()
 
     def open(self):
         """

@@ -15,9 +15,16 @@ def main():
     # Initialize the configuration
     config = Config(base_dir)
     
-    # Initialize and run the analyzer
-    analyzer = Analyzer(config)
-    analyzer.run_analysis()
+    # Get the list of phantoms from the config
+    phantoms = config.get_setting('phantoms', [])
+    if not phantoms:
+        print("No phantoms found in the configuration file.")
+        return
+
+    # Initialize and run the analyzer for each phantom
+    for phantom_name in phantoms:
+        analyzer = Analyzer(config, phantom_name)
+        analyzer.run_analysis()
 
 if __name__ == "__main__":
     main()

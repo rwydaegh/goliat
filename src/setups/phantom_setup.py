@@ -22,10 +22,28 @@ class PhantomSetup:
         """
         Ensures the phantom model is loaded into the current document.
         """
+        self._log("--- Running Phantom Check ---")
         all_entities = self.model.AllEntities()
-        if any(self.phantom_name.lower() in entity.Name.lower() for entity in all_entities if hasattr(entity, 'Name')):
-            self._log("Phantom model is already present in the document.")
+        self._log(f"Found {len(all_entities)} total entities in the project.")
+        
+        is_loaded = False
+        for i, entity in enumerate(all_entities):
+            if hasattr(entity, 'Name'):
+                entity_name_lower = entity.Name.lower()
+                phantom_name_lower = self.phantom_name.lower()
+                self._log(f"  - Entity {i}: '{entity.Name}' (lower: '{entity_name_lower}')")
+                if phantom_name_lower in entity_name_lower:
+                    self._log(f"    -> MATCH FOUND! '{phantom_name_lower}' in '{entity_name_lower}'")
+                    is_loaded = True
+                    break
+            else:
+                self._log(f"  - Entity {i}: (No 'Name' attribute)")
+
+        if is_loaded:
+            self._log("--- Phantom Check Result: Phantom model is already present. ---")
             return True
+        else:
+            self._log("--- Phantom Check Result: Phantom not found in project. ---")
 
         sab_path = os.path.join(self.config.base_dir, 'data', 'phantoms', f"{self.phantom_name.capitalize()}.sab")
         if os.path.exists(sab_path):
@@ -42,6 +60,7 @@ class PhantomSetup:
             raise FileNotFoundError(f"Phantom '{self.phantom_name}' not found for download or in local files.")
         
         self._log(f"Found '{phantom_to_download.Name}'. Downloading...")
-        self.data.DownloadModel(phantom_to_download, email="example@example.com", directory=os.path.join(self.config.base_dir, 'data', 'phantoms'))
+        user_email = self.config.get_setting('user_email', 'example@example.com')
+        self.data.DownloadModel(phantom_to_download, email=user_email, directory=os.path.join(self.config.base_dir, 'data', 'phantoms'))
         self._log("Phantom downloaded successfully. Please re-run the script to import the new .sab file.")
         return False

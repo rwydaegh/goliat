@@ -15,9 +15,9 @@ def main():
     run_full_startup(base_dir)
 
     from src.config import Config
-    from src.study import NearFieldStudy
+    from src.studies.near_field_study import NearFieldStudy
 
-    config = Config(base_dir)
+    config = Config(base_dir, 'near_field_config.json')
     study = NearFieldStudy(config)
 
     phantom_name = "Thelonius"

@@ -9,10 +9,10 @@ class SimulationRunner:
     Manages the execution of the simulation, either through the Sim4Life API
     or by calling the iSolve.exe solver manually.
     """
-    def __init__(self, config, project_path, simulation, verbose=True):
+    def __init__(self, config, project_path, simulations, verbose=True):
         self.config = config
         self.project_path = project_path
-        self.simulation = simulation
+        self.simulations = simulations if isinstance(simulations, list) else [simulations]
         self.verbose = verbose
         import s4l_v1.document
         self.document = s4l_v1.document
@@ -21,29 +21,38 @@ class SimulationRunner:
         if self.verbose:
             print(message)
 
-    def run(self):
+    def run_all(self):
         """
-        Runs the simulation, either via S4L API or iSolve executable.
+        Runs all simulations in the list.
         """
-        self._log(f"Running simulation...")
-        if not self.simulation:
+        for i, sim in enumerate(self.simulations):
+            self._log(f"\n--- Running simulation {i+1}/{len(self.simulations)}: {sim.Name} ---")
+            self.run(sim)
+        self._log("\n--- All simulations finished ---")
+
+    def run(self, simulation):
+        """
+        Runs a single simulation, either via S4L API or iSolve executable.
+        """
+        self._log(f"Running simulation: {simulation.Name}")
+        if not simulation:
             self._log(f"ERROR: Simulation object not found.")
             return
 
-        if hasattr(self.simulation, "WriteInputFile"):
+        if hasattr(simulation, "WriteInputFile"):
             self._log("Writing solver input file...")
-            self.simulation.WriteInputFile()
+            simulation.WriteInputFile()
             self.document.SaveAs(self.project_path) # Force a save to flush files
         
         if self.config.get_manual_isolve():
-            self._run_isolve_manual()
+            self._run_isolve_manual(simulation)
         else:
-            self.simulation.RunSimulation(wait=True)
+            simulation.RunSimulation(wait=True)
             self._log("Simulation finished.")
         
-        return self.simulation
+        return simulation
 
-    def _run_isolve_manual(self):
+    def _run_isolve_manual(self, simulation):
         """Finds iSolve.exe, runs it, and reloads the results."""
         self._log("Attempting to run simulation with iSolve.exe...")
         
@@ -56,10 +65,10 @@ class SimulationRunner:
         if not os.path.exists(isolve_path):
             raise FileNotFoundError(f"iSolve.exe not found at {isolve_path}")
             
-        if not hasattr(self.simulation, 'GetInputFileName'):
+        if not hasattr(simulation, 'GetInputFileName'):
             raise RuntimeError("Could not get input file name from simulation object.")
 
-        relative_path = self.simulation.GetInputFileName()
+        relative_path = simulation.GetInputFileName()
         project_dir = os.path.dirname(self.project_path)
         input_file_path = os.path.join(project_dir, relative_path)
         self._log(f"Found input file path from API: {input_file_path}")
@@ -86,9 +95,9 @@ class SimulationRunner:
             self.document.Close()
             open_project(self.project_path)
             
-            sim_name = self.simulation.Name
-            self.simulation = next((s for s in self.document.AllSimulations if s.Name == sim_name), None)
-            if not self.simulation:
+            sim_name = simulation.Name
+            simulation = next((s for s in self.document.AllSimulations if s.Name == sim_name), None)
+            if not simulation:
                 raise RuntimeError(f"Could not find simulation '{sim_name}' after re-opening project.")
             self._log("Project reloaded and results are available.")
 

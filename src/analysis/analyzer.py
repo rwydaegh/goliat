@@ -10,12 +10,12 @@ class Analyzer:
     """
     Analyzes the results of the phantom simulation studies.
     """
-    def __init__(self, config: Config):
+    def __init__(self, config: Config, phantom_name: str):
         self.config = config
         self.base_dir = config.base_dir
-        self.phantom_name = "Thelonius"
-        self.results_base_dir = os.path.join(self.base_dir, "results", self.phantom_name)
-        self.plotter = Plotter(os.path.join(self.base_dir, 'plots'))
+        self.phantom_name = phantom_name
+        self.results_base_dir = os.path.join(self.base_dir, "results", "near_field", self.phantom_name)
+        self.plotter = Plotter(os.path.join(self.base_dir, 'plots', 'near_field', self.phantom_name))
         self.all_results = []
         self.all_organ_results = []
         self.tissue_group_definitions = {

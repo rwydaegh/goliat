@@ -5,11 +5,11 @@ class Config:
     """
     Handles loading and validation of configuration files.
     """
-    def __init__(self, base_dir):
+    def __init__(self, base_dir, config_filename="near_field_config.json"):
         self.base_dir = base_dir
-        self.config_path = os.path.join(self.base_dir, 'config.json')
+        self.config_path = os.path.join(self.base_dir, 'configs', config_filename)
         self.material_mapping_path = os.path.join(self.base_dir, 'material_name_mapping.json')
-        
+       
         self.config = self._load_json(self.config_path)
         self.material_mapping = self._load_json(self.material_mapping_path)
 

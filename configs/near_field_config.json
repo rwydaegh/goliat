@@ -212,6 +212,7 @@
     "location": "localhost",
     "show_solver_output": true
   },
+  "user_email": "example@example.com",
   "verbose": false,
   "manual_isolve": true,
   "data_setup": {

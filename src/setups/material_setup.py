@@ -20,7 +20,7 @@ class MaterialSetup:
         if self.verbose:
             print(message)
 
-    def assign_materials(self, antenna_components):
+    def assign_materials(self, antenna_components=None, phantom_only=False):
         """
         Assigns materials to the simulation entities.
         """
@@ -36,7 +36,10 @@ class MaterialSetup:
             self._assign_phantom_materials()
 
         # Antenna materials
-        self._assign_antenna_materials(antenna_components)
+        if not phantom_only:
+            if not antenna_components:
+                raise ValueError("antenna_components must be provided when not in phantom_only mode.")
+            self._assign_antenna_materials(antenna_components)
 
     def _assign_phantom_materials(self):
         all_entities = self.model.AllEntities()

@@ -1,24 +1,24 @@
 import os
 import numpy as np
 
-from .setups.phantom_setup import PhantomSetup
-from .setups.placement_setup import PlacementSetup
-from .setups.gridding_setup import GriddingSetup
-from .setups.material_setup import MaterialSetup
-from .setups.source_setup import SourceSetup
+from .phantom_setup import PhantomSetup
+from .placement_setup import PlacementSetup
+from .gridding_setup import GriddingSetup
+from .material_setup import MaterialSetup
+from .source_setup import SourceSetup
+from .base_setup import BaseSetup
 
-class SimulationSetup:
+class NearFieldSetup(BaseSetup):
     """
     Configures the entire simulation environment within Sim4Life by coordinating
     specialized setup modules.
     """
     def __init__(self, config, phantom_name, frequency_mhz, placement_name, antenna, verbose=True, free_space=False):
-        self.config = config
+        super().__init__(config, verbose)
         self.phantom_name = phantom_name
         self.frequency_mhz = frequency_mhz
         self.placement_name = placement_name
         self.antenna = antenna
-        self.verbose = verbose
         self.free_space = free_space
 
         if placement_name.startswith('front_of_eyes'):
@@ -31,23 +31,22 @@ class SimulationSetup:
             self.base_placement_name = placement_name
         
         # S4L modules
-        import s4l_v1
-        import XCore
         import XCoreModeling
-        self.document = s4l_v1.document
-        self.model = s4l_v1.model
-        self.emfdtd = s4l_v1.simulation.emfdtd
+        self.document = self.s4l_v1.document
         self.XCoreModeling = XCoreModeling
 
     def _log(self, message):
         if self.verbose:
             print(message)
 
-    def run_full_setup(self):
+    def run_full_setup(self, project_manager):
         """
         Executes the full sequence of setup steps.
         """
         self._log("Running full simulation setup...")
+
+        # Create or open the project file. This is the first step.
+        project_manager.create_or_open_project(self.phantom_name, self.frequency_mhz, self.placement_name)
         
         if not self.free_space:
             phantom_setup = PhantomSetup(self.config, self.phantom_name, self.verbose)
@@ -198,103 +197,27 @@ class SimulationSetup:
         
         self._setup_solver_settings(simulation)
 
-        sim_params = self.config.get_simulation_parameters()
-        term_level = sim_params.get("global_auto_termination", "GlobalAutoTerminationWeak")
-        
         if self.free_space:
             sim_bbox_name = "freespace_simulation_bbox"
         else:
             sim_bbox_name = f"{self.placement_name.lower()}_simulation_bbox"
-
+        
         sim_bbox_entity = next((e for e in self.model.AllEntities() if hasattr(e, 'Name') and e.Name == sim_bbox_name), None)
         if not sim_bbox_entity:
             raise RuntimeError(f"Could not find simulation bounding box: '{sim_bbox_name}'")
 
-        bbox_min, bbox_max = self.model.GetBoundingBox([sim_bbox_entity])
-        diagonal_length_m = np.linalg.norm(np.array(bbox_max) - np.array(bbox_min)) / 1000.0
-        
-        time_multiplier = sim_params.get("simulation_time_multiplier", 5)
-        self._log(f"  - Using simulation time multiplier: {time_multiplier}")
-        
-        time_to_travel_s = (time_multiplier * diagonal_length_m) / 299792458
-        sim_time_periods = time_to_travel_s / (1 / (self.frequency_mhz * 1e6))
-        simulation.SetupSettings.SimulationTime = sim_time_periods, s4l_v1.units.Periods
-        
-        term_options = simulation.SetupSettings.GlobalAutoTermination.enum
-        if hasattr(term_options, term_level):
-            simulation.SetupSettings.GlobalAutoTermination = getattr(term_options, term_level)
-        
-        if term_level == "GlobalAutoTerminationUserDefined":
-            simulation.SetupSettings.ConvergenceLevel = sim_params.get("convergence_level_dB", -30)
-
+        self._apply_simulation_time_and_termination(simulation, sim_bbox_entity, self.frequency_mhz)
         
         return simulation
 
-    def _setup_solver_settings(self, simulation):
-        """ Configures solver settings, including kernel and boundary conditions. """
-        self._log("  - Configuring solver settings...")
-        solver_settings = self.config.get_solver_settings()
-        if not solver_settings:
-            return
-
-        solver = simulation.SolverSettings
-
-        # Setup Kernel
-        kernel_type = solver_settings.get("kernel", "CUDA")
-        kernel_enum = solver.Kernel.enum
-        kernel_to_set = next((k.name for k in kernel_enum if k.name.lower() == kernel_type.lower()), None)
-        if kernel_to_set:
-            solver.Kernel = getattr(kernel_enum, kernel_to_set)
-            self._log(f"    - Solver kernel set to: {kernel_to_set}")
-        else:
-            self._log(f"    - Warning: Invalid solver kernel '{kernel_type}'. Using default.")
-
-        # Setup Boundary Conditions
-        excitation_type = self.config.get_excitation_type()
-        
-        # Default to UPML for Gaussian sources, otherwise use config or default
-        if excitation_type.lower() == 'gaussian':
-            bc_type = "UpmlCpml"
-            self._log("  - Gaussian source detected, forcing boundary condition to UpmlCpml.")
-        else:
-            boundary_config = solver_settings.get("boundary_conditions", {})
-            bc_type = boundary_config.get("type", "UpmlCpml")
-
-        self._log(f"    - Setting global boundary conditions to: {bc_type}")
-        
-        global_boundaries = simulation.GlobalBoundarySettings
-        if global_boundaries:
-            bc_enum = global_boundaries.GlobalBoundaryType.enum
-            if hasattr(bc_enum, bc_type):
-                global_boundaries.GlobalBoundaryType = getattr(bc_enum, bc_type)
-                self._log(f"      - Successfully set GlobalBoundaryType to {bc_type}")
-            else:
-                self._log(f"      - Warning: Invalid boundary condition type '{bc_type}'. Using default.")
-        else:
-            self._log("      - Warning: 'GlobalBoundarySettings' not found on simulation object.")
-
-
     def _finalize_setup(self, simulation, antenna_components):
-        self._log("Finalizing setup...")
-        
-
-        # Voxelization Settings
-        voxeler_settings = self.emfdtd.AutomaticVoxelerSettings()
         all_antenna_parts = list(antenna_components.values())
-        
         point_sensor_entities = [e for e in self.model.AllEntities() if "Point Entity" in e.Name]
 
         if self.free_space:
             all_simulation_parts = all_antenna_parts + point_sensor_entities
         else:
-            all_simulation_parts = [e for e in self.model.AllEntities() if isinstance(e, self.XCoreModeling.TriangleMesh)] + all_antenna_parts + point_sensor_entities
+            phantom_entities = [e for e in self.model.AllEntities() if isinstance(e, self.XCoreModeling.TriangleMesh)]
+            all_simulation_parts = phantom_entities + all_antenna_parts + point_sensor_entities
         
-        simulation.Add(voxeler_settings, all_simulation_parts)
-
-        import XCore
-        old_log_level = XCore.SetLogLevel(XCore.eLogCategory.Nothing)
-        simulation.UpdateAllMaterials()
-        XCore.SetLogLevel(old_log_level)
-
-        simulation.UpdateGrid()
-        simulation.CreateVoxels()
+        super()._finalize_setup(simulation, all_simulation_parts)
