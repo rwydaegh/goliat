@@ -26,10 +26,6 @@ class Config:
         """Returns the simulation parameters."""
         return self.simulation_config.get("simulation_parameters", {})
 
-    def get_frequencies(self):
-        """Returns the list of frequencies."""
-        return self.simulation_config.get("frequencies_mhz", [])
-
     def get_antenna_config(self):
         """Returns the antenna configuration."""
         return self.simulation_config.get("antenna_config", {})
@@ -68,3 +64,15 @@ class Config:
     def get_manual_isolve(self):
         """Returns the manual_isolve flag."""
         return self.simulation_config.get("manual_isolve", False)
+
+    def get_freespace_expansion(self):
+        """Returns the freespace antenna bounding box expansion in mm."""
+        return self.get_simulation_parameters().get("freespace_antenna_bbox_expansion_mm", [10, 10, 10])
+
+    def get_excitation_type(self):
+        """Returns the excitation type."""
+        return self.get_simulation_parameters().get("excitation_type", "Harmonic")
+
+    def get_bandwidth(self):
+        """Returns the bandwidth in MHz."""
+        return self.get_simulation_parameters().get("bandwidth_mhz", 50.0)

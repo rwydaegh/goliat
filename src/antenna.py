@@ -9,30 +9,30 @@ class Antenna:
         self.frequency_mhz = frequency_mhz
         self.antenna_config = self.config.get_antenna_config()
 
+    def get_config_for_frequency(self):
+        """
+        Returns the specific antenna configuration for the given frequency.
+        """
+        freq_str = str(self.frequency_mhz)
+        if freq_str not in self.antenna_config:
+            raise ValueError(f"Antenna configuration not defined for frequency: {self.frequency_mhz} MHz")
+        return self.antenna_config[freq_str]
+
     def get_model_name(self):
         """
-        Determines the antenna model type (PIFA or IFA) based on the frequency.
+        Returns the antenna model name (e.g., 'PIFA', 'IFA') for the current frequency.
         """
-        for model_type, freqs in self.antenna_config.get("models", {}).items():
-            if self.frequency_mhz in freqs:
-                return model_type
-        raise ValueError(f"Antenna model not defined for frequency: {self.frequency_mhz} MHz")
+        return self.get_config_for_frequency().get("model_name")
 
     def get_source_entity_name(self):
         """
-        Determines the source entity name based on the frequency.
+        Returns the source entity name for the current frequency.
         """
-        for source_name, freqs in self.antenna_config.get("sources", {}).items():
-            if self.frequency_mhz in freqs:
-                return source_name
-        raise ValueError(f"Antenna source not defined for frequency: {self.frequency_mhz} MHz")
+        return self.get_config_for_frequency().get("source_name")
 
     def get_centered_antenna_path(self, centered_antennas_dir):
         """
         Returns the full path to the centered .sab file for the current frequency.
         """
-        # The filename is assumed to be like 'IFA_1450MHz_centered.sab'
-        # We derive this from the model type and frequency.
-        model_name = self.get_model_name()
-        antenna_filename = f"{model_name}_{self.frequency_mhz}MHz_centered.sab"
+        antenna_filename = f"{self.frequency_mhz}MHz_centered.sab"
         return os.path.join(centered_antennas_dir, antenna_filename)

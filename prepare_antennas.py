@@ -11,14 +11,7 @@ import numpy as np
 import XCoreModeling
 import re
 
-def get_antenna_model_name(frequency_mhz, config):
-    """ Determines the antenna model type (PIFA or IFA) based on the frequency. """
-    for model_type, freqs in config.get("models", {}).items():
-        if frequency_mhz in freqs:
-            return model_type
-    raise ValueError(f"Antenna model not defined for frequency: {frequency_mhz} MHz")
-
-def center_antenna_and_export_sab(file_path, output_dir, antenna_config):
+def center_antenna_and_export_sab(file_path, output_dir):
     """
     Opens an antenna .smash file, standardizes its name, centers it,
     conditionally rotates it, adds a final bounding box, and exports the antenna
@@ -37,13 +30,6 @@ def center_antenna_and_export_sab(file_path, output_dir, antenna_config):
     
     freq_mhz = int(freq_match.group())
     freq_str = '2150' if freq_mhz == 2140 else str(freq_mhz)
-    
-    try:
-        model_name = get_antenna_model_name(freq_mhz, antenna_config)
-    except ValueError as e:
-        print(f"  - Error: {e}. Skipping.")
-        document.Close()
-        return
 
     all_groups = [e for e in model.AllEntities() if isinstance(e, model.EntityGroup)]
     antenna_group = next((g for g in all_groups if g.Name == 'Antenna'), None)
@@ -85,7 +71,7 @@ def center_antenna_and_export_sab(file_path, output_dir, antenna_config):
     bbox_entity.Name = "Antenna bounding box"
 
     # --- 5. Export to .sab and Close ---
-    save_filename = f"{model_name}_{freq_mhz}MHz_centered.sab"
+    save_filename = f"{freq_mhz}MHz_centered.sab"
     save_path = os.path.join(output_dir, save_filename)
     
     entities_to_export = [antenna_group, bbox_entity]
@@ -99,12 +85,6 @@ def main():
     
     base_dir = os.path.dirname(os.path.abspath(__file__))
     
-    # Load simulation config to get antenna model info
-    config_path = os.path.join(base_dir, 'simulation_config.json')
-    with open(config_path, 'r') as f:
-        sim_config = json.load(f)
-    antenna_config = sim_config.get('antenna_config', {})
-
     source_dir = os.path.join(base_dir, 'data', 'antennas', 'downloaded_from_drive')
     centered_dir = os.path.join(base_dir, 'data', 'antennas', 'centered')
     
@@ -123,7 +103,7 @@ def main():
     print(f"Found {len(files_to_process)} files to process...")
     for file_path in files_to_process:
         try:
-            center_antenna_and_export_sab(file_path, centered_dir, antenna_config)
+            center_antenna_and_export_sab(file_path, centered_dir)
         except Exception as e:
             print(f"An unexpected error occurred while processing {os.path.basename(file_path)}: {e}")
             if s4l_v1.document.IsOpen():

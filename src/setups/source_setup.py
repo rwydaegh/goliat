@@ -1,0 +1,92 @@
+class SourceSetup:
+    def __init__(self, config, simulation, frequency_mhz, antenna, verbose=True, free_space=False):
+        self.config = config
+        self.simulation = simulation
+        self.frequency_mhz = frequency_mhz
+        self.antenna = antenna
+        self.verbose = verbose
+        self.free_space = free_space
+        
+        import s4l_v1.simulation.emfdtd
+        import s4l_v1.units
+
+        self.emfdtd = s4l_v1.simulation.emfdtd
+        self.units = s4l_v1.units
+
+    def _log(self, message):
+        if self.verbose:
+            print(message)
+
+    def setup_source_and_sensors(self, antenna_components):
+        """
+        Sets up the excitation source and sensors.
+        """
+        self._log("Setting up source and sensors...")
+        
+        source_name = self.antenna.get_source_entity_name()
+        if source_name not in antenna_components:
+             raise RuntimeError(f"Could not find source entity '{source_name}' in antenna group.")
+        source_entity = antenna_components[source_name]
+
+        # Source setup
+        edge_source_settings = self.emfdtd.EdgeSourceSettings()
+        
+        excitation_type = self.config.get_excitation_type()
+        
+        # Get the enum for ExcitationType
+        excitation_enum = edge_source_settings.ExcitationType.enum
+        
+        if excitation_type.lower() == 'gaussian':
+            edge_source_settings.ExcitationType = excitation_enum.Gaussian
+            edge_source_settings.CenterFrequency = self.frequency_mhz, self.units.MHz
+            edge_source_settings.Bandwidth = self.config.get_bandwidth(), self.units.MHz
+        else: # Harmonic
+            edge_source_settings.ExcitationType = excitation_enum.Harmonic
+            edge_source_settings.Frequency = self.frequency_mhz, self.units.MHz
+
+        self.simulation.Add(edge_source_settings, [source_entity])
+
+        # Sensor setup
+        edge_sensor_settings = self.emfdtd.EdgeSensorSettings()
+        self.simulation.Add(edge_sensor_settings, [source_entity])
+
+        if self.free_space:
+            far_field_sensor_settings = self.simulation.AddFarFieldSensorSettings()
+
+            # Configure extracted frequencies for Gaussian source
+            if excitation_type.lower() == 'gaussian':
+                center_freq_hz = self.frequency_mhz * 1e6
+                bandwidth_hz = self.config.get_bandwidth() * 1e6
+                start_freq_hz = center_freq_hz - (bandwidth_hz / 2)
+                end_freq_hz = center_freq_hz + (bandwidth_hz / 2)
+                
+                # Create a list of 21 frequencies, including the center frequency
+                num_samples = 21
+                extracted_frequencies_hz = [start_freq_hz + i * (bandwidth_hz / (num_samples - 1)) for i in range(num_samples)]
+                
+                far_field_sensor_settings.ExtractedFrequencies = extracted_frequencies_hz, self.units.Hz
+                self._log(f"  - Set extracted frequencies from {start_freq_hz/1e6} MHz to {end_freq_hz/1e6} MHz.")
+
+        # Add point sensors at the corners of the simulation bounding box
+        import s4l_v1.model
+        sim_bbox_entity = next((e for e in s4l_v1.model.AllEntities() if "simulation_bbox" in e.Name), None)
+        if sim_bbox_entity:
+            bbox_min, bbox_max = s4l_v1.model.GetBoundingBox([sim_bbox_entity])
+            corners = [
+                (bbox_min[0], bbox_min[1], bbox_min[2]),
+                (bbox_max[0], bbox_min[1], bbox_min[2]),
+                (bbox_min[0], bbox_max[1], bbox_min[2]),
+                (bbox_max[0], bbox_max[1], bbox_min[2]),
+                (bbox_min[0], bbox_min[1], bbox_max[2]),
+                (bbox_max[0], bbox_min[1], bbox_max[2]),
+                (bbox_min[0], bbox_max[1], bbox_max[2]),
+                (bbox_max[0], bbox_max[1], bbox_max[2]),
+            ]
+
+            for i, corner in enumerate(corners):
+                point_entity = s4l_v1.model.CreatePoint(s4l_v1.model.Vec3(corner))
+                point_entity.Name = f"Point Entity {i+1}"
+                point_sensor_settings = self.emfdtd.PointSensorSettings()
+                point_sensor_settings.Name = f"Point Sensor {i+1}"
+                self.simulation.Add(point_sensor_settings, [point_entity])
+                self._log(f"  - Added point sensor at {corner}")

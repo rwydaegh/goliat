@@ -1,46 +1,193 @@
 {
   "simulation_parameters": {
     "global_auto_termination": "GlobalAutoTerminationUserDefined",
-    "convergence_level_dB": -15
+    "convergence_level_dB": -15,
+    "global_gridding": 3.0,
+    "freespace_antenna_bbox_expansion_mm": [20, 20, 20],
+    "excitation_type": "Gaussian",
+    "bandwidth_mhz": 50.0
   },
-  "frequencies_mhz": [
-    700,
-    835,
-    1450,
-    2140,
-    2450,
-    3500,
-    5200,
-    5800
-  ],
   "antenna_config": {
-    "models": {
-      "PIFA": [700, 835],
-      "IFA": [1450, 2140, 2450, 3500, 5200, 5800]
-    },
-    "sources": {
-      "Unite 1": [700, 835],
-      "Feed": [1450, 2140, 2450, 3500, 5200, 5800]
-    },
-    "components": {
-      "PIFA": {
-        "antenna": "component1:Patch",
-        "battery": "component1:Battery",
-        "ground": "component1:Substrate",
-        "source": "Lines 1"
+    "700": {
+      "center_frequency": 700,
+      "model_name": "PIFA",
+      "source_name": "Lines 1",
+      "materials": {
+        "Extrude 1": "PEC",
+        "component1:Battery": "PEC",
+        "component1:Patch": "PEC",
+        "component1:ShortingPin": "PEC",
+        "component1:Substrate": "Rogers RT/duroid 5880"
       },
-      "IFA": {
-        "antenna": "Antenna",
-        "battery": "Battery",
-        "ground": "Ground",
-        "source": "Feed"
+      "gridding": {
+        "automatic": ["component1:Substrate", "Lines 1"],
+        "manual": {
+          "group1": ["component1:Battery", "component1:Patch", "Extrude 1"],
+          "group2": ["component1:ShortingPin"]
+        },
+        "manual_grid_step": {
+          "group1": [1, 0.03, 1],
+          "group2": [0.1, 0.1, 0.1]
+        },
+        "resolution": {
+          "group1": [1.0, 1.0, 1.0],
+          "group2": [0.5, 0.5, 0.5]
+        }
+      }
+    },
+    "835": {
+      "center_frequency": 835,
+      "model_name": "PIFA",
+      "source_name": "Lines 1",
+      "materials": {
+        "Extrude 1": "PEC",
+        "component1:Battery": "PEC",
+        "component1:Patch": "PEC",
+        "component1:ShortingPin": "PEC",
+        "component1:Substrate": "Rogers RT/duroid 5880"
+      },
+      "gridding": {
+        "automatic": ["component1:Substrate", "Lines 1"],
+        "manual": {
+          "group1": ["component1:Battery", "component1:Patch", "Extrude 1"],
+          "group2": ["component1:ShortingPin"]
+        },
+        "manual_grid_step": {
+          "group1": [1, 0.03, 1],
+          "group2": [0.1, 0.1, 0.1]
+        },
+        "resolution": {
+          "group1": [1.0, 1.0, 1.0],
+          "group2": [0.5, 0.5, 0.5]
+        }
+      }
+    },
+    "1450": {
+      "center_frequency": 1450,
+      "model_name": "IFA",
+      "source_name": "Feed",
+      "materials": {
+        "Antenna": "PEC",
+        "Battery": "PEC",
+        "Ground": "PEC"
+      },
+      "gridding": {
+        "automatic": ["Feed"],
+        "manual": {
+          "group1": ["Antenna"],
+          "group2": ["Battery", "Ground"]
+        },
+        "manual_grid_step": {
+          "group1": [0.1, 0.1, 0.1],
+          "group2": [0.3, 1, 1]
+        }
+      }
+    },
+    "2140": {
+      "center_frequency": 2140,
+      "model_name": "IFA",
+      "source_name": "Feed",
+      "materials": {
+        "Antenna": "PEC",
+        "Battery": "PEC",
+        "Ground": "PEC"
+      },
+      "gridding": {
+        "automatic": ["Feed"],
+        "manual": {
+          "group1": ["Antenna"],
+          "group2": ["Battery", "Ground"]
+        },
+        "manual_grid_step": {
+          "group1": [0.1, 0.1, 0.1],
+          "group2": [0.3, 1, 1]
+        }
+      }
+    },
+    "2450": {
+      "center_frequency": 2450,
+      "model_name": "IFA",
+      "source_name": "Feed",
+      "materials": {
+        "Antenna": "PEC",
+        "Battery": "PEC",
+        "Ground": "PEC"
+      },
+      "gridding": {
+        "automatic": ["Feed"],
+        "manual": {
+          "group1": ["Antenna"],
+          "group2": ["Battery", "Ground"]
+        },
+        "manual_grid_step": {
+          "group1": [0.1, 0.1, 0.1],
+          "group2": [0.3, 1, 1]
+        }
+      }
+    },
+    "3500": {
+      "center_frequency": 3500,
+      "model_name": "IFA",
+      "source_name": "Feed",
+      "materials": {
+        "Antenna": "PEC",
+        "Battery": "PEC",
+        "Ground": "PEC"
+      },
+      "gridding": {
+        "automatic": ["Feed"],
+        "manual": {
+          "group1": ["Antenna"],
+          "group2": ["Battery", "Ground"]
+        },
+        "manual_grid_step": {
+          "group1": [0.1, 0.1, 0.1],
+          "group2": [0.3, 1, 1]
+        }
+      }
+    },
+    "5200": {
+      "center_frequency": 5200,
+      "model_name": "IFA",
+      "source_name": "Feed",
+      "materials": {
+        "Antenna": "PEC",
+        "Battery": "PEC",
+        "Ground": "PEC"
+      },
+      "gridding": {
+        "automatic": ["Feed"],
+        "manual": {
+          "group1": ["Antenna"],
+          "group2": ["Battery", "Ground"]
+        },
+        "manual_grid_step": {
+          "group1": [0.1, 0.1, 0.1],
+          "group2": [0.3, 1, 1]
+        }
+      }
+    },
+    "5800": {
+      "center_frequency": 5800,
+      "model_name": "IFA",
+      "source_name": "Feed",
+      "materials": {
+        "Antenna": "PEC",
+        "Battery": "PEC",
+        "Ground": "PEC"
+      },
+      "gridding": {
+        "automatic": ["Feed"],
+        "manual": {
+          "group1": ["Antenna"],
+          "group2": ["Battery", "Ground"]
+        },
+        "manual_grid_step": {
+          "group1": [0.1, 0.1, 0.1],
+          "group2": [0.3, 1, 1]
+        }
       }
     }
-  },
-  "gridding_parameters": {
-    "antenna_gridding": 0.3,
-    "fine_grid": 0.3,
-    "coarse_grid": 1.0
   },
   "solver_settings": {
     "kernel": "Cuda",

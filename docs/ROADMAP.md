@@ -6,7 +6,7 @@ This document outlines the development roadmap for the GOLIAT near-field simulat
 
 -   [x] **Project Scaffolding:** Establish a robust, class-based directory structure separating configuration, source code, and data.
 -   [x] **Configuration Management:** Implement a `Config` class to load and manage all simulation and phantom parameters from JSON files.
--   [x] **Antenna Abstraction:** Create an `Antenna` class to handle frequency-dependent model and source selection.
+-   [x] **Antenna Abstraction:** Create an `Antenna` class to handle frequency-dependent property selection.
 -   [x] **Single Project Workflow:** Develop the `NearFieldProject` class to handle the setup, execution, and result extraction for a single simulation case.
 -   [x] **Initial Validation:** Debug and validate the end-to-end workflow for a single test case (`Thelonius`, 700MHz, `front_of_eyes`).
 -   [x] **Logging Control:** Implement targeted suppression of verbose Sim4Life engine logs for a cleaner and more readable output.
