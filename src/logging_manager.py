@@ -97,3 +97,20 @@ def shutdown_loggers():
         for handler in logger.handlers[:]:
             handler.close()
             logger.removeHandler(handler)
+
+class LoggingMixin:
+    """
+    A mixin class to provide a standardized _log method.
+    It expects the inheriting class to have 'verbose_logger', 'progress_logger',
+    and an optional 'gui' attribute.
+    """
+    def _log(self, message, level='verbose'):
+        """Logs a message to the appropriate logger."""
+        if level == 'progress':
+            self.progress_logger.info(message)
+            if hasattr(self, 'gui') and self.gui:
+                self.gui.log(message, level='progress')
+        else:
+            self.verbose_logger.info(message)
+            if hasattr(self, 'gui') and self.gui and level != 'progress':
+                self.gui.log(message, level='verbose')

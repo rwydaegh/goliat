@@ -6,7 +6,7 @@ The framework is designed to be modular, scalable, and reproducible, handling a 
 
 ## 1. Project Goal
 
-The primary objective is to perform a comprehensive dosimetric assessment for the **Thelonius** and **Eartha** child voxel phantoms across a wide range of frequencies and exposure scenarios. This includes:
+The primary objective is to perform a comprehensive dosimetric assessment for the **thelonious** and **Eartha** child voxel phantoms across a wide range of frequencies and exposure scenarios. This includes:
 - **Near-Field:** SAR simulations with device antennas placed close to the phantom.
 - **Far-Field:** Whole-body exposure simulations from incident plane waves, covering both environmental and auto-induced scenarios.
 
@@ -93,16 +93,16 @@ Ensure you have **Sim4Life v8.2.0.16876** installed and licensed.
 
 All commands **must** be executed with the Python interpreter included with Sim4Life.
 
-**Path to Python:** `C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe`
+**Path to Python:** `"C:/Program Files/Sim4Life_8.2.0.16876/Python/python.exe"`
 
 ---
 
 **Example: Run a Far-Field Study with a custom config**
 
-This is the most common use case for testing.
+This is the most common use case for testing. **IMPORTANT**: For development and testing, always use a dedicated configuration file like `configs/todays_far_field_config.json`. Do NOT modify the main `configs/far_field_config.json` for temporary tests.
 
 ```bash
-"C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe" run_study.py far_field --config "configs/todays_far_field_config.json"
+"C:/Program Files/Sim4Life_8.2.0.16876/Python/python.exe" run_study.py far_field --config "configs/todays_far_field_config.json"
 ```
 
 ---
@@ -111,12 +111,12 @@ This is the most common use case for testing.
 
 **Run a full far-field study with GUI:**
 ```bash
-"C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe" run_study.py far_field
+"C:/Program Files/Sim4Life_8.2.0.16876/Python/python.exe" run_study.py far_field
 ```
 
 **Run a full near-field study:**
 ```bash
-"C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe" run_study.py near_field
+"C:/Program Files/Sim4Life_8.2.0.16876/Python/python.exe" run_study.py near_field
 ```
 
 The script will automatically perform all necessary setup steps on the first run:

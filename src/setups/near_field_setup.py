@@ -6,6 +6,7 @@ from .placement_setup import PlacementSetup
 from .gridding_setup import GriddingSetup
 from .material_setup import MaterialSetup
 from .source_setup import SourceSetup
+from .boundary_setup import BoundarySetup
 from .base_setup import BaseSetup
 
 class NearFieldSetup(BaseSetup):
@@ -35,7 +36,7 @@ class NearFieldSetup(BaseSetup):
         self.document = self.s4l_v1.document
         self.XCoreModeling = XCoreModeling
 
-    def run_full_setup(self, project_manager):
+    def run_full_setup(self, project_manager, lock=None):
         """
         Executes the full sequence of setup steps.
         """
@@ -59,10 +60,13 @@ class NearFieldSetup(BaseSetup):
         antenna_components = self._get_antenna_components()
 
         material_setup = MaterialSetup(self.config, simulation, self.antenna, self.verbose_logger, self.progress_logger, self.free_space)
-        material_setup.assign_materials(antenna_components)
+        material_setup.assign_materials(antenna_components, lock=lock)
 
         gridding_setup = GriddingSetup(self.config, simulation, self.placement_name, self.antenna, self.verbose_logger, self.progress_logger)
         gridding_setup.setup_gridding(antenna_components)
+
+        boundary_setup = BoundarySetup(self.config, simulation, self.verbose_logger, self.progress_logger)
+        boundary_setup.setup_boundary_conditions()
 
         source_setup = SourceSetup(self.config, simulation, self.frequency_mhz, self.antenna, self.verbose_logger, self.progress_logger, self.free_space)
         source_setup.setup_source_and_sensors(antenna_components)
@@ -219,4 +223,4 @@ class NearFieldSetup(BaseSetup):
             phantom_entities = [e for e in self.model.AllEntities() if isinstance(e, self.XCoreModeling.TriangleMesh)]
             all_simulation_parts = phantom_entities + all_antenna_parts + point_sensor_entities
         
-        super()._finalize_setup(simulation, all_simulation_parts)
+        super()._finalize_setup(simulation, all_simulation_parts, self.frequency_mhz)

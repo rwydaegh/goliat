@@ -8,6 +8,8 @@ import subprocess
 import pkg_resources
 from collections import defaultdict
 import logging
+import io
+
 
 class StudyCancelledError(Exception):
     """Custom exception to indicate that the study was cancelled by the user."""
@@ -112,19 +114,6 @@ class Profiler:
             self.completed_phases.add('run')
             self.current_phase = None
 
-    def start_subtask(self, task_name):
-        """Starts timing a named subtask by pushing it onto the stack."""
-        self.subtask_stack.append({'name': task_name, 'start_time': time.monotonic()})
-
-    def end_subtask(self):
-        """Ends timing the current subtask by popping it from the stack."""
-        if not self.subtask_stack:
-            return 0
-        
-        subtask = self.subtask_stack.pop()
-        elapsed = time.monotonic() - subtask['start_time']
-        self.subtask_times[subtask['name']].append(elapsed)
-        return elapsed
 
     def get_subtask_estimate(self, task_name):
         """Returns the estimated time for a given subtask."""
@@ -325,6 +314,51 @@ def profile(study, phase_name):
         
         if study.gui:
             study.gui.update_profiler()
+
+@contextlib.contextmanager
+def profile_subtask(study, task_name, instance_to_profile=None):
+    """
+    A comprehensive context manager for a 'subtask'. It handles:
+    - High-level timing via study.profiler.
+    - GUI stage animation.
+    - Optional, detailed line-by-line profiling if configured.
+    """
+    study.start_stage_animation(task_name, 1)
+    study.profiler.subtask_stack.append({'name': task_name, 'start_time': time.monotonic()})
+    
+    lp = None
+    wrapper = None
+
+    # Check if line profiling is enabled for this specific subtask
+    line_profiling_config = study.config.get_line_profiling_config()
+    if (instance_to_profile and
+        line_profiling_config.get("enabled", False) and
+        task_name in line_profiling_config.get("subtasks", {})):
+        
+        study._log(f"  - Activating line profiler for subtask: {task_name}", level='verbose')
+        lp, wrapper = study._setup_line_profiler(task_name, instance_to_profile)
+
+    try:
+        # If line profiler is active, yield its wrapper. Otherwise, yield a dummy function.
+        if lp and wrapper:
+            yield wrapper
+        else:
+            yield lambda func: func
+            
+    finally:
+        subtask = study.profiler.subtask_stack.pop()
+        elapsed = time.monotonic() - subtask['start_time']
+        study.profiler.subtask_times[subtask['name']].append(elapsed)
+        study._log(f"    - Subtask '{task_name}' done in {elapsed:.2f}s", level='progress')
+
+        # If the line profiler was active, print its stats
+        if lp:
+            study._log(f"    - Line profiler stats for '{task_name}':", level='verbose')
+            s = io.StringIO()
+            lp.print_stats(stream=s)
+            study.verbose_logger.info(s.getvalue())
+            
+        study.end_stage_animation()
 
 
 def ensure_s4l_running():

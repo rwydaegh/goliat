@@ -26,10 +26,12 @@ class GriddingSetup(BaseSetup):
 
     def _setup_main_grid(self):
         """
-        Sets up the main grid based on the overall simulation bounding box.
+        Sets up the main grid based on the overall simulation bounding box,
+        including global gridding mode, padding, and resolution.
         """
         gridding_params = self.config.get_gridding_parameters()
-        gridding_mode = gridding_params.get("gridding_mode", "manual")
+        global_gridding_params = gridding_params.get("global_gridding", {})
+        gridding_mode = global_gridding_params.get("grid_mode", "automatic")
 
         # Determine the name of the simulation bounding box
         if self.simulation.Name.endswith("_freespace"):
@@ -45,26 +47,47 @@ class GriddingSetup(BaseSetup):
         if not sim_bbox_entity:
             raise RuntimeError(f"Could not find simulation bounding box: '{sim_bbox_name}'")
 
+        # Apply global grid settings
+        self.simulation.GlobalGridSettings.BoundingBox = self.model.GetBoundingBox([sim_bbox_entity])
+
         if gridding_mode == "automatic":
             self._log("  - Using automatic gridding.")
-            auto_grid_settings = self.simulation.AddAutomaticGridSettings([sim_bbox_entity])
+            self.simulation.GlobalGridSettings.DiscretizationMode = 'Automatic'
+            
+            # Add the required grid object for the simulation box
+            added_grid_settings = self.simulation.AddAutomaticGridSettings([sim_bbox_entity])
+
+            # Map user-friendly refinement names to Sim4Life enums
+            refinement_mapping = {
+                "Very Fine": "AutoRefinementVeryFine",
+                "Fine": "AutoRefinementFine",
+                "Default": "AutoRefinementDefault",
+                "Coarse": "AutoRefinementCoarse",
+                "Very Coarse": "AutoRefinementVeryCoarse"
+            }
             
             # Set refinement based on config, with a default value
-            refinement_level = gridding_params.get("refinement", "AutoRefinementDefault")
-            auto_grid_settings.AutoRefinement = refinement_level
-            
-            self._log(f"  - Automatic gridding set with refinement level: {refinement_level}", level='verbose')
+            user_refinement_level = global_gridding_params.get("refinement", "Default")
+            s4l_refinement_level = refinement_mapping.get(user_refinement_level, "AutoRefinementDefault")
+
+            # Apply the same setting to both the global and the added grid
+            self.simulation.GlobalGridSettings.AutoRefinement = s4l_refinement_level
+            added_grid_settings.AutoRefinement = s4l_refinement_level
+            self._log(f"  - Global and added automatic grid set with refinement level: {user_refinement_level} ({s4l_refinement_level})", level='verbose')
 
         elif gridding_mode == "manual":
             self._log("  - Using manual gridding.")
-            manual_grid_sim_bbox = self.simulation.AddManualGridSettings([sim_bbox_entity])
+            self.simulation.GlobalGridSettings.DiscretizationMode = 'Manual'
             
+            # Add the required grid object for the simulation box
+            added_manual_grid = self.simulation.AddManualGridSettings([sim_bbox_entity])
+
             global_grid_res_mm = None
             log_source = "default"
 
             # Try to get per-frequency gridding first
             if self.frequency_mhz:
-                per_freq_gridding = self.config.get_setting("gridding_parameters.global_gridding_per_frequency")
+                per_freq_gridding = gridding_params.get("global_gridding_per_frequency")
                 if per_freq_gridding and isinstance(per_freq_gridding, dict):
                     freq_key = str(int(self.frequency_mhz))
                     if freq_key in per_freq_gridding:
@@ -73,13 +96,36 @@ class GriddingSetup(BaseSetup):
 
             # Fallback to global gridding if per-frequency is not found
             if global_grid_res_mm is None:
-                global_grid_res_mm = self.config.get_setting("simulation_parameters.global_gridding", 5.0)
+                global_grid_res_mm = global_gridding_params.get("manual_fallback_max_step_mm", 5.0)
                 log_source = "global"
 
-            manual_grid_sim_bbox.MaxStep = (np.array([global_grid_res_mm] * 3), self.units.MilliMeters)
-            self._log(f"  - Global grid set with {log_source} resolution: {global_grid_res_mm} mm.", level='verbose')
+            max_step_setting = (np.array([global_grid_res_mm] * 3), self.units.MilliMeters)
+            
+            # Apply the same setting to both the global and the added grid
+            self.simulation.GlobalGridSettings.MaxStep = max_step_setting
+            added_manual_grid.MaxStep = max_step_setting
+            self._log(f"  - Global and added manual grid set with {log_source} resolution: {global_grid_res_mm} mm.", level='verbose')
         else:
             raise ValueError(f"Unsupported gridding_mode: {gridding_mode}")
+
+        # Setup Padding
+        padding_params = gridding_params.get("padding", {})
+        padding_mode = padding_params.get("padding_mode", "automatic")
+        global_grid_settings = self.simulation.GlobalGridSettings
+
+        if padding_mode == "manual":
+            self._log("  - Using manual padding.")
+            global_grid_settings.PaddingMode = global_grid_settings.PaddingMode.enum.Manual
+            
+            bottom_padding = np.array(padding_params.get("manual_bottom_padding_mm", [0,0,0]))
+            top_padding = np.array(padding_params.get("manual_top_padding_mm", [0,0,0]))
+
+            global_grid_settings.BottomPadding = bottom_padding, self.units.MilliMeters
+            global_grid_settings.TopPadding = top_padding, self.units.MilliMeters
+            self._log(f"    - Manual padding set: Bottom={bottom_padding}mm, Top={top_padding}mm")
+        else:
+            self._log("  - Using automatic padding.")
+            global_grid_settings.PaddingMode = global_grid_settings.PaddingMode.enum.Automatic
 
     def _setup_subgrids(self, antenna_components):
         # Antenna-specific gridding

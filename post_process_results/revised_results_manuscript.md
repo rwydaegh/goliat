@@ -1,6 +1,6 @@
 # Results and Scientific Inquiry
 
-This document presents a comprehensive analysis of the near-field dosimetric assessment for the 'Thelonius' child phantom. We begin by interpreting the primary simulation results and then proceed to a deeper, hypothesis-driven inquiry to uncover novel insights and formulate new research questions.
+This document presents a comprehensive analysis of the near-field dosimetric assessment for the 'thelonious' child phantom. We begin by interpreting the primary simulation results and then proceed to a deeper, hypothesis-driven inquiry to uncover novel insights and formulate new research questions.
 
 ## 1. Primary Findings from Near-Field Exposure Scenarios
 
@@ -102,7 +102,7 @@ At lower frequencies (e.g., 700 MHz), the electromagnetic waves have a longer wa
 
 ## 4. Synthesis and Future Directions
 
-Our comprehensive analysis, from initial data exploration to hypothesis-driven inquiry, has painted a detailed picture of the near-field dosimetric landscape for the 'Thelonius' phantom. We have not only quantified the SAR in various tissues but have also uncovered complex, frequency- and scenario-dependent phenomena that warrant further investigation.
+Our comprehensive analysis, from initial data exploration to hypothesis-driven inquiry, has painted a detailed picture of the near-field dosimetric landscape for the 'thelonious' phantom. We have not only quantified the SAR in various tissues but have also uncovered complex, frequency- and scenario-dependent phenomena that warrant further investigation.
 
 The new research questions formulated throughout this analysis provide a clear roadmap for future work. The next logical steps would be to:
 

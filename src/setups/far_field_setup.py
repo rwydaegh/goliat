@@ -4,6 +4,8 @@ from .base_setup import BaseSetup
 from .phantom_setup import PhantomSetup
 from .material_setup import MaterialSetup
 from .gridding_setup import GriddingSetup
+from .boundary_setup import BoundarySetup
+from line_profiler import LineProfiler
 
 class FarFieldSetup(BaseSetup):
     """
@@ -114,6 +116,9 @@ class FarFieldSetup(BaseSetup):
 
         gridding_setup = GriddingSetup(self.config, simulation, None, None, self.verbose_logger, self.progress_logger, frequency_mhz=self.frequency_mhz)
         gridding_setup.setup_gridding()
+
+        boundary_setup = BoundarySetup(self.config, simulation, self.verbose_logger, self.progress_logger)
+        boundary_setup.setup_boundary_conditions()
 
         self._add_point_sensors(simulation, "far_field_simulation_bbox")
 

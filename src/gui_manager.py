@@ -32,13 +32,10 @@ def study_process_wrapper(queue, study_type, config_filename, execution_control)
                 self.profiler = None
 
             def log(self, message, level='verbose'):
-                """Logs a message to the appropriate logger and sends it to the GUI if it's a progress message."""
+                """Logs a message by sending it to the GUI if it's a progress message."""
                 # Also log to the actual file/console from the worker process
                 if level == 'progress':
-                    progress_logger.info(message)
                     self.queue.put({'type': 'status', 'message': message})
-                else:
-                    verbose_logger.info(message)
 
             def update_overall_progress(self, current_step, total_steps):
                 self.queue.put({'type': 'overall_progress', 'current': current_step, 'total': total_steps})

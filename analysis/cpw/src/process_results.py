@@ -249,7 +249,7 @@ if __name__ == "__main__":
     # --- Step 1: Extract Volume Data (if needed) ---
     # Ensure the path is correct for where the initial results are.
     # This might need to be adjusted based on the actual simulation output directory.
-    html_path = 'results/far_field/thelonius/450MHz/environmental_x_pos_theta/sar_stats_all_tissues.html'
+    html_path = 'results/far_field/thelonious/450MHz/environmental_x_pos_theta/sar_stats_all_tissues.html'
     volume_pickle_path = "analysis/cpw/data/volume_data.pkl"
     if not os.path.exists(volume_pickle_path):
         volume_df = extract_volume_data(html_path)

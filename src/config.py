@@ -141,3 +141,9 @@ class Config:
         if study_type not in self.profiling_config:
             raise ValueError(f"Profiling configuration not defined for study type: {study_type}")
         return self.profiling_config[study_type]
+
+    def get_line_profiling_config(self):
+        """
+        Returns the line_profiling settings from the main config.
+        """
+        return self.get_setting('line_profiling', {})

@@ -30,9 +30,7 @@ class PhantomSetup(BaseSetup):
             if hasattr(entity, 'Name'):
                 entity_name_lower = entity.Name.lower()
                 phantom_name_lower = self.phantom_name.lower()
-                self._log(f"  - Entity {i}: '{entity.Name}' (lower: '{entity_name_lower}')")
                 if phantom_name_lower in entity_name_lower:
-                    self._log(f"    -> MATCH FOUND! '{phantom_name_lower}' in '{entity_name_lower}'")
                     is_loaded = True
                     break
             else:
@@ -44,7 +42,7 @@ class PhantomSetup(BaseSetup):
         else:
             self._log("--- Phantom Check Result: Phantom not found in project. ---")
 
-        sab_path = os.path.join(self.config.base_dir, 'data', 'phantoms', f"{self.phantom_name.capitalize()}.sab")
+        sab_path = os.path.join(self.config.base_dir, 'data', 'phantoms', f"{self.phantom_name}.sab")
         if os.path.exists(sab_path):
             self._log(f"Phantom not found in document. Importing from '{sab_path}'...")
             self.XCoreModeling.Import(sab_path)

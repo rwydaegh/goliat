@@ -18,17 +18,16 @@
     },
     "far_field": {
         "phase_weights": {
-            "setup": 0.6622898883651295,
-            "run": 0.0,
-            "extract": 0.33771011163487047
+            "setup": 1.0,
+            "run": 0.0
         },
         "subtask_estimates": {
-            "setup_simulation": 28.78546666667486,
-            "run_write_input_file": 29.350866666669027,
-            "run_isolve_execution": 28.383400000010926,
-            "run_wait_for_results": 5.043799999977152,
-            "run_reload_project": 15.765533333349351,
-            "run_simulation_total": 78.56546666668729,
+            "setup_simulation": 28.570499999972526,
+            "run_write_input_file": 18.804499999969266,
+            "run_isolve_execution": 0.008000000030733645,
+            "run_wait_for_results": 5.039000000047963,
+            "run_reload_project": 13.710999999952037,
+            "run_simulation_total": 96.79699999996228,
             "extract_input_power": 0.08973333329583208,
             "extract_sar_statistics": 4.38540000001279
         }

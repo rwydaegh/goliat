@@ -3,3 +3,5 @@ pandas
 tqdm
 gdown
 seaborn
+line-profiler
+pytest

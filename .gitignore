@@ -2,6 +2,9 @@ data/
 results/
 plots/
 PythonAPIReference/
+Sim4Life_Manual_7.2.pdf
+Sim4Life_Introduction.pdf
+*.lprof
 
 # Python cache
 __pycache__/

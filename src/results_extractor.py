@@ -6,8 +6,9 @@ import logging
 import traceback
 import pandas as pd
 import numpy as np
+from .logging_manager import LoggingMixin
 
-class ResultsExtractor:
+class ResultsExtractor(LoggingMixin):
     """
     Handles all post-processing and data extraction tasks.
     """
@@ -31,15 +32,6 @@ class ResultsExtractor:
         self.analysis = s4l_v1.analysis
         self.units = units
 
-    def _log(self, message, level='verbose'):
-        if level == 'progress':
-            self.progress_logger.info(message)
-            if self.gui:
-                self.gui.log(message, level='progress')
-        else:
-            self.verbose_logger.info(message)
-            if self.gui and level != 'progress':
-                self.gui.log(message, level='verbose')
 
     def extract(self):
         """
@@ -80,140 +72,134 @@ class ResultsExtractor:
     def _extract_input_power(self, simulation_extractor, results_data):
         """Extracts the input power from the simulation."""
         self._log("  - Extracting input power...")
-        self.study.profiler.start_subtask("extract_input_power")
-        try:
-            input_power_extractor = simulation_extractor["Input Power"]
-            self.document.AllAlgorithms.Add(input_power_extractor)
-            input_power_extractor.Update()
+        with self.study.subtask("extract_input_power"):
+            try:
+                input_power_extractor = simulation_extractor["Input Power"]
+                self.document.AllAlgorithms.Add(input_power_extractor)
+                input_power_extractor.Update()
 
-            if hasattr(input_power_extractor, 'GetPower'):
-                self._log("  - Using GetPower() to extract input power.")
-                power_w, _ = input_power_extractor.GetPower(0)
-                results_data['input_power_W'] = float(power_w)
-                results_data['input_power_frequency_MHz'] = float(self.frequency_mhz)
-            else:
-                self._log("  - GetPower() not available, falling back to manual extraction.")
-                input_power_output = input_power_extractor.Outputs["EM Input Power(f)"]
-                input_power_output.Update()
-
-                if hasattr(input_power_output, 'GetHarmonicData'):
-                    self._log("  - Harmonic data detected. Extracting single power value.")
-                    power_complex = input_power_output.GetHarmonicData(0)
-                    input_power_w = abs(power_complex)
-                    frequency_at_value_mhz = self.frequency_mhz
-                    results_data['input_power_W'] = float(input_power_w)
-                    results_data['input_power_frequency_MHz'] = float(frequency_at_value_mhz)
+                if hasattr(input_power_extractor, 'GetPower'):
+                    self._log("  - Using GetPower() to extract input power.")
+                    power_w, _ = input_power_extractor.GetPower(0)
+                    results_data['input_power_W'] = float(power_w)
+                    results_data['input_power_frequency_MHz'] = float(self.frequency_mhz)
                 else:
-                    power_data = input_power_output.Data.GetComponent(0)
-                    if power_data is not None and hasattr(power_data, 'size') and power_data.size > 0:
-                        if power_data.size == 1:
-                            input_power_w = power_data.item()
-                            frequency_at_value_mhz = self.frequency_mhz
-                        else:
-                            center_frequency_hz = self.frequency_mhz * 1e6
-                            axis = input_power_output.Data.Axis
-                            min_diff = float('inf')
-                            target_index = -1
-                            for i, freq_hz in enumerate(axis):
-                                diff = abs(freq_hz - center_frequency_hz)
-                                if diff < min_diff:
-                                    min_diff = diff
-                                    target_index = i
-                            if target_index != -1:
-                                input_power_w = power_data[target_index]
-                                frequency_at_value_mhz = axis[target_index] / 1e6
-                            else:
-                                input_power_w = -1
-                                frequency_at_value_mhz = -1
+                    self._log("  - GetPower() not available, falling back to manual extraction.")
+                    input_power_output = input_power_extractor.Outputs["EM Input Power(f)"]
+                    input_power_output.Update()
+
+                    if hasattr(input_power_output, 'GetHarmonicData'):
+                        self._log("  - Harmonic data detected. Extracting single power value.")
+                        power_complex = input_power_output.GetHarmonicData(0)
+                        input_power_w = abs(power_complex)
+                        frequency_at_value_mhz = self.frequency_mhz
                         results_data['input_power_W'] = float(input_power_w)
                         results_data['input_power_frequency_MHz'] = float(frequency_at_value_mhz)
                     else:
-                        self._log("  - WARNING: Could not extract input power values.")
-        except Exception as e:
-            self._log(f"  - ERROR: An exception occurred during input power extraction: {e}", level='progress')
-            traceback.print_exc()
-        finally:
-            elapsed = self.study.profiler.end_subtask()
-            self._log(f"  - Input power extraction took {elapsed:.2f}s", level='progress')
+                        power_data = input_power_output.Data.GetComponent(0)
+                        if power_data is not None and hasattr(power_data, 'size') and power_data.size > 0:
+                            if power_data.size == 1:
+                                input_power_w = power_data.item()
+                                frequency_at_value_mhz = self.frequency_mhz
+                            else:
+                                center_frequency_hz = self.frequency_mhz * 1e6
+                                axis = input_power_output.Data.Axis
+                                min_diff = float('inf')
+                                target_index = -1
+                                for i, freq_hz in enumerate(axis):
+                                    diff = abs(freq_hz - center_frequency_hz)
+                                    if diff < min_diff:
+                                        min_diff = diff
+                                        target_index = i
+                                if target_index != -1:
+                                    input_power_w = power_data[target_index]
+                                    frequency_at_value_mhz = axis[target_index] / 1e6
+                                else:
+                                    input_power_w = -1
+                                    frequency_at_value_mhz = -1
+                            results_data['input_power_W'] = float(input_power_w)
+                            results_data['input_power_frequency_MHz'] = float(frequency_at_value_mhz)
+                        else:
+                            self._log("  - WARNING: Could not extract input power values.")
+            except Exception as e:
+                self._log(f"  - ERROR: An exception occurred during input power extraction: {e}", level='progress')
+                traceback.print_exc()
 
     def _extract_sar_statistics(self, simulation_extractor, results_data):
         """Extracts SAR statistics for all tissues."""
         self._log("  - Extracting SAR statistics for all tissues...")
-        self.study.profiler.start_subtask("extract_sar_statistics")
-        try:
-            em_sensor_extractor = simulation_extractor["Overall Field"]
-            em_sensor_extractor.FrequencySettings.ExtractedFrequency = u"All"
-            self.document.AllAlgorithms.Add(em_sensor_extractor)
-            em_sensor_extractor.Update()
+        with self.study.subtask("extract_sar_statistics"):
+            try:
+                em_sensor_extractor = simulation_extractor["Overall Field"]
+                em_sensor_extractor.FrequencySettings.ExtractedFrequency = u"All"
+                self.document.AllAlgorithms.Add(em_sensor_extractor)
+                em_sensor_extractor.Update()
 
-            inputs = [em_sensor_extractor.Outputs["EM E(x,y,z,f0)"]]
-            sar_stats_evaluator = self.analysis.em_evaluators.SarStatisticsEvaluator(inputs=inputs)
-            sar_stats_evaluator.PeakSpatialAverageSAR = True
-            sar_stats_evaluator.PeakSAR.TargetMass = 10.0, self.units.Unit("g")
-            sar_stats_evaluator.UpdateAttributes()
-            self.document.AllAlgorithms.Add(sar_stats_evaluator)
-            sar_stats_evaluator.Update()
- 
-            stats_output = sar_stats_evaluator.Outputs
-            
-            results = None
-            if len(stats_output) > 0:
-                # The results are in the first output port of the evaluator
-                results_wrapper = stats_output.item_at(0)
-                if hasattr(results_wrapper, 'Data'):
-                    results = results_wrapper.Data
+                inputs = [em_sensor_extractor.Outputs["EM E(x,y,z,f0)"]]
+                sar_stats_evaluator = self.analysis.em_evaluators.SarStatisticsEvaluator(inputs=inputs)
+                sar_stats_evaluator.PeakSpatialAverageSAR = True
+                sar_stats_evaluator.PeakSAR.TargetMass = 10.0, self.units.Unit("g")
+                sar_stats_evaluator.UpdateAttributes()
+                self.document.AllAlgorithms.Add(sar_stats_evaluator)
+                sar_stats_evaluator.Update()
+    
+                stats_output = sar_stats_evaluator.Outputs
+                
+                results = None
+                if len(stats_output) > 0:
+                    # The results are in the first output port of the evaluator
+                    results_wrapper = stats_output.item_at(0)
+                    if hasattr(results_wrapper, 'Data'):
+                        results = results_wrapper.Data
+                    else:
+                        self._log("  - ERROR: AlgorithmOutput object does not have a .Data attribute.")
                 else:
-                    self._log("  - ERROR: AlgorithmOutput object does not have a .Data attribute.")
-            else:
-                self._log("  - ERROR: No output ports found in the SAR Statistics Evaluator.")
+                    self._log("  - ERROR: No output ports found in the SAR Statistics Evaluator.")
 
-            # IMPORTANT: Clean up the algorithm to avoid issues when processing multiple simulations in the same project
-            self.document.AllAlgorithms.Remove(sar_stats_evaluator)
+                # IMPORTANT: Clean up the algorithm to avoid issues when processing multiple simulations in the same project
+                self.document.AllAlgorithms.Remove(sar_stats_evaluator)
 
-            if not (results and hasattr(results, 'NumberOfRows') and results.NumberOfRows() > 0 and results.NumberOfColumns() > 0):
-                self._log("  - WARNING: No SAR statistics data found.")
-                return
+                if not (results and hasattr(results, 'NumberOfRows') and results.NumberOfRows() > 0 and results.NumberOfColumns() > 0):
+                    self._log("  - WARNING: No SAR statistics data found.")
+                    return
 
-            columns = ["Tissue"] + [cap for cap in results.ColumnMainCaptions]
-            data = []
-            for i in range(results.NumberOfRows()):
-                row_caption = results.RowCaptions[i]
-                clean_caption = re.sub(r'\s*\(.*\)\s*$', '', row_caption).strip().replace(')', '')
-                row_data = [clean_caption] + [results.Value(i, j) for j in range(results.NumberOfColumns())]
-                data.append(row_data)
+                columns = ["Tissue"] + [cap for cap in results.ColumnMainCaptions]
+                data = []
+                for i in range(results.NumberOfRows()):
+                    row_caption = results.RowCaptions[i]
+                    clean_caption = re.sub(r'\s*\(.*\)\s*$', '', row_caption).strip().replace(')', '')
+                    row_data = [clean_caption] + [results.Value(i, j) for j in range(results.NumberOfColumns())]
+                    data.append(row_data)
 
-            df = pd.DataFrame(data, columns=columns)
-            numeric_cols = [col for col in df.columns if col != 'Tissue']
-            df[numeric_cols] = df[numeric_cols].apply(pd.to_numeric, errors='coerce').fillna(0)
+                df = pd.DataFrame(data, columns=columns)
+                numeric_cols = [col for col in df.columns if col != 'Tissue']
+                df[numeric_cols] = df[numeric_cols].apply(pd.to_numeric, errors='coerce').fillna(0)
 
-            tissue_groups = self._define_tissue_groups(df['Tissue'].tolist())
-            group_sar_stats = self._calculate_group_sar(df, tissue_groups)
-            
-            for group, data in group_sar_stats.items():
-                results_data[f"{group}_weighted_avg_sar"] = data['weighted_avg_sar']
-                results_data[f"{group}_peak_sar"] = data['peak_sar']
+                tissue_groups = self._define_tissue_groups(df['Tissue'].tolist())
+                group_sar_stats = self._calculate_group_sar(df, tissue_groups)
+                
+                for group, data in group_sar_stats.items():
+                    results_data[f"{group}_weighted_avg_sar"] = data['weighted_avg_sar']
+                    results_data[f"{group}_peak_sar"] = data['peak_sar']
 
-            all_regions_row = df[df['Tissue'] == 'All Regions']
-            if not all_regions_row.empty:
-                mass_averaged_sar = all_regions_row['Mass-Averaged SAR'].iloc[0]
-                if self.study_type == 'near_field':
-                    sar_key = 'head_SAR' if self.placement_name.lower() in ['front_of_eyes', 'by_cheek'] else 'trunk_SAR'
-                    results_data[sar_key] = float(mass_averaged_sar)
-                else:
-                    results_data['whole_body_sar'] = float(mass_averaged_sar)
+                all_regions_row = df[df['Tissue'] == 'All Regions']
+                if not all_regions_row.empty:
+                    mass_averaged_sar = all_regions_row['Mass-Averaged SAR'].iloc[0]
+                    if self.study_type == 'near_field':
+                        sar_key = 'head_SAR' if self.placement_name.lower() in ['front_of_eyes', 'by_cheek'] else 'trunk_SAR'
+                        results_data[sar_key] = float(mass_averaged_sar)
+                    else:
+                        results_data['whole_body_sar'] = float(mass_averaged_sar)
 
-                peak_sar_col_name = 'Peak Spatial-Average SAR[IEEE/IEC62704-1] (10g)'
-                if peak_sar_col_name in all_regions_row.columns:
-                    results_data['peak_sar_10g_W_kg'] = float(all_regions_row[peak_sar_col_name].iloc[0])
+                    peak_sar_col_name = 'Peak Spatial-Average SAR[IEEE/IEC62704-1] (10g)'
+                    if peak_sar_col_name in all_regions_row.columns:
+                        results_data['peak_sar_10g_W_kg'] = float(all_regions_row[peak_sar_col_name].iloc[0])
 
-            self._save_reports(df, tissue_groups, group_sar_stats, results_data)
+                self._save_reports(df, tissue_groups, group_sar_stats, results_data)
 
-        except Exception as e:
-            self._log(f"  - ERROR: An unexpected error during all-tissue SAR statistics extraction: {e}", level='progress')
-            traceback.print_exc()
-        finally:
-            elapsed = self.study.profiler.end_subtask()
-            self._log(f"  - SAR statistics extraction took {elapsed:.2f}s", level='progress')
+            except Exception as e:
+                self._log(f"  - ERROR: An unexpected error during all-tissue SAR statistics extraction: {e}", level='progress')
+                traceback.print_exc()
 
     def _define_tissue_groups(self, available_tissues):
         """Defines tissue groups based on keywords."""

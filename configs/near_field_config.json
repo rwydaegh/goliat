@@ -1,9 +1,18 @@
 {
   "extends": "base_config.json",
   "simulation_parameters": {
-    "global_gridding": 3.0,
-    "freespace_antenna_bbox_expansion_mm": [20, 20, 20],
+    "freespace_antenna_bbox_expansion_mm": [
+      20,
+      20,
+      20
+    ],
     "number_of_point_sources": 2
+  },
+  "gridding_parameters": {
+    "global_gridding": {
+        "grid_mode": "manual",
+        "manual_fallback_max_step_mm": 3.0
+    }
   },
   "antenna_config": {
     "700": {
@@ -250,7 +259,7 @@
       "trunk_z_separation": -390,
       "chest_extension": 90
     },
-    "thelonius": {
+    "thelonious": {
       "head_y_separation": 0,
       "trunk_z_separation": -300,
       "chest_extension": 100,

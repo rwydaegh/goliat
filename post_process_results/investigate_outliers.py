@@ -11,7 +11,7 @@ def investigate_outliers():
     print("--- Starting Outlier Investigation ---")
 
     # --- 1. Load Data ---
-    results_pickle_path = 'results/near_field/thelonius/aggregated_results.pkl'
+    results_pickle_path = 'results/near_field/thelonious/aggregated_results.pkl'
     if not os.path.exists(results_pickle_path):
         print(f"ERROR: Aggregated results file not found at '{results_pickle_path}'")
         return

@@ -1,40 +1,70 @@
 {
     "extends": "base_config.json",
-    "study_name": "Far-Field Validation Run",
+    "study_name": "Today's Far-Field run",
+    "line_profiling": {
+        "enabled": true,
+        "subtasks": {
+            "setup_simulation": [
+                "src.setups.far_field_setup.FarFieldSetup.run_full_setup",
+                "src.setups.far_field_setup.FarFieldSetup._create_simulation_entity",
+                "src.setups.far_field_setup.FarFieldSetup._apply_common_settings",
+                "src.setups.far_field_setup.FarFieldSetup._finalize_setup",
+                "src.setups.base_setup.BaseSetup._finalize_setup"
+            ]
+        }
+    },
     "execution_control": {
         "do_setup": true,
         "do_run": true,
-        "do_extract": true
+        "do_extract": false
     },
-    "export_material_properties": false,
     "manual_isolve": true,
     "phantoms": [
-        "thelonius"
+        "thelonious"
     ],
     "frequencies_mhz": [
-        2450,
-        4000
+        450
     ],
     "far_field_setup": {
         "type": "environmental",
         "environmental": {
             "incident_directions": [
-                "x_pos",
-                "y_pos"
+                "x_pos"
             ],
             "polarizations": [
-                "theta"
+                "theta",
+                "phi"
             ]
+        },
+        "auto_induced": {
+            "grid_resolution_deg": 15
         }
     },
     "simulation_parameters": {
-        "bbox_padding_mm": 50,
+        "bbox_padding_mm": 0,
         "simulation_bbox_points": 8,
-        "global_gridding": 10.0,
         "number_of_point_sources": 2
     },
     "gridding_parameters": {
-        "gridding_mode": "automatic",
-        "refinement": "AutoRefinementDefault"
+        "global_gridding": {
+            "grid_mode": "manual",
+            "manual_fallback_max_step_mm": 5.0
+        },
+        "global_gridding_per_frequency": {
+            "450": 4,
+            "700": 4,
+            "835": 4,
+            "1450": 2.494,
+            "2140": 1.694,
+            "2450": 1.482,
+            "3500": 1.043,
+            "5200": 0.712,
+            "5800": 0.642
+        },
+        "padding": {
+            "padding_mode": "manual",
+            "manual_bottom_padding_mm": [15, 15, 15],
+            "manual_top_padding_mm": [15, 15, 15]
+        }
     }
 }

@@ -1,11 +1,13 @@
 import os
 import traceback
+import io
 from queue import Empty
 from .base_study import BaseStudy
 from ..utils import StudyCancelledError
 from ..config import Config
 from ..project_manager import ProjectManager
 from ..setups.far_field_setup import FarFieldSetup
+from ..setups.base_setup import BaseSetup
 from ..setups.phantom_setup import PhantomSetup
 from ..simulation_runner import SimulationRunner
 from ..results_extractor import ResultsExtractor
@@ -101,20 +103,16 @@ class FarFieldStudy(BaseStudy):
                                         setup_index = k * len(polarizations) + l + 1
                                         self._log(f"    - Setting up simulation {setup_index}/{total_setups}: {direction_name}_{polarization_name}", level='progress')
                                         
-                                        self.start_stage_animation("setup_simulation", setup_index)
-                                        
-                                        self.start_subtask("setup_simulation")
                                         setup = FarFieldSetup(self.config, phantom_name, freq, direction_name, polarization_name, self.project_manager, self.verbose_logger, self.progress_logger)
-                                        simulation = setup.run_full_setup(phantom_setup)
-                                        elapsed = self.end_subtask()
+                                        
+                                        # The context manager handles timing, GUI animations, and optional line profiling.
+                                        with self.subtask("setup_simulation", instance_to_profile=setup) as wrapper:
+                                            simulation = wrapper(setup.run_full_setup)(phantom_setup)
                                         
                                         if simulation:
                                             all_simulations.append((simulation, direction_name, polarization_name))
-                                            self._log(f"    - Done in {elapsed:.2f}s", level='progress')
                                         else:
-                                            self._log(f"    - Setup failed after {elapsed:.2f}s", level='progress')
-
-                                        self.end_stage_animation()
+                                            self._log(f"    - Setup failed for {direction_name}_{polarization_name}", level='progress')
 
                                         if self.gui:
                                             progress = self.profiler.get_weighted_progress("setup", setup_index / total_setups)
@@ -130,7 +128,9 @@ class FarFieldStudy(BaseStudy):
                             config_polarizations = self.config.get_setting('far_field_setup.environmental.polarizations', [])
                             
                             # Reconstruct the expected simulation names from the config
-                            expected_sim_names = [f"EM_FDTD_{phantom_name}_{freq}MHz_{d}_{p}" for d in config_directions for p in config_polarizations]
+                            expected_sim_names_thelonious = [f"EM_FDTD_{phantom_name}_{freq}MHz_{d}_{p}" for d in config_directions for p in config_polarizations]
+                            expected_sim_names_thelonius = [f"EM_FDTD_{phantom_name.replace('thelonious', 'thelonius')}_{freq}MHz_{d}_{p}" for d in config_directions for p in config_polarizations]
+                            expected_sim_names = expected_sim_names_thelonious + expected_sim_names_thelonius
                             
                             # Filter the simulations from the document
                             sims_to_process = [sim for sim in all_sims_in_doc if sim.Name in expected_sim_names]

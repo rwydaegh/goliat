@@ -8,8 +8,9 @@ import traceback
 import threading
 from queue import Queue, Empty
 from .utils import open_project, non_blocking_sleep
+from .logging_manager import LoggingMixin
 
-class SimulationRunner:
+class SimulationRunner(LoggingMixin):
     """
     Manages the execution of the simulation, either through the Sim4Life API
     or by calling the iSolve.exe solver manually.
@@ -25,19 +26,6 @@ class SimulationRunner:
         import s4l_v1.document
         self.document = s4l_v1.document
 
-    def _log(self, message, level='verbose'):
-        """Logs a message to the appropriate logger."""
-        if level == 'progress':
-            self.progress_logger.info(message)
-            if self.gui:
-                self.gui.log(message, level='progress')
-        else:
-            self.verbose_logger.info(message)
-        
-        # For verbose messages, if a GUI is attached, we still want to log through it
-        # so it can decide what to do (e.g. nothing), but we don't want to send to status
-        if self.gui and level != 'progress':
-            self.gui.log(message, level='verbose')
 
     def run_all(self):
         """
@@ -75,48 +63,22 @@ class SimulationRunner:
             self._log(f"ERROR: Simulation object not found.", level='progress')
             return
 
-        self.study.profiler.start_subtask("run_simulation_total")
+        with self.study.subtask("run_simulation_total"):
+            try:
+                if hasattr(simulation, "WriteInputFile"):
+                    with self.study.subtask("run_write_input_file"):
+                        self._log("Writing solver input file...", level='progress')
+                        simulation.WriteInputFile()
+                        self.document.SaveAs(self.project_path) # Force a save to flush files
 
-        try:
-            if hasattr(simulation, "WriteInputFile"):
-                self.study.profiler.start_subtask("run_write_input_file")
-                self._log("Writing solver input file...", level='progress')
-                simulation.WriteInputFile()
-                self.document.SaveAs(self.project_path) # Force a save to flush files
-                elapsed = self.study.profiler.end_subtask()
-                self._log(f"Done in {elapsed:.2f}s", level='progress')
-
-            # Debug statement: Log simulation run details and input file content
-            solver_kernel = self.config.get_solver_settings().get('kernel', 'Software')
-            
-            input_file_content = "N/A (input file not available)"
-            if hasattr(simulation, 'GetInputFileName'):
-                relative_path = simulation.GetInputFileName()
-                project_dir = os.path.dirname(self.project_path)
-                input_file_path = os.path.join(project_dir, relative_path)
-                if os.path.exists(input_file_path):
-                    try:
-                        # Try to read as text, but fall back on error
-                        with open(input_file_path, 'r', encoding='utf-8') as f:
-                            input_file_content = f.read(1024) + "\n..." # Read first 1KB for preview
-                    except UnicodeDecodeError:
-                        input_file_content = "Input file is binary and cannot be displayed as text."
-                    except Exception as e:
-                        input_file_content = f"Error reading input file: {e}"
+                if self.config.get_manual_isolve():
+                    self._run_isolve_manual(simulation)
                 else:
-                    input_file_content = f"Input file not found at: {input_file_path}"
-
-            self._log(f"DEBUG: Simulation will run with kernel: {solver_kernel}", level='verbose')
-            self._log(f"DEBUG: Input file content:\n{input_file_content}", level='verbose')
-
-            if self.config.get_manual_isolve():
-                self._run_isolve_manual(simulation)
-            else:
-                simulation.RunSimulation(wait=True)
-                self._log("Simulation finished.", level='progress')
-        finally:
-            elapsed = self.study.profiler.end_subtask() # Ends "run_simulation_total"
-            self._log(f"Total simulation run time: {elapsed:.2f}s", level='progress')
+                    simulation.RunSimulation(wait=True)
+                    self._log("Simulation finished.", level='progress')
+            except Exception as e:
+                self._log(f"An error occurred during simulation run: {e}", level='progress')
+                traceback.print_exc()
 
         return simulation
 
@@ -125,6 +87,8 @@ class SimulationRunner:
         Finds iSolve.exe, runs it in a non-blocking way, and logs its output in real-time.
         """
         # --- 1. Setup: Find paths and prepare command ---
+        # The input file is now written in the run() method before this is called.
+
         python_path = sys.executable
         s4l_root = os.path.dirname(os.path.dirname(python_path))
         isolve_path = os.path.join(s4l_root, "Solvers", "iSolve.exe")
@@ -157,9 +121,8 @@ class SimulationRunner:
                 pipe.close()
 
         try:
-            self.study.profiler.start_subtask("run_isolve_execution")
-            
-            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
+            with self.study.subtask("run_isolve_execution"):
+                process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
             
             output_queue = Queue()
             thread = threading.Thread(target=reader_thread, args=(process.stdout, output_queue))
@@ -185,28 +148,20 @@ class SimulationRunner:
                 line = output_queue.get_nowait()
                 self.verbose_logger.info(line.strip())
 
-            elapsed = self.study.profiler.end_subtask()
-
             if return_code != 0:
                 error_message = f"iSolve.exe failed with return code {return_code}."
                 self._log(error_message, level='progress')
                 raise RuntimeError(error_message)
-            else:
-                self._log(f"  - Done in {elapsed:.2f}s.", level='progress')
 
             # --- 4. Post-simulation steps ---
-            self.study.profiler.start_subtask("run_wait_for_results")
-            self._log("Waiting for 5 seconds to ensure results are written to disk...", level='progress')
-            non_blocking_sleep(5)
-            elapsed = self.study.profiler.end_subtask()
-            self._log(f"Done in {elapsed:.2f}s", level='progress')
+            with self.study.subtask("run_wait_for_results"):
+                self._log("Waiting for 5 seconds to ensure results are written to disk...", level='progress')
+                non_blocking_sleep(5)
             
-            self.study.profiler.start_subtask("run_reload_project")
-            self._log("Re-opening project to load results...", level='progress')
-            self.document.Close()
-            open_project(self.project_path)
-            elapsed = self.study.profiler.end_subtask()
-            self._log(f"Done in {elapsed:.2f}s", level='progress')
+            with self.study.subtask("run_reload_project"):
+                self._log("Re-opening project to load results...", level='progress')
+                self.document.Close()
+                open_project(self.project_path)
             
             sim_name = simulation.Name
             simulation = next((s for s in self.document.AllSimulations if s.Name == sim_name), None)

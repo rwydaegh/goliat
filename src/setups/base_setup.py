@@ -2,8 +2,18 @@ import numpy as np
 import logging
 import os
 import pickle
+from src.logging_manager import LoggingMixin
 
-class BaseSetup:
+# Define a dummy 'profile' decorator if the script is not run with kernprof
+try:
+    # This will succeed if the script is run with kernprof
+    profile
+except NameError:
+    # If not, define a dummy decorator that does nothing
+    def profile(func):
+        return func
+
+class BaseSetup(LoggingMixin):
     """
     Abstract base class for all simulation setups (Near-Field, Far-Field).
     """
@@ -24,15 +34,6 @@ class BaseSetup:
         self.emfdtd = self.s4l_v1.simulation.emfdtd
         self.model = self.s4l_v1.model
 
-    def _log(self, message, level='verbose'):
-        """
-        Logs a message to the appropriate logger.
-        """
-        if level == 'progress':
-            self.progress_logger.info(message)
-        else:
-            self.verbose_logger.info(message)
-
     def _apply_simulation_time_and_termination(self, simulation, sim_bbox_entity, frequency_mhz):
         """
         Calculates and applies simulation time and termination settings.
@@ -44,7 +45,12 @@ class BaseSetup:
         time_multiplier = sim_params.get("simulation_time_multiplier", 5)
         self._log(f"  - Using simulation time multiplier: {time_multiplier}")
         
-        bbox_min, bbox_max = self.model.GetBoundingBox([sim_bbox_entity])
+        bbox = self.model.GetBoundingBox([sim_bbox_entity])
+        if not bbox or len(bbox) < 2:
+            self._log(f"  - ERROR: Could not get a valid bounding box for entity '{sim_bbox_entity.Name}'. Skipping time calculation.")
+            return
+        bbox_min, bbox_max = bbox
+        
         diagonal_length_m = np.linalg.norm(np.array(bbox_max) - np.array(bbox_min)) / 1000.0
         
         time_to_travel_s = (time_multiplier * diagonal_length_m) / 299792458
@@ -65,7 +71,7 @@ class BaseSetup:
             self._log(f"    - Convergence level set to: {convergence_db} dB")
 
     def _setup_solver_settings(self, simulation):
-        """ Configures solver settings, including kernel and boundary conditions. """
+        """ Configures solver settings, including kernel. """
         self._log("  - Configuring solver settings...")
         solver_settings = self.config.get_solver_settings()
         if not solver_settings:
@@ -74,39 +80,17 @@ class BaseSetup:
         solver = simulation.SolverSettings
 
         # Setup Kernel
-        kernel_type = solver_settings.get("kernel", "CUDA").lower()
+        kernel_type = solver_settings.get("kernel", "Software").lower()
         
         if kernel_type == "acceleware":
             solver.Kernel = solver.Kernel.enum.AXware
-            self._log(f"    - Solver kernel set to: AXware")
+            self._log(f"    - Solver kernel set to: Acceleware (AXware)")
         elif kernel_type == "cuda":
             solver.Kernel = solver.Kernel.enum.Cuda
             self._log(f"    - Solver kernel set to: Cuda")
         else:
-            self._log(f"    - Warning: Unknown solver kernel '{kernel_type}'. Using default (Software).", level='progress')
-
-        # Setup Boundary Conditions
-        excitation_type = self.config.get_excitation_type()
-        
-        if excitation_type.lower() == 'gaussian':
-            bc_type = "UpmlCpml"
-            self._log("  - Gaussian source detected, forcing boundary condition to UpmlCpml.")
-        else:
-            boundary_config = solver_settings.get("boundary_conditions", {})
-            bc_type = boundary_config.get("type", "UpmlCpml")
-
-        self._log(f"    - Setting global boundary conditions to: {bc_type}")
-        
-        global_boundaries = simulation.GlobalBoundarySettings
-        if global_boundaries:
-            bc_enum = global_boundaries.GlobalBoundaryType.enum
-            if hasattr(bc_enum, bc_type):
-                global_boundaries.GlobalBoundaryType = getattr(bc_enum, bc_type)
-                self._log(f"      - Successfully set GlobalBoundaryType to {bc_type}")
-            else:
-                self._log(f"      - Warning: Invalid boundary condition type '{bc_type}'. Using default.")
-        else:
-            self._log("      - Warning: 'GlobalBoundarySettings' not found on simulation object.")
+            solver.Kernel = solver.Kernel.enum.Software
+            self._log(f"    - Solver kernel set to: Software")
 
     def run_full_setup(self, project_manager):
         """
@@ -169,6 +153,7 @@ class BaseSetup:
             simulation.Add(point_sensor, [point_entity])
             self._log(f"  - Added point sensor at {corner_coords} ({corner_name})")
 
+    @profile
     def _finalize_setup(self, simulation, all_simulation_parts, frequency_mhz):
         """
         Performs the final voxelization and grid update for a simulation.
@@ -180,7 +165,7 @@ class BaseSetup:
         simulation.Add(voxeler_settings, all_simulation_parts)
 
         import XCore
-        old_log_level = XCore.SetLogLevel(XCore.eLogCategory.Nothing)
+        old_log_level = XCore.SetLogLevel(XCore.eLogCategory.Error)
         simulation.UpdateAllMaterials()
         XCore.SetLogLevel(old_log_level)
 
@@ -213,5 +198,5 @@ class BaseSetup:
             self._log(f"--- Exported Material Properties to {output_path} ---", level='progress')
 
         simulation.UpdateGrid()
-        simulation.CreateVoxels()
+        simulation.CreateVoxels() # Saves the file to the document's FilePath
         self._log("    - Finalizing setup complete.")

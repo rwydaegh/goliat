@@ -84,19 +84,14 @@ class NearFieldStudy(BaseStudy):
                     if self.gui:
                         self.gui.update_stage_progress("Setup", 0, 1)
                     
-                    self.start_stage_animation("setup_simulation", 1)
-                    self.start_subtask("setup_simulation")
-                    
                     antenna = Antenna(self.config, freq)
                     setup = NearFieldSetup(self.config, phantom_name, freq, placement_name, antenna, self.verbose_logger, self.progress_logger)
-                    simulation = setup.run_full_setup(self.project_manager)
                     
-                    elapsed = self.end_subtask()
-                    self._log(f"    - Done in {elapsed:.2f}s", level='progress')
-                    self.end_stage_animation()
-                    
+                    with self.subtask("setup_simulation", instance_to_profile=setup) as wrapper:
+                        simulation = wrapper(setup.run_full_setup)(self.project_manager)
+
                     if not simulation:
-                        self._log("ERROR: Setup failed to produce a simulation object.", level='progress')
+                        self._log(f"ERROR: Setup failed for {placement_name}. Cannot proceed.", level='progress')
                         return
                     
                     self.project_manager.save()
@@ -110,8 +105,15 @@ class NearFieldStudy(BaseStudy):
             # ALWAYS get a fresh simulation handle from the document before run/extract
             import s4l_v1.document
             if s4l_v1.document.AllSimulations:
-                simulation = s4l_v1.document.AllSimulations[0]
-            
+                # First, try to find the simulation with the correct "thelonious" name.
+                sim_name_correct = f"EM_FDTD_{phantom_name}_{freq}MHz_{placement_name}"
+                simulation = next((s for s in s4l_v1.document.AllSimulations if s.Name == sim_name_correct), None)
+
+                # If not found, check for the old "thelonius" name.
+                if not simulation:
+                    sim_name_old = f"EM_FDTD_{phantom_name.replace('thelonious', 'thelonius')}_{freq}MHz_{placement_name}"
+                    simulation = next((s for s in s4l_v1.document.AllSimulations if s.Name == sim_name_old), None)
+
             if not simulation:
                 self._log(f"ERROR: No simulation found or created for {placement_name}. Cannot proceed.", level='progress')
                 return
@@ -134,8 +136,14 @@ class NearFieldStudy(BaseStudy):
                     import s4l_v1.document
                     sim_name = simulation.Name
                     reloaded_simulation = next((s for s in s4l_v1.document.AllSimulations if s.Name == sim_name), None)
+                    
+                    # If not found, check for the old "thelonius" name.
                     if not reloaded_simulation:
-                        raise RuntimeError(f"Could not find simulation '{sim_name}' after reloading project.")
+                        sim_name_old = sim_name.replace('thelonious', 'thelonius')
+                        reloaded_simulation = next((s for s in s4l_v1.document.AllSimulations if s.Name == sim_name_old), None)
+
+                    if not reloaded_simulation:
+                        raise RuntimeError(f"Could not find simulation '{sim_name}' (or '{sim_name_old}') after reloading project.")
 
                     extractor = ResultsExtractor(self.config, reloaded_simulation, phantom_name, freq, placement_name, 'near_field', self.verbose_logger, self.progress_logger, gui=self.gui, study=self)
                     extractor.extract()
