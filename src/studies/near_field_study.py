@@ -87,7 +87,7 @@ class NearFieldStudy(BaseStudy):
             if not simulation:
                 raise RuntimeError(f"Could not find simulation '{sim_name}' after reloading project.")
 
-            extractor = ResultsExtractor(self.config, simulation, phantom_name, freq, placement_name, self.verbose)
+            extractor = ResultsExtractor(self.config, simulation, phantom_name, freq, placement_name, 'near_field', self.verbose)
             extractor.extract()
 
             # Save the project to store the results of this placement

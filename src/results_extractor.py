@@ -9,12 +9,13 @@ class ResultsExtractor:
     """
     Handles all post-processing and data extraction tasks.
     """
-    def __init__(self, config, simulation, phantom_name, frequency_mhz, placement_name, verbose=True, free_space=False):
+    def __init__(self, config, simulation, phantom_name, frequency_mhz, placement_name, study_type, verbose=True, free_space=False):
         self.config = config
         self.simulation = simulation
         self.phantom_name = phantom_name
         self.frequency_mhz = frequency_mhz
         self.placement_name = placement_name
+        self.study_type = study_type
         self.verbose = verbose
         self.free_space = free_space
         
@@ -51,7 +52,10 @@ class ResultsExtractor:
             self._log("  - Skipping SAR statistics for free-space simulation.")
 
         # Save final results
-        results_dir = os.path.join(self.config.base_dir, 'results', self.phantom_name, f"{self.frequency_mhz}MHz", self.placement_name)
+        if self.study_type == 'near_field':
+            results_dir = os.path.join(self.config.base_dir, 'results', 'near_field', self.phantom_name, f"{self.frequency_mhz}MHz", self.placement_name)
+        else:
+            results_dir = os.path.join(self.config.base_dir, 'results', 'far_field', self.phantom_name, f"{self.frequency_mhz}MHz", self.placement_name)
         os.makedirs(results_dir, exist_ok=True)
         results_filepath = os.path.join(results_dir, 'sar_results.json')
         with open(results_filepath, 'w') as f:
@@ -161,8 +165,11 @@ class ResultsExtractor:
                 results_data['peak_sar_10g_W_kg'] = all_regions_row[peak_sar_col_name].iloc[0]
 
             total_avg_sar_row = df.iloc[-1]
-            sar_key = 'head_SAR' if self.placement_name.lower() in ['front_of_eyes', 'by_cheek'] else 'trunk_SAR'
-            results_data[sar_key] = total_avg_sar_row['Mass-Averaged SAR']
+            if self.study_type == 'near_field':
+                sar_key = 'head_SAR' if self.placement_name.lower() in ['front_of_eyes', 'by_cheek'] else 'trunk_SAR'
+                results_data[sar_key] = total_avg_sar_row['Mass-Averaged SAR']
+            else:
+                results_data['whole_body_sar'] = total_avg_sar_row['Mass-Averaged SAR']
 
             self._save_reports(df, tissue_groups, group_sar_stats, results_data)
 
@@ -194,7 +201,10 @@ class ResultsExtractor:
 
     def _save_reports(self, df, tissue_groups, group_sar_stats, summary_results):
         """Saves detailed reports in Pickle and HTML format."""
-        results_dir = os.path.join(self.config.base_dir, 'results', self.phantom_name, f"{self.frequency_mhz}MHz", self.placement_name)
+        if self.study_type == 'near_field':
+            results_dir = os.path.join(self.config.base_dir, 'results', 'near_field', self.phantom_name, f"{self.frequency_mhz}MHz", self.placement_name)
+        else:
+            results_dir = os.path.join(self.config.base_dir, 'results', 'far_field', self.phantom_name, f"{self.frequency_mhz}MHz", self.placement_name)
         
         pickle_data = {
             'detailed_sar_stats': df,

@@ -1,5 +1,6 @@
 {
     "extends": "base_config.json",
+    "manual_isolve": true,
     "phantoms": [
         "thelonius"
     ],
@@ -21,10 +22,9 @@
         }
     },
     "simulation_parameters": {
-        "bbox_padding_m": 0,
-        "global_gridding_resolution_m": 0.005,
+        "bbox_padding_mm": 50,
         "simulation_bbox_points": 8,
-        "global_gridding": 3.0,
+        "global_gridding": 10.0,
         "number_of_point_sources": 2
     }
 }

@@ -88,16 +88,23 @@ Ensure you have **Sim4Life v8.2 or later** installed and licensed.
 
 ### Running a Study
 
-To run a simulation campaign, execute the main script with the desired configuration file using the Sim4Life Python interpreter.
+To run a simulation campaign, execute the main script with the desired study type.
+
+*Note: These commands require the Sim4Life Python interpreter. If the `python` command on your system does not point to it, you must use the full path to the interpreter.*
 
 **Run a near-field study:**
 ```bash
-"C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe" run_study.py near_field --config near_field_config.json
+python run_study.py near_field
 ```
 
 **Run a far-field study:**
 ```bash
-"C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe" run_study.py far_field --config far_field_config.json
+python run_study.py far_field
+```
+
+If needed, use the full path to the interpreter:
+```bash
+"C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe" run_study.py far_field
 ```
 
 The script will automatically perform all necessary setup steps:

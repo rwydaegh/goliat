@@ -9,8 +9,8 @@
         "location": "localhost",
         "show_solver_output": true
     },
-    "verbose": true,
-    "manual_isolve": false,
+    "verbose": false,
+    "manual_isolve": true,
     "download_email": "example@example.com",
     "point_source_order": [
         "lower_left_bottom",

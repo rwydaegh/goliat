@@ -23,12 +23,6 @@ def main():
         help="The type of study to run."
     )
     parser.add_argument(
-        '--config',
-        type=str,
-        default=None,
-        help="Name of the configuration file to use (e.g., 'near_field_config.json'). Defaults to the standard for the study type."
-    )
-    parser.add_argument(
         '--skip-startup',
         action='store_true',
         help="Skip the startup checks for dependencies and data."
@@ -50,10 +44,10 @@ def main():
         run_full_startup(base_dir)
 
     if args.study_type == 'near_field':
-        config_file = args.config or "near_field_config.json"
+        config_file = "near_field_config.json"
         study = NearFieldStudy(config_filename=config_file, verbose=args.verbose)
     elif args.study_type == 'far_field':
-        config_file = args.config or "far_field_config.json"
+        config_file = "far_field_config.json"
         study = FarFieldStudy(config_filename=config_file, verbose=args.verbose)
     else:
         # This case should not be reachable due to 'choices' in argparse

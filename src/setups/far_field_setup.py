@@ -93,15 +93,14 @@ class FarFieldSetup(BaseSetup):
         
         bbox_min, bbox_max = self.model.GetBoundingBox(phantom_entities)
         
-        padding_m = self.config.get_setting("simulation_parameters/bbox_padding_m", 0.05)
-        padding_mm = padding_m * 1000
+        padding_mm = self.config.get_setting("simulation_parameters/bbox_padding_mm", 50)
 
         sim_bbox_min = np.array(bbox_min) - padding_mm
         sim_bbox_max = np.array(bbox_max) + padding_mm
 
         sim_bbox = XCoreModeling.CreateWireBlock(self.model.Vec3(sim_bbox_min), self.model.Vec3(sim_bbox_max))
         sim_bbox.Name = bbox_name
-        self._log(f"  - Created far-field simulation BBox with {padding_m}m padding.")
+        self._log(f"  - Created far-field simulation BBox with {padding_mm}mm padding.")
         return sim_bbox
 
     def _apply_common_settings(self, simulation):

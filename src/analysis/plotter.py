@@ -7,7 +7,7 @@ from matplotlib.colors import LogNorm
 import matplotlib.gridspec as gridspec
 
 METRIC_LABELS = {
-    "SAR_head": "Head SAR", "SAR_trunk": "Trunk SAR",
+    "SAR_head": "Head SAR", "SAR_trunk": "Trunk SAR", "SAR_whole_body": "Whole-Body SAR",
     "psSAR10g_eyes": "psSAR10g Eyes", "psSAR10g_skin": "psSAR10g Skin", "psSAR10g_brain": "psSAR10g Brain"
 }
 LEGEND_LABELS = {
@@ -31,6 +31,17 @@ class Plotter:
         ax.legend(['Head SAR', 'Trunk SAR'])
         plt.tight_layout()
         fig.savefig(os.path.join(self.plots_dir, f'average_sar_bar_{scenario_name}.png'))
+        plt.close(fig)
+
+    def plot_whole_body_sar_bar(self, avg_results):
+        fig, ax = plt.subplots(figsize=(12, 7))
+        avg_results['SAR_whole_body'].plot(kind='bar', ax=ax, color='skyblue')
+        ax.set_xticklabels(avg_results.index.get_level_values('frequency_mhz'), rotation=0)
+        ax.set_title('Average Whole-Body SAR')
+        ax.set_xlabel('Frequency (MHz)')
+        ax.set_ylabel('Normalized Whole-Body SAR (mW/kg)')
+        plt.tight_layout()
+        fig.savefig(os.path.join(self.plots_dir, 'average_whole_body_sar_bar.png'))
         plt.close(fig)
 
     def plot_pssar_line(self, scenario_name, avg_results):
@@ -90,7 +101,7 @@ class Plotter:
         if organ_pivot.empty: return
 
         fig = plt.figure(figsize=(24, 12 + len(organ_pivot) * 0.4))
-        gs = gridspec.GridSpec(2, 2, height_ratios=[len(organ_pivot), len(group_pivot) + 1], 
+        gs = gridspec.GridSpec(2, 2, height_ratios=[len(organ_pivot), len(group_pivot) + 1],
                                  width_ratios=[0.95, 0.05], hspace=0.1)
         ax_organ = fig.add_subplot(gs[0, 0])
         ax_group = fig.add_subplot(gs[1, 0])
@@ -98,7 +109,6 @@ class Plotter:
 
         ax_organ = self._plot_heatmap(fig, ax_organ, organ_pivot, 'Min, Avg, and Max SAR (mW/kg) per Tissue', cbar=True, cbar_ax=cbar_ax)
         ax_organ.set_xlabel('')
-        # Add min, avg, max labels to the top heatmap
         x_labels = [metric.replace('_sar', '') for freq, metric in organ_pivot.columns]
         ax_organ.set_xticks(np.arange(len(x_labels)) + 0.5)
         ax_organ.set_xticklabels(x_labels, rotation=0)
@@ -122,27 +132,27 @@ class Plotter:
         fig.savefig(os.path.join(self.plots_dir, 'heatmap_sar_summary.png'))
         plt.close(fig)
 
-    def plot_pssar_heatmap(self, organ_df, group_df, tissue_groups):
-        """Generates the combined heatmap for psSAR10g."""
-        organ_pivot = organ_df.pivot_table(index='tissue', columns='frequency_mhz', values='pssar_10g')
+    def plot_peak_sar_heatmap(self, organ_df, group_df, tissue_groups, value_col='peak_sar_10g_mw_kg', title='Peak SAR'):
+        """Generates a combined heatmap for a given peak SAR metric."""
+        organ_pivot = organ_df.pivot_table(index='tissue', columns='frequency_mhz', values=value_col)
         organ_pivot = organ_pivot.loc[(organ_pivot > 0.01).any(axis=1)]
         mean_organ_sar = organ_pivot.mean(axis=1).sort_values(ascending=False)
         organ_pivot = organ_pivot.reindex(mean_organ_sar.index)
 
-        group_pivot = group_df.pivot_table(index='group', columns='frequency_mhz', values='pssar_10g')
+        group_pivot = group_df.pivot_table(index='group', columns='frequency_mhz', values=value_col)
         mean_group_sar = group_pivot.mean(axis=1).sort_values(ascending=False)
         group_pivot = group_pivot.reindex(mean_group_sar.index)
 
         if organ_pivot.empty: return
 
         fig = plt.figure(figsize=(18, 10 + len(organ_pivot) * 0.3))
-        gs = gridspec.GridSpec(2, 2, height_ratios=[len(organ_pivot), len(group_pivot) + 1], 
+        gs = gridspec.GridSpec(2, 2, height_ratios=[len(organ_pivot), len(group_pivot) + 1],
                                  width_ratios=[0.95, 0.05], hspace=0.1)
         ax_organ = fig.add_subplot(gs[0, 0])
         ax_group = fig.add_subplot(gs[1, 0])
         cbar_ax = fig.add_subplot(gs[:, 1])
 
-        ax_organ = self._plot_heatmap(fig, ax_organ, organ_pivot, 'Peak Spatial-Average SAR 10g (mW/kg)', cbar=True, cbar_ax=cbar_ax)
+        ax_organ = self._plot_heatmap(fig, ax_organ, organ_pivot, f'{title} (mW/kg) per Tissue', cbar=True, cbar_ax=cbar_ax)
         ax_organ.set_xlabel('')
         ax_organ.set_xticklabels([])
         ax_organ.set_ylabel('Tissue')
@@ -154,7 +164,7 @@ class Plotter:
             if group in group_colors:
                 tick_label.set_color(group_colors[group])
 
-        ax_group = self._plot_heatmap(fig, ax_group, group_pivot, 'Organ Group Summary (psSAR10g)', cbar=False)
+        ax_group = self._plot_heatmap(fig, ax_group, group_pivot, f'Organ Group Summary ({title})', cbar=False)
         ax_group.set_xlabel('Frequency (MHz)')
         ax_group.set_ylabel('')
         for tick_label in ax_group.get_yticklabels():
@@ -162,5 +172,5 @@ class Plotter:
             tick_label.set_color(group_colors.get(f"{tick_label.get_text().lower()}_group", 'black'))
 
         plt.tight_layout(rect=[0, 0, 0.95, 0.98])
-        fig.savefig(os.path.join(self.plots_dir, 'heatmap_pssar10g_summary.png'))
+        fig.savefig(os.path.join(self.plots_dir, f'heatmap_{value_col}_summary.png'))
         plt.close(fig)
