@@ -204,6 +204,9 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
         print("\n--- Generating plots for far-field analysis ---")
         summary_stats = self.calculate_summary_stats(results_df)
         plotter.plot_whole_body_sar_bar(summary_stats)
+        plotter.plot_peak_sar_line(summary_stats)
+        plotter.plot_far_field_distribution_boxplot(results_df, metric='SAR_whole_body')
+        plotter.plot_far_field_distribution_boxplot(results_df, metric='peak_sar')
 
         # Prepare data for heatmaps
         organ_sar_df = all_organ_results_df.groupby(['tissue', 'frequency_mhz']).agg(
@@ -216,7 +219,10 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
         # tissue_groups defined in analyzer
         for group_name, tissues in analyzer.tissue_group_definitions.items():
             if not tissues: continue
-            group_df = all_organ_results_df[all_organ_results_df['tissue'].isin(tissues)]
+            # Create a case-insensitive regex pattern to match any of the tissue keywords
+            pattern = '|'.join(tissues)
+            group_df = all_organ_results_df[all_organ_results_df['tissue'].str.contains(pattern, case=False, na=False)]
+            
             if not group_df.empty:
                 summary = group_df.groupby('frequency_mhz').agg(
                     avg_sar=('mass_avg_sar_mw_kg', 'mean'),

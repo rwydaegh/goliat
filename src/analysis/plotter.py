@@ -8,7 +8,8 @@ import matplotlib.gridspec as gridspec
 
 METRIC_LABELS = {
     "SAR_head": "Head SAR", "SAR_trunk": "Trunk SAR", "SAR_whole_body": "Whole-Body SAR",
-    "psSAR10g_eyes": "psSAR10g Eyes", "psSAR10g_skin": "psSAR10g Skin", "psSAR10g_brain": "psSAR10g Brain"
+    "psSAR10g_eyes": "psSAR10g Eyes", "psSAR10g_skin": "psSAR10g Skin", "psSAR10g_brain": "psSAR10g Brain",
+    "peak_sar": "Peak SAR (10g)"
 }
 LEGEND_LABELS = {
     "psSAR10g_eyes": "Eyes", "psSAR10g_skin": "Skin", "psSAR10g_brain": "Brain"
@@ -44,6 +45,23 @@ class Plotter:
         fig.savefig(os.path.join(self.plots_dir, 'average_whole_body_sar_bar.png'))
         plt.close(fig)
 
+    def plot_peak_sar_line(self, summary_stats):
+        """Plots the peak SAR across frequencies for far-field."""
+        fig, ax = plt.subplots(figsize=(12, 7))
+        if 'peak_sar' in summary_stats.columns:
+            summary_stats['peak_sar'].plot(kind='line', marker='o', ax=ax, color='purple')
+            ax.set_title('Average Peak SAR (10g) Across All Tissues')
+            ax.set_xlabel('Frequency (MHz)')
+            ax.set_ylabel('Normalized Peak SAR (mW/kg)')
+            ax.set_xticks(summary_stats.index)
+            ax.grid(True, which='both', linestyle='--', linewidth=0.5)
+        else:
+            ax.text(0.5, 0.5, 'No Peak SAR data found', ha='center', va='center')
+            ax.set_title('Average Peak SAR (10g) Across All Tissues')
+        plt.tight_layout()
+        fig.savefig(os.path.join(self.plots_dir, 'line_peak_sar_summary.png'))
+        plt.close(fig)
+
     def plot_pssar_line(self, scenario_name, avg_results):
         fig, ax = plt.subplots(figsize=(12, 7))
         pssar_columns = [col for col in avg_results.columns if col.startswith('psSAR10g')]
@@ -74,6 +92,21 @@ class Plotter:
                 plt.tight_layout()
                 fig.savefig(os.path.join(self.plots_dir, f'boxplot_{metric}_{scenario_name}.png'))
                 plt.close(fig)
+
+    def plot_far_field_distribution_boxplot(self, results_df, metric='SAR_whole_body'):
+        """Generates a boxplot for the distribution of a given metric in far-field results."""
+        if metric not in results_df.columns or results_df[metric].dropna().empty:
+            print(f"  - WARNING: No data for metric '{metric}' to generate boxplot.")
+            return
+
+        fig, ax = plt.subplots(figsize=(12, 7))
+        sns.boxplot(data=results_df, x='frequency_mhz', y=metric, ax=ax, hue='frequency_mhz', palette='viridis', legend=False)
+        ax.set_title(f'Distribution of Normalized {METRIC_LABELS.get(metric, metric)}')
+        ax.set_xlabel('Frequency (MHz)')
+        ax.set_ylabel('Normalized SAR (mW/kg)')
+        plt.tight_layout()
+        fig.savefig(os.path.join(self.plots_dir, f'boxplot_{metric}_distribution.png'))
+        plt.close(fig)
 
     def _plot_heatmap(self, fig, ax, data, title, cbar=True, cbar_ax=None):
         """Helper function to plot a single heatmap."""

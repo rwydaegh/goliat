@@ -97,19 +97,12 @@ class FarFieldStudy(BaseStudy):
         for phantom_name in phantoms:
             for freq in frequencies:
                 try:
-                    # This will now open the project if it exists
+                    # This will now open the project if it exists, or skip if corrupted
                     self.project_manager.create_or_open_project(phantom_name, freq, skip_load=True)
                     
                     # Check if the project was successfully opened
-                    doc = self.project_manager.document
-                    self._log(f"  - DEBUG: Document object is: {doc}")
-                    if doc:
-                        self._log(f"  - DEBUG: hasattr(doc, 'IsOpen'): {hasattr(doc, 'IsOpen')}")
-                        if hasattr(doc, 'IsOpen'):
-                            self._log(f"  - DEBUG: doc.IsOpen(): {doc.IsOpen()}")
-
                     if not (self.project_manager.document and hasattr(self.project_manager.document, 'IsOpen') and self.project_manager.document.IsOpen()):
-                        self._log(f"  - Project file not found or could not be opened for {phantom_name} at {freq}MHz. Skipping.")
+                        self._log(f"  - Project file not found, corrupted, or could not be opened for {phantom_name} at {freq}MHz. Skipping.")
                         continue
                     
                     self._log(f"\n--- Extracting from: {phantom_name}, {freq}MHz ---")

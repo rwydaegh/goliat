@@ -113,6 +113,25 @@ The script will automatically perform all necessary setup steps:
 3.  **Prepare Antennas**: Processes raw antenna models for simulation.
 4.  **Run Simulations**: Proceeds with the full simulation campaign as defined in the specified configuration file.
 
+### Analyzing Results
+
+After a study has been run, the results can be analyzed to generate reports and plots.
+
+**Run analysis for a study:**
+```bash
+python run_analysis.py <study_type> --config <path_to_config>
+```
+
+-   `<study_type>`: The type of study to analyze (`near_field` or `far_field`).
+-   `<path_to_config>`: The path to the configuration file used for the study (e.g., `configs/far_field_config.json`).
+
+**Example:**
+```bash
+"C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe" run_analysis.py far_field --config "configs/far_field_config.json"
+```
+
+This will process the simulation outputs, calculate summary statistics, and save detailed reports and plots to the `results/` and `plots/` directories, respectively.
+
 ## 5. Configuration
 
 The simulation is controlled by JSON files located in the `configs/` directory.

@@ -1,5 +1,10 @@
 import os
+import h5py
 from .utils import open_project
+
+class ProjectCorruptionError(Exception):
+    """Custom exception for corrupted project files."""
+    pass
 
 class ProjectManager:
     """
@@ -15,6 +20,29 @@ class ProjectManager:
     def _log(self, message):
         if self.verbose:
             print(message)
+
+    def _is_valid_smash_file(self):
+        """
+        Checks if the project file is valid and not locked.
+        It first tries to rename the file to itself to check for a lock,
+        then uses h5py to check for basic HDF5 format corruption.
+        """
+        try:
+            # 1. Check for file lock by trying to rename. This is a common Windows trick.
+            os.rename(self.project_path, self.project_path)
+        except OSError as e:
+            self._log(f"  - File lock detected on {self.project_path}: {e}")
+            self._log(f"  - The file is likely being used by another process. Skipping.")
+            return False
+
+        try:
+            # 2. Check for HDF5 format corruption.
+            with h5py.File(self.project_path, 'r') as f:
+                pass
+            return True
+        except OSError as e:
+            self._log(f"  - HDF5 format error in {self.project_path}: {e}")
+            return False
 
     def create_or_open_project(self, phantom_name, frequency_mhz, placement_name=None, skip_load=False):
         """
@@ -42,7 +70,12 @@ class ProjectManager:
 
         if skip_load:
             if os.path.exists(self.project_path):
-                self.open()
+                try:
+                    self.open()
+                except ProjectCorruptionError:
+                    # Error is logged in open(), just ensure we don't proceed
+                    if self.document and hasattr(self.document, 'IsOpen') and self.document.IsOpen():
+                        self.document.Close()
             else:
                 self._log(f"WARNING: Project file not found at {self.project_path}. Cannot open.")
                 if self.document and hasattr(self.document, 'IsOpen') and self.document.IsOpen():
@@ -71,8 +104,13 @@ class ProjectManager:
 
     def open(self):
         """
-        Opens an existing project.
+        Opens an existing project after validating it.
         """
+        self._log(f"Validating project file: {self.project_path}")
+        if not self._is_valid_smash_file():
+            self._log(f"ERROR: Project file {self.project_path} is corrupted. Skipping open.")
+            raise ProjectCorruptionError(f"File is not a valid HDF5 file: {self.project_path}")
+
         self._log(f"Opening project: {self.project_path}")
         open_project(self.project_path)
         # After opening, the document object is new, so we need to get a fresh reference
