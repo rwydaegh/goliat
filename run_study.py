@@ -1,19 +1,23 @@
 import os
 import sys
-import argparse
-
-# Add the project root to the Python path
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
-
-from src.config import Config
-from src.study import NearFieldStudy
+from src.startup import run_full_startup
 
 def main():
     """
     Runs a free-space simulation for each available frequency to validate
     the antenna models and the core simulation pipeline.
     """
-    base_dir = os.path.dirname(os.path.abspath(__file__))
+    base_dir = os.path.abspath(os.path.dirname(__file__))
+    
+    # Add the project root to the Python path
+    sys.path.insert(0, base_dir)
+    
+    # Run all startup checks and preparations
+    run_full_startup(base_dir)
+
+    from src.config import Config
+    from src.study import NearFieldStudy
+
     config = Config(base_dir)
     study = NearFieldStudy(config)
 

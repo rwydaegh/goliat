@@ -1,6 +1,7 @@
 # Python script to individually center each antenna model.
 
 import os
+import sys
 import json
 import s4l_v1
 import s4l_v1.model as model
@@ -10,6 +11,9 @@ from s4l_v1._api.application import run_application
 import numpy as np
 import XCoreModeling
 import re
+
+# Add project root to Python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 def center_antenna_and_export_sab(file_path, output_dir):
     """
@@ -83,10 +87,10 @@ def center_antenna_and_export_sab(file_path, output_dir):
 def main():
     run_application(disable_ui_plugins=True)
     
-    base_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     
-    source_dir = os.path.join(base_dir, 'data', 'antennas', 'downloaded_from_drive')
-    centered_dir = os.path.join(base_dir, 'data', 'antennas', 'centered')
+    source_dir = os.path.join(project_root, 'data', 'antennas', 'downloaded_from_drive')
+    centered_dir = os.path.join(project_root, 'data', 'antennas', 'centered')
     
     os.makedirs(centered_dir, exist_ok=True)
     

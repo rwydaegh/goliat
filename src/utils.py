@@ -1,6 +1,8 @@
 import os
 import sys
 import contextlib
+import subprocess
+import pkg_resources
 
 def ensure_s4l_running():
     """

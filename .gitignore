@@ -14,6 +14,4 @@ __pycache__/
 .DS_Store
 
 # Data files that are not part of the repository
-data/antennas/downloaded_from_drive/
-data/antennas/centered/
-data/phantoms/*.sab
+data/

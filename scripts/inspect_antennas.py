@@ -3,7 +3,7 @@ import sys
 import argparse
 
 # Add the project root to the Python path
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from src.config import Config
 from src.study import NearFieldStudy
@@ -16,8 +16,8 @@ def main():
     parser.add_argument('--frequency', type=int, required=True, help="Frequency in MHz of the antenna to inspect.")
     args = parser.parse_args()
 
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    config = Config(base_dir)
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    config = Config(project_root)
     study = NearFieldStudy(config)
 
     freq_band = str(args.frequency)
@@ -44,7 +44,7 @@ def main():
 
     ensure_s4l_running()
     
-    results_dir = os.path.join(base_dir, 'results')
+    results_dir = os.path.join(project_root, 'results')
     os.makedirs(results_dir, exist_ok=True)
     project_path = os.path.join(results_dir, f"{project_name}.smash")
 

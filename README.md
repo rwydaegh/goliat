@@ -43,6 +43,10 @@ The project is organized into a modular and scalable structure:
 │   └── phantoms/
 │       └── Thelonius.sab           # Phantom models
 ├── results/                        # Simulation outputs, logs, etc.
+├── scripts/
+│   ├── download_data.py          # Handles downloading data from Google Drive
+│   ├── inspect_antennas.py       # Utility to inspect antenna model components
+│   └── prepare_antennas.py       # Centers and prepares raw antenna models
 ├── src/
 │   ├── setups/                   # Specialized setup modules (materials, grid, etc.)
 │   ├── __init__.py
@@ -52,6 +56,7 @@ The project is organized into a modular and scalable structure:
 │   ├── results_extractor.py      # Extracts and processes simulation results
 │   ├── simulation_runner.py      # Runs the simulation (API or iSolve)
 │   ├── simulation_setup.py       # Configures the S4L scene
+│   ├── startup.py                # Handles all automated prerequisite checks
 │   ├── study.py                  # Defines the NearFieldStudy class for campaign management
 │   └── utils.py                  # Utility functions (e.g., s4l interaction)
 ├── docs/
@@ -60,7 +65,6 @@ The project is organized into a modular and scalable structure:
 │   ├── what we need.md           # Summary of deliverables
 │   └── README.md                 # Explains reference materials
 ├── run_study.py                    # Main entry point to run a simulation campaign
-├── prepare_antennas.py             # One-time script to center antenna models
 ├── simulation_config.json          # Main simulation configuration
 ├── phantoms_config.json            # Phantom-specific configuration
 ├── material_name_mapping.json      # Maps model entity names to material names
@@ -74,29 +78,23 @@ The project is organized into a modular and scalable structure:
 
 ### Step 1: Prerequisites
 
-Ensure you have Sim4Life v8.2 or later installed and licensed. The project requires Python and the dependencies listed in `requirements.txt`.
+Ensure you have Sim4Life v8.2 or later installed and licensed.
 
-### Step 2: Install Dependencies
+### Step 2: Run the Study
 
-```bash
-pip install -r requirements.txt
-```
-
-### Step 3: Prepare Antenna Models
-
-The original antenna models (`.smash` files) must be centered and converted to `.sab` format.
-
-1.  Download the antenna models from the [GOLIAT Google Drive](https://drive.google.com/drive/folders/1xymuIkKBqX-oDJ3VA3UCEaPuOGe2aDj5?usp=sharing).
-2.  Create the directory `data/antennas/downloaded_from_drive/`.
-3.  Place the downloaded `.smash` files into it.
-4.  Run the preparation script using the Sim4Life Python interpreter:
+The project is now fully automated. Simply run the `run_study.py` script using the Sim4Life Python interpreter:
 
 ```bash
-"C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe" prepare_antennas.py
+"C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe" run_study.py
 ```
-This will process the antennas and save the centered `.sab` files to `data/antennas/centered/`.
 
-### Step 4: Run Simulations
+The script will automatically perform all necessary setup steps:
+1.  **Install Dependencies**: Check for and install any missing Python packages listed in `requirements.txt`.
+2.  **Download Data**: Download and extract the required simulation data from Google Drive into the `data` directory if it's not already present.
+3.  **Prepare Antennas**: Center the raw antenna models and save them as `.sab` files in the `data/antennas/centered` directory. This step is only run if the centered files are missing.
+4.  **Run Simulations**: Proceed with the simulation campaign.
+
+### Step 3: Run Simulations
 
 The `run_study.py` script is the main entry point. You can easily configure it to run a single simulation or a full campaign.
 
