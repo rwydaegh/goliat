@@ -1,8 +1,11 @@
 import os
+import re
 import numpy as np
 import json
 import subprocess
 import glob
+import pandas as pd
+import pickle
 
 from .antenna import Antenna
 from .utils import ensure_s4l_running, open_project
@@ -38,6 +41,7 @@ class NearFieldProject:
         """Imports Sim4Life modules and attaches them to the instance."""
         ensure_s4l_running()
         import s4l_v1
+        from s4l_v1 import Unit
         import s4l_v1.document
         import s4l_v1.model
         import s4l_v1.simulation.emfdtd
@@ -46,9 +50,11 @@ class NearFieldProject:
         import s4l_v1.data
         import s4l_v1.analysis
         import s4l_v1.analysis.em_evaluators
+        import s4l_v1.analysis.extractors
         import XCoreModeling
 
         self.s4l_v1 = s4l_v1
+        self.Unit = Unit
         self.document = s4l_v1.document
         self.model = s4l_v1.model
         self.emfdtd = s4l_v1.simulation.emfdtd
@@ -57,6 +63,7 @@ class NearFieldProject:
         self.data = s4l_v1.data
         self.analysis = s4l_v1.analysis
         self.em_evaluators = s4l_v1.analysis.em_evaluators
+        self.extractors = s4l_v1.analysis.extractors
         self.XCoreModeling = XCoreModeling
 
     def _run_isolve_manual(self):
@@ -93,10 +100,17 @@ class NearFieldProject:
             
             self._log("iSolve.exe completed successfully.")
             
-            # After the simulation, load the results back into the project
-            self._log("Loading results back into the project...")
-            self.simulation.LoadResults()
-            self._log("Results loaded.")
+            # After the simulation, the project must be reloaded to see the results
+            self._log("Re-opening project to load results...")
+            self.document.Close()
+            open_project(self.project_path)
+            
+            # Re-acquire the simulation object from the reloaded document
+            sim_name = f"EM_FDTD_{self.phantom_name}_{self.antenna.get_model_name()}_{self.placement_name}"
+            self.simulation = next((s for s in self.document.AllSimulations if s.Name == sim_name), None)
+            if not self.simulation:
+                raise RuntimeError(f"Could not find simulation '{sim_name}' after re-opening project.")
+            self._log("Project reloaded and results are available.")
 
         except subprocess.CalledProcessError as e:
             error_message = (
@@ -115,12 +129,13 @@ class NearFieldProject:
         Sets up the entire simulation environment in Sim4Life.
         If the project already exists, it will just be opened.
         """
-        if self.force_setup and os.path.exists(self.project_path):
-            self._log(f"Force setup: deleting existing project file at {self.project_path}")
+        # Always start with a clean project to avoid file lock issues
+        if os.path.exists(self.project_path):
+            self._log(f"Deleting existing project file at {self.project_path}")
             os.remove(self.project_path)
 
         if not os.path.exists(self.project_path):
-            self._log("Project file not found, creating and saving a new empty project.")
+            self._log("Creating and saving a new empty project.")
             self.document.New()
             self.save()  # Save immediately to establish the path
             
@@ -140,6 +155,22 @@ class NearFieldProject:
             self.simulation = next((s for s in self.document.AllSimulations if s.Name == sim_name), None)
             if not self.simulation:
                 self._log(f"Warning: Could not find simulation '{sim_name}' in existing project.")
+    
+    def open_for_extraction(self):
+        """
+        Opens an existing project and ensures the simulation object is loaded,
+        bypassing the full setup process.
+        """
+        self._log("Opening project for result extraction...")
+        # The project is now reloaded in _run_isolve_manual, so we just need to open it here.
+        open_project(self.project_path)
+        sim_name = f"EM_FDTD_{self.phantom_name}_{self.antenna.get_model_name()}_{self.placement_name}"
+        self.simulation = next((s for s in self.document.AllSimulations if s.Name == sim_name), None)
+        if not self.simulation:
+            raise RuntimeError(f"Could not find simulation '{sim_name}' in existing project.")
+
+        # This method now simply opens the project. All result loading is handled
+        # by the extract_results method to ensure it's self-contained.
 
     def run(self):
         """
@@ -170,40 +201,203 @@ class NearFieldProject:
             self._log("  - ERROR: Simulation object not found. Skipping result extraction.")
             return
         
-        # Get the 'Overall Field' sensor from the simulation results
-        # S4L returns a list, so we take the first one.
-        overall_field_sensor = self.simulation.Results()['Overall Field'][0]
-        if not overall_field_sensor:
-            self._log("  - ERROR: Could not find 'Overall Field' sensor in simulation results.")
-            return
+        results_data = {}
 
-        # Create a new SAR statistics evaluator
-        sar_evaluator = self.em_evaluators.SarStatisticsEvaluator(overall_field_sensor)
-        
-        # Update the evaluator to compute the results
-        sar_evaluator.Update()
+        simulation_extractor = self.simulation.Results()
 
-        # Get the SAR result object from the evaluator's outputs
-        sar_results = sar_evaluator.Outputs()['SAR Statistics']
-        if not sar_results:
-            self._log("  - ERROR: Could not find 'SAR Statistics' in evaluator outputs.")
-            return
+        # The peak SAR will be extracted from the all-tissue statistics later
+        results_data['peak_sar_10g_W_kg'] = -1.0
+
+
+        # --- Extract Input Power ---
+        self._log("  - Extracting input power...")
+        try:
+            # The extractor for Input Power is different from the main field extractor
+            input_power_extractor = simulation_extractor["Input Power"]
+            self.document.AllAlgorithms.Add(input_power_extractor)
+            input_power_extractor.Update() # Ensure the extractor itself is updated
             
-        # Get all available SAR values
-        peak_sar_1g = sar_results.Data.GetMaximum(self.units.W_kg, averaging_mass=1.0)
-        peak_sar_10g = sar_results.Data.GetMaximum(self.units.W_kg, averaging_mass=10.0)
-        
-        self._log(f"  - Peak SAR (1g): {peak_sar_1g:.4f} W/kg")
-        self._log(f"  - Peak SAR (10g): {peak_sar_10g:.4f} W/kg")
+            # The output port is named "EM Input Power(f)"
+            input_power_output = input_power_extractor.Outputs["EM Input Power(f)"]
+            input_power_output.Update() # Ensure the output port data is up-to-date
+            
+            # The .Data property gives us a FloatXYData object
+            input_power_field = input_power_output.Data
+            
+            # A FloatXYData object contains one or more SimpleSeries. For input power, there's one.
+            # GetComponent(0) returns a numpy array of (frequency, power) tuples.
+            power_data = input_power_field.GetComponent(0)
+
+            if power_data is not None and power_data.size > 0:
+                # For a single frequency simulation, GetComponent(0) returns a flat numpy array,
+                # often just [power_value] or sometimes [frequency, power_value, ...].
+                if power_data.size == 1:
+                    input_power_w = power_data.item() # Get scalar from 0-dim array
+                    frequency_at_value_mhz = self.frequency_mhz # Assume simulation frequency
+                elif power_data.size >= 2:
+                    # Assuming the format is [freq, power, freq, power, ...]
+                    # We find the value closest to our simulation frequency.
+                    center_frequency_hz = self.frequency_mhz * 1e6
+                    # Reshape into (N, 2) array of [freq, power] pairs
+                    reshaped_data = power_data.reshape(-1, 2)
+                    frequencies = reshaped_data[:, 0]
+                    powers = reshaped_data[:, 1]
+                    
+                    freq_diff = np.abs(frequencies - center_frequency_hz)
+                    target_index = freq_diff.argmin()
+
+                    input_power_w = powers[target_index]
+                    frequency_at_value_mhz = frequencies[target_index] / 1e6
+                else: # Should not happen if size > 0
+                    input_power_w = -1.0
+                    frequency_at_value_mhz = -1.0
+
+                self._log(f"  - Input Power: {input_power_w:.4f} W at {frequency_at_value_mhz:.2f} MHz")
+                results_data['input_power_W'] = float(input_power_w)
+                results_data['input_power_frequency_MHz'] = float(frequency_at_value_mhz)
+            else:
+                self._log("  - WARNING: Could not extract input power values. Data series is empty.")
+        except Exception as e:
+            self._log(f"  - ERROR: An exception occurred during input power extraction: {e}")
+            import traceback
+            traceback.print_exc()
+
+
+        # --- Extract SAR Statistics for All Tissues ---
+        self._log("  - Extracting SAR statistics for all tissues...")
+        try:
+            # This follows the user's snippet: create an evaluator for all tissues
+            em_sensor_extractor = simulation_extractor["Overall Field"]
+            em_sensor_extractor.FrequencySettings.ExtractedFrequency = u"All"
+            self.document.AllAlgorithms.Add(em_sensor_extractor)
+            em_sensor_extractor.Update() # IMPORTANT: Update the extractor to load the data
+
+            # Create SarStatisticsEvaluator and enable Peak Spatial Average SAR calculation
+            inputs = [em_sensor_extractor.Outputs["EM E(x,y,z,f0)"]]
+            sar_stats_evaluator = self.analysis.em_evaluators.SarStatisticsEvaluator(inputs=inputs)
+            sar_stats_evaluator.PeakSpatialAverageSAR = True
+            # NOTE: The AveragingMass property expects a float (in grams). The API does not use
+            # the s4l_v1.units module for this property. Setting this to 10.0 calculates
+            # the 10g average SAR, even though the output column name from the API
+            # will still misleadingly say '1g'.
+            sar_stats_evaluator.AveragingMass = 10.0
+            self.document.AllAlgorithms.Add(sar_stats_evaluator)
+
+            # Update the evaluator to generate the statistics
+            sar_stats_evaluator.Update()
+
+            # Define report path for HTML and pickle stats
+            results_dir = os.path.join(self.config.base_dir, 'results', self.phantom_name, f"{self.frequency_mhz}MHz", self.placement_name)
+            stats_filepath_html = os.path.join(results_dir, 'sar_stats_all_tissues.html')
+            stats_filepath_pickle = os.path.join(results_dir, 'sar_stats_all_tissues.pkl')
+
+            # Extract the data directly from the evaluator's output
+            stats_output = sar_stats_evaluator.Outputs[0]
+            results = stats_output.Data
+
+            if not (results and results.NumberOfRows() > 0 and results.NumberOfColumns() > 0):
+                self._log("  - WARNING: No SAR statistics data found.")
+                return
+
+            # --- Data Processing and Grouping ---
+            columns = ["Tissue"] + [cap for cap in results.ColumnMainCaptions]
+            
+            # Prepare data for DataFrame
+            data = []
+            for i in range(results.NumberOfRows()):
+                row_caption = results.RowCaptions[i]
+                # Clean the tissue name by removing phantom specifics and trailing characters
+                clean_caption = re.sub(r'\s*\(.*\)\s*$', '', row_caption).strip()
+                clean_caption = clean_caption.replace(')', '') # Remove any stray closing parentheses
+                row_data = [clean_caption] + [results.Value(i, j) for j in range(results.NumberOfColumns())]
+                data.append(row_data)
+
+            df = pd.DataFrame(data, columns=columns)
+
+            # Define tissue groups based on the tissues found in the results
+            tissue_groups = self._define_tissue_groups(df['Tissue'].tolist())
+
+            # Convert all columns except 'Tissue' to numeric, coercing errors
+            numeric_cols = [col for col in df.columns if col != 'Tissue']
+            for col in numeric_cols:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+            df[numeric_cols] = df[numeric_cols].fillna(0) # Replace any NaNs with 0
+
+            # Calculate grouped SAR statistics
+            group_sar_stats = self._calculate_group_sar(df, tissue_groups)
+            
+            # Flatten the dictionary for JSON output
+            for group, data in group_sar_stats.items():
+                results_data[f"{group}_weighted_avg_sar"] = data['weighted_avg_sar']
+                results_data[f"{group}_peak_sar"] = data['peak_sar']
+
+            # Extract the peak 10g SAR from the 'All Regions' data
+            all_regions_row = df[df['Tissue'] == 'All Regions']
+            peak_sar_col_name = 'Peak Spatial-Average SAR[IEEE/IEC62704-1] (1g)'
+            if not all_regions_row.empty and peak_sar_col_name in all_regions_row.columns:
+                peak_sar_10g = all_regions_row[peak_sar_col_name].iloc[0]
+                results_data['peak_sar_10g_W_kg'] = peak_sar_10g
+                self._log(f"  - Peak SAR (10g) from stats: {peak_sar_10g:.4f} W/kg")
+            else:
+                self._log(f"  - WARNING: Could not find '{peak_sar_col_name}' in the results table.")
+
+            # Extract total average SAR (from the last row) and make the key dynamic
+            total_avg_sar_row = df.iloc[-1]
+            total_sar_value = total_avg_sar_row['Mass-Averaged SAR']
+            
+            # Determine if it's a head or trunk simulation
+            if self.placement_name.lower() in ['front_of_eyes', 'by_cheek']:
+                sar_key = 'head_SAR'
+            else:
+                sar_key = 'trunk_SAR'
+            
+            results_data[sar_key] = total_sar_value
+            
+            # --- Save Reports ---
+            # Create a dictionary to hold all data for pickling
+            pickle_data = {
+                'detailed_sar_stats': df,
+                'tissue_group_composition': tissue_groups,
+                'grouped_sar_stats': group_sar_stats,
+                'summary_results': results_data
+            }
+
+            # Save as Pickle
+            with open(stats_filepath_pickle, 'wb') as f:
+                pickle.dump(pickle_data, f)
+            self._log(f"  - Saved comprehensive results dictionary to: {stats_filepath_pickle}")
+
+            # Save as HTML
+            html_content = df.to_html(index=False, border=1)
+            
+            # Add group composition to HTML report
+            html_content += "<h2>Tissue Group Composition</h2>"
+            html_content += "<table border='1'><tr><th>Group</th><th>Tissues</th></tr>"
+            for group_name, tissues in tissue_groups.items():
+                tissues_str = ", ".join(tissues) if tissues else "None"
+                html_content += f"<tr><td>{group_name}</td><td>{tissues_str}</td></tr>"
+            html_content += "</table>"
+
+            # Add grouped SAR to HTML report
+            html_content += "<h2>Grouped SAR Statistics</h2>"
+            html_content += "<table border='1'><tr><th>Group</th><th>Weighted Average SAR (W/kg)</th><th>Peak SAR (W/kg)</th></tr>"
+            for group, data in group_sar_stats.items():
+                html_content += f"<tr><td>{group}</td><td>{data['weighted_avg_sar']}</td><td>{data['peak_sar']}</td></tr>"
+            html_content += "</table>"
+
+            with open(stats_filepath_html, 'w', encoding='utf-8') as f:
+                f.write(html_content)
+            self._log(f"  - Saved detailed SAR stats for all tissues to: {stats_filepath_html}")
+
+        except Exception as e:
+            self._log(f"  - ERROR: An unexpected error occurred during all-tissue SAR statistics extraction: {e}")
+            import traceback
+            traceback.print_exc()
+
 
         # Save results to a file
         results_dir = os.path.join(self.config.base_dir, 'results', self.phantom_name, f"{self.frequency_mhz}MHz", self.placement_name)
         os.makedirs(results_dir, exist_ok=True)
-        
-        results_data = {
-            'peak_sar_1g_W_kg': peak_sar_1g,
-            'peak_sar_10g_W_kg': peak_sar_10g
-        }
         
         results_filepath = os.path.join(results_dir, 'sar_results.json')
         with open(results_filepath, 'w') as f:
@@ -217,6 +411,77 @@ class NearFieldProject:
         self._log(f"Saving project to {self.project_path}...")
         self.document.SaveAs(self.project_path)
         self._log("Project saved.")
+
+    def _define_tissue_groups(self, available_tissues):
+        """Defines tissue groups based on keywords found in the available tissue list."""
+        groups = {
+            "eyes_group": ["eye", "cornea", "sclera", "lens", "vitreous"],
+            "skin_group": ["skin"],
+            "brain_group": ["brain", "commissura", "midbrain", "pineal", "hypophysis", "medulla", "pons", "thalamus", "hippocampus", "cerebellum"]
+        }
+        
+        tissue_groups = {group: set() for group in groups}
+        
+        # Match keywords against the actual tissue names from the simulation results
+        for tissue_name in available_tissues:
+            for group_name, keywords in groups.items():
+                if any(keyword in tissue_name.lower() for keyword in keywords):
+                    tissue_groups[group_name].add(tissue_name)
+        
+        # Log the defined groups for clarity
+        self._log("Defined Tissue Groups:")
+        for group_name, tissues in tissue_groups.items():
+            if tissues:
+                self._log(f"  - {group_name}: {list(tissues)}")
+            else:
+                self._log(f"  - {group_name}: No tissues matched.")
+
+        # Convert sets to lists for consistency
+        return {group: list(tissues) for group, tissues in tissue_groups.items()}
+
+    def _calculate_group_sar(self, df, tissue_groups):
+        """
+        Calculates the weighted average SAR and finds the peak SAR
+        for defined tissue groups.
+        """
+        group_sar_data = {}
+        peak_sar_col = 'Peak Spatial-Average SAR[IEEE/IEC62704-1] (1g)'
+
+        for group_name, tissues in tissue_groups.items():
+            group_df = df[df['Tissue'].isin(tissues)]
+            
+            weighted_avg_sar = -1.0
+            peak_sar = -1.0
+
+            if not group_df.empty:
+                try:
+                    # Weighted average calculation
+                    required_cols = ['Total Mass', 'Mass-Averaged SAR']
+                    if not all(col in group_df.columns for col in required_cols):
+                        raise KeyError(f"Missing required columns for weighted average SAR")
+                    
+                    weighted_sar_sum = (group_df['Total Mass'] * group_df['Mass-Averaged SAR']).sum()
+                    total_mass = group_df['Total Mass'].sum()
+                    weighted_avg_sar = weighted_sar_sum / total_mass if total_mass > 0 else 0
+
+                    # Peak SAR calculation
+                    if peak_sar_col in group_df.columns:
+                        peak_sar = group_df[peak_sar_col].max()
+                    else:
+                        self._log(f"  - WARNING: Peak SAR column '{peak_sar_col}' not found for group '{group_name}'.")
+
+                except (KeyError, TypeError) as e:
+                    self._log(f"  - WARNING: Could not calculate SAR for '{group_name}'. Error: {e}")
+                    self._log(f"  - Available columns: {list(group_df.columns)}")
+            else:
+                self._log(f"  - INFO: No tissues found for group '{group_name}'.")
+
+            group_sar_data[group_name] = {
+                'weighted_avg_sar': weighted_avg_sar,
+                'peak_sar': peak_sar
+            }
+        
+        return group_sar_data
 
     def cleanup(self):
         """
@@ -499,12 +764,40 @@ class NearFieldProject:
             else:
                 self._log(f"  - Warning: Invalid solver kernel '{kernel_type}' specified. Available: {available_kernels}. Using default.")
 
-        sim_time = sim_params.get("simulation_time_periods", 15)
-        term_level = sim_params.get("global_auto_termination", "Medium")
-        simulation.SetupSettings.SimulationTime = sim_time, self.units.Periods
+        term_level = sim_params.get("global_auto_termination", "GlobalAutoTerminationWeak")
+        
+        # Dynamically calculate simulation time
+        sim_bbox_entity = self.model.AllEntities()[f"{self.placement_name.lower()}_simulation_bbox"]
+        bbox_min, bbox_max = self.model.GetBoundingBox([sim_bbox_entity])
+        diagonal_vec = np.array(bbox_max) - np.array(bbox_min)
+        diagonal_length_mm = np.linalg.norm(diagonal_vec)
+        diagonal_length_m = diagonal_length_mm / 1000.0  # Convert mm to m
+        
+        c0 = 299792458  # Speed of light in m/s
+        time_to_travel_s = (2 * diagonal_length_m) / c0
+        
+        frequency_hz = self.frequency_mhz * 1e6
+        period_s = 1 / frequency_hz
+        sim_time_periods = time_to_travel_s / period_s
+        
+        self._log(f"  - BBox Diagonal: {diagonal_length_m:.4f} m")
+        self._log(f"  - Calculated sim time: {time_to_travel_s:.2e} s ({sim_time_periods:.2f} periods)")
+        
+        simulation.SetupSettings.SimulationTime = sim_time_periods, self.units.Periods
+        
         term_options = simulation.SetupSettings.GlobalAutoTermination.enum
-        if hasattr(term_options, f"GlobalAutoTermination{term_level}"):
-            simulation.SetupSettings.GlobalAutoTermination = getattr(term_options, f"GlobalAutoTermination{term_level}")
+        
+        # Set the termination level from the config
+        if hasattr(term_options, term_level):
+            simulation.SetupSettings.GlobalAutoTermination = getattr(term_options, term_level)
+        else:
+            self._log(f"  - Warning: Invalid termination level '{term_level}' specified. Using default.")
+
+        # If user-defined, set the convergence level
+        if term_level == "GlobalAutoTerminationUserDefined":
+            convergence_db = sim_params.get("convergence_level_dB", -30)
+            simulation.SetupSettings.ConvergenceLevel = convergence_db
+            self._log(f"  - Set user-defined convergence level to: {convergence_db} dB")
 
         # Set Background Material
         background_settings = simulation.raw.BackgroundMaterialSettings()

@@ -1,7 +1,7 @@
 {
   "simulation_parameters": {
-    "simulation_time_periods": 10,
-    "global_auto_termination": "GlobalAutoTerminationWeak"
+    "global_auto_termination": "GlobalAutoTerminationUserDefined",
+    "convergence_level_dB": -15
   },
   "frequencies_mhz": [
     700,
@@ -38,14 +38,14 @@
     }
   },
   "gridding_parameters": {
-    "antenna_gridding": 0.1,
-    "fine_grid": 0.1,
-    "coarse_grid": 3.0
+    "antenna_gridding": 0.3,
+    "fine_grid": 0.3,
+    "coarse_grid": 1.0
   },
   "solver_settings": {
     "kernel": "Cuda",
     "location": "localhost"
   },
-  "verbose": false,
+  "verbose": true,
   "manual_isolve": true
 }
