@@ -6,6 +6,9 @@
 
 **Automated near-field and far-field SAR assessments using Sim4Life**
 
+> [!WARNING]
+> This is beta software. While it is actively used in research, it is still under development and may contain bugs. Please use with caution and report any issues.
+
 [![Documentation](https://img.shields.io/badge/docs-latest-blue.svg)](https://rwydaegh.github.io/goliat/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11+-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
@@ -19,7 +22,7 @@
 
 ## 🎯 What is GOLIAT?
 
-GOLIAT is a Python framework that **automates electromagnetic field (EMF) dosimetry simulations** from start to finish. Calculate Specific Absorption Rate (SAR) in digital human phantoms with minimal manual intervention—whether you're simulating a phone call (near-field) or environmental exposure (far-field).
+GOLIAT is a Python framework that **automates electromagnetic field (EMF) dosimetry simulations** from start to finish. Calculate Specific Absorption Rate (SAR) in digital human phantoms with minimal manual intervention, whether you're simulating a phone call (near-field) or environmental exposure (far-field).
 
 **Perfect for**: Researchers, compliance engineers, and anyone studying EMF exposure in biological tissues.
 
@@ -176,7 +179,7 @@ graph LR
 4. **Extract**: Pull SAR, power balance, point sensors from results
 5. **Analyze**: Generate CSVs, plots, statistical summaries
 
-Each stage is modular—swap in custom phantoms, antennas, or analysis strategies.
+Each stage is modular, swap in custom phantoms, antennas, or analysis strategies.
 
 🔗 [**Detailed Architecture Guide**](https://rwydaegh.github.io/goliat/architecture_overview.html)
 
