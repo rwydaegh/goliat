@@ -323,7 +323,7 @@ class FarFieldStudy(BaseStudy):
     def _validate_auto_cleanup_config(self, do_setup, do_run, do_extract, auto_cleanup):
         """
         Validates the auto_cleanup_previous_results configuration and warns about potential issues.
-        
+
         Args:
             do_setup (bool): Whether setup phase is enabled
             do_run (bool): Whether run phase is enabled
@@ -332,7 +332,7 @@ class FarFieldStudy(BaseStudy):
         """
         if not auto_cleanup:
             return
-        
+
         # Check if this is a proper serial workflow (all phases enabled)
         if not (do_setup and do_run and do_extract):
             self._log(
@@ -348,7 +348,7 @@ class FarFieldStudy(BaseStudy):
                 level="progress",
                 log_type="info",
             )
-        
+
         # Check for batch/parallel run mode
         batch_run = self.config.get_setting("execution_control.batch_run", False)
         if batch_run:
@@ -365,15 +365,17 @@ class FarFieldStudy(BaseStudy):
                 log_type="warning",
             )
             # Force disable auto-cleanup to prevent data corruption
-            self.config.config["execution_control"]["auto_cleanup_previous_results"] = []
-        
+            self.config.config["execution_control"][
+                "auto_cleanup_previous_results"
+            ] = []
+
         # Inform user that auto-cleanup is active
         cleanup_types = self.config.get_auto_cleanup_previous_results()
         if cleanup_types:
             file_type_names = {
                 "output": "output files (*_Output.h5)",
                 "input": "input files (*_Input.h5)",
-                "smash": "project files (*.smash)"
+                "smash": "project files (*.smash)",
             }
             cleanup_descriptions = [file_type_names.get(t, t) for t in cleanup_types]
             self._log(

@@ -27,8 +27,7 @@ commit_message.txt
 
 # Documentation
 PythonAPIReference/
-PythonAPIReference_old/
-Sim4Life_Manual_7.2.pdf
+Sim4Life_Manual.pdf
 Sim4Life_Introduction.pdf
 
 # Configs
@@ -48,7 +47,3 @@ analysis/sensitivity_analysis/configs/
 .bashrc
 .setup_done
 .env
-
-# Personal
-mindmap.md
-TODO.txt

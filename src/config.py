@@ -342,8 +342,10 @@ class Config:
         Returns:
             list: A list of file types to clean up. Empty list means no cleanup.
         """
-        cleanup_setting = self.get_setting("execution_control.auto_cleanup_previous_results", [])
-        
+        cleanup_setting = self.get_setting(
+            "execution_control.auto_cleanup_previous_results", []
+        )
+
         # Handle legacy boolean format for backwards compatibility
         if isinstance(cleanup_setting, bool):
             if cleanup_setting:
@@ -351,24 +353,26 @@ class Config:
                 return ["output"]
             else:
                 return []
-        
+
         # Validate that it's a list
         if not isinstance(cleanup_setting, list):
             import logging
+
             logging.warning(
                 f"'auto_cleanup_previous_results' should be a list, got {type(cleanup_setting)}. "
                 "Disabling cleanup for safety."
             )
             return []
-        
+
         # Validate file types
         valid_types = {"output", "input", "smash"}
         invalid_types = [t for t in cleanup_setting if t not in valid_types]
         if invalid_types:
             import logging
+
             logging.warning(
                 f"Invalid file types in 'auto_cleanup_previous_results': {invalid_types}. "
                 f"Valid types are: {valid_types}"
             )
-        
+
         return [t for t in cleanup_setting if t in valid_types]
