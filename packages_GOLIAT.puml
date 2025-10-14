@@ -1,0 +1,111 @@
+@startuml packages_GOLIAT
+set namespaceSeparator none
+package "src" as src {
+}
+package "src.analysis" as src.analysis {
+}
+package "src.analysis.analyzer" as src.analysis.analyzer {
+}
+package "src.analysis.plotter" as src.analysis.plotter {
+}
+package "src.analysis.strategies" as src.analysis.strategies {
+}
+package "src.antenna" as src.antenna {
+}
+package "src.colors" as src.colors {
+}
+package "src.config" as src.config {
+}
+package "src.data_extractor" as src.data_extractor {
+}
+package "src.gui_manager" as src.gui_manager {
+}
+package "src.logging_manager" as src.logging_manager {
+}
+package "src.osparc_batch" as src.osparc_batch {
+}
+package "src.osparc_batch.gui" as src.osparc_batch.gui {
+}
+package "src.osparc_batch.runner" as src.osparc_batch.runner {
+}
+package "src.osparc_batch.worker" as src.osparc_batch.worker {
+}
+package "src.profiler" as src.profiler {
+}
+package "src.project_manager" as src.project_manager {
+}
+package "src.results_extractor" as src.results_extractor {
+}
+package "src.setups" as src.setups {
+}
+package "src.setups.base_setup" as src.setups.base_setup {
+}
+package "src.setups.boundary_setup" as src.setups.boundary_setup {
+}
+package "src.setups.far_field_setup" as src.setups.far_field_setup {
+}
+package "src.setups.gridding_setup" as src.setups.gridding_setup {
+}
+package "src.setups.material_setup" as src.setups.material_setup {
+}
+package "src.setups.near_field_setup" as src.setups.near_field_setup {
+}
+package "src.setups.phantom_setup" as src.setups.phantom_setup {
+}
+package "src.setups.placement_setup" as src.setups.placement_setup {
+}
+package "src.setups.source_setup" as src.setups.source_setup {
+}
+package "src.simulation_runner" as src.simulation_runner {
+}
+package "src.studies" as src.studies {
+}
+package "src.studies.base_study" as src.studies.base_study {
+}
+package "src.studies.far_field_study" as src.studies.far_field_study {
+}
+package "src.studies.near_field_study" as src.studies.near_field_study {
+}
+package "src.utils" as src.utils {
+}
+src.analysis.analyzer --> src.analysis.plotter
+src.analysis.analyzer --> src.analysis.strategies
+src.gui_manager --> src.logging_manager
+src.gui_manager --> src.utils
+src.logging_manager --> src.colors
+src.osparc_batch.runner --> src.config
+src.osparc_batch.runner --> src.osparc_batch.gui
+src.osparc_batch.runner --> src.osparc_batch.worker
+src.osparc_batch.worker --> src.osparc_batch.runner
+src.project_manager --> src.logging_manager
+src.project_manager --> src.utils
+src.results_extractor --> src.logging_manager
+src.setups.base_setup --> src.logging_manager
+src.setups.boundary_setup --> src.setups.base_setup
+src.setups.far_field_setup --> src.setups.base_setup
+src.setups.far_field_setup --> src.setups.boundary_setup
+src.setups.far_field_setup --> src.setups.gridding_setup
+src.setups.far_field_setup --> src.setups.material_setup
+src.setups.far_field_setup --> src.setups.phantom_setup
+src.setups.gridding_setup --> src.setups.base_setup
+src.setups.material_setup --> src.setups.base_setup
+src.setups.near_field_setup --> src.setups.base_setup
+src.setups.near_field_setup --> src.setups.boundary_setup
+src.setups.near_field_setup --> src.setups.gridding_setup
+src.setups.near_field_setup --> src.setups.material_setup
+src.setups.near_field_setup --> src.setups.phantom_setup
+src.setups.near_field_setup --> src.setups.placement_setup
+src.setups.near_field_setup --> src.setups.source_setup
+src.setups.phantom_setup --> src.setups.base_setup
+src.setups.placement_setup --> src.setups.base_setup
+src.setups.source_setup --> src.setups.base_setup
+src.simulation_runner --> src.logging_manager
+src.simulation_runner --> src.utils
+src.studies.base_study --> src.config
+src.studies.base_study --> src.logging_manager
+src.studies.base_study --> src.profiler
+src.studies.base_study --> src.project_manager
+src.studies.base_study --> src.utils
+src.studies.far_field_study --> src.studies.base_study
+src.studies.near_field_study --> src.studies.base_study
+@enduml
