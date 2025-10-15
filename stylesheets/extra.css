@@ -1,0 +1,52 @@
+/* Custom styles for GOLIAT documentation */
+
+:root {
+  --md-primary-fg-color: #3f51b5;
+  --md-primary-fg-color--light: #5c6bc0;
+  --md-primary-fg-color--dark: #303f9f;
+}
+
+/* Code block improvements */
+.highlight .filename {
+  background-color: var(--md-code-bg-color);
+  padding: 0.5em 1em;
+  border-bottom: 0.05rem solid var(--md-default-fg-color--lightest);
+  font-weight: 700;
+}
+
+/* Admonition customization */
+.md-typeset .admonition.tip {
+  border-color: #00bfa5;
+}
+
+.md-typeset .admonition.tip > .admonition-title {
+  background-color: rgba(0, 191, 165, 0.1);
+}
+
+/* Better table styling */
+.md-typeset table:not([class]) {
+  border: 0.05rem solid var(--md-default-fg-color--lightest);
+  border-radius: 0.2rem;
+  display: table;
+  font-size: 0.64rem;
+  overflow: hidden;
+}
+
+.md-typeset table:not([class]) th {
+  background-color: var(--md-default-fg-color--lightest);
+  font-weight: 700;
+}
+
+/* Mermaid diagram theming */
+.mermaid {
+  text-align: center;
+}
+
+/* Better code copy button */
+.md-clipboard {
+  color: var(--md-default-fg-color--light);
+}
+
+.md-clipboard:hover {
+  color: var(--md-accent-fg-color);
+}
