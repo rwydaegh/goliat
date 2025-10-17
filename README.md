@@ -260,6 +260,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines, code style rules
 
 ---
 
+## Citation
+
+If you use GOLIAT in your research, please cite it using the metadata in the [`CITATION.cff`](.github/CITATION.cff) file.
+
 ## License
 
 This project is licensed under the **Apache 2.0 License** – see [LICENSE](LICENSE) for details.
