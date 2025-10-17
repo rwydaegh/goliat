@@ -156,7 +156,10 @@ Spatial discretization.
 | Parameter | Type | Example | Description |
 |-----------|------|---------|-------------|
 | `manual_isolve` | boolean | `true` | Run iSolve.exe directly (recommended; avoids Ares bug). |
-| `download_email` | string | `"user@example.com"` | Email for phantom downloads. |
+| `manual_isolve` | boolean | `true` | Run iSolve.exe directly (recommended; avoids Ares bug). |
+| `export_material_properties` | boolean | `false` | Export material props to PKL (advanced). |
+
+**Note on Phantom Downloads**: Some phantom models may require an email address for download, which can be set via the `DOWNLOAD_EMAIL` environment variable in your `.env` file. This should be the email of the license administrator at your institution.
 | `export_material_properties` | boolean | `false` | Export material props to PKL (advanced). |
 
 ## Far-Field Configuration (`far_field_config.json`)
