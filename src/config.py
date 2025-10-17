@@ -279,6 +279,15 @@ class Config:
         """Retrieves the 'line_profiling' settings from the main configuration."""
         return self.get_setting("line_profiling", {})
 
+    def get_download_email(self):
+        """Retrieves the download email from environment variables."""
+        email = os.getenv("DOWNLOAD_EMAIL")
+        if not email:
+            raise ValueError(
+                "Missing DOWNLOAD_EMAIL. Please set this in your .env file."
+            )
+        return email
+
     def get_server(self):
         """Retrieves the server name for remote simulation execution."""
         return self.config.get("server", None)
@@ -296,8 +305,8 @@ class Config:
         credentials = {
             "api_key": os.getenv("OSPARC_API_KEY"),
             "api_secret": os.getenv("OSPARC_API_SECRET"),
-            "api_server": os.getenv("OSPARC_API_SERVER"),
-            "api_version": os.getenv("OSPARC_API_VERSION", "v0"),
+            "api_server": "https://api.sim4life.science",
+            "api_version": "v0",
         }
 
         missing = [

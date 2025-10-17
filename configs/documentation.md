@@ -36,8 +36,6 @@ oSPARC API credentials are no longer stored in configuration files for security 
 
 - `OSPARC_API_KEY`: Your oSPARC API key
 - `OSPARC_API_SECRET`: Your oSPARC API secret
-- `OSPARC_API_SERVER`: The oSPARC API server URL (typically `https://api.sim4life.science`)
-- `OSPARC_API_VERSION`: The API version (typically `v0`)
 
 These should be set in a `.env` file in the project root.
 

@@ -71,13 +71,16 @@ GOLIAT uses a flexible JSON-based configuration system located in the `configs/`
     ```
     **Note**: GOLIAT's configuration system supports inheritance. Your custom config extends `base_config.json`, allowing you to override only the settings you need. For a deep dive into all available parameters, refer to the [Configuration Guide](configuration.md).
 
-3.  **For oSPARC Cloud Runs (Optional)**: If you plan to use oSPARC for cloud-based simulations, create a `.env` file in your project root with your credentials:
-    ```
-    OSPARC_API_KEY=your_osparc_api_key
-    OSPARC_API_SECRET=your_osparc_api_secret
-    OSPARC_API_SERVER=https://api.sim4life.science
-    OSPARC_API_VERSION=v0
-    ```
+3.  **Set Up Environment Variables**: Create a `.env` file in the project root for credentials.
+    - **For oSPARC Cloud Runs (Optional)**: If you plan to use oSPARC, add your API key and secret:
+        ```
+        OSPARC_API_KEY=your_osparc_api_key
+        OSPARC_API_SECRET=your_osparc_api_secret
+        ```
+    - **For Phantom Downloads**: To download phantom models, you may need to provide an email address associated with your institution's license:
+        ```
+        DOWNLOAD_EMAIL=your_email@example.com
+        ```
 
 ## Step 3: Run Your First Simulation
 

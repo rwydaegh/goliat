@@ -23,7 +23,6 @@ def dummy_configs(tmp_path_factory):
             "global_auto_termination": "GlobalAutoTerminationUserDefined",
             "convergence_level_dB": -15,
         },
-        "download_email": "test@example.com",
     }
     near_field_content = {
         "extends": "base_config.json",
@@ -70,14 +69,14 @@ def test_config_load_and_inheritance(dummy_configs):
     # Temporarily set environment variables for oSPARC credentials
     os.environ["OSPARC_API_KEY"] = "dummy_key"
     os.environ["OSPARC_API_SECRET"] = "dummy_secret"
-    os.environ["OSPARC_API_SERVER"] = "https://api.example.com"
+    os.environ["DOWNLOAD_EMAIL"] = "test@example.com"
 
     config_instance = Config(
         dummy_configs["base_dir"], "configs/near_field_config.json"
     )
 
     assert config_instance.get_setting("study_type") == "near_field"
-    assert config_instance.get_setting("download_email") == "test@example.com"
+    assert config_instance.get_download_email() == "test@example.com"
     assert (
         config_instance.get_setting("simulation_parameters.convergence_level_dB") == -15
     )
@@ -103,7 +102,7 @@ def test_config_load_and_inheritance(dummy_configs):
     # Clean up environment variables
     del os.environ["OSPARC_API_KEY"]
     del os.environ["OSPARC_API_SECRET"]
-    del os.environ["OSPARC_API_SERVER"]
+    del os.environ["DOWNLOAD_EMAIL"]
 
 
 @pytest.mark.skip_on_ci
@@ -140,8 +139,6 @@ def test_osparc_credentials_missing(dummy_configs):
         del os.environ["OSPARC_API_KEY"]
     if "OSPARC_API_SECRET" in os.environ:
         del os.environ["OSPARC_API_SECRET"]
-    if "OSPARC_API_SERVER" in os.environ:
-        del os.environ["OSPARC_API_SERVER"]
 
     config_instance = Config(
         dummy_configs["base_dir"], "configs/near_field_config.json"
