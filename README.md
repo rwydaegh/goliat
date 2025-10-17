@@ -260,9 +260,21 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines, code style rules
 
 ---
 
-## Citation
+## Citing
 
-If you use GOLIAT in your research, please cite it using the metadata in the [`CITATION.cff`](.github/CITATION.cff) file.
+If you use this software, please cite it as:
+
+```bibtex
+@software{Wydaeghe_GOLIAT,
+  title   = {{GOLIAT: A Comprehensive Automated Near- and Far-Field SAR Assessment Toolbox using Sim4Life}},
+  author  = {Wydaeghe, Robin},
+  url     = {https://github.com/rwydaeghe/goliat},
+  license = {Apache-2.0},
+  version = {0.1.0}
+}
+```
+
+For other citation formats, please refer to the "Cite this repository" button on the main page of our GitHub repository or to our Zenodo records.
 
 ## License
 

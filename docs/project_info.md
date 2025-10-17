@@ -41,7 +41,3 @@ The GOLIAT consortium consists of 22 partners from across Europe and the United 
 -   Massachusetts General Hospital (MGH), US
 -   Harvard School of Public Health (HSPH), US
 -   University of Michigan (UMich), US
-
-## How to Cite
-
-If you use GOLIAT in your research, please cite it. All the necessary metadata is available in the [`CITATION.cff`](https://github.com/rwydaegh/goliat/blob/main/.github/CITATION.cff) file in the root of the repository.
