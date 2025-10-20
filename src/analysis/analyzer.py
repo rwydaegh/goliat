@@ -7,7 +7,9 @@ import pandas as pd
 
 from ..config import Config
 from .plotter import Plotter
-from .strategies import BaseAnalysisStrategy
+from .base_strategy import BaseAnalysisStrategy
+from .far_field_strategy import FarFieldAnalysisStrategy
+from .near_field_strategy import NearFieldAnalysisStrategy
 
 
 class Analyzer:
