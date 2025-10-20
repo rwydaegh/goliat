@@ -21,8 +21,6 @@ main_logger = setup_console_logging()
 
 def main(config_path: str):
     """Main entry point: sets up and starts the GUI and the main logic process."""
-    import sys
-
     from PySide6.QtWidgets import QApplication
 
     from src.config import Config
