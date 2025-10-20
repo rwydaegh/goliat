@@ -288,10 +288,6 @@ class Config:
             )
         return email
 
-    def get_server(self):
-        """Retrieves the server name for remote simulation execution."""
-        return self.config.get("server", None)
-
     def get_osparc_credentials(self):
         """
         Retrieves oSPARC credentials from environment variables.
