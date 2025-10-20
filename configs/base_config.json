@@ -1,4 +1,5 @@
 {
+  "use_gui": true,
     "execution_control": {
         "do_setup": true,
         "do_run": true,
