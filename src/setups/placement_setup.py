@@ -11,7 +11,9 @@ class PlacementSetup(BaseSetup):
         config,
         phantom_name,
         frequency_mhz,
-        placement_name,
+        scenario_name,
+        position_name,
+        orientation_name,
         antenna,
         verbose_logger,
         progress_logger,
@@ -20,36 +22,12 @@ class PlacementSetup(BaseSetup):
         super().__init__(config, verbose_logger, progress_logger)
         self.phantom_name = phantom_name
         self.frequency_mhz = frequency_mhz
-        self.placement_name = placement_name
+        self.base_placement_name = scenario_name
+        self.position_name = position_name
+        self.orientation_name = orientation_name
+        self.placement_name = f"{scenario_name}_{position_name}_{orientation_name}"
         self.antenna = antenna
         self.free_space = free_space
-
-        # Parse the detailed placement name, e.g., "front_of_eyes_center_vertical"
-        try:
-            parts = placement_name.split("_")
-            if placement_name.startswith("front_of_eyes"):
-                self.base_placement_name = "front_of_eyes"
-                self.position_name = parts[3]
-                self.orientation_name = parts[4]
-            elif placement_name.startswith("by_cheek"):
-                self.base_placement_name = "by_cheek"
-                self.position_name = parts[2]
-                self.orientation_name = parts[3]
-            elif placement_name.startswith("by_belly"):
-                self.base_placement_name = "by_belly"
-                self.position_name = parts[2]
-                self.orientation_name = parts[3]
-            else:
-                # Fallback for old single placement names or unknown format
-                self.base_placement_name = placement_name
-                self.position_name = "default"
-                self.orientation_name = "default"
-
-        except IndexError:
-            # Fallback for old single placement names
-            self.base_placement_name = placement_name
-            self.position_name = "default"
-            self.orientation_name = "default"
 
         import XCoreMath
 

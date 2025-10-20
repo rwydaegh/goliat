@@ -27,7 +27,9 @@ class ResultsExtractor(LoggingMixin):
         simulation,
         phantom_name,
         frequency_mhz,
-        placement_name,
+        scenario_name,
+        position_name,
+        orientation_name,
         study_type,
         verbose_logger,
         progress_logger,
@@ -43,7 +45,9 @@ class ResultsExtractor(LoggingMixin):
             simulation (s4l_v1.simulation.emfdtd.Simulation): The simulation object to extract results from.
             phantom_name (str): The name of the phantom model used.
             frequency_mhz (int): The simulation frequency in MHz.
-            placement_name (str): The name of the placement scenario.
+            scenario_name (str): The base name of the placement scenario.
+            position_name (str): The name of the position within the scenario.
+            orientation_name (str): The name of the orientation within the scenario.
             study_type (str): The type of the study (e.g., 'near_field').
             verbose_logger (logging.Logger): Logger for detailed output.
             progress_logger (logging.Logger): Logger for progress updates.
@@ -55,7 +59,7 @@ class ResultsExtractor(LoggingMixin):
         self.simulation = simulation
         self.phantom_name = phantom_name
         self.frequency_mhz = frequency_mhz
-        self.placement_name = placement_name
+        self.placement_name = f"{scenario_name}_{position_name}_{orientation_name}"
         self.study_type = study_type
         self.verbose_logger = verbose_logger
         self.progress_logger = progress_logger
