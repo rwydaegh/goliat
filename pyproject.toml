@@ -1,0 +1,27 @@
+[tool.semantic_release]
+version_variable = "src/__init__.py:__version__"
+branch = "main"
+changelog_file = "CHANGELOG.md"
+commit_author = "rwydaegh <rwydaegh@users.noreply.github.com>"
+commit_message = "chore(release): {version}"
+upload_to_pypi = false
+upload_to_release = true
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''

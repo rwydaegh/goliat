@@ -73,35 +73,12 @@
   },
   "placement_scenarios": {
     "front_of_eyes": {
+      "bounding_box": "full_body",
       "positions": {
         "center": [0, 0, 0],
         "left": [-25, 0, 0],
         "right": [25, 0, 0],
         "down": [0, 0, -60]
-      },
-      "orientations": {
-        "vertical": [],
-        "horizontal": [
-          {"axis": "Y", "angle_deg": 90}
-        ]
-      }
-    },
-    "by_cheek": {
-      "positions": {
-        "base": [0, 0, 0]
-      },
-      "orientations": {
-        "base": [],
-        "up": [{"axis": "X", "angle_deg": 10}],
-        "down": [{"axis": "X", "angle_deg": -10}]
-      }
-    },
-    "by_belly": {
-      "positions": {
-        "center": [0, 0, 0],
-        "left": [-150, 0, 0],
-        "right": [150, 0, 0],
-        "up": [0, 0, 100]
       },
       "orientations": {
         "vertical": [],
