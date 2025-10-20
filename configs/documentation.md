@@ -65,6 +65,7 @@ These should be set in a `.env` file in the project root.
 | `placement_scenarios` | object | `{ "front_of_eyes": { ... } }` | Defines device placements. Each key is a scenario name. These should also remain unchanged for the GOLIAT project as they are determined by the protocol. |
 | `placement_scenarios.{name}.positions` | object | `{ "center": [0,0,0], ...}` | A set of relative positions for the placement scenario. |
 | `placement_scenarios.{name}.orientations` | object | `{ "vertical": [], ...}` | A set of orientations to be applied at each position. |
+| `placement_scenarios.{name}.bounding_box` | string | `"default"`, `"head"`, `"trunk"`, `"full_body"` | Determines which part of the phantom to include in the simulation bounding box. "default" uses head for eyes/cheek and trunk for belly. |
 | `phantoms.{name}.placements` | object | `{ "do_front_of_eyes": true, ...}` | Booleans to enable or disable specific placement scenarios for a given phantom. |
 | `phantoms.{name}.distance_from_eye` | number | `200` | The separation distance in mm for the "front_of_eyes" placement. |
 | `phantoms.{name}.distance_from_cheek` | number | `8` | The separation distance in mm for the "by_cheek" placement. |
