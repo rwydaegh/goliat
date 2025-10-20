@@ -266,15 +266,52 @@ class NearFieldSetup(BaseSetup):
                 ),
                 None,
             )
-            if self.base_placement_name in ["front_of_eyes", "by_cheek"]:
-                bbox_to_combine_name = f"{self.phantom_name.lower()}_Head_BBox"
-            else:
-                bbox_to_combine_name = f"{self.phantom_name.lower()}_Trunk_BBox"
+            placement_scenario_config = self.config.get_placement_scenario(
+                self.base_placement_name
+            )
+            bounding_box_setting = placement_scenario_config.get("bounding_box", "default")
 
-            bbox_to_combine = self.model.AllEntities()[bbox_to_combine_name]
+            self._log(f"  - Bounding box setting: '{bounding_box_setting}'", log_type="info")
+
+            # Warn user for unusual combinations
+            if self.base_placement_name in ["front_of_eyes", "by_cheek"] and bounding_box_setting == "trunk":
+                self._log(
+                    f"WARNING: Using a 'trunk' bounding box for the '{self.base_placement_name}' placement is unusual and may lead to unexpected results.",
+                    log_type="warning",
+                )
+            if self.base_placement_name == "by_belly" and bounding_box_setting == "head":
+                self._log(
+                    f"WARNING: Using a 'head' bounding box for the '{self.base_placement_name}' placement is unusual and may lead to unexpected results.",
+                    log_type="warning",
+                )
+
+            entities_to_bound = [antenna_bbox_entity]
+
+            if bounding_box_setting == "full_body":
+                phantom_entities = [
+                    e
+                    for e in self.model.AllEntities()
+                    if isinstance(e, self.XCoreModeling.TriangleMesh)
+                ]
+                entities_to_bound.extend(phantom_entities)
+            else:
+                bbox_map = {
+                    "default_head": "Head_BBox",
+                    "default_other": "Trunk_BBox",
+                    "head": "Head_BBox",
+                    "trunk": "Trunk_BBox",
+                }
+                
+                key = bounding_box_setting
+                if key == "default":
+                    key = "default_head" if self.base_placement_name in ["front_of_eyes", "by_cheek"] else "default_other"
+                
+                if key in bbox_map:
+                    bbox_name = f"{self.phantom_name.lower()}_{bbox_map[key]}"
+                    entities_to_bound.append(self.model.AllEntities()[bbox_name])
 
             combined_bbox_min, combined_bbox_max = self.model.GetBoundingBox(
-                [bbox_to_combine, antenna_bbox_entity]
+                entities_to_bound
             )
             sim_bbox = self.XCoreModeling.CreateWireBlock(
                 combined_bbox_min, combined_bbox_max

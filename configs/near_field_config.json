@@ -235,6 +235,7 @@
   },
   "placement_scenarios": {
     "front_of_eyes": {
+      "bounding_box": "default",
       "positions": {
         "center": [0, 0, 0],
         "left": [-25, 0, 0],
@@ -249,6 +250,7 @@
       }
     },
     "by_cheek": {
+      "bounding_box": "default",
       "positions": {
         "base": [0, 0, 0]
       },
@@ -259,6 +261,7 @@
       }
     },
     "by_belly": {
+      "bounding_box": "default",
       "positions": {
         "center": [0, 0, 0],
         "left": [-150, 0, 0],
