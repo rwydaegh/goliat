@@ -2,13 +2,12 @@
     "extends": "base_config.json",
     "study_type": "far_field",
     "execution_control": {
-        "do_setup": true,
+        "do_setup": false,
         "do_run": false,
-        "do_extract": false,
-        "only_write_input_file": true,
+        "do_extract": true,
+        "only_write_input_file": false,
         "batch_run": false
     },
-    "manual_isolve": true,
     "phantoms": [
         "thelonious"
     ],
@@ -22,8 +21,7 @@
                 "x_pos"
             ],
             "polarizations": [
-                "theta",
-                "phi"
+                "theta"
             ]
         },
         "auto_induced": {
@@ -41,7 +39,7 @@
             "manual_fallback_max_step_mm": 5.0
         },
         "global_gridding_per_frequency": {
-            "450": 2.5
+            "450": 4.0
         },
         "padding": {
             "padding_mode": "manual",

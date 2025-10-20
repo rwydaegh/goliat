@@ -316,16 +316,16 @@ class NearFieldStudy(BaseStudy):
                         )
 
                     extractor = ResultsExtractor(
-                        self.config,
-                        reloaded_simulation,
-                        phantom_name,
-                        freq,
-                        scenario_name,
-                        position_name,
-                        orientation_name,
-                        "near_field",
-                        self.verbose_logger,
-                        self.progress_logger,
+                        config=self.config,
+                        simulation=reloaded_simulation,
+                        phantom_name=phantom_name,
+                        frequency_mhz=freq,
+                        scenario_name=scenario_name,
+                        position_name=position_name,
+                        orientation_name=orientation_name,
+                        study_type="near_field",
+                        verbose_logger=self.verbose_logger,
+                        progress_logger=self.progress_logger,
                         gui=self.gui,
                         study=self,
                     )

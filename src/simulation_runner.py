@@ -133,7 +133,6 @@ class SimulationRunner(LoggingMixin):
                     log_msg = f"Simulation finished on '{server_name or 'localhost'}'."
                     self._log(log_msg, level="progress", log_type="success")
 
-
             except Exception as e:
                 self._log(
                     f"An error occurred during simulation run: {e}",
@@ -162,20 +161,33 @@ class SimulationRunner(LoggingMixin):
 
         self._log(f"Searching for server: '{server_name}'", log_type="verbose")
         import s4l_v1.simulation
+
         available_servers = s4l_v1.simulation.GetAvailableServers()
 
         if not available_servers:
-            self._log("No remote servers seem to be available.", level="progress", log_type="warning")
+            self._log(
+                "No remote servers seem to be available.",
+                level="progress",
+                log_type="warning",
+            )
             return None
 
         self._log(f"Available servers: {available_servers}", log_type="verbose")
 
         for server in available_servers:
             if server_name.lower() in server.lower():
-                self._log(f"Found matching server: '{server}'", level="progress", log_type="info")
+                self._log(
+                    f"Found matching server: '{server}'",
+                    level="progress",
+                    log_type="info",
+                )
                 return server
 
-        self._log(f"Server '{server_name}' not found in available servers.", level="progress", log_type="error")
+        self._log(
+            f"Server '{server_name}' not found in available servers.",
+            level="progress",
+            log_type="error",
+        )
         raise RuntimeError(f"Server '{server_name}' not found.")
 
     def _run_isolve_manual(self, simulation):

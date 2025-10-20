@@ -36,16 +36,15 @@
         }
     },
     "solver_settings": {
-        "kernel": "Acceleware",
-        "location": "localhost",
-        "show_solver_output": true,
+        "kernel": "software",
+        "server": "localhost",
         "boundary_conditions": {
             "type": "UpmlCpml",
             "strength": "Low"
         }
     },
     "verbose": false,
-    "manual_isolve": true,
+    "manual_isolve": false,
     "data_setup": {
         "gdrive_url": "https://drive.google.com/drive/folders/1Ps0ilW6yx4Z5VoWRZKrkhP225m8lBQOV?usp=sharing",
         "data_dir": "data"
