@@ -274,7 +274,7 @@ If you use this software, please cite it as:
 }
 ```
 
-For other citation formats, please refer to the "Cite this repository" button on the main page of our GitHub repository or to our Zenodo records.
+For other citation formats, please refer to the "Cite this repository" button on the main page of our GitHub repository.
 
 ## License
 

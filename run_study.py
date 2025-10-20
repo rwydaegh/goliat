@@ -19,8 +19,39 @@ if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
 
-# --- Centralized Startup ---
-# --- End Centralized Startup ---
+class ConsoleLogger:
+    """A console-based logger to substitute for the GUI."""
+
+    def __init__(self, progress_logger, verbose_logger):
+        self.progress_logger = progress_logger
+        self.verbose_logger = verbose_logger
+
+    def log(self, message, level="verbose", log_type="default"):
+        if level == "progress":
+            self.progress_logger.info(message)
+        else:
+            self.verbose_logger.info(message)
+
+    def update_overall_progress(self, current_step, total_steps):
+        self.progress_logger.info(f"Overall Progress: {current_step}/{total_steps}")
+
+    def update_stage_progress(self, stage_name, current_step, total_steps):
+        self.progress_logger.info(f"Stage '{stage_name}': {current_step}/{total_steps}")
+
+    def start_stage_animation(self, task_name, end_value):
+        self.progress_logger.info(f"Starting: {task_name}")
+
+    def end_stage_animation(self):
+        pass
+
+    def update_profiler(self):
+        pass
+
+    def fatal_error(self, message):
+        self.progress_logger.error(f"FATAL ERROR: {message}")
+
+    def is_stopped(self):
+        return False  # No GUI to stop it
 
 
 def study_process_wrapper(queue, stop_event, config_filename, process_id):
@@ -122,17 +153,18 @@ def main():
             print(f"Error removing stale lock file {lock_file_path}: {e}")
 
     # The main process only needs a minimal logger setup for the GUI.
-    setup_loggers()
+    progress_logger, verbose_logger, _ = setup_loggers(process_id=process_id)
 
     # Run initial setup once in the main process
     initial_setup()
 
     config = Config(base_dir, config_filename)
     execution_control = config.get_setting("execution_control", {})
+    use_gui = config.get_setting("use_gui", True)
 
     if execution_control.get("batch_run"):
         run_osparc_batch(config_filename)
-    else:
+    elif use_gui:
         # Use spawn context for compatibility across platforms
         ctx = multiprocessing.get_context("spawn")
         queue = ctx.Queue()
@@ -156,6 +188,51 @@ def main():
         if study_process.is_alive():
             study_process.terminate()
             study_process.join()
+    else:
+        try:
+            from src.profiler import Profiler
+            from src.studies.far_field_study import FarFieldStudy
+            from src.studies.near_field_study import NearFieldStudy
+
+            study_type = config.get_setting("study_type")
+
+            profiling_config_data = config.get_profiling_config(study_type)
+            profiler = Profiler(
+                execution_control=config.get_setting("execution_control"),
+                profiling_config=profiling_config_data,
+                study_type=study_type,
+                config_path=config.profiling_config_path,
+            )
+
+            console_logger = ConsoleLogger(progress_logger, verbose_logger)
+
+            if study_type == "near_field":
+                study = NearFieldStudy(
+                    config_filename=config_filename, gui=console_logger
+                )
+            elif study_type == "far_field":
+                study = FarFieldStudy(
+                    config_filename=config_filename, gui=console_logger
+                )
+            else:
+                raise ValueError(
+                    f"Unknown or missing study type '{study_type}' in {config_filename}"
+                )
+
+            study.profiler = profiler
+            study.run()
+
+        except StudyCancelledError:
+            progress_logger.info("--- Study manually stopped by user ---")
+        except Exception as e:
+            error_msg = f"FATAL ERROR in study process: {e}"
+            progress_logger.error(error_msg)
+            tb_str = traceback.format_exc()
+            verbose_logger.error(f"Traceback:\n{tb_str}")
+            print(error_msg)
+            print(f"Traceback:\n{tb_str}")
+        finally:
+            shutdown_loggers()
 
     # Clean up the lock file on exit
     lock_file = os.path.join(base_dir, ".setup_done")
