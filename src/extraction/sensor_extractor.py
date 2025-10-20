@@ -127,7 +127,7 @@ class SensorExtractor:
                     level="progress",
                     log_type="error",
                 )
-                traceback.print_exc()
+                self.verbose_logger.error(traceback.format_exc())
 
     def _save_plot(self, fig, ax):
         """Save the point sensor plot to disk."""

@@ -55,7 +55,7 @@ class PowerExtractor(LoggingMixin):
                     level="progress",
                     log_type="error",
                 )
-                traceback.print_exc()
+                self.verbose_logger.error(traceback.format_exc())
 
     def _extract_far_field_power(self):
         self._log(
@@ -230,4 +230,4 @@ class PowerExtractor(LoggingMixin):
             self._log(
                 f"  - WARNING: Could not extract power balance: {e}", log_type="warning"
             )
-            traceback.print_exc()
+            self.verbose_logger.error(traceback.format_exc())

@@ -148,7 +148,7 @@ class SimulationRunner(LoggingMixin):
                         level="progress",
                         log_type="warning",
                     )
-                traceback.print_exc()
+                self.verbose_logger.error(traceback.format_exc())
 
         return simulation
 
@@ -318,7 +318,7 @@ class SimulationRunner(LoggingMixin):
                 level="progress",
                 log_type="error",
             )
-            traceback.print_exc()
+            self.verbose_logger.error(traceback.format_exc())
             raise
 
     def _run_osparc_direct(self, simulation, server_name):
@@ -339,7 +339,7 @@ class SimulationRunner(LoggingMixin):
                 log_type="info",
             )
             self._log(f"Original error: {e}", log_type="verbose")
-            traceback.print_exc()
+            self.verbose_logger.error(traceback.format_exc())
             raise RuntimeError(
                 "Could not import XOsparcApiClient module, which is necessary for oSPARC runs."
             )

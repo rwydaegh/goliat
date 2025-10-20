@@ -6,10 +6,8 @@ import pickle
 import pandas as pd
 
 from ..config import Config
-from .plotter import Plotter
 from .base_strategy import BaseAnalysisStrategy
-from .far_field_strategy import FarFieldAnalysisStrategy
-from .near_field_strategy import NearFieldAnalysisStrategy
+from .plotter import Plotter
 
 
 class Analyzer:

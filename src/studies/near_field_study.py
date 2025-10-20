@@ -342,7 +342,7 @@ class NearFieldStudy(BaseStudy):
                 level="progress",
                 log_type="error",
             )
-            traceback.print_exc()
+            self.verbose_logger.error(traceback.format_exc())
         finally:
             if (
                 self.project_manager
