@@ -97,7 +97,7 @@ This section addresses common issues encountered when using GOLIAT. Issues are g
 - **Symptom**: Window unresponsive.
 - **Cause**: Multiprocessing issue or long computation.
 - **Solution**:
-  1. Run headless: `python run_study_no_gui.py --config config.json`.
+  1. Run headless: Set `"use_gui": false` in your config and run `python run_study.py --config your_config.json`.
   2. Check `logs/*.progress.log` for updates.
   3. Reduce grid size for faster tests.
 

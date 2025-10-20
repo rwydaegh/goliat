@@ -104,10 +104,7 @@ sequenceDiagram
 ### Entry Points
 
 **`run_study.py`**:
-:   The main entry point. Launches GUI and study process.
-
-**`run_study_no_gui.py`**:
-:   Headless CLI for batch/automation.
+:   The main entry point. Launches the GUI or runs in headless mode based on the `use_gui` flag in the configuration.
 
 ### Core Classes
 
