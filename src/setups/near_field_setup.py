@@ -20,7 +20,9 @@ class NearFieldSetup(BaseSetup):
         config,
         phantom_name,
         frequency_mhz,
-        placement_name,
+        scenario_name,
+        position_name,
+        orientation_name,
         antenna,
         verbose_logger,
         progress_logger,
@@ -29,18 +31,12 @@ class NearFieldSetup(BaseSetup):
         super().__init__(config, verbose_logger, progress_logger)
         self.phantom_name = phantom_name
         self.frequency_mhz = frequency_mhz
-        self.placement_name = placement_name
+        self.base_placement_name = scenario_name
+        self.position_name = position_name
+        self.orientation_name = orientation_name
+        self.placement_name = f"{scenario_name}_{position_name}_{orientation_name}"
         self.antenna = antenna
         self.free_space = free_space
-
-        if placement_name.startswith("front_of_eyes"):
-            self.base_placement_name = "front_of_eyes"
-        elif placement_name.startswith("by_cheek"):
-            self.base_placement_name = "by_cheek"
-        elif placement_name.startswith("by_belly"):
-            self.base_placement_name = "by_belly"
-        else:
-            self.base_placement_name = placement_name
 
         # S4L modules
         import XCoreModeling
@@ -56,7 +52,11 @@ class NearFieldSetup(BaseSetup):
 
         # Create or open the project file. This is the first step.
         project_manager.create_or_open_project(
-            self.phantom_name, self.frequency_mhz, self.placement_name
+            self.phantom_name,
+            self.frequency_mhz,
+            self.base_placement_name,
+            self.position_name,
+            self.orientation_name,
         )
 
         if not self.free_space:
@@ -73,7 +73,9 @@ class NearFieldSetup(BaseSetup):
             self.config,
             self.phantom_name,
             self.frequency_mhz,
-            self.placement_name,
+            self.base_placement_name,
+            self.position_name,
+            self.orientation_name,
             self.antenna,
             self.verbose_logger,
             self.progress_logger,

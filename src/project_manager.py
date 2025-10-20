@@ -90,14 +90,23 @@ class ProjectManager(LoggingMixin):
             )
             return False
 
-    def create_or_open_project(self, phantom_name, frequency_mhz, placement_name=None):
+    def create_or_open_project(
+        self,
+        phantom_name,
+        frequency_mhz,
+        scenario_name=None,
+        position_name=None,
+        orientation_name=None,
+    ):
         """
         Creates a new project or opens an existing one based on the 'do_setup' flag.
 
         Args:
             phantom_name (str): The name of the phantom model.
             frequency_mhz (int): The simulation frequency in MHz.
-            placement_name (str, optional): The name of the placement scenario.
+            scenario_name (str, optional): The base name of the placement scenario.
+            position_name (str, optional): The name of the position within the scenario.
+            orientation_name (str, optional): The name of the orientation within the scenario.
 
         Raises:
             ValueError: If required parameters are missing or `study_type` is unknown.
@@ -109,11 +118,19 @@ class ProjectManager(LoggingMixin):
             raise ValueError("'study_type' not found in the configuration file.")
 
         if study_type == "near_field":
-            if not all([phantom_name, frequency_mhz, placement_name]):
+            if not all(
+                [
+                    phantom_name,
+                    frequency_mhz,
+                    scenario_name,
+                    position_name,
+                    orientation_name,
+                ]
+            ):
                 raise ValueError(
-                    "For near-field studies, phantom_name, frequency_mhz, and placement_name are required."
+                    "For near-field studies, all placement parameters are required."
                 )
-
+            placement_name = f"{scenario_name}_{position_name}_{orientation_name}"
             project_dir = os.path.join(
                 self.config.base_dir,
                 "results",
