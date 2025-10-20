@@ -146,7 +146,7 @@ class SarExtractor(LoggingMixin):
                     level="progress",
                     log_type="error",
                 )
-                traceback.print_exc()
+                self.verbose_logger.error(traceback.format_exc())
 
     def _define_tissue_groups(self, available_tissues):
         """
@@ -280,4 +280,4 @@ class SarExtractor(LoggingMixin):
                 f"  - ERROR: An exception occurred during peak SAR detail extraction: {e}",
                 log_type="error",
             )
-            traceback.print_exc()
+            self.verbose_logger.error(traceback.format_exc())

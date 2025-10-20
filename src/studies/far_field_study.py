@@ -318,7 +318,7 @@ class FarFieldStudy(BaseStudy):
                     level="progress",
                     log_type="error",
                 )
-                traceback.print_exc()
+                self.verbose_logger.error(traceback.format_exc())
 
     def _validate_auto_cleanup_config(self, do_setup, do_run, do_extract, auto_cleanup):
         """
@@ -429,4 +429,4 @@ class FarFieldStudy(BaseStudy):
                     level="progress",
                     log_type="error",
                 )
-                traceback.print_exc()
+                self.verbose_logger.error(traceback.format_exc())

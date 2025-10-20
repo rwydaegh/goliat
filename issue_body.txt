@@ -1,0 +1,4 @@
+Standardize traceback logging across the codebase.
+
+-   **Acceptance Criteria**: All calls to `traceback.print_exc()` are replaced with `logger.error(traceback.format_exc())`.
+-   **Scope**: This refactoring applies to all Python files in the `src` directory.
