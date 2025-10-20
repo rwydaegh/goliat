@@ -71,32 +71,35 @@ class NearFieldStudy(BaseStudy):
             if not placements_config:
                 continue
 
-            enabled_placements = []
-            for scenario_name, scenario_details in all_scenarios.items():
-                if placements_config.get(f"do_{scenario_name}"):
-                    positions = scenario_details.get("positions", {})
-                    orientations = scenario_details.get("orientations", {})
-                    for pos_name in positions.keys():
-                        for orient_name in orientations.keys():
-                            enabled_placements.append(
-                                f"{scenario_name}_{pos_name}_{orient_name}"
-                            )
-
             for freq_str in frequencies:
-                self._check_for_stop_signal()
                 freq = int(freq_str)
-                for placement_name in enabled_placements:
-                    self._check_for_stop_signal()
-                    simulation_count += 1
-                    self._log(
-                        f"\n--- Processing Simulation {simulation_count}/{total_simulations}: "
-                        f"{phantom_name}, {freq}MHz, {placement_name} ---",
-                        level="progress",
-                        log_type="header",
-                    )
-                    self._run_placement(
-                        phantom_name, freq, placement_name, do_setup, do_run, do_extract
-                    )
+                for scenario_name, scenario_details in all_scenarios.items():
+                    if placements_config.get(f"do_{scenario_name}"):
+                        positions = scenario_details.get("positions", {})
+                        orientations = scenario_details.get("orientations", {})
+                        for pos_name in positions.keys():
+                            for orient_name in orientations.keys():
+                                self._check_for_stop_signal()
+                                simulation_count += 1
+                                placement_name = (
+                                    f"{scenario_name}_{pos_name}_{orient_name}"
+                                )
+                                self._log(
+                                    f"\n--- Processing Simulation {simulation_count}/{total_simulations}: "
+                                    f"{phantom_name}, {freq}MHz, {placement_name} ---",
+                                    level="progress",
+                                    log_type="header",
+                                )
+                                self._run_placement(
+                                    phantom_name,
+                                    freq,
+                                    scenario_name,
+                                    pos_name,
+                                    orient_name,
+                                    do_setup,
+                                    do_run,
+                                    do_extract,
+                                )
 
     def _validate_auto_cleanup_config(self, do_setup, do_run, do_extract, auto_cleanup):
         """
@@ -164,11 +167,20 @@ class NearFieldStudy(BaseStudy):
             )
 
     def _run_placement(
-        self, phantom_name, freq, placement_name, do_setup, do_run, do_extract
+        self,
+        phantom_name,
+        freq,
+        scenario_name,
+        position_name,
+        orientation_name,
+        do_setup,
+        do_run,
+        do_extract,
     ):
         """
-        Runs a full placement scenario, which may include multiple positions and orientations.
+        Runs a full placement scenario for a single position and orientation.
         """
+        placement_name = f"{scenario_name}_{position_name}_{orientation_name}"
         try:
             simulation = None
 
@@ -183,7 +195,9 @@ class NearFieldStudy(BaseStudy):
                         self.config,
                         phantom_name,
                         freq,
-                        placement_name,
+                        scenario_name,
+                        position_name,
+                        orientation_name,
                         antenna,
                         self.verbose_logger,
                         self.progress_logger,
@@ -210,7 +224,7 @@ class NearFieldStudy(BaseStudy):
                         self.gui.update_stage_progress("Setup", 1, 1)
             else:
                 self.project_manager.create_or_open_project(
-                    phantom_name, freq, placement_name
+                    phantom_name, freq, scenario_name, position_name, orientation_name
                 )
 
             # ALWAYS get a fresh simulation handle from the document before run/extract
@@ -306,7 +320,9 @@ class NearFieldStudy(BaseStudy):
                         reloaded_simulation,
                         phantom_name,
                         freq,
-                        placement_name,
+                        scenario_name,
+                        position_name,
+                        orientation_name,
                         "near_field",
                         self.verbose_logger,
                         self.progress_logger,

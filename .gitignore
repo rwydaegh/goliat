@@ -32,6 +32,10 @@ Sim4Life_Introduction.pdf
 
 # Configs
 configs/*/
+!configs/base_config.json
+!configs/near_field_config.json
+!configs/far_field_config.json
+configs/profiling_config.json
 analysis/sensitivity_analysis/configs/
 
 # Generated files

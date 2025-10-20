@@ -6,9 +6,11 @@
       "only_write_input_file": false,
       "do_run": false,
       "do_extract": false,
-      "batch_run": false
+      "batch_run": false,
+      "auto_cleanup_previous_results": []
   },
   "phantoms": [
+    "thelonious",
     "eartha"
   ],
   "simulation_parameters": {
@@ -25,15 +27,15 @@
         "manual_fallback_max_step_mm": 5.0
     },
     "global_gridding_per_frequency": {
-        "450": 3.0,
-        "700": 3.0,
-        "835": 3.0,
-        "1450": 3.0,
-        "2140": 3.0,
-        "2450": 3.0,
-        "3500": 3.0,
-        "5200": 3.0,
-        "5800": 3.0
+        "450": 2.5,
+        "700": 2.5,
+        "835": 2.5,
+        "1450": 2.5,
+        "2140": 1.694,
+        "2450": 1.482,
+        "3500": 1.0,
+        "5200": 1.0,
+        "5800": 1.0
     },
     "padding": {
         "padding_mode": "manual",
@@ -72,19 +74,18 @@
     }
   },
   "placement_scenarios": {
-    "front_of_eyes": {
-      "bounding_box": "full_body",
+    "by_cheek": {
+      "bounding_box": "default",
       "positions": {
-        "center": [0, 0, 0],
-        "left": [-25, 0, 0],
-        "right": [25, 0, 0],
-        "down": [0, 0, -60]
+        "tragus": [0, 0, 0]
       },
       "orientations": {
-        "vertical": [],
-        "horizontal": [
-          {"axis": "Y", "angle_deg": 90}
-        ]
+        "base": [],
+        "up": [{"axis": "X", "angle_deg": 10}],
+        "down": [{"axis": "X", "angle_deg": -10}],
+        "tilt_base": [{"axis": "Z", "angle_deg": 15}],
+        "tilt_up": [{"axis": "Z", "angle_deg": 15}, {"axis": "X", "angle_deg": 10}],
+        "tilt_down": [{"axis": "Z", "angle_deg": 15}, {"axis": "X", "angle_deg": -10}]
       }
     }
   },
