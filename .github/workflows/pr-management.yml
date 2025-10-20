@@ -1,0 +1,18 @@
+# .github/workflows/pr-management.yml
+name: PR Management
+
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  label-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Label PR based on branch name
+        uses: actions/labeler@v5
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          configuration-path: .github/labeler.yml
