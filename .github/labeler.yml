@@ -1,0 +1,26 @@
+# .github/labeler.yml
+
+# Add 'enhancement' label to any PRs with branch names starting with 'feature/'
+enhancement:
+  - head: 'feature/.*'
+
+# Add 'bug' label to any PRs with branch names starting with 'bugfix/' or 'fix/'
+bug:
+  - head: 'bugfix/.*'
+  - head: 'fix/.*'
+
+# Add 'documentation' label to any PRs with branch names starting with 'docs/'
+documentation:
+  - head: 'docs/.*'
+
+# Add 'ci/cd' label to any PRs with branch names starting with 'ci/'
+'ci/cd':
+  - head: 'ci/.*'
+
+# Add 'refactor' label to any PRs with branch names starting with 'refactor/'
+refactor:
+  - head: 'refactor/.*'
+
+# Add 'testing' label to any PRs with branch names starting with 'test/'
+testing:
+  - head: 'test/.*'
