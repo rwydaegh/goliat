@@ -99,7 +99,7 @@ class SimulationRunner(LoggingMixin):
         self._log(f"Running simulation: {simulation.Name}", log_type="verbose")
 
         with self.study.subtask("run_simulation_total"):
-            server_name = self.config.get_server()
+            server_name = self.config.get_solver_settings().get("server")
 
             try:
                 if hasattr(simulation, "WriteInputFile"):
@@ -125,16 +125,14 @@ class SimulationRunner(LoggingMixin):
 
                 if self.config.get_manual_isolve():
                     self._run_isolve_manual(simulation)
-                elif server_name and server_name != "localhost":
+                elif server_name and "osparc" in server_name.lower():
                     self._run_osparc_direct(simulation, server_name)
                 else:
-                    # Fallback to localhost if no server or localhost is specified
-                    simulation.RunSimulation(wait=True, server_id=None)
-                    self._log(
-                        "Simulation finished on localhost.",
-                        level="progress",
-                        log_type="success",
-                    )
+                    server_id = self._get_server_id(server_name)
+                    simulation.RunSimulation(wait=True, server_id=server_id)
+                    log_msg = f"Simulation finished on '{server_name or 'localhost'}'."
+                    self._log(log_msg, level="progress", log_type="success")
+
 
             except Exception as e:
                 self._log(
@@ -143,7 +141,8 @@ class SimulationRunner(LoggingMixin):
                     log_type="error",
                 )
                 # Check if a cloud server was intended for the run
-                if self.config.get_server() and self.config.get_server() != "localhost":
+                server_name = self.config.get_solver_settings().get("server")
+                if server_name and server_name != "localhost":
                     self._log(
                         "If you are running on the cloud, please ensure you are logged into Sim4Life "
                         "via the GUI and your API credentials are correct.",
@@ -153,6 +152,31 @@ class SimulationRunner(LoggingMixin):
                 traceback.print_exc()
 
         return simulation
+
+    def _get_server_id(self, server_name):
+        """
+        Finds the full server identifier from a partial server name.
+        """
+        if not server_name or server_name.lower() == "localhost":
+            return None
+
+        self._log(f"Searching for server: '{server_name}'", log_type="verbose")
+        import s4l_v1.simulation
+        available_servers = s4l_v1.simulation.GetAvailableServers()
+
+        if not available_servers:
+            self._log("No remote servers seem to be available.", level="progress", log_type="warning")
+            return None
+
+        self._log(f"Available servers: {available_servers}", log_type="verbose")
+
+        for server in available_servers:
+            if server_name.lower() in server.lower():
+                self._log(f"Found matching server: '{server}'", level="progress", log_type="info")
+                return server
+
+        self._log(f"Server '{server_name}' not found in available servers.", level="progress", log_type="error")
+        raise RuntimeError(f"Server '{server_name}' not found.")
 
     def _run_isolve_manual(self, simulation):
         """
@@ -287,7 +311,7 @@ class SimulationRunner(LoggingMixin):
 
     def _run_osparc_direct(self, simulation, server_name):
         """
-        Submits a job directly to the oSPARC platform, bypassing server discovery.
+        Submits a job directly to the oSPARC platform.
         """
         try:
             import XOsparcApiClient  # Only available in Sim4Life v8.2.2 and later.
@@ -309,7 +333,7 @@ class SimulationRunner(LoggingMixin):
             )
 
         self._log(
-            "--- Running simulation directly on oSPARC ---",
+            f"--- Running simulation on oSPARC server: {server_name} ---",
             level="progress",
             log_type="header",
         )

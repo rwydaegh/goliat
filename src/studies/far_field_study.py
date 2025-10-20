@@ -403,22 +403,22 @@ class FarFieldStudy(BaseStudy):
         for sim, direction_name, polarization_name in simulations_to_extract:
             self._check_for_stop_signal()
             try:
-                placement_name = f"environmental_{direction_name}_{polarization_name}"
-
                 self._log(
                     f"    - Extracting from simulation: {sim.Name}",
                     level="progress",
                     log_type="progress",
                 )
                 extractor = ResultsExtractor(
-                    self.config,
-                    sim,
-                    phantom_name,
-                    freq,
-                    placement_name,
-                    "far_field",
-                    self.verbose_logger,
-                    self.progress_logger,
+                    config=self.config,
+                    simulation=sim,
+                    phantom_name=phantom_name,
+                    frequency_mhz=freq,
+                    scenario_name="environmental",
+                    position_name=polarization_name,
+                    orientation_name=direction_name,
+                    study_type="far_field",
+                    verbose_logger=self.verbose_logger,
+                    progress_logger=self.progress_logger,
                     gui=self.gui,
                     study=self,
                 )
