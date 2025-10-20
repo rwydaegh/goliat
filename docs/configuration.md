@@ -248,6 +248,7 @@ Define positions/orientations:
   }
 }
 ```
+| `placement_scenarios.{name}.bounding_box` | string | `"default"`, `"head"`, `"trunk"`, `"full_body"` | Determines which part of the phantom to include in the simulation bounding box. "default" uses head for eyes/cheek and trunk for belly. |
 
 ### Phantom-Specific Settings
 
