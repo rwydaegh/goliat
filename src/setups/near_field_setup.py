@@ -269,19 +269,35 @@ class NearFieldSetup(BaseSetup):
             placement_scenario_config = self.config.get_placement_scenario(
                 self.base_placement_name
             )
-            bounding_box_setting = placement_scenario_config.get("bounding_box", "default")
+            bounding_box_setting = placement_scenario_config.get(
+                "bounding_box", "default"
+            )
 
-            self._log(f"  - Bounding box setting: '{bounding_box_setting}'", log_type="info")
+            self._log(
+                f"  - Bounding box setting: '{bounding_box_setting}'", log_type="info"
+            )
 
             # Warn user for unusual combinations
-            if self.base_placement_name in ["front_of_eyes", "by_cheek"] and bounding_box_setting == "trunk":
+            if (
+                self.base_placement_name in ["front_of_eyes", "by_cheek"]
+                and bounding_box_setting == "trunk"
+            ):
                 self._log(
-                    f"WARNING: Using a 'trunk' bounding box for the '{self.base_placement_name}' placement is unusual and may lead to unexpected results.",
+                    (
+                        f"WARNING: Using a 'trunk' bounding box for the '{self.base_placement_name}' "
+                        "placement is unusual and may lead to unexpected results."
+                    ),
                     log_type="warning",
                 )
-            if self.base_placement_name == "by_belly" and bounding_box_setting == "head":
+            if (
+                self.base_placement_name == "by_belly"
+                and bounding_box_setting == "head"
+            ):
                 self._log(
-                    f"WARNING: Using a 'head' bounding box for the '{self.base_placement_name}' placement is unusual and may lead to unexpected results.",
+                    (
+                        f"WARNING: Using a 'head' bounding box for the '{self.base_placement_name}' "
+                        "placement is unusual and may lead to unexpected results."
+                    ),
                     log_type="warning",
                 )
 
@@ -301,11 +317,15 @@ class NearFieldSetup(BaseSetup):
                     "head": "Head_BBox",
                     "trunk": "Trunk_BBox",
                 }
-                
+
                 key = bounding_box_setting
                 if key == "default":
-                    key = "default_head" if self.base_placement_name in ["front_of_eyes", "by_cheek"] else "default_other"
-                
+                    key = (
+                        "default_head"
+                        if self.base_placement_name in ["front_of_eyes", "by_cheek"]
+                        else "default_other"
+                    )
+
                 if key in bbox_map:
                     bbox_name = f"{self.phantom_name.lower()}_{bbox_map[key]}"
                     entities_to_bound.append(self.model.AllEntities()[bbox_name])
