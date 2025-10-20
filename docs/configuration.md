@@ -32,6 +32,7 @@ Core settings shared across studies.
 |-----------|------|---------|-------------|
 | `extends` | string | `"base_config.json"` | Parent config to inherit from. |
 | `study_type` | string | `"near_field"` | Type: `"near_field"` or `"far_field"`. |
+| `use_gui` | boolean | `true` | If `true`, launches the GUI. If `false`, runs in headless mode. |
 | `phantoms` | array | `["thelonious", "eartha"]` | List of phantom models. For near-field, can include `"freespace"` for antenna-only runs. |
 | `execution_control` | object | See below | Controls workflow stages. |
 
