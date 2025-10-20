@@ -7,7 +7,7 @@ import os
 class Cleaner:
     """
     Handles cleanup of simulation files to save disk space.
-    
+
     This class provides functionality to delete previous simulation files
     based on configuration settings.
     """
@@ -61,7 +61,7 @@ class Cleaner:
     def _delete_files(self, cleanup_types, file_patterns):
         """Delete files based on cleanup types."""
         total_deleted = 0
-        
+
         for cleanup_type in cleanup_types:
             if cleanup_type not in file_patterns:
                 continue
@@ -76,7 +76,7 @@ class Cleaner:
                     level="progress",
                     log_type="info",
                 )
-                
+
                 for file_path in files_to_delete:
                     if self._delete_single_file(file_path):
                         total_deleted += 1

@@ -9,7 +9,7 @@ import numpy as np
 class SensorExtractor:
     """
     Handles extraction of point sensor E-field data.
-    
+
     This class extracts time-domain E-field measurements from point sensors,
     generates plots, and stores the raw data.
     """
@@ -36,7 +36,7 @@ class SensorExtractor:
             simulation_extractor: The results extractor from the simulation object.
         """
         self.parent._log("  - Extracting point sensor data...", log_type="progress")
-        
+
         with self.parent.study.subtask("extract_point_sensor_data"):
             try:
                 num_sensors = self.parent.config.get_setting(

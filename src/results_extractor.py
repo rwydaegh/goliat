@@ -1,13 +1,13 @@
 import json
 import os
 
-from .logging_manager import LoggingMixin
-from .extraction.power_extractor import PowerExtractor
-from .extraction.sar_extractor import SarExtractor
-from .extraction.sensor_extractor import SensorExtractor
-from .extraction.reporter import Reporter
 from .extraction.cleaner import Cleaner
 from .extraction.json_encoder import NumpyArrayEncoder
+from .extraction.power_extractor import PowerExtractor
+from .extraction.reporter import Reporter
+from .extraction.sar_extractor import SarExtractor
+from .extraction.sensor_extractor import SensorExtractor
+from .logging_manager import LoggingMixin
 
 
 class ResultsExtractor(LoggingMixin):
@@ -58,6 +58,7 @@ class ResultsExtractor(LoggingMixin):
         self.phantom_name = phantom_name
         self.frequency_mhz = frequency_mhz
         self.placement_name = f"{scenario_name}_{position_name}_{orientation_name}"
+        self.orientation_name = orientation_name
         self.study_type = study_type
         self.verbose_logger = verbose_logger
         self.progress_logger = progress_logger
@@ -95,7 +96,7 @@ class ResultsExtractor(LoggingMixin):
         # Extract power data
         if self.gui:
             self.gui.update_stage_progress("Extracting Power", 50, 100)
-        
+
         power_extractor = PowerExtractor(self, results_data)
         power_extractor.extract_input_power(simulation_extractor)
 
@@ -103,7 +104,7 @@ class ResultsExtractor(LoggingMixin):
         if not self.free_space:
             if self.gui:
                 self.gui.update_stage_progress("Extracting SAR", 100, 100)
-            
+
             sar_extractor = SarExtractor(self, results_data)
             sar_extractor.extract_sar_statistics(simulation_extractor)
             power_extractor.extract_power_balance(simulation_extractor)
@@ -120,7 +121,7 @@ class ResultsExtractor(LoggingMixin):
         ):
             if self.gui:
                 self.gui.update_stage_progress("Extracting Point Sensors", 75, 100)
-            
+
             sensor_extractor = SensorExtractor(self, results_data)
             sensor_extractor.extract_point_sensor_data(simulation_extractor)
 
@@ -161,5 +162,5 @@ class ResultsExtractor(LoggingMixin):
 
         with open(results_filepath, "w") as f:
             json.dump(final_results_data, f, indent=4, cls=NumpyArrayEncoder)
-        
+
         self._log(f"  - SAR results saved to: {results_filepath}", log_type="info")

@@ -1,5 +1,6 @@
-import numpy as np
 import traceback
+
+import numpy as np
 
 from ..logging_manager import LoggingMixin
 
@@ -26,6 +27,7 @@ class PowerExtractor(LoggingMixin):
         self.results_data = results_data
 
         import s4l_v1.document
+
         self.document = s4l_v1.document
 
     def extract_input_power(self, simulation_extractor):
@@ -67,8 +69,7 @@ class PowerExtractor(LoggingMixin):
                 (
                     e
                     for e in s4l_v1.model.AllEntities()
-                    if hasattr(e, "Name")
-                    and e.Name == "far_field_simulation_bbox"
+                    if hasattr(e, "Name") and e.Name == "far_field_simulation_bbox"
                 ),
                 None,
             )
@@ -83,7 +84,8 @@ class PowerExtractor(LoggingMixin):
                 log_type="warning",
             )
             return
-        sim_min, sim_max = np.array(sim_bbox), np.array(sim_bbox)
+        # sim_bbox is a list of two points: [min_corner, max_corner]
+        sim_min, sim_max = np.array(sim_bbox[0]), np.array(sim_bbox[1])
         padding_bottom = np.array(
             self.config.get_setting(
                 "gridding_parameters.padding.manual_bottom_padding_mm", [0, 0, 0]
@@ -94,22 +96,25 @@ class PowerExtractor(LoggingMixin):
                 "gridding_parameters.padding.manual_top_padding_mm", [0, 0, 0]
             )
         )
-        total_min, total_max = (
-            sim_min - padding_bottom,
-            sim_max + padding_top,
-        )
+        total_min = sim_min - padding_bottom
+        total_max = sim_max + padding_top
 
         e_field_v_m, z0 = 1.0, 377.0
         power_density_w_m2 = (e_field_v_m**2) / (2 * z0)
 
-        direction = self.placement_name.split("_")
-        dims = total_max - total_min
-        if direction == "x":
-            area_m2 = (dims * dims) / 1e6
-        elif direction == "y":
-            area_m2 = (dims * dims) / 1e6
-        else:
-            area_m2 = (dims * dims) / 1e6
+        # e.g., 'environmental_x_pos_theta' -> 'x'
+        direction = self.parent.orientation_name
+        dims = total_max - total_min  # This is a 3-element array [dx, dy, dz]
+
+        if "x" in direction:
+            # Area of the YZ plane
+            area_m2 = (dims[1] * dims[2]) / 1e6
+        elif "y" in direction:
+            # Area of the XZ plane
+            area_m2 = (dims[0] * dims[2]) / 1e6
+        else:  # Default to z-direction
+            # Area of the XY plane
+            area_m2 = (dims[0] * dims[1]) / 1e6
 
         total_input_power = power_density_w_m2 * area_m2
         self.results_data.update(
@@ -141,9 +146,7 @@ class PowerExtractor(LoggingMixin):
                 "  - GetPower() not available, falling back to manual extraction.",
                 log_type="warning",
             )
-            input_power_output = input_power_extractor.Outputs[
-                "EM Input Power(f)"
-            ]
+            input_power_output = input_power_extractor.Outputs["EM Input Power(f)"]
             input_power_output.Update()
 
             if hasattr(input_power_output, "GetHarmonicData"):
@@ -203,7 +206,10 @@ class PowerExtractor(LoggingMixin):
                 if key != "Balance"
             }
 
-            if self.parent.study_type == "far_field" and "input_power_W" in self.results_data:
+            if (
+                self.parent.study_type == "far_field"
+                and "input_power_W" in self.results_data
+            ):
                 power_balance_data["Pin"] = self.results_data["input_power_W"]
                 self._log(
                     f"    - Overwriting Pin with theoretical value: {float(power_balance_data['Pin']):.4e} W",

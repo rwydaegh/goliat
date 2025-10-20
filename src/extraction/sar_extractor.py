@@ -1,5 +1,6 @@
 import re
 import traceback
+
 import pandas as pd
 
 from ..logging_manager import LoggingMixin
@@ -28,6 +29,7 @@ class SarExtractor(LoggingMixin):
         import s4l_v1.analysis
         import s4l_v1.document
         import s4l_v1.units as units
+
         self.analysis = s4l_v1.analysis
         self.document = s4l_v1.document
         self.units = units
@@ -102,7 +104,9 @@ class SarExtractor(LoggingMixin):
                 group_sar_stats = self._calculate_group_sar(df, tissue_groups)
 
                 for group, data in group_sar_stats.items():
-                    self.results_data[f"{group}_weighted_avg_sar"] = data["weighted_avg_sar"]
+                    self.results_data[f"{group}_weighted_avg_sar"] = data[
+                        "weighted_avg_sar"
+                    ]
                     self.results_data[f"{group}_peak_sar"] = data["peak_sar"]
 
                 all_regions_row = df[df["Tissue"] == "All Regions"]
