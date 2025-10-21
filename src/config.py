@@ -141,7 +141,7 @@ class Config:
         """Gets the 'gridding_parameters' dictionary."""
         return self.config.get("gridding_parameters", {})
 
-    def get_phantom_config(self, phantom_name: str) -> dict:
+    def get_phantom_definition(self, phantom_name: str) -> dict:
         """Gets the configuration for a specific phantom.
 
         Args:
@@ -151,20 +151,6 @@ class Config:
             The configuration for the specified phantom.
         """
         return self.config.get("phantom_definitions", {}).get(phantom_name)
-
-    def get_phantom_placements(self, phantom_name: str) -> dict:
-        """Gets the placement configuration for a specific phantom.
-
-        Args:
-            phantom_name: The name of the phantom.
-
-        Returns:
-            A dictionary of enabled placements for the phantom.
-        """
-        phantom_config = self.get_phantom_config(phantom_name)
-        if phantom_config:
-            return phantom_config.get("placements", {})
-        return {}
 
     def get_material_mapping(self, phantom_name: str) -> dict:
         """Gets the material name mapping for a specific phantom.

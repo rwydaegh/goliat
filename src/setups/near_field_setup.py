@@ -184,7 +184,7 @@ class NearFieldSetup(BaseSetup):
         self._log("Setting up bounding boxes...", log_type="progress")
         all_entities = self.model.AllEntities()
 
-        phantom_config = self.config.get_phantom_config(self.phantom_name.lower())
+        phantom_config = self.config.get_phantom_definition(self.phantom_name.lower())
         if not phantom_config:
             raise ValueError(
                 f"Configuration for '{self.phantom_name.lower()}' not found."
