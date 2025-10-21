@@ -52,7 +52,8 @@ class NearFieldStudy(BaseStudy):
         # Calculate total number of simulations for the profiler
         total_simulations = 0
         for phantom_name in phantoms:
-            placements_config = self.config.get_phantom_placements(phantom_name)
+            phantom_definition = self.config.get_phantom_definition(phantom_name)
+            placements_config = phantom_definition.get("placements", {})
             if not placements_config:
                 continue
             for scenario_name, scenario_details in all_scenarios.items():
@@ -69,7 +70,8 @@ class NearFieldStudy(BaseStudy):
 
         simulation_count = 0
         for phantom_name in phantoms:
-            placements_config = self.config.get_phantom_placements(phantom_name)
+            phantom_definition = self.config.get_phantom_definition(phantom_name)
+            placements_config = phantom_definition.get("placements", {})
             if not placements_config:
                 continue
 

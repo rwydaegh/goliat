@@ -194,7 +194,8 @@ def _find_near_field_input_files(
 
     # Get placement scenarios from config
     all_scenarios = config.get_setting("placement_scenarios", {})
-    placements_config = config.get_phantom_placements(phantom)
+    phantom_definition = config.get_phantom_definition(phantom)
+    placements_config = phantom_definition.get("placements", {})
 
     if not placements_config:
         main_logger.warning(

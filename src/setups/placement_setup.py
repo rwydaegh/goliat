@@ -47,10 +47,10 @@ class PlacementSetup(BaseSetup):
             log_type="header",
         )
 
-        placements_config = self.config.get_phantom_placements(
+        phantom_definition = self.config.get_phantom_definition(
             self.phantom_name.lower()
         )
-        if not self.free_space and not placements_config.get(
+        if not self.free_space and not phantom_definition.get("placements", {}).get(
             f"do_{self.base_placement_name}"
         ):
             self._log(
@@ -157,12 +157,15 @@ class PlacementSetup(BaseSetup):
             position_offset = [0, 0, 0]
         else:
             position_offset = scenario["positions"].get(self.position_name, [0, 0, 0])
-        orientation_rotations = scenario["orientations"].get(self.orientation_name, [])
+        orientation_rotations = (
+            scenario["orientations"].get(self.orientation_name, []).copy()
+        )
 
         all_entities = self.model.AllEntities()
-        placements_config = self.config.get_phantom_placements(
+        phantom_definition = self.config.get_phantom_definition(
             self.phantom_name.lower()
         )
+        placements_config = phantom_definition.get("placements", {})
         base_target_point = self.model.Vec3(0, 0, 0)
 
         if self.base_placement_name == "front_of_eyes":
@@ -189,18 +192,16 @@ class PlacementSetup(BaseSetup):
                 ),
                 None,
             )
-            mouth_entity = next(
-                (e for e in all_entities if hasattr(e, "Name") and e.Name == "Tongue"),
-                None,
-            )
-            if not ear_skin or not mouth_entity:
+
+            lips_point = phantom_definition.get("lips")
+
+            if not ear_skin or not lips_point:
                 raise ValueError(
-                    "Could not find 'Ear_skin' or 'Tongue' entities for 'Cheek' placement."
+                    "Could not find 'Ear_skin' entity or 'lips' definition for 'Cheek' placement."
                 )
 
             # Get center points
             ear_bbox_min, ear_bbox_max = self.model.GetBoundingBox([ear_skin])
-            mouth_bbox_min, mouth_bbox_max = self.model.GetBoundingBox([mouth_entity])
 
             ear_center = self.XCoreMath.Vec3(
                 (ear_bbox_min[0] + ear_bbox_max[0]) / 2.0,
@@ -208,9 +209,7 @@ class PlacementSetup(BaseSetup):
                 (ear_bbox_min[2] + ear_bbox_max[2]) / 2.0,
             )
             mouth_center = self.XCoreMath.Vec3(
-                (mouth_bbox_min[0] + mouth_bbox_max[0]) / 2.0,
-                (mouth_bbox_min[1] + mouth_bbox_max[1]) / 2.0,
-                (mouth_bbox_min[2] + mouth_bbox_max[2]) / 2.0,
+                lips_point[0], lips_point[1], lips_point[2]
             )
 
             # Calculate angle for base alignment
