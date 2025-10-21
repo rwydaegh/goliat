@@ -24,8 +24,9 @@ except NameError:
     def profile(func):
         return func
 
-    class BaseSetup(LoggingMixin):
-        """Abstract base class for all simulation setups."""
+
+class BaseSetup(LoggingMixin):
+    """Abstract base class for all simulation setups."""
 
     def __init__(
         self, config: "Config", verbose_logger: "Logger", progress_logger: "Logger"
