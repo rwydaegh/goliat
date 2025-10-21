@@ -1,9 +1,19 @@
 import os
 import pickle
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 from src.logging_manager import LoggingMixin
+
+if TYPE_CHECKING:
+    from logging import Logger
+
+    import s4l_v1.model as model
+    import s4l_v1.simulation.emfdtd as emfdtd
+
+    from ..config import Config
+    from ..project_manager import ProjectManager
 
 # Define a dummy 'profile' decorator if the script is not run with kernprof
 try:
@@ -14,20 +24,18 @@ except NameError:
     def profile(func):
         return func
 
+    class BaseSetup(LoggingMixin):
+        """Abstract base class for all simulation setups."""
 
-class BaseSetup(LoggingMixin):
-    """
-    Abstract base class for all simulation setups (Near-Field, Far-Field).
-    """
-
-    def __init__(self, config, verbose_logger, progress_logger):
-        """
-        Initializes the base setup.
+    def __init__(
+        self, config: "Config", verbose_logger: "Logger", progress_logger: "Logger"
+    ):
+        """Initializes the base setup.
 
         Args:
-            config (Config): The configuration object for the study.
-            verbose_logger (logging.Logger): Logger for verbose output.
-            progress_logger (logging.Logger): Logger for progress updates.
+            config: The configuration object for the study.
+            verbose_logger: Logger for verbose output.
+            progress_logger: Logger for progress updates.
         """
         self.config = config
         self.verbose_logger = verbose_logger
@@ -39,12 +47,12 @@ class BaseSetup(LoggingMixin):
         self.model = self.s4l_v1.model
 
     def _apply_simulation_time_and_termination(
-        self, simulation, sim_bbox_entity, frequency_mhz
+        self,
+        simulation: "emfdtd.Simulation",
+        sim_bbox_entity: "model.Entity",
+        frequency_mhz: int,
     ):
-        """
-        Calculates and applies simulation time and termination settings.
-        This is a shared method for both Near-Field and Far-Field setups.
-        """
+        """Calculates and applies simulation time and termination settings."""
         sim_params = self.config.get_simulation_parameters()
 
         # Time Calculation
@@ -96,7 +104,7 @@ class BaseSetup(LoggingMixin):
                 f"    - Convergence level set to: {convergence_db} dB", log_type="info"
             )
 
-    def _setup_solver_settings(self, simulation):
+    def _setup_solver_settings(self, simulation: "emfdtd.Simulation"):
         """Configures solver settings, including kernel."""
         self._log("  - Configuring solver settings...", log_type="progress")
         solver_settings = self.config.get_solver_settings()
@@ -120,12 +128,11 @@ class BaseSetup(LoggingMixin):
             solver.Kernel = solver.Kernel.enum.Software
             self._log("    - Solver kernel set to: Software", log_type="info")
 
-    def run_full_setup(self, project_manager):
-        """
-        This method must be implemented by subclasses to prepare the simulation scene.
+    def run_full_setup(self, project_manager: "ProjectManager"):
+        """Prepares the simulation scene. Must be implemented by subclasses.
 
         Args:
-            project_manager (ProjectManager): The project manager to handle file operations.
+            project_manager: The project manager for file operations.
 
         Returns:
             The main simulation object.
@@ -134,7 +141,9 @@ class BaseSetup(LoggingMixin):
             "The 'run_full_setup' method must be implemented by a subclass."
         )
 
-    def _add_point_sensors(self, simulation, sim_bbox_entity_name):
+    def _add_point_sensors(
+        self, simulation: "emfdtd.Simulation", sim_bbox_entity_name: str
+    ):
         """Adds point sensors at the corners of the simulation bounding box."""
         num_points = self.config.get_setting(
             "simulation_parameters.number_of_point_sensors", 0
@@ -218,12 +227,13 @@ class BaseSetup(LoggingMixin):
 
     @profile
     def _finalize_setup(
-        self, project_manager, simulation, all_simulation_parts, frequency_mhz
+        self,
+        project_manager: "ProjectManager",
+        simulation: "emfdtd.Simulation",
+        all_simulation_parts: list,
+        frequency_mhz: int,
     ):
-        """
-        Performs the final voxelization and grid update for a simulation.
-        This is a shared method for both Near-Field and Far-Field setups.
-        """
+        """Performs the final voxelization and grid update for a simulation."""
         self._log("    - Finalizing setup...", log_type="progress")
 
         voxeler_settings = self.emfdtd.AutomaticVoxelerSettings()

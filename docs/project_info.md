@@ -11,11 +11,11 @@ The primary objectives of the project include:
 -   **Comprehensive SAR Analysis**: Calculating Specific Absorption Rate (SAR) metrics, including whole-body, head, trunk, and peak spatial-average SAR (psSAR10g) in sensitive tissues like the skin, eyes, and brain.
 -   **Varied Exposure Scenarios**: Investigating numerous exposure conditions, including different frequencies, antenna types, and device positions (e.g., by the cheek, in front of the eyes, near the belly).
 
-## Funding and Acknowledgements
+## Funding and acknowledgements
 
 This work is part of the GOLIAT project, which has received funding from the **European Union's Horizon Health program** under the call HORIZON-HEALTH-2021-ENVHLTH-02-01 – Exposure to electromagnetic fields (EMF) and health.
 
-## Project Partners
+## Project partners
 
 The GOLIAT consortium consists of 22 partners from across Europe and the United States:
 

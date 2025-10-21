@@ -78,15 +78,16 @@ nav:
     - Basic: tutorials/basic.md
     - Intermediate: tutorials/intermediate.md
     - Advanced: tutorials/advanced.md
-  - Configuration: configuration.md
-  - API Reference: api.md
   - Developer Guide: developer_guide.md
-  - Architecture: architecture_overview.md
+  - Reference:
+    - Technical Guide: technical_guide.md
+    - Advanced Features: advanced_features.md
+    - Configuration: configuration.md
+    - API Reference: api_reference.md
   - Troubleshooting: troubleshooting.md
   - Internals:
     - Project Info: project_info.md
     - Coloring Rules: COLORING_RULES.md
-    - GUI Profiling Logger: old_good_GUI-Profiling-Logger.md
     - UML: uml.md
 
 plugins:

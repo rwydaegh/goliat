@@ -2,36 +2,43 @@
 
 import os
 import pickle
+from typing import TYPE_CHECKING
 
 import pandas as pd
 
+if TYPE_CHECKING:
+    from ..results_extractor import ResultsExtractor
+
 
 class Reporter:
-    """
-    Handles generation and saving of detailed reports.
+    """Handles generation and saving of detailed reports.
 
-    This class saves SAR statistics and other results in multiple formats
-    (Pickle, HTML) for comprehensive analysis.
+    Saves SAR statistics and other results in multiple formats (Pickle, HTML)
+    for comprehensive analysis.
     """
 
-    def __init__(self, parent):
-        """
-        Initializes the Reporter.
+    def __init__(self, parent: "ResultsExtractor"):
+        """Initializes the Reporter.
 
         Args:
-            parent (ResultsExtractor): The parent ResultsExtractor instance.
+            parent: The parent ResultsExtractor instance.
         """
         self.parent = parent
 
-    def save_reports(self, df, tissue_groups, group_sar_stats, results_data):
-        """
-        Saves detailed reports in Pickle and HTML formats.
+    def save_reports(
+        self,
+        df: pd.DataFrame,
+        tissue_groups: dict,
+        group_sar_stats: dict,
+        results_data: dict,
+    ):
+        """Saves detailed reports in Pickle and HTML formats.
 
         Args:
-            df (pd.DataFrame): DataFrame with detailed SAR statistics.
-            tissue_groups (dict): Dictionary defining tissue groups.
-            group_sar_stats (dict): Dictionary with grouped SAR statistics.
-            results_data (dict): Dictionary with summary results.
+            df: DataFrame with detailed SAR statistics.
+            tissue_groups: Dictionary defining tissue groups.
+            group_sar_stats: Dictionary with grouped SAR statistics.
+            results_data: Dictionary with summary results.
         """
         results_dir = self._get_results_dir()
         os.makedirs(results_dir, exist_ok=True)
@@ -43,8 +50,8 @@ class Reporter:
             results_dir, df, tissue_groups, group_sar_stats, results_data
         )
 
-    def _get_results_dir(self):
-        """Get the results directory path."""
+    def _get_results_dir(self) -> str:
+        """Gets the results directory path."""
         return os.path.join(
             self.parent.config.base_dir,
             "results",
@@ -55,9 +62,14 @@ class Reporter:
         )
 
     def _save_pickle_report(
-        self, results_dir, df, tissue_groups, group_sar_stats, results_data
+        self,
+        results_dir: str,
+        df: pd.DataFrame,
+        tissue_groups: dict,
+        group_sar_stats: dict,
+        results_data: dict,
     ):
-        """Save comprehensive data in pickle format."""
+        """Saves comprehensive data in pickle format."""
         pickle_data = {
             "detailed_sar_stats": df,
             "tissue_group_composition": tissue_groups,
@@ -76,9 +88,14 @@ class Reporter:
         )
 
     def _save_html_report(
-        self, results_dir, df, tissue_groups, group_sar_stats, results_data
+        self,
+        results_dir: str,
+        df: pd.DataFrame,
+        tissue_groups: dict,
+        group_sar_stats: dict,
+        results_data: dict,
     ):
-        """Save human-readable HTML report."""
+        """Saves a human-readable HTML report."""
         html_content = self._build_html_content(
             df, tissue_groups, group_sar_stats, results_data
         )
@@ -89,8 +106,14 @@ class Reporter:
 
         self.parent._log(f"  - HTML report saved to: {html_filepath}", log_type="info")
 
-    def _build_html_content(self, df, tissue_groups, group_sar_stats, results_data):
-        """Build the HTML report content."""
+    def _build_html_content(
+        self,
+        df: pd.DataFrame,
+        tissue_groups: dict,
+        group_sar_stats: dict,
+        results_data: dict,
+    ) -> str:
+        """Builds the HTML report content."""
         html_content = df.to_html(index=False, border=1)
 
         html_content += "<h2>Tissue Group Composition</h2>"

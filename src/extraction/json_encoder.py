@@ -1,10 +1,14 @@
 import json
+from typing import Any
 
 import numpy as np
 
 
 class NumpyArrayEncoder(json.JSONEncoder):
-    def default(self, obj):
+    """A JSON encoder for NumPy data types."""
+
+    def default(self, obj: Any) -> Any:
+        """Converts NumPy types to standard Python types for JSON serialization."""
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         if isinstance(obj, np.integer):

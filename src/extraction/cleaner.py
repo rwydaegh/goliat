@@ -2,30 +2,27 @@
 
 import glob
 import os
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..results_extractor import ResultsExtractor
 
 
 class Cleaner:
-    """
-    Handles cleanup of simulation files to save disk space.
+    """Handles cleanup of simulation files to save disk space."""
 
-    This class provides functionality to delete previous simulation files
-    based on configuration settings.
-    """
-
-    def __init__(self, parent):
-        """
-        Initializes the Cleaner.
+    def __init__(self, parent: "ResultsExtractor"):
+        """Initializes the Cleaner.
 
         Args:
-            parent (ResultsExtractor): The parent ResultsExtractor instance.
+            parent: The parent ResultsExtractor instance.
         """
         self.parent = parent
 
     def cleanup_simulation_files(self):
-        """
-        Deletes simulation files for the current simulation based on the
-        'auto_cleanup_previous_results' configuration. This is called after
-        successful extraction to save disk space.
+        """Deletes simulation files based on the 'auto_cleanup_previous_results' config.
+
+        This is called after successful extraction to save disk space.
         """
         cleanup_types = self.parent.config.get_auto_cleanup_previous_results()
         if not cleanup_types:
@@ -58,8 +55,8 @@ class Cleaner:
                 log_type="success",
             )
 
-    def _delete_files(self, cleanup_types, file_patterns):
-        """Delete files based on cleanup types."""
+    def _delete_files(self, cleanup_types: list, file_patterns: dict) -> int:
+        """Deletes files based on cleanup types."""
         total_deleted = 0
 
         for cleanup_type in cleanup_types:
@@ -83,8 +80,8 @@ class Cleaner:
 
         return total_deleted
 
-    def _delete_single_file(self, file_path):
-        """Delete a single file and log the result."""
+    def _delete_single_file(self, file_path: str) -> bool:
+        """Deletes a single file and logs the result."""
         try:
             os.remove(file_path)
             self.parent._log(

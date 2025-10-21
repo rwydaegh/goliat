@@ -1,23 +1,30 @@
 import os
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 from .base_setup import BaseSetup
 
+if TYPE_CHECKING:
+    from logging import Logger
+
+    from ..antenna import Antenna
+    from ..config import Config
+
 
 class PlacementSetup(BaseSetup):
     def __init__(
         self,
-        config,
-        phantom_name,
-        frequency_mhz,
-        scenario_name,
-        position_name,
-        orientation_name,
-        antenna,
-        verbose_logger,
-        progress_logger,
-        free_space=False,
+        config: "Config",
+        phantom_name: str,
+        frequency_mhz: int,
+        scenario_name: str,
+        position_name: str,
+        orientation_name: str,
+        antenna: "Antenna",
+        verbose_logger: "Logger",
+        progress_logger: "Logger",
+        free_space: bool = False,
     ):
         super().__init__(config, verbose_logger, progress_logger)
         self.phantom_name = phantom_name
@@ -34,10 +41,7 @@ class PlacementSetup(BaseSetup):
         self.XCoreMath = XCoreMath
 
     def place_antenna(self):
-        """
-        Places and orients the antenna by composing a single transformation matrix
-        and applying it once.
-        """
+        """Places and orients the antenna using a single composed transformation."""
         self._log(
             f"--- Starting Placement: {self.base_placement_name} - {self.position_name} - {self.orientation_name} ---",
             log_type="header",
@@ -138,10 +142,8 @@ class PlacementSetup(BaseSetup):
 
         self._log("--- Transformation Sequence Complete ---", log_type="success")
 
-    def _get_placement_details(self):
-        """
-        Calculates the base target point, position offset, and orientation rotations.
-        """
+    def _get_placement_details(self) -> tuple:
+        """Calculates the target point, offset, and orientation rotations."""
         if self.free_space:
             return self.model.Vec3(0, 0, 0), [], [0, 0, 0]
 

@@ -1,10 +1,17 @@
 import os
+from typing import TYPE_CHECKING
 
 import h5py
 import s4l_v1.model as s4l_model
 
 from .logging_manager import LoggingMixin
 from .utils import open_project
+
+if TYPE_CHECKING:
+    from logging import Logger
+
+    from .config import Config
+    from .gui_manager import QueueGUI
 
 
 class ProjectCorruptionError(Exception):
@@ -14,22 +21,26 @@ class ProjectCorruptionError(Exception):
 
 
 class ProjectManager(LoggingMixin):
-    """
-    Manages the lifecycle of Sim4Life (.smash) project files.
+    """Manages the lifecycle of Sim4Life (.smash) project files.
 
-    This class handles the creation, opening, saving, and validation of
-    project files, ensuring robustness against file corruption and locks.
+    Handles creation, opening, saving, and validation of project files,
+    ensuring robustness against file corruption and locks.
     """
 
-    def __init__(self, config, verbose_logger, progress_logger, gui=None):
-        """
-        Initializes the ProjectManager.
+    def __init__(
+        self,
+        config: "Config",
+        verbose_logger: "Logger",
+        progress_logger: "Logger",
+        gui: "QueueGUI" = None,
+    ):
+        """Initializes the ProjectManager.
 
         Args:
-            config (Config): The main configuration object.
-            verbose_logger (logging.Logger): Logger for detailed output.
-            progress_logger (logging.Logger): Logger for high-level progress updates.
-            gui (QueueGUI, optional): The GUI proxy for inter-process communication.
+            config: The main configuration object.
+            verbose_logger: Logger for detailed output.
+            progress_logger: Logger for high-level progress updates.
+            gui: The GUI proxy for inter-process communication.
         """
         self.config = config
         self.verbose_logger = verbose_logger
@@ -43,16 +54,15 @@ class ProjectManager(LoggingMixin):
             "execution_control", {"do_setup": True, "do_run": True, "do_extract": True}
         )
 
-    def _is_valid_smash_file(self):
-        """
-        Checks if the project file is a valid, unlocked HDF5 file.
+    def _is_valid_smash_file(self) -> bool:
+        """Checks if the project file is a valid, unlocked HDF5 file.
 
-        This method performs two checks:
-        1.  It attempts to rename the file to itself as a proxy for detecting file locks.
-        2.  It uses `h5py` to verify the file's basic HDF5 structure.
+        Performs two checks:
+        1. Attempts to rename the file to itself to detect file locks.
+        2. Uses `h5py` to verify the file's HDF5 structure.
 
         Returns:
-            bool: True if the file is valid and not locked, False otherwise.
+            True if the file is valid and not locked, False otherwise.
         """
         if not self.project_path:
             return False
@@ -92,26 +102,25 @@ class ProjectManager(LoggingMixin):
 
     def create_or_open_project(
         self,
-        phantom_name,
-        frequency_mhz,
-        scenario_name=None,
-        position_name=None,
-        orientation_name=None,
+        phantom_name: str,
+        frequency_mhz: int,
+        scenario_name: str = None,
+        position_name: str = None,
+        orientation_name: str = None,
     ):
-        """
-        Creates a new project or opens an existing one based on the 'do_setup' flag.
+        """Creates a new project or opens an existing one based on the 'do_setup' flag.
 
         Args:
-            phantom_name (str): The name of the phantom model.
-            frequency_mhz (int): The simulation frequency in MHz.
-            scenario_name (str, optional): The base name of the placement scenario.
-            position_name (str, optional): The name of the position within the scenario.
-            orientation_name (str, optional): The name of the orientation within the scenario.
+            phantom_name: The name of the phantom model.
+            frequency_mhz: The simulation frequency in MHz.
+            scenario_name: The base name of the placement scenario.
+            position_name: The name of the position within the scenario.
+            orientation_name: The name of the orientation within the scenario.
 
         Raises:
             ValueError: If required parameters are missing or `study_type` is unknown.
             FileNotFoundError: If `do_setup` is false and the project file does not exist.
-            ProjectCorruptionError: If the project file is found to be corrupted.
+            ProjectCorruptionError: If the project file is corrupted.
         """
         study_type = self.config.get_setting("study_type")
         if not study_type:
@@ -203,12 +212,10 @@ class ProjectManager(LoggingMixin):
                 raise
 
     def create_new(self):
-        """
-        Creates a new, empty project in memory.
+        """Creates a new, empty project in memory.
 
-        This method first closes any open document to release file locks, then
-        deletes the existing project file and its associated cache files.
-        Finally, it creates a new, unsaved project in memory.
+        Closes any open document, deletes the existing project file and its
+        cache, then creates a new unsaved project.
         """
         if (
             self.document
@@ -262,8 +269,7 @@ class ProjectManager(LoggingMixin):
         self._log("Model initialized, ready for population.", log_type="verbose")
 
     def open(self):
-        """
-        Opens an existing project after performing validation checks.
+        """Opens an existing project after performing validation checks.
 
         Raises:
             ProjectCorruptionError: If the project file is invalid, locked, or
@@ -300,8 +306,7 @@ class ProjectManager(LoggingMixin):
             )
 
     def save(self):
-        """
-        Saves the currently active project to its designated file path.
+        """Saves the currently active project to its designated file path.
 
         Raises:
             ValueError: If the project path has not been set.
@@ -319,7 +324,7 @@ class ProjectManager(LoggingMixin):
         self.document.Close()
 
     def cleanup(self):
-        """Performs cleanup operations, such as closing any open project."""
+        """Closes any open project."""
         if (
             self.document
             and hasattr(self.document, "IsOpen")

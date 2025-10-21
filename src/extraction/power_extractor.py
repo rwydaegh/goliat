@@ -1,20 +1,25 @@
 import traceback
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 from ..logging_manager import LoggingMixin
 
+if TYPE_CHECKING:
+    import s4l_v1.analysis as analysis
+
+    from ..results_extractor import ResultsExtractor
+
 
 class PowerExtractor(LoggingMixin):
     """Handles the extraction of input power and power balance."""
 
-    def __init__(self, parent, results_data):
-        """
-        Initializes the PowerExtractor.
+    def __init__(self, parent: "ResultsExtractor", results_data: dict):
+        """Initializes the PowerExtractor.
 
         Args:
-            parent (ResultsExtractor): The parent ResultsExtractor instance.
-            results_data (dict): The dictionary to store the extracted data.
+            parent: The parent ResultsExtractor instance.
+            results_data: The dictionary to store the extracted data.
         """
         self.parent = parent
         self.config = parent.config
@@ -30,13 +35,11 @@ class PowerExtractor(LoggingMixin):
 
         self.document = s4l_v1.document
 
-    def extract_input_power(self, simulation_extractor):
-        """
-        Extracts the input power from the simulation results.
+    def extract_input_power(self, simulation_extractor: "analysis.Extractor"):
+        """Extracts the input power from the simulation results.
 
-        For far-field studies, it calculates a theoretical input power based on
-        the plane wave source. For near-field, it extracts the power from the
-        simulation's port sensor.
+        For far-field, it calculates a theoretical input power. For near-field,
+        it extracts power from the port sensor.
 
         Args:
             simulation_extractor: The results extractor from the simulation object.
@@ -58,6 +61,7 @@ class PowerExtractor(LoggingMixin):
                 self.verbose_logger.error(traceback.format_exc())
 
     def _extract_far_field_power(self):
+        """Calculates theoretical input power for far-field simulations."""
         self._log(
             "  - Far-field study: using theoretical model for input power.",
             log_type="info",
@@ -128,7 +132,8 @@ class PowerExtractor(LoggingMixin):
             log_type="highlight",
         )
 
-    def _extract_near_field_power(self, simulation_extractor):
+    def _extract_near_field_power(self, simulation_extractor: "analysis.Extractor"):
+        """Extracts input power for near-field simulations from port sensors."""
         input_power_extractor = simulation_extractor["Input Power"]
         self.document.AllAlgorithms.Add(input_power_extractor)
         input_power_extractor.Update()
@@ -185,9 +190,8 @@ class PowerExtractor(LoggingMixin):
                         log_type="warning",
                     )
 
-    def extract_power_balance(self, simulation_extractor):
-        """
-        Extracts the power balance from the simulation to verify energy conservation.
+    def extract_power_balance(self, simulation_extractor: "analysis.Extractor"):
+        """Extracts the power balance to verify energy conservation.
 
         Args:
             simulation_extractor: The results extractor from the simulation object.

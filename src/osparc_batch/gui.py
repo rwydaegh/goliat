@@ -90,25 +90,25 @@ class BatchGUI(QWidget):
         # The worker will handle the rest, including quitting the app
 
     def hide_to_tray(self):
-        """Hide the main window and show the tray icon."""
+        """Hides the main window and shows the tray icon."""
         logger.info("Hiding window to system tray.")
         self.hide()
         self.tray_icon.show()
 
     def show_from_tray(self):
-        """Show the main window and hide the tray icon."""
+        """Shows the main window and hides the tray icon."""
         logger.info("Showing window from system tray.")
         self.show()
         self.tray_icon.hide()
 
     def tray_icon_activated(self, reason):
-        """Handle tray icon activation."""
+        """Handles tray icon activation."""
         if reason == QSystemTrayIcon.ActivationReason.Trigger:
             logger.debug("Tray icon clicked, showing window.")
             self.show_from_tray()
 
     def closeEvent(self, event):
-        """Handle the window close event."""
+        """Handles the window close event."""
         logger.info("Window close event triggered.")
         self.force_stop_run()
         event.accept()

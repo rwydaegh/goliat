@@ -1,4 +1,5 @@
 import traceback
+from typing import TYPE_CHECKING
 
 from ..antenna import Antenna
 from ..results_extractor import ResultsExtractor
@@ -7,19 +8,20 @@ from ..simulation_runner import SimulationRunner
 from ..utils import profile
 from .base_study import BaseStudy
 
+if TYPE_CHECKING:
+    from ..gui_manager import QueueGUI
+
 
 class NearFieldStudy(BaseStudy):
-    """
-    Manages and runs a full near-field simulation campaign.
-    """
+    """Manages and runs a full near-field simulation campaign."""
 
-    def __init__(self, config_filename="near_field_config.json", gui=None):
+    def __init__(
+        self, config_filename: str = "near_field_config.json", gui: "QueueGUI" = None
+    ):
         super().__init__("near_field", config_filename, gui)
 
     def _run_study(self):
-        """
-        Runs the entire simulation campaign based on the configuration.
-        """
+        """Runs the entire simulation campaign based on the configuration."""
         self._log(
             f"--- Starting Near-Field Study: {self.config.get_setting('study_name')} ---",
             level="progress",
@@ -101,15 +103,16 @@ class NearFieldStudy(BaseStudy):
                                     do_extract,
                                 )
 
-    def _validate_auto_cleanup_config(self, do_setup, do_run, do_extract, auto_cleanup):
-        """
-        Validates the auto_cleanup_previous_results configuration and warns about potential issues.
+    def _validate_auto_cleanup_config(
+        self, do_setup: bool, do_run: bool, do_extract: bool, auto_cleanup: list
+    ):
+        """Validates the auto_cleanup_previous_results configuration.
 
         Args:
-            do_setup (bool): Whether setup phase is enabled
-            do_run (bool): Whether run phase is enabled
-            do_extract (bool): Whether extract phase is enabled
-            auto_cleanup (list): List of file types to clean up
+            do_setup: Whether setup phase is enabled.
+            do_run: Whether run phase is enabled.
+            do_extract: Whether extract phase is enabled.
+            auto_cleanup: List of file types to clean up.
         """
         if not auto_cleanup:
             return
@@ -168,18 +171,16 @@ class NearFieldStudy(BaseStudy):
 
     def _run_placement(
         self,
-        phantom_name,
-        freq,
-        scenario_name,
-        position_name,
-        orientation_name,
-        do_setup,
-        do_run,
-        do_extract,
+        phantom_name: str,
+        freq: int,
+        scenario_name: str,
+        position_name: str,
+        orientation_name: str,
+        do_setup: bool,
+        do_run: bool,
+        do_extract: bool,
     ):
-        """
-        Runs a full placement scenario for a single position and orientation.
-        """
+        """Runs a full placement scenario for a single position and orientation."""
         placement_name = f"{scenario_name}_{position_name}_{orientation_name}"
         try:
             simulation = None

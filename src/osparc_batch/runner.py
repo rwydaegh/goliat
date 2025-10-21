@@ -19,7 +19,7 @@ from src.osparc_batch.worker import Worker
 main_logger = setup_console_logging()
 
 
-def main(config_path: str):
+def main(config_path: str) -> None:
     """Main entry point: sets up and starts the GUI and the main logic process."""
     from PySide6.QtWidgets import QApplication
 

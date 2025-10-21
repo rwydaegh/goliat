@@ -1,21 +1,26 @@
 import re
 import traceback
+from typing import TYPE_CHECKING
 
 import pandas as pd
 
 from ..logging_manager import LoggingMixin
 
+if TYPE_CHECKING:
+    import s4l_v1.analysis as analysis
+
+    from ..results_extractor import ResultsExtractor
+
 
 class SarExtractor(LoggingMixin):
     """Handles the extraction of SAR (Specific Absorption Rate) statistics."""
 
-    def __init__(self, parent, results_data):
-        """
-        Initializes the SarExtractor.
+    def __init__(self, parent: "ResultsExtractor", results_data: dict):
+        """Initializes the SarExtractor.
 
         Args:
-            parent (ResultsExtractor): The parent ResultsExtractor instance.
-            results_data (dict): The dictionary to store the extracted data.
+            parent: The parent ResultsExtractor instance.
+            results_data: The dictionary to store the extracted data.
         """
         self.parent = parent
         self.config = parent.config
@@ -34,12 +39,11 @@ class SarExtractor(LoggingMixin):
         self.document = s4l_v1.document
         self.units = units
 
-    def extract_sar_statistics(self, simulation_extractor):
-        """
-        Extracts detailed SAR statistics for all tissues in the simulation.
+    def extract_sar_statistics(self, simulation_extractor: "analysis.Extractor"):
+        """Extracts detailed SAR statistics for all tissues.
 
-        This involves running the `SarStatisticsEvaluator` and processing its
-        output into a pandas DataFrame.
+        Runs the `SarStatisticsEvaluator` and processes its output into a
+        pandas DataFrame.
 
         Args:
             simulation_extractor: The results extractor from the simulation object.
@@ -148,15 +152,14 @@ class SarExtractor(LoggingMixin):
                 )
                 self.verbose_logger.error(traceback.format_exc())
 
-    def _define_tissue_groups(self, available_tissues):
-        """
-        Defines tissue groups based on the material mapping file or falls back to keyword matching.
+    def _define_tissue_groups(self, available_tissues: list) -> dict:
+        """Defines tissue groups from material mapping or keyword matching.
 
         Args:
-            available_tissues (list): A list of tissue names available in the simulation.
+            available_tissues: A list of tissue names available in the simulation.
 
         Returns:
-            dict: A dictionary where keys are group names and values are lists of tissue names.
+            A dictionary where keys are group names and values are lists of tissue names.
         """
         material_mapping = self.config.get_material_mapping(self.phantom_name)
 
@@ -203,16 +206,15 @@ class SarExtractor(LoggingMixin):
             for group, keywords in groups.items()
         }
 
-    def _calculate_group_sar(self, df, tissue_groups):
-        """
-        Calculates the weighted average and peak SAR for defined tissue groups.
+    def _calculate_group_sar(self, df: pd.DataFrame, tissue_groups: dict) -> dict:
+        """Calculates the weighted average and peak SAR for defined tissue groups.
 
         Args:
-            df (pd.DataFrame): The DataFrame with detailed SAR statistics.
-            tissue_groups (dict): A dictionary defining the composition of tissue groups.
+            df: The DataFrame with detailed SAR statistics.
+            tissue_groups: A dictionary defining the composition of tissue groups.
 
         Returns:
-            dict: A dictionary with calculated SAR values for each group.
+            A dictionary with calculated SAR values for each group.
         """
         group_sar_data = {}
         peak_sar_col = "Peak Spatial-Average SAR[IEEE/IEC62704-1] (10g)"
@@ -237,10 +239,8 @@ class SarExtractor(LoggingMixin):
                 }
         return group_sar_data
 
-    def extract_peak_sar_details(self, em_sensor_extractor):
-        """
-        Extracts detailed information about the peak spatial-average SAR (psSAR),
-        including its location.
+    def extract_peak_sar_details(self, em_sensor_extractor: "analysis.Extractor"):
+        """Extracts detailed information about the peak spatial-average SAR (psSAR).
 
         Args:
             em_sensor_extractor: The 'Overall Field' results extractor.

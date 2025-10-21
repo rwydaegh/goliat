@@ -1,19 +1,28 @@
 import os
 import time
+from typing import TYPE_CHECKING
 
 from .base_setup import BaseSetup
+
+if TYPE_CHECKING:
+    from logging import Logger
+
+    import s4l_v1.simulation.emfdtd as emfdtd
+
+    from ..antenna import Antenna
+    from ..config import Config
 
 
 class MaterialSetup(BaseSetup):
     def __init__(
         self,
-        config,
-        simulation,
-        antenna,
-        phantom_name,
-        verbose_logger,
-        progress_logger,
-        free_space=False,
+        config: "Config",
+        simulation: "emfdtd.Simulation",
+        antenna: "Antenna",
+        phantom_name: str,
+        verbose_logger: "Logger",
+        progress_logger: "Logger",
+        free_space: bool = False,
     ):
         super().__init__(config, verbose_logger, progress_logger)
         self.simulation = simulation
@@ -27,10 +36,10 @@ class MaterialSetup(BaseSetup):
         self.database = s4l_v1.materials.database
         self.XCoreModeling = XCoreModeling
 
-    def assign_materials(self, antenna_components=None, phantom_only=False):
-        """
-        Assigns materials to the simulation entities.
-        """
+    def assign_materials(
+        self, antenna_components: dict = None, phantom_only: bool = False
+    ):
+        """Assigns materials to the simulation entities."""
         self._log("Assigning materials...", log_type="progress")
 
         # Background material
@@ -51,6 +60,7 @@ class MaterialSetup(BaseSetup):
             self._assign_antenna_materials(antenna_components)
 
     def _assign_phantom_materials(self):
+        """Assigns materials to the phantom tissues."""
         lock_file_path = os.path.join(self.config.base_dir, "material_db.lock")
 
         # Acquire lock
@@ -95,7 +105,8 @@ class MaterialSetup(BaseSetup):
             if os.path.exists(lock_file_path):
                 os.remove(lock_file_path)
 
-    def _assign_antenna_materials(self, antenna_components):
+    def _assign_antenna_materials(self, antenna_components: dict):
+        """Assigns materials to the antenna components."""
         antenna_config = self.antenna.get_config_for_frequency()
         material_mappings = antenna_config.get("materials", {})
 

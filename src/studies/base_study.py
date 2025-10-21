@@ -2,6 +2,7 @@ import importlib
 import logging
 import os
 import traceback
+from typing import TYPE_CHECKING
 
 from line_profiler import LineProfiler
 
@@ -11,13 +12,20 @@ from src.profiler import Profiler
 from src.project_manager import ProjectManager
 from src.utils import StudyCancelledError, ensure_s4l_running, profile_subtask
 
+if TYPE_CHECKING:
+    from ..gui_manager import QueueGUI
+
 
 class BaseStudy(LoggingMixin):
-    """
-    Abstract base class for all studies (Near-Field, Far-Field).
-    """
+    """Abstract base class for all studies."""
 
-    def __init__(self, study_type, config_filename=None, gui=None, profiler=None):
+    def __init__(
+        self,
+        study_type: str,
+        config_filename: str = None,
+        gui: "QueueGUI" = None,
+        profiler=None,
+    ):
         self.study_type = study_type
         self.gui = gui
         self.verbose_logger = logging.getLogger("verbose")
@@ -55,14 +63,11 @@ class BaseStudy(LoggingMixin):
         if self.gui and self.gui.is_stopped():
             raise StudyCancelledError("Study cancelled by user.")
 
-    def subtask(self, task_name, instance_to_profile=None):
-        """
-        Returns a context manager that profiles a subtask, handling timing,
-        GUI animations, and optional line-profiling.
-        """
+    def subtask(self, task_name: str, instance_to_profile=None):
+        """Returns a context manager that profiles a subtask."""
         return profile_subtask(self, task_name, instance_to_profile)
 
-    def start_stage_animation(self, task_name, end_value):
+    def start_stage_animation(self, task_name: str, end_value: int):
         """Starts the GUI animation for a stage."""
         if self.gui:
             self.gui.start_stage_animation(task_name, end_value)
@@ -100,17 +105,13 @@ class BaseStudy(LoggingMixin):
                 self.gui.update_profiler()  # Send final profiler state
 
     def _run_study(self):
-        """
-        This method must be implemented by subclasses to execute the specific study.
-        """
+        """Executes the specific study. Must be implemented by subclasses."""
         raise NotImplementedError(
             "The '_run_study' method must be implemented by a subclass."
         )
 
-    def _setup_line_profiler(self, subtask_name, instance):
-        """
-        Sets up the line profiler for a specific subtask if configured.
-        """
+    def _setup_line_profiler(self, subtask_name: str, instance) -> tuple:
+        """Sets up the line profiler for a specific subtask if configured."""
         line_profiling_config = self.config.get_line_profiling_config()
 
         if not line_profiling_config.get(

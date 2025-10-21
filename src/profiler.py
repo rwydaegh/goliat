@@ -4,25 +4,28 @@ from collections import defaultdict
 
 
 class Profiler:
-    """
-    Manages execution time tracking, ETA estimation, and study phase management.
+    """Manages execution time tracking, ETA estimation, and study phase management.
 
-    This class provides a comprehensive system for profiling the execution of a
-    study. It divides the study into phases (setup, run, extract), calculates
-    weighted progress, and estimates the time remaining. It also features a
-    self-improving mechanism by saving updated time estimates to a configuration
-    file after each run.
+    This class divides a study into phases (setup, run, extract), calculates
+    weighted progress, and estimates the time remaining. It also saves updated
+    time estimates to a configuration file after each run, making it
+    self-improving.
     """
 
-    def __init__(self, execution_control, profiling_config, study_type, config_path):
-        """
-        Initializes the Profiler.
+    def __init__(
+        self,
+        execution_control: dict,
+        profiling_config: dict,
+        study_type: str,
+        config_path: str,
+    ):
+        """Initializes the Profiler.
 
         Args:
-            execution_control (dict): A dictionary indicating which study phases are active.
-            profiling_config (dict): A dictionary with historical timing data for phases and subtasks.
-            study_type (str): The type of the study (e.g., 'near_field').
-            config_path (str): The file path to the profiling configuration.
+            execution_control: A dictionary indicating which study phases are active.
+            profiling_config: A dictionary with historical timing data.
+            study_type: The type of the study (e.g., 'near_field').
+            config_path: The file path to the profiling configuration.
         """
         self.execution_control = execution_control
         self.profiling_config = profiling_config
@@ -44,12 +47,11 @@ class Profiler:
         self.phase_start_time = None
         self.run_phase_total_duration = 0
 
-    def _calculate_phase_weights(self):
-        """
-        Calculates the relative weight of each enabled study phase based on historical data.
+    def _calculate_phase_weights(self) -> dict:
+        """Calculates the relative weight of each enabled study phase.
 
         Returns:
-            dict: A dictionary mapping phase names to their normalized weights.
+            A dictionary mapping phase names to their normalized weights.
         """
         weights = {}
         total_weight = 0
@@ -64,25 +66,24 @@ class Profiler:
                 weights[phase] /= total_weight
         return weights
 
-    def set_total_simulations(self, total):
-        """Sets the total number of simulations for the entire study."""
+    def set_total_simulations(self, total: int):
+        """Sets the total number of simulations for the study."""
         self.total_simulations = total
 
-    def set_project_scope(self, total_projects):
+    def set_project_scope(self, total_projects: int):
         """Sets the total number of projects to be processed."""
         self.total_projects = total_projects
 
-    def set_current_project(self, project_index):
+    def set_current_project(self, project_index: int):
         """Sets the index of the currently processing project."""
         self.current_project = project_index
 
-    def start_stage(self, phase_name, total_stages=1):
-        """
-        Marks the beginning of a new study phase or stage.
+    def start_stage(self, phase_name: str, total_stages: int = 1):
+        """Marks the beginning of a new study phase or stage.
 
         Args:
-            phase_name (str): The name of the phase being started.
-            total_stages (int): The total number of stages within this phase.
+            phase_name: The name of the phase being started.
+            total_stages: The total number of stages within this phase.
         """
         self.current_phase = phase_name
         self.phase_start_time = time.monotonic()
@@ -90,28 +91,29 @@ class Profiler:
         self.total_stages_in_phase = total_stages
 
     def end_stage(self):
-        """Marks the end of a study phase or stage and records its duration."""
+        """Marks the end of a study phase and records its duration."""
         if self.phase_start_time:
             elapsed = time.monotonic() - self.phase_start_time
             self.profiling_config[f"avg_{self.current_phase}_time"] = elapsed
         self.current_phase = None
 
     def complete_run_phase(self):
-        """Calculates and stores the total duration of the 'run' phase from its subtasks."""
+        """Stores the total duration of the 'run' phase from its subtasks."""
         self.run_phase_total_duration = sum(
             self.subtask_times.get("run_simulation_total", [0])
         )
 
-    def get_weighted_progress(self, phase_name, phase_progress_ratio):
-        """
-        Calculates the overall study progress based on the weight of the current phase.
+    def get_weighted_progress(
+        self, phase_name: str, phase_progress_ratio: float
+    ) -> float:
+        """Calculates the overall study progress based on phase weights.
 
         Args:
-            phase_name (str): The name of the current phase.
-            phase_progress_ratio (float): The progress of the current phase (0.0 to 1.0).
+            phase_name: The name of the current phase.
+            phase_progress_ratio: The progress of the current phase (0.0 to 1.0).
 
         Returns:
-            float: The total weighted progress percentage.
+            The total weighted progress percentage.
         """
         progress = 0
         for p, w in self.phase_weights.items():
@@ -121,30 +123,28 @@ class Profiler:
             progress += w
         return progress * 100
 
-    def get_subtask_estimate(self, task_name):
-        """
-        Retrieves the estimated time for a specific subtask from the profiling configuration.
+    def get_subtask_estimate(self, task_name: str) -> float:
+        """Retrieves the estimated time for a specific subtask.
 
         Args:
-            task_name (str): The name of the subtask.
+            task_name: The name of the subtask.
 
         Returns:
-            float: The estimated duration in seconds.
+            The estimated duration in seconds.
         """
         return self.profiling_config.get(f"avg_{task_name}", 1.0)
 
-    def get_time_remaining(self, current_stage_progress=0.0):
-        """
-        Estimates the total time remaining for the study.
+    def get_time_remaining(self, current_stage_progress: float = 0.0) -> float:
+        """Estimates the total time remaining for the study.
 
-        This estimation considers completed phases, the progress of the current
-        phase, and the estimated time for all future phases.
+        This considers completed phases, current phase progress, and estimated
+        time for all future phases.
 
         Args:
-            current_stage_progress (float): The progress of the current stage (0.0 to 1.0).
+            current_stage_progress: The progress of the current stage (0.0 to 1.0).
 
         Returns:
-            float: The estimated time remaining in seconds.
+            The estimated time remaining in seconds.
         """
         if not self.current_phase:
             return 0
@@ -175,9 +175,9 @@ class Profiler:
         return max(0, eta)
 
     def update_and_save_estimates(self):
-        """
-        Updates the profiling configuration with the latest average times and saves it to a file.
-        This method makes the profiler's estimates self-improving over time.
+        """Updates the profiling configuration with the latest average times and saves it.
+
+        This makes the profiler's estimates self-improving over time.
         """
         try:
             with open(self.config_path, "r") as f:
@@ -201,7 +201,5 @@ class Profiler:
             json.dump(full_config, f, indent=4)
 
     def save_estimates(self):
-        """
-        Ensures the final profiling estimates are saved at the end of the study.
-        """
+        """Saves the final profiling estimates at the end of the study."""
         self.update_and_save_estimates()

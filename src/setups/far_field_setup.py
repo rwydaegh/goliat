@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 import numpy as np
 
 from .base_setup import BaseSetup
@@ -5,22 +7,30 @@ from .boundary_setup import BoundarySetup
 from .gridding_setup import GriddingSetup
 from .material_setup import MaterialSetup
 
+if TYPE_CHECKING:
+    from logging import Logger
+
+    import s4l_v1.model as model
+    import s4l_v1.simulation.emfdtd as emfdtd
+
+    from ..config import Config
+    from ..project_manager import ProjectManager
+    from .phantom_setup import PhantomSetup
+
 
 class FarFieldSetup(BaseSetup):
-    """
-    Configures a single far-field simulation for a specific direction and polarization.
-    """
+    """Configures a far-field simulation for a specific direction and polarization."""
 
     def __init__(
         self,
-        config,
-        phantom_name,
-        frequency_mhz,
-        direction_name,
-        polarization_name,
-        project_manager,
-        verbose_logger,
-        progress_logger,
+        config: "Config",
+        phantom_name: str,
+        frequency_mhz: int,
+        direction_name: str,
+        polarization_name: str,
+        project_manager: "ProjectManager",
+        verbose_logger: "Logger",
+        progress_logger: "Logger",
     ):
         super().__init__(config, verbose_logger, progress_logger)
         self.phantom_name = phantom_name
@@ -33,10 +43,8 @@ class FarFieldSetup(BaseSetup):
         )
         self.document = self.s4l_v1.document
 
-    def run_full_setup(self, phantom_setup):
-        """
-        Executes the full sequence of setup steps for a single far-field simulation.
-        """
+    def run_full_setup(self, phantom_setup: "PhantomSetup") -> "emfdtd.Simulation":
+        """Executes the full setup sequence for a single far-field simulation."""
         self._log("--- Setting up single Far-Field sim ---", log_type="header")
 
         # The phantom is now loaded once per project in the study.
@@ -49,10 +57,10 @@ class FarFieldSetup(BaseSetup):
 
         return simulation
 
-    def _create_simulation_entity(self, bbox_entity):
-        """
-        Creates the EM FDTD simulation entity and its plane wave source.
-        """
+    def _create_simulation_entity(
+        self, bbox_entity: "model.Entity"
+    ) -> "emfdtd.Simulation":
+        """Creates the EM FDTD simulation entity and its plane wave source."""
         sim_name = f"EM_FDTD_{self.phantom_name}_{self.frequency_mhz}MHz_{self.direction_name}_{self.polarization_name}"
         self._log(f"  - Creating simulation: {sim_name}", log_type="info")
 
@@ -94,10 +102,8 @@ class FarFieldSetup(BaseSetup):
 
         return simulation
 
-    def _create_or_get_simulation_bbox(self):
-        """
-        Creates the simulation bounding box if it doesn't exist, otherwise returns the existing one.
-        """
+    def _create_or_get_simulation_bbox(self) -> "model.Entity":
+        """Creates or gets the simulation bounding box."""
         bbox_name = "far_field_simulation_bbox"
         existing_bbox = next(
             (
@@ -143,10 +149,8 @@ class FarFieldSetup(BaseSetup):
         )
         return sim_bbox
 
-    def _apply_common_settings(self, simulation):
-        """
-        Applies common material, gridding, and solver settings to the simulation.
-        """
+    def _apply_common_settings(self, simulation: "emfdtd.Simulation"):
+        """Applies common material, gridding, and solver settings."""
         self._log(
             f"Applying common settings to {simulation.Name}...", log_type="progress"
         )
@@ -185,11 +189,13 @@ class FarFieldSetup(BaseSetup):
         self._finalize_setup(self.project_manager, simulation, self.frequency_mhz)
         self._log("Common settings applied.", log_type="success")
 
-    def _finalize_setup(self, project_manager, simulation, frequency_mhz):
-        """
-        Gathers all necessary entities for a far-field simulation and calls the shared
-        finalization method from the base class.
-        """
+    def _finalize_setup(
+        self,
+        project_manager: "ProjectManager",
+        simulation: "emfdtd.Simulation",
+        frequency_mhz: int,
+    ):
+        """Gathers entities and calls the finalization method from the base class."""
         bbox_entity = next(
             (
                 e

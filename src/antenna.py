@@ -1,32 +1,32 @@
 import os
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .config import Config
 
 
 class Antenna:
-    """
-    Manages antenna-specific properties and configurations within the simulation framework.
-    """
+    """Manages antenna-specific properties and configurations."""
 
-    def __init__(self, config, frequency_mhz):
-        """
-        Initializes the Antenna object.
+    def __init__(self, config: "Config", frequency_mhz: int):
+        """Initializes the Antenna object.
 
         Args:
-            config (Config): The configuration object containing antenna settings.
-            frequency_mhz (int): The operating frequency in MHz.
+            config: The configuration object containing antenna settings.
+            frequency_mhz: The operating frequency in MHz.
         """
         self.config = config
         self.frequency_mhz = frequency_mhz
         self.antenna_config = self.config.get_antenna_config()
 
-    def get_config_for_frequency(self):
-        """
-        Retrieves the specific antenna configuration dictionary for the current frequency.
+    def get_config_for_frequency(self) -> dict:
+        """Gets the antenna configuration for the current frequency.
 
         Raises:
-            ValueError: If no antenna configuration is defined for the specified frequency.
+            ValueError: If no configuration is defined for the frequency.
 
         Returns:
-            dict: A dictionary containing configuration details for the antenna at the given frequency.
+            The antenna configuration dictionary.
         """
         freq_str = str(self.frequency_mhz)
         if freq_str not in self.antenna_config:
@@ -35,33 +35,22 @@ class Antenna:
             )
         return self.antenna_config[freq_str]
 
-    def get_model_type(self):
-        """
-        Retrieves the model type of the antenna (e.g., 'PIFA', 'IFA') for the current frequency.
-
-        Returns:
-            str: The antenna model type.
-        """
+    def get_model_type(self) -> str:
+        """Gets the antenna model type (e.g., 'PIFA', 'IFA')."""
         return self.get_config_for_frequency().get("model_type")
 
-    def get_source_entity_name(self):
-        """
-        Retrieves the name of the source entity within the antenna CAD model for the current frequency.
-
-        Returns:
-            str: The name of the source entity.
-        """
+    def get_source_entity_name(self) -> str:
+        """Gets the name of the source entity in the CAD model."""
         return self.get_config_for_frequency().get("source_name")
 
-    def get_centered_antenna_path(self, centered_antennas_dir):
-        """
-        Constructs the full file path to the centered .sab file for the current frequency.
+    def get_centered_antenna_path(self, centered_antennas_dir: str) -> str:
+        """Constructs the path to the centered .sab antenna file.
 
         Args:
-            centered_antennas_dir (str): The base directory where centered antenna files are stored.
+            centered_antennas_dir: The directory for centered antenna files.
 
         Returns:
-            str: The absolute path to the centered antenna model file.
+            The absolute path to the centered antenna model file.
         """
         antenna_filename = f"{self.frequency_mhz}MHz_centered.sab"
         return os.path.join(centered_antennas_dir, antenna_filename)

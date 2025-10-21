@@ -1,0 +1,26 @@
+# pydoc-markdown.yml
+
+site_name: GOLIAT API Reference
+
+pages:
+  - title: Home
+    path: index.md
+    src: README.md
+  - title: API Reference
+    path: api.md
+    src:
+      - src
+
+processors:
+  - type: filter
+    skip_empty_modules: true
+  - type: smart
+  - type: crossref
+
+renderer:
+  type: markdown
+  descriptive_class_title: false
+  descriptive_module_title: true
+  add_module_prefix: true
+  add_member_class_prefix: false
+  filename: api_reference.md

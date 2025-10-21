@@ -1,25 +1,28 @@
 import logging
 import os
+from typing import TYPE_CHECKING
 
 import pandas as pd
 
 from .base_strategy import BaseAnalysisStrategy
 
+if TYPE_CHECKING:
+    from .analyzer import Analyzer
+    from .plotter import Plotter
+
 
 class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
-    """
-    Analysis strategy for near-field simulations.
-    """
+    """Analysis strategy for near-field simulations."""
 
-    def get_results_base_dir(self):
-        """Returns the base directory for near-field results."""
+    def get_results_base_dir(self) -> str:
+        """Gets the base directory for near-field results."""
         return os.path.join(self.base_dir, "results", "near_field", self.phantom_name)
 
-    def get_plots_dir(self):
-        """Returns the directory for saving near-field plots."""
+    def get_plots_dir(self) -> str:
+        """Gets the directory for saving near-field plots."""
         return os.path.join(self.base_dir, "plots", "near_field", self.phantom_name)
 
-    def load_and_process_results(self, analyzer):
+    def load_and_process_results(self, analyzer: "Analyzer"):
         """Iterates through near-field simulation results and processes each one."""
         frequencies = self.config.get_antenna_config().keys()
         placement_scenarios = self.config.get_setting("placement_scenarios", {})
@@ -35,15 +38,17 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
                             frequency_mhz, scenario_name, pos_name, orient_name
                         )
 
-    def get_normalization_factor(self, frequency_mhz, simulated_power_w):
-        """Calculates the normalization factor based on the target power defined in the antenna configuration.
+    def get_normalization_factor(
+        self, frequency_mhz: int, simulated_power_w: float
+    ) -> float:
+        """Calculates the normalization factor based on the target power.
 
         Args:
-            frequency_mhz (int): The simulation frequency in MHz.
-            simulated_power_w (float): The input power from the simulation in Watts.
+            frequency_mhz: The simulation frequency in MHz.
+            simulated_power_w: The input power from the simulation in Watts.
 
         Returns:
-            float: The calculated normalization factor. Returns 1.0 if normalization is not possible.
+            The calculated normalization factor, or 1.0 if not possible.
         """
         antenna_configs = self.config.get_antenna_config()
         freq_config = antenna_configs.get(str(frequency_mhz), {})
@@ -59,25 +64,25 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
 
     def extract_data(
         self,
-        pickle_data,
-        frequency_mhz,
-        placement_name,
-        scenario_name,
-        sim_power,
-        norm_factor,
-    ):
-        """Extracts and normalizes SAR data from a single near-field simulation result.
+        pickle_data: dict,
+        frequency_mhz: int,
+        placement_name: str,
+        scenario_name: str,
+        sim_power: float,
+        norm_factor: float,
+    ) -> tuple[dict, list]:
+        """Extracts and normalizes SAR data from a single near-field result.
 
         Args:
-            pickle_data (dict): Data loaded from the .pkl result file.
-            frequency_mhz (int): The simulation frequency.
-            placement_name (str): The detailed name of the placement.
-            scenario_name (str): The general scenario name (e.g., 'by_cheek').
-            sim_power (float): The simulated input power in Watts.
-            norm_factor (float): The normalization factor to apply to SAR values.
+            pickle_data: Data loaded from the .pkl result file.
+            frequency_mhz: The simulation frequency.
+            placement_name: The detailed name of the placement.
+            scenario_name: The general scenario name (e.g., 'by_cheek').
+            sim_power: The simulated input power in Watts.
+            norm_factor: The normalization factor to apply to SAR values.
 
         Returns:
-            tuple: A tuple containing the main result entry (dict) and a list of organ-specific entries.
+            A tuple containing the main result entry and a list of organ-specific entries.
         """
         summary_results = pickle_data.get("summary_results", {})
         grouped_stats = pickle_data.get("grouped_sar_stats", {})
@@ -119,14 +124,14 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
                 )
         return result_entry, organ_entries
 
-    def apply_bug_fixes(self, result_entry):
-        """Applies a workaround for a known issue where Head SAR is miscategorized as Trunk SAR.
+    def apply_bug_fixes(self, result_entry: dict) -> dict:
+        """Applies a workaround for Head SAR being miscategorized as Trunk SAR.
 
         Args:
-            result_entry (dict): The data entry for a single simulation result.
+            result_entry: The data entry for a single simulation result.
 
         Returns:
-            dict: The corrected result entry.
+            The corrected result entry.
         """
         placement = result_entry["placement"].lower()
         if placement.startswith("front_of_eyes") or placement.startswith("by_cheek"):
@@ -137,14 +142,14 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
                 result_entry["SAR_trunk"] = pd.NA
         return result_entry
 
-    def calculate_summary_stats(self, results_df):
-        """Calculates summary statistics, including completion progress for each scenario.
+    def calculate_summary_stats(self, results_df: pd.DataFrame) -> pd.DataFrame:
+        """Calculates summary statistics, including completion progress.
 
         Args:
-            results_df (pd.DataFrame): The DataFrame containing all aggregated simulation results.
+            results_df: DataFrame with all aggregated simulation results.
 
         Returns:
-            pd.DataFrame: A DataFrame with mean SAR values and a 'progress' column.
+            A DataFrame with mean SAR values and a 'progress' column.
         """
         placement_scenarios = self.config.get_setting("placement_scenarios", {})
         placements_per_scenario = {}
@@ -169,17 +174,23 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
         )
         return summary_stats
 
-    def generate_plots(self, analyzer, plotter, results_df, all_organ_results_df):
+    def generate_plots(
+        self,
+        analyzer: "Analyzer",
+        plotter: "Plotter",
+        results_df: pd.DataFrame,
+        all_organ_results_df: pd.DataFrame,
+    ):
         """Generates all plots for the near-field analysis.
 
-        This includes bar charts for average SAR, line plots for psSAR, and boxplots
+        Includes bar charts for average SAR, line plots for psSAR, and boxplots
         for SAR distribution.
 
         Args:
-            analyzer (Analyzer): The main analyzer instance.
-            plotter (Plotter): The plotter instance to use for generating plots.
-            results_df (pd.DataFrame): The DataFrame with main aggregated results.
-            all_organ_results_df (pd.DataFrame): The DataFrame with detailed organ-level results.
+            analyzer: The main analyzer instance.
+            plotter: The plotter instance for generating plots.
+            results_df: DataFrame with main aggregated results.
+            all_organ_results_df: DataFrame with detailed organ-level results.
         """
         scenarios_with_results = results_df["scenario"].unique()
         summary_stats = self.calculate_summary_stats(results_df)

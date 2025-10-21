@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 import numpy as np
 
 from .base_setup import BaseSetup
@@ -8,25 +10,31 @@ from .phantom_setup import PhantomSetup
 from .placement_setup import PlacementSetup
 from .source_setup import SourceSetup
 
+if TYPE_CHECKING:
+    from logging import Logger
+
+    import s4l_v1.simulation.emfdtd as emfdtd
+
+    from ..antenna import Antenna
+    from ..config import Config
+    from ..project_manager import ProjectManager
+
 
 class NearFieldSetup(BaseSetup):
-    """
-    Configures the entire simulation environment within Sim4Life by coordinating
-    specialized setup modules.
-    """
+    """Configures the simulation environment by coordinating setup modules."""
 
     def __init__(
         self,
-        config,
-        phantom_name,
-        frequency_mhz,
-        scenario_name,
-        position_name,
-        orientation_name,
-        antenna,
-        verbose_logger,
-        progress_logger,
-        free_space=False,
+        config: "Config",
+        phantom_name: str,
+        frequency_mhz: int,
+        scenario_name: str,
+        position_name: str,
+        orientation_name: str,
+        antenna: "Antenna",
+        verbose_logger: "Logger",
+        progress_logger: "Logger",
+        free_space: bool = False,
     ):
         super().__init__(config, verbose_logger, progress_logger)
         self.phantom_name = phantom_name
@@ -44,10 +52,10 @@ class NearFieldSetup(BaseSetup):
         self.document = self.s4l_v1.document
         self.XCoreModeling = XCoreModeling
 
-    def run_full_setup(self, project_manager, lock=None):
-        """
-        Executes the full sequence of setup steps.
-        """
+    def run_full_setup(
+        self, project_manager: "ProjectManager", lock=None
+    ) -> "emfdtd.Simulation":
+        """Executes the full sequence of setup steps."""
         self._log("Running full simulation setup...", log_type="progress")
 
         # Create or open the project file. This is the first step.
@@ -135,10 +143,8 @@ class NearFieldSetup(BaseSetup):
         self._log("Full simulation setup complete.", log_type="success")
         return simulation
 
-    def _get_antenna_components(self):
-        # The antenna group name changes during placement. We need to find it regardless of its state.
-        # Initial name: "Antenna {freq} MHz"
-        # Placed name:  "Antenna {freq} MHz (Placement)"
+    def _get_antenna_components(self) -> dict:
+        """Gets a dictionary of all antenna component entities."""
 
         placed_name = f"Antenna {self.frequency_mhz} MHz ({self.placement_name})"
         initial_name = f"Antenna {self.frequency_mhz} MHz"
@@ -174,9 +180,7 @@ class NearFieldSetup(BaseSetup):
         return {e.Name: e for e in flat_component_list}
 
     def _setup_bounding_boxes(self):
-        """
-        Creates the head and trunk bounding boxes.
-        """
+        """Creates the head and trunk bounding boxes."""
         self._log("Setting up bounding boxes...", log_type="progress")
         all_entities = self.model.AllEntities()
 
@@ -239,6 +243,7 @@ class NearFieldSetup(BaseSetup):
         self._log("  - Trunk BBox created.", log_type="info")
 
     def _create_simulation_bbox(self):
+        """Creates the main simulation bounding box."""
         if self.free_space:
             antenna_bbox_entity = next(
                 (
@@ -343,10 +348,8 @@ class NearFieldSetup(BaseSetup):
                 f"  - Combined BBox created for {self.placement_name}.", log_type="info"
             )
 
-    def _setup_simulation_entity(self):
-        """
-        Creates and configures the base EM-FDTD simulation entity.
-        """
+    def _setup_simulation_entity(self) -> "emfdtd.Simulation":
+        """Creates and configures the base EM-FDTD simulation entity."""
         self._log("Setting up simulation entity...", log_type="progress")
 
         if self.document.AllSimulations:
@@ -393,7 +396,13 @@ class NearFieldSetup(BaseSetup):
 
         return simulation
 
-    def _finalize_setup(self, project_manager, simulation, antenna_components):
+    def _finalize_setup(
+        self,
+        project_manager: "ProjectManager",
+        simulation: "emfdtd.Simulation",
+        antenna_components: dict,
+    ):
+        """Gathers entities and calls the finalization method from the base class."""
         all_antenna_parts = list(antenna_components.values())
         point_sensor_entities = [
             e for e in self.model.AllEntities() if "Point Sensor Entity" in e.Name

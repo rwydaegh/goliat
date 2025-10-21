@@ -1,19 +1,30 @@
+from typing import TYPE_CHECKING
+
 from .base_setup import BaseSetup
+
+if TYPE_CHECKING:
+    from logging import Logger
+
+    import s4l_v1.simulation.emfdtd as emfdtd
+
+    from ..config import Config
 
 
 class BoundarySetup(BaseSetup):
-    """
-    Configures the boundary conditions for the simulation.
-    """
+    """Configures the boundary conditions for the simulation."""
 
-    def __init__(self, config, simulation, verbose_logger, progress_logger):
+    def __init__(
+        self,
+        config: "Config",
+        simulation: "emfdtd.Simulation",
+        verbose_logger: "Logger",
+        progress_logger: "Logger",
+    ):
         super().__init__(config, verbose_logger, progress_logger)
         self.simulation = simulation
 
     def setup_boundary_conditions(self):
-        """
-        Sets up the boundary conditions based on the configuration.
-        """
+        """Sets up the boundary conditions based on the configuration."""
         self._log("Setting up boundary conditions...", log_type="progress")
         solver_settings = self.config.get_solver_settings()
         boundary_config = solver_settings.get("boundary_conditions", {})

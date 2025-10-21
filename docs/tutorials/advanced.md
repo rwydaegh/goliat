@@ -6,11 +6,11 @@ This tutorial covers scaling simulations with oSPARC cloud batching and local pa
 
 Complete [Basic Tutorial](basic.md). For oSPARC, add API keys to `.env` (see [User Guide](../user_guide.md)).
 
-## oSPARC Batching
+## oSPARC batching
 
 oSPARC allows parallel cloud runs. Workflow: Generate inputs locally → Submit batch → Download results → Extract.
 
-### Step 1: Generate Input Files
+### Step 1: Generate input files
 
 Edit your config (e.g., `configs/my_advanced.json`):
 
@@ -38,7 +38,7 @@ python run_study.py --config configs/my_advanced.json
 
 - Outputs .h5 input files in `results/far_field/{phantom}/{freq}MHz/{project}.smash_Results/`.
 
-### Step 2: Submit Batch to oSPARC
+### Step 2: Submit batch to oSPARC
 
 Update config for submission:
 
@@ -65,7 +65,7 @@ python run_study.py --config configs/my_advanced.json
 - Costs: Based on compute time; monitor in oSPARC dashboard.
 - Pitfalls: Ensure .env keys valid; check quotas. If job fails, retry with `"do_run": false, "do_extract": true`.
 
-### Step 3: Extract Results
+### Step 3: Extract results
 
 After jobs complete (GUI shows COMPLETED), update config:
 
@@ -90,15 +90,15 @@ python run_study.py --config configs/my_advanced.json
 
 **Expected**: Aggregated SAR over phantoms/freqs, plots in `results/far_field/plots/`.
 
-## Local Parallel Execution
+## Local parallel execution
 
 For multi-core local runs, use `run_parallel_studies.py`. Splits config into subsets (e.g., phantoms or frequencies).
 
-### Step 1: Prepare Config
+### Step 1: Prepare config
 
 Use a large config (e.g., full near-field with multiple freqs/phantoms).
 
-### Step 2: Split and Run
+### Step 2: Split and run
 
 Run:
 
@@ -119,7 +119,7 @@ Use `--skip-split` for existing split dir.
 
 **Notes**: Local parallel uses CPU cores; no cloud needed. For large studies, combine with batch for hybrid.
 
-## Comparing Results
+## Comparing results
 
 After batch/parallel run, run analysis:
 

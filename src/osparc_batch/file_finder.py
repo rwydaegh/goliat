@@ -1,22 +1,22 @@
 import statistics
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import colorama
 
 from src.osparc_batch.logging_utils import setup_console_logging
 
+if TYPE_CHECKING:
+    from src.config import Config
+
 main_logger = setup_console_logging()
 
 
-def find_input_files(config) -> list[Path]:
-    """
-    Finds solver input files (.h5), identifies the latest group based on creation time and configuration,
-    and cleans up older, unselected files.
+def find_input_files(config: "Config") -> list[Path]:
+    """Finds solver input files (.h5) and cleans up older files.
 
-    Supports both far-field and near-field study types:
-    - Far-field: Uses frequencies_mhz and finds files per phantom/frequency
-    - Near-field: Uses antenna_config keys and finds files per phantom/frequency/placement
+    Supports both far-field and near-field study types.
     """
     main_logger.info(
         f"{colorama.Fore.MAGENTA}--- Searching for input files based on configuration ---"
@@ -69,11 +69,12 @@ def find_input_files(config) -> list[Path]:
 
 
 def _find_far_field_input_files(
-    config, results_base_dir: Path, phantom: str, freq: int
+    config: "Config", results_base_dir: Path, phantom: str, freq: int
 ) -> list[Path]:
-    """
-    Finds input files for far-field simulations.
-    Far-field has multiple files per phantom/frequency (one for each direction/polarization).
+    """Finds input files for far-field simulations.
+
+    Far-field has multiple files per phantom/frequency (one for each
+    direction/polarization).
     """
     project_dir = results_base_dir / "far_field" / phantom.lower() / f"{freq}MHz"
     project_filename_base = f"far_field_{phantom.lower()}_{freq}MHz"
@@ -183,10 +184,10 @@ def _find_far_field_input_files(
 
 
 def _find_near_field_input_files(
-    config, results_base_dir: Path, phantom: str, freq: int
+    config: "Config", results_base_dir: Path, phantom: str, freq: int
 ) -> list[Path]:
-    """
-    Finds input files for near-field simulations.
+    """Finds input files for near-field simulations.
+
     Near-field has one file per phantom/frequency/placement combination.
     """
     input_files = []
