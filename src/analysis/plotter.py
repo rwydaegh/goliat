@@ -4,6 +4,7 @@ import os
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import seaborn as sns
 from matplotlib.colors import LogNorm
 
@@ -24,13 +25,13 @@ LEGEND_LABELS = {
 
 
 class Plotter:
-    """A class dedicated to generating various plots from simulation results."""
+    """Generates various plots from simulation results."""
 
-    def __init__(self, plots_dir):
-        """Initializes the Plotter and creates the output directory for plots.
+    def __init__(self, plots_dir: str):
+        """Initializes the Plotter and creates the output directory.
 
         Args:
-            plots_dir (str): The directory where all generated plots will be saved.
+            plots_dir: The directory where all generated plots will be saved.
         """
         self.plots_dir = plots_dir
         os.makedirs(self.plots_dir, exist_ok=True)
@@ -39,13 +40,15 @@ class Plotter:
             extra={"log_type": "info"},
         )
 
-    def plot_average_sar_bar(self, scenario_name, avg_results, progress_info):
-        """Plots a bar chart of average Head and Trunk SAR per frequency for a given scenario.
+    def plot_average_sar_bar(
+        self, scenario_name: str, avg_results: pd.DataFrame, progress_info: pd.Series
+    ):
+        """Plots a bar chart of average Head and Trunk SAR per frequency.
 
         Args:
-            scenario_name (str): The name of the placement scenario (e.g., 'by_cheek').
-            avg_results (pd.DataFrame): A DataFrame with average SAR values, indexed by frequency.
-            progress_info (pd.Series): A Series containing the completion progress for each frequency.
+            scenario_name: The name of the placement scenario (e.g., 'by_cheek').
+            avg_results: DataFrame with average SAR values, indexed by frequency.
+            progress_info: Series with completion progress for each frequency.
         """
         fig, ax = plt.subplots(figsize=(12, 7))
         avg_results[["SAR_head", "SAR_trunk"]].plot(
@@ -66,11 +69,11 @@ class Plotter:
         )
         plt.close(fig)
 
-    def plot_whole_body_sar_bar(self, avg_results):
+    def plot_whole_body_sar_bar(self, avg_results: pd.DataFrame):
         """Plots a bar chart of the average Whole-Body SAR per frequency.
 
         Args:
-            avg_results (pd.DataFrame): A DataFrame with average SAR values, indexed by frequency.
+            avg_results: DataFrame with average SAR values, indexed by frequency.
         """
         fig, ax = plt.subplots(figsize=(12, 7))
         avg_results["SAR_whole_body"].plot(kind="bar", ax=ax, color="skyblue")
@@ -84,7 +87,7 @@ class Plotter:
         fig.savefig(os.path.join(self.plots_dir, "average_whole_body_sar_bar.png"))
         plt.close(fig)
 
-    def plot_peak_sar_line(self, summary_stats):
+    def plot_peak_sar_line(self, summary_stats: pd.DataFrame):
         """Plots the peak SAR across frequencies for far-field."""
         fig, ax = plt.subplots(figsize=(12, 7))
         if "peak_sar" in summary_stats.columns:
@@ -103,12 +106,12 @@ class Plotter:
         fig.savefig(os.path.join(self.plots_dir, "line_peak_sar_summary.png"))
         plt.close(fig)
 
-    def plot_pssar_line(self, scenario_name, avg_results):
+    def plot_pssar_line(self, scenario_name: str, avg_results: pd.DataFrame):
         """Plots a line chart of the average psSAR10g for different tissue groups.
 
         Args:
-            scenario_name (str): The name of the placement scenario.
-            avg_results (pd.DataFrame): A DataFrame containing average psSAR10g values for various tissues.
+            scenario_name: The name of the placement scenario.
+            avg_results: DataFrame with average psSAR10g values for various tissues.
         """
         fig, ax = plt.subplots(figsize=(12, 7))
         pssar_columns = [
@@ -130,12 +133,14 @@ class Plotter:
         fig.savefig(os.path.join(self.plots_dir, f"pssar10g_line_{scenario_name}.png"))
         plt.close(fig)
 
-    def plot_sar_distribution_boxplots(self, scenario_name, scenario_results_df):
-        """Creates boxplots to show the distribution of SAR values for each metric across different placements.
+    def plot_sar_distribution_boxplots(
+        self, scenario_name: str, scenario_results_df: pd.DataFrame
+    ):
+        """Creates boxplots to show the distribution of SAR values for each metric.
 
         Args:
-            scenario_name (str): The name of the placement scenario.
-            scenario_results_df (pd.DataFrame): A DataFrame containing detailed results for the scenario.
+            scenario_name: The name of the placement scenario.
+            scenario_results_df: DataFrame with detailed results for the scenario.
         """
         pssar_columns = [
             col for col in scenario_results_df.columns if col.startswith("psSAR10g")
@@ -166,7 +171,9 @@ class Plotter:
                 )
                 plt.close(fig)
 
-    def plot_far_field_distribution_boxplot(self, results_df, metric="SAR_whole_body"):
+    def plot_far_field_distribution_boxplot(
+        self, results_df: pd.DataFrame, metric: str = "SAR_whole_body"
+    ):
         """Generates a boxplot for the distribution of a given metric in far-field results."""
         if metric not in results_df.columns or results_df[metric].dropna().empty:
             logging.getLogger("progress").warning(
@@ -192,7 +199,9 @@ class Plotter:
         fig.savefig(os.path.join(self.plots_dir, f"boxplot_{metric}_distribution.png"))
         plt.close(fig)
 
-    def _plot_heatmap(self, fig, ax, data, title, cbar=True, cbar_ax=None):
+    def _plot_heatmap(
+        self, fig, ax, data: pd.DataFrame, title: str, cbar: bool = True, cbar_ax=None
+    ):
         """Helper function to plot a single heatmap."""
         sns.heatmap(
             data,
@@ -208,7 +217,9 @@ class Plotter:
         ax.set_title(title, pad=20)
         return ax
 
-    def plot_sar_heatmap(self, organ_df, group_df, tissue_groups):
+    def plot_sar_heatmap(
+        self, organ_df: pd.DataFrame, group_df: pd.DataFrame, tissue_groups: dict
+    ):
         """Generates the combined heatmap for Min, Avg, and Max SAR."""
         organ_pivot = organ_df.pivot_table(
             index="tissue",
@@ -288,11 +299,11 @@ class Plotter:
 
     def plot_peak_sar_heatmap(
         self,
-        organ_df,
-        group_df,
-        tissue_groups,
-        value_col="peak_sar_10g_mw_kg",
-        title="Peak SAR",
+        organ_df: pd.DataFrame,
+        group_df: pd.DataFrame,
+        tissue_groups: dict,
+        value_col: str = "peak_sar_10g_mw_kg",
+        title: str = "Peak SAR",
     ):
         """Generates a combined heatmap for a given peak SAR metric."""
         organ_pivot = organ_df.pivot_table(

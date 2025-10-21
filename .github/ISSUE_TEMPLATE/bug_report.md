@@ -24,7 +24,7 @@ What actually happened.
 ## Environment
 - OS: [e.g., Windows 11, Ubuntu 22.04]
 - Python version: [e.g., 3.11.5]
-- Sim4Life version: [e.g., 8.2.2]
+- Sim4Life version: [e.g., 8.2.0]
 - GOLIAT version/commit: [e.g., v1.0, commit abc123]
 
 ## Configuration

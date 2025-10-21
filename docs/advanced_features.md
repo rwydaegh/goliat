@@ -1,8 +1,8 @@
-# Codebase Features: A Comprehensive Deep-Dive
+# Advanced Features: A Deeper Dive
 
-This document details the architecture and workflow of the key operational features of the codebase, focusing on the graphical user interface (GUI), logging, session management, and the profiling/timing system.
+This section details the architecture and workflow of the key operational features of the codebase, focusing on the graphical user interface (GUI), logging, session management, and the profiling/timing system.
 
-## 1. High-Level Workflow
+## 1. High-level workflow
 
 The application is designed to run scientific studies (e.g., Near-Field, Far-Field) which can be time-consuming. To provide user feedback and manage complexity, the system employs a multi-process architecture.
 
@@ -50,11 +50,11 @@ graph TD
     A -- Updates UI --> D[User];
 ```
 
-## 2. GUI (`gui_manager.py`)
+## 2. Gui (`gui_manager.py`)
 
 The GUI provides a real-time view of the study's progress. It runs in the main process and is designed to be responsive, even while the heavy computation happens elsewhere.
 
-### Message Processing
+### Message processing
 
 The `ProgressGUI` uses a `QTimer` that fires every 100ms, calling the `process_queue` method. This method drains the queue of any pending messages from the study process and updates the UI accordingly.
 
@@ -81,7 +81,7 @@ class ProgressGUI(QWidget):
                 break
 ```
 
-### The Animation System: A Closer Look
+### The animation system: a closer look
 
 A key feature for user experience is the smooth animation of the stage progress bar. This is used for tasks where the simulation software doesn't provide real-time progress feedback, but we have a historical estimate of how long it should take.
 
@@ -152,7 +152,7 @@ The system uses Python's standard `logging` module, configured to provide two di
 1.  **`progress` logger**: For high-level, user-facing messages. These are shown in the GUI and saved to `*.progress.log`.
 2.  **`verbose` logger**: For detailed, internal messages. These are saved to the main `*.log` file.
 
-### Implementation Details:
+### Implementation details:
 
 *   **Log Rotation**: The `setup_loggers` function checks the number of log files in the `logs` directory. If it exceeds a limit (10 pairs), it deletes the oldest pair (`.log` and `.progress.log`) to prevent the directory from growing indefinitely.
 *   **Handler Configuration**: The function creates file handlers and stream (console) handlers for each logger, ensuring messages go to the right places. `propagate = False` is used to prevent messages from being handled by parent loggers, avoiding duplicate output.
@@ -181,11 +181,11 @@ def setup_loggers(session_timestamp=None):
     return progress_logger, verbose_logger, session_timestamp
 ```
 
-## 4. Profiling and Timing (`utils.py`, `profiling_config.json`)
+## 4. Profiling and timing (`utils.py`, `profiling_config.json`)
 
 The `Profiler` class is the engine for the timing and progress estimation system.
 
-### Key Concepts:
+### Key concepts:
 
 *   **Phases and Weights**: A study is divided into phases (`setup`, `run`, `extract`). `profiling_config.json` assigns a "weight" to each, representing its contribution to the total time.
     ```json
@@ -239,11 +239,8 @@ The `Config` class uses a powerful inheritance mechanism to avoid duplicating se
             config = deep_merge(base_config, config)
             
         return config
-    ```
-    For example, `near_field_config.json` might only specify the settings that differ from the main `base_config.json`.
+    ```    For example, `near_field_config.json` might only specify the settings that differ from the main `base_config.json`.
 
-## 6. Project Management
+## 6. Project management
 
 *   **`project_manager.py`**: This class is critical for reliability. The underlying `.smash` project files can become corrupted or locked. The `_is_valid_smash_file` method is a key defensive measure. It first attempts to rename the file to itself (a trick to check for file locks on Windows) and then uses `h5py` to ensure the file is a valid HDF5 container before attempting to open it in the simulation software. This prevents the application from crashing on a corrupted file.
-
-This integrated system of GUI, logging, profiling, and configuration management provides a robust and user-friendly framework for running complex scientific simulations.

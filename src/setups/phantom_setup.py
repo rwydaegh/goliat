@@ -1,10 +1,22 @@
 import os
+from typing import TYPE_CHECKING
 
 from .base_setup import BaseSetup
 
+if TYPE_CHECKING:
+    from logging import Logger
+
+    from ..config import Config
+
 
 class PhantomSetup(BaseSetup):
-    def __init__(self, config, phantom_name, verbose_logger, progress_logger):
+    def __init__(
+        self,
+        config: "Config",
+        phantom_name: str,
+        verbose_logger: "Logger",
+        progress_logger: "Logger",
+    ):
         super().__init__(config, verbose_logger, progress_logger)
         self.phantom_name = phantom_name
 
@@ -16,13 +28,11 @@ class PhantomSetup(BaseSetup):
         self.data = s4l_v1.data
         self.XCoreModeling = XCoreModeling
 
-    def _log(self, message, log_type="default"):
+    def _log(self, message: str, log_type: str = "default"):
         self.verbose_logger.info(message, extra={"log_type": log_type})
 
-    def ensure_phantom_is_loaded(self):
-        """
-        Ensures the phantom model is loaded into the current document.
-        """
+    def ensure_phantom_is_loaded(self) -> bool:
+        """Ensures the phantom model is loaded, downloading it if necessary."""
         self._log("--- Running Phantom Check ---", log_type="header")
         all_entities = self.model.AllEntities()
         self._log(

@@ -1,16 +1,26 @@
+from typing import TYPE_CHECKING
+
 from .base_setup import BaseSetup
+
+if TYPE_CHECKING:
+    from logging import Logger
+
+    import s4l_v1.simulation.emfdtd as emfdtd
+
+    from ..antenna import Antenna
+    from ..config import Config
 
 
 class SourceSetup(BaseSetup):
     def __init__(
         self,
-        config,
-        simulation,
-        frequency_mhz,
-        antenna,
-        verbose_logger,
-        progress_logger,
-        free_space=False,
+        config: "Config",
+        simulation: "emfdtd.Simulation",
+        frequency_mhz: int,
+        antenna: "Antenna",
+        verbose_logger: "Logger",
+        progress_logger: "Logger",
+        free_space: bool = False,
     ):
         super().__init__(config, verbose_logger, progress_logger)
         self.simulation = simulation
@@ -22,10 +32,8 @@ class SourceSetup(BaseSetup):
 
         self.units = s4l_v1.units
 
-    def setup_source_and_sensors(self, antenna_components):
-        """
-        Sets up the excitation source and sensors.
-        """
+    def setup_source_and_sensors(self, antenna_components: dict):
+        """Sets up the excitation source and sensors."""
         self._log("Setting up source and sensors...", log_type="progress")
 
         source_name = self.antenna.get_source_entity_name()

@@ -13,7 +13,7 @@ How to regenerate
 - Ensure the Sim4Life Python (with pip) is on PATH as described in the README.
 - Then run:
   - Windows (with Sim4Life Python): 
-    - "D:\Program Files\Sim4Life_8.2.2.18061\Python\python.exe" scripts/generate_uml.py
+    - "D:\Program Files\Sim4Life_8.2.0.18061\Python\python.exe" scripts/generate_uml.py
   - Or from a shell session where `python` resolves to the Sim4Life Python:
     - source .bashrc && python scripts/generate_uml.py
 

@@ -3,6 +3,7 @@ import os
 import time
 import traceback
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from typing import TYPE_CHECKING
 
 import colorama
 
@@ -11,13 +12,15 @@ from src.osparc_batch.osparc_client import (
     _submit_job_in_process,
     get_osparc_client_config,
 )
-from src.osparc_batch.worker import Worker
+
+if TYPE_CHECKING:
+    from src.osparc_batch.worker import Worker
 
 main_logger = logging.getLogger("osparc_batch")
 
 
-def main_process_logic(worker: Worker):
-    """The main logic of the batch run, now running in a QThread."""
+def main_process_logic(worker: "Worker"):
+    """The main logic of the batch run, executed in a QThread."""
     import osparc as osparc_module
 
     try:

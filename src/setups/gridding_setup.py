@@ -1,18 +1,28 @@
+from typing import TYPE_CHECKING
+
 import numpy as np
 
 from .base_setup import BaseSetup
+
+if TYPE_CHECKING:
+    from logging import Logger
+
+    import s4l_v1.simulation.emfdtd as emfdtd
+
+    from ..antenna import Antenna
+    from ..config import Config
 
 
 class GriddingSetup(BaseSetup):
     def __init__(
         self,
-        config,
-        simulation,
-        placement_name,
-        antenna,
-        verbose_logger,
-        progress_logger,
-        frequency_mhz=None,
+        config: "Config",
+        simulation: "emfdtd.Simulation",
+        placement_name: str,
+        antenna: "Antenna",
+        verbose_logger: "Logger",
+        progress_logger: "Logger",
+        frequency_mhz: int = None,
     ):
         super().__init__(config, verbose_logger, progress_logger)
         self.simulation = simulation
@@ -24,11 +34,8 @@ class GriddingSetup(BaseSetup):
 
         self.units = s4l_v1.units
 
-    def setup_gridding(self, antenna_components=None):
-        """
-        Sets up the gridding for the simulation. If antenna_components are provided,
-        it will also set up the subgrids for the antenna.
-        """
+    def setup_gridding(self, antenna_components: dict = None):
+        """Sets up the main grid and subgrids for the simulation."""
         self._log("Setting up gridding...", log_type="progress")
         self._setup_main_grid()
         if antenna_components:
@@ -40,10 +47,7 @@ class GriddingSetup(BaseSetup):
             )
 
     def _setup_main_grid(self):
-        """
-        Sets up the main grid based on the overall simulation bounding box,
-        including global gridding mode, padding, and resolution.
-        """
+        """Sets up the main grid, including mode, padding, and resolution."""
         gridding_params = self.config.get_gridding_parameters()
         global_gridding_params = gridding_params.get("global_gridding", {})
         gridding_mode = global_gridding_params.get("grid_mode", "automatic")
@@ -183,8 +187,8 @@ class GriddingSetup(BaseSetup):
                 global_grid_settings.PaddingMode.enum.Automatic
             )
 
-    def _setup_subgrids(self, antenna_components):
-        # Antenna-specific gridding
+    def _setup_subgrids(self, antenna_components: dict):
+        """Sets up antenna-specific subgrids."""
         if not self.antenna:
             self._log("  - No antenna provided, skipping subgridding.", log_type="info")
             return

@@ -1,4 +1,5 @@
 import traceback
+from typing import TYPE_CHECKING
 
 from ..results_extractor import ResultsExtractor
 from ..setups.far_field_setup import FarFieldSetup
@@ -7,20 +8,20 @@ from ..simulation_runner import SimulationRunner
 from ..utils import StudyCancelledError, profile
 from .base_study import BaseStudy
 
+if TYPE_CHECKING:
+    from ..gui_manager import QueueGUI
+
 
 class FarFieldStudy(BaseStudy):
-    """
-    Manages a far-field simulation study, including setup, execution, and results extraction.
-    """
+    """Manages a far-field simulation study."""
 
-    def __init__(self, config_filename="far_field_config.json", gui=None):
+    def __init__(
+        self, config_filename: str = "far_field_config.json", gui: "QueueGUI" = None
+    ):
         super().__init__("far_field", config_filename, gui)
 
     def _run_study(self):
-        """
-        Executes the entire far-field study by iterating through each simulation case,
-        creating a separate project for each.
-        """
+        """Executes the far-field study by iterating through each simulation case."""
         self._log(
             f"--- Starting Far-Field Study: {self.config.get_setting('study_name')} ---",
             level="progress",
@@ -320,15 +321,16 @@ class FarFieldStudy(BaseStudy):
                 )
                 self.verbose_logger.error(traceback.format_exc())
 
-    def _validate_auto_cleanup_config(self, do_setup, do_run, do_extract, auto_cleanup):
-        """
-        Validates the auto_cleanup_previous_results configuration and warns about potential issues.
+    def _validate_auto_cleanup_config(
+        self, do_setup: bool, do_run: bool, do_extract: bool, auto_cleanup: list
+    ):
+        """Validates the auto_cleanup_previous_results configuration.
 
         Args:
-            do_setup (bool): Whether setup phase is enabled
-            do_run (bool): Whether run phase is enabled
-            do_extract (bool): Whether extract phase is enabled
-            auto_cleanup (list): List of file types to clean up
+            do_setup: Whether setup phase is enabled.
+            do_run: Whether run phase is enabled.
+            do_extract: Whether extract phase is enabled.
+            auto_cleanup: List of file types to clean up.
         """
         if not auto_cleanup:
             return
@@ -385,10 +387,10 @@ class FarFieldStudy(BaseStudy):
                 log_type="info",
             )
 
-    def _extract_results_for_project(self, phantom_name, freq, simulations_to_extract):
-        """
-        Extracts results for a given list of simulations.
-        """
+    def _extract_results_for_project(
+        self, phantom_name: str, freq: int, simulations_to_extract: list
+    ):
+        """Extracts results for a given list of simulations."""
         if not simulations_to_extract:
             self._log(
                 "  - No matching simulations to extract based on the current configuration.",

@@ -9,23 +9,16 @@ from .colors import get_color
 
 
 class ColorFormatter(logging.Formatter):
-    """
-    A custom log formatter that applies color to terminal output.
+    """A custom log formatter that applies color to terminal output."""
 
-    This formatter uses the `log_type` attribute of a log record to determine
-    the appropriate color from the `COLOR_MAP`. It ensures that each log
-    message is colorized and the style is reset afterward.
-    """
-
-    def format(self, record):
-        """
-        Formats the log record by adding color codes.
+    def format(self, record: logging.LogRecord) -> str:
+        """Formats the log record by adding color codes.
 
         Args:
-            record (logging.LogRecord): The log record to format.
+            record: The log record to format.
 
         Returns:
-            str: The formatted and colorized log message.
+            The formatted and colorized log message.
         """
         log_type = getattr(record, "log_type", "default")
         color = get_color(log_type)
@@ -33,23 +26,22 @@ class ColorFormatter(logging.Formatter):
         return f"{color}{message}{Style.RESET_ALL}"
 
 
-def setup_loggers(process_id=None):
-    """
-    Initializes and configures the dual-logging system for the application.
+def setup_loggers(process_id: str = None) -> tuple[logging.Logger, logging.Logger, str]:
+    """Initializes and configures the dual-logging system.
 
-    This function sets up two distinct loggers:
-    1. 'progress': For high-level, user-facing progress updates.
+    Sets up two loggers:
+    1. 'progress': For high-level, user-facing updates.
     2. 'verbose': For detailed, internal debugging information.
 
-    It also handles log rotation to prevent excessive disk usage.
+    Also handles log rotation to prevent excessive disk usage.
 
     Args:
-        process_id (str, optional): An identifier for the process to ensure
-            unique log filenames in parallel runs.
+        process_id: An identifier for the process to ensure unique log
+                    filenames in parallel runs.
 
     Returns:
-        tuple: A tuple containing the progress logger, verbose logger, and the
-               session timestamp.
+        A tuple containing the progress logger, verbose logger, and the
+        session timestamp.
     """
     init(autoreset=True)
     log_dir = "logs"
@@ -138,12 +130,7 @@ def setup_loggers(process_id=None):
 
 
 def shutdown_loggers():
-    """
-    Safely shuts down all logging handlers to release file locks.
-
-    This function should be called at the end of the application's lifecycle
-    to ensure that all log files are properly closed.
-    """
+    """Safely shuts down all logging handlers to release file locks."""
     for name in ["progress", "verbose"]:
         logger = logging.getLogger(name)
         logger.info("--- Logging shutdown ---")
@@ -153,25 +140,19 @@ def shutdown_loggers():
 
 
 class LoggingMixin:
-    """
-    A mixin class that provides a standardized logging interface.
+    """A mixin class that provides a standardized logging interface.
 
-    This mixin is intended to be inherited by classes that require logging
-    capabilities. It provides a `_log` method that abstracts the underlying
-    logging mechanism and directs messages to the appropriate logger ('progress'
-    or 'verbose') and, if available, to the GUI.
+    Provides a `_log` method that directs messages to the appropriate logger
+    ('progress' or 'verbose') and, if available, to the GUI.
     """
 
-    def _log(self, message, level="verbose", log_type="default"):
-        """
-        Logs a message with a specified level and color-coding type.
+    def _log(self, message: str, level: str = "verbose", log_type: str = "default"):
+        """Logs a message with a specified level and color-coding type.
 
         Args:
-            message (str): The message to be logged.
-            level (str): The logging level, either 'progress' for user-facing
-                         messages or 'verbose' for detailed internal messages.
-            log_type (str): A string key that maps to a color in the
-                          `COLOR_MAP` for terminal output.
+            message: The message to be logged.
+            level: The logging level ('progress' or 'verbose').
+            log_type: A string key that maps to a color for terminal output.
         """
         extra = {"log_type": log_type}
 

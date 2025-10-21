@@ -4,13 +4,19 @@ import shutil
 import traceback
 import zipfile
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from src.osparc_batch.logging_utils import setup_console_logging
+
+if TYPE_CHECKING:
+    import osparc
+
+    from src.config import Config
 
 main_logger = setup_console_logging()
 
 
-def get_osparc_client_config(config, osparc_module):
+def get_osparc_client_config(config: "Config", osparc_module) -> "osparc.Configuration":
     """Initializes and returns the oSPARC client configuration."""
     creds = config.get_osparc_credentials()
     if not all(k in creds for k in ["api_key", "api_secret", "api_server"]):
@@ -30,11 +36,11 @@ def get_osparc_client_config(config, osparc_module):
 
 def submit_job(
     input_file_path: Path,
-    client_cfg,
+    client_cfg: "osparc.Configuration",
     solver_key: str,
     solver_version: str,
     osparc_module,
-):
+) -> tuple["osparc.Job", "osparc.Solver"]:
     """Submits a single job to oSPARC and returns the job and solver objects."""
     with osparc_module.ApiClient(client_cfg) as api_client:
         files_api = osparc_module.FilesApi(api_client)
@@ -57,8 +63,11 @@ def submit_job(
 
 
 def _submit_job_in_process(
-    input_file_path: Path, client_cfg, solver_key: str, solver_version: str
-):
+    input_file_path: Path,
+    client_cfg: "osparc.Configuration",
+    solver_key: str,
+    solver_version: str,
+) -> tuple["osparc.Job", "osparc.Solver"]:
     """Helper function to run the oSPARC submission in a separate process."""
     import osparc as osparc_module
 
@@ -76,7 +85,12 @@ def _submit_job_in_process(
 
 
 def download_and_process_results(
-    job, solver, client_cfg, input_file_path, osparc_module, status_callback=None
+    job: "osparc.Job",
+    solver: "osparc.Solver",
+    client_cfg: "osparc.Configuration",
+    input_file_path: Path,
+    osparc_module,
+    status_callback=None,
 ):
     """Downloads and processes the results for a single job."""
     job_logger = logging.getLogger(f"job_{job.id}")

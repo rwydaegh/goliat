@@ -2,7 +2,7 @@
 
 This guide is for developers extending or maintaining GOLIAT. It covers the codebase structure, testing, and contribution process. GOLIAT is modular Python code interfacing with Sim4Life for EMF simulations.
 
-## Codebase Structure
+## Codebase structure
 
 GOLIAT's architecture separates concerns:
 
@@ -20,7 +20,7 @@ GOLIAT's architecture separates concerns:
 
 Key flow: Config → BaseStudy.run() → Setups → Runner → Extractor → Analyzer.
 
-### Logging and Colors
+### Logging and colors
 
 GOLIAT uses two loggers:
 - **progress**: High-level updates (console, .progress.log).
@@ -311,7 +311,7 @@ This integrated system of GUI, logging, profiling, and configuration management 
 
 GOLIAT uses `pytest` for testing, with tests located in the `tests/` directory.
 
-### Handling the `s4l_v1` Dependency
+### Handling the `s4l_v1` dependency
 
 Much of the codebase requires `s4l_v1`, a proprietary library available only within the Sim4Life Python environment on Windows. This prevents tests that rely on it from running in the Linux-based CI environment.
 
@@ -322,7 +322,7 @@ To manage this, tests requiring `s4l_v1` are marked with `@pytest.mark.skip_on_c
 pytest -m "not skip_on_ci" tests/
 ```
 
-### Local Testing Setup
+### Local testing setup
 
 To run the complete test suite, your local development environment must use the Sim4Life Python interpreter.
 
@@ -334,7 +334,7 @@ To run the complete test suite, your local development environment must use the 
 
 This configures VS Code to use the correct interpreter, which includes the `s4l_v1` library.
 
-### Running Tests Locally
+### Running tests locally
 
 With the interpreter set, run the full test suite from the terminal.
 
@@ -348,7 +348,7 @@ With the interpreter set, run the full test suite from the terminal.
     pytest tests/ -v
     ```
 
-### Adding New Tests
+### Adding new tests
 
 -   If a new test depends on `s4l_v1` (or imports a module that does), it must be decorated with `@pytest.mark.skip_on_ci`.
 -   If a test is self-contained and has no Sim4Life dependencies, it does not need the marker.
@@ -368,9 +368,9 @@ def test_a_self_contained_function():
     assert 2 + 2 == 4
 ```
 
-## Extending the Framework
+## Extending the framework
 
-### Adding a New Setup
+### Adding a new setup
 
 To add a custom source (e.g., dipole):
 
@@ -388,7 +388,7 @@ class DipoleSetup(BaseSetup):
         pass
 ```
 
-### Contribution Workflow
+### Contribution workflow
 
 1. Fork the repo.
 2. Create branch: `git checkout -b feature/new-setup`.
@@ -402,7 +402,7 @@ PR requirements:
 - Tests: Add for new features.
 - Docs: Update user_guide.md if user-facing.
 
-## Building Docs
+## Building docs
 
 Use MkDocs:
 
@@ -414,7 +414,7 @@ Build: `mkdocs build` – outputs to site/.
 
 For UML (docs/classes.puml): Use PlantUML viewer or VS Code extension.
 
-## Code Style
+## Code style
 
 - Formatter: Black (pip install black).
 - Imports: isort.
@@ -439,13 +439,13 @@ repos:
 
 Run: `pre-commit run`.
 
-## Other Notes
+## Other notes
 
 - Dependencies: requirements.txt (no Poetry).
 - Gitignore: Ignore logs/, results/, .env.
 - License: MIT – see LICENSE.
 - Changelog: Update CHANGELOG.md for releases.
 
-For more, see [Contributing](https://github.com/rwydaegh/goliat/blob/master/.github/CONTRIBUTING.md).
+For more, see [Contributing](https://github.com/rwydaegh/goliat/blob/master/.github/CONTRIBUTING.md). For a deep dive into all available parameters, refer to the [Configuration Guide](configuration.md).
 
 ---

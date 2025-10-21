@@ -2,22 +2,21 @@
 
 This section addresses common issues encountered when using GOLIAT. Issues are grouped by category, with steps to resolve them.
 
-## Sim4Life Setup Issues
+## Sim4life setup issues
 
-### Sim4Life Not Found or Python Path Error
+### Sim4life not found or python path error
 - **Symptom**: "iSolve.exe not found" or import errors for s4l_v1.
 - **Cause**: Sim4Life Python not in PATH.
 - **Solution**:
-  1. Locate Sim4Life installation (default: C:\Program Files\Sim4Life_8.2.2).
+  1. Locate Sim4Life installation (default: C:\Program Files\Sim4Life_8.2.0).
   2. Edit `.bashrc` in project root with your path:
      ```
      export PATH="/path/to/Sim4Life/Python:$PATH"
-     export PYTHONPATH="/path/to/Sim4Life/Python/Lib/site-packages:$PYTHONPATH"
      ```
   3. Source: `source .bashrc`.
   4. Verify: `python -c "import s4l_v1; print('OK')"` – should print "OK".
 
-### Sim4Life License or Phantom Download Fails
+### Sim4life license or phantom download fails
 - **Symptom**: "License error" or phantom download prompt fails.
 - **Cause**: Missing license or invalid email.
 - **Solution**:
@@ -26,27 +25,26 @@ This section addresses common issues encountered when using GOLIAT. Issues are g
   3. Rerun study – GOLIAT retries download.
   4. Manual alternative: Download phantoms from ZMT Zurich site, place in `data/`.
 
-## Project and File Issues
+## Project and file issues
 
-### Lock Files Prevent Access (.smash.s4l_lock)
+### Lock files prevent access
 - **Symptom**: "File locked" or "Project corruption" error.
-- **Cause**: Previous run crashed; lock file remains.
+- **Cause**: A previous run crashed, leaving a lock file behind. This is a hidden file with a `.s4l_lock` extension.
 - **Solution**:
   1. Close all Sim4Life instances.
-  2. Delete lock file: `rm results/.../.{project}.smash.s4l_lock`.
-  3. Rerun. If persistent, restart machine.
+  2. Manually delete the lock file. It will be in the same directory as the `.smash` file.
+  3. Rerun the simulation. If the issue persists, restarting your machine may be necessary.
 
-### Corrupted Project File (.smash)
+### Corrupted project file (.smash)
 - **Symptom**: "HDF5 format error" or "Could not open project".
 - **Cause**: Incomplete save or disk issue.
 - **Solution**:
-  1. Delete .smash file: `rm results/.../project.smash`.
-  2. Set `"do_setup": true` in config to recreate.
+  1. Set `"do_setup": true` in your configuration file. GOLIAT will automatically overwrite the corrupted file with a new one.
   3. Check disk space/logs for hardware issues.
 
-## Execution Issues
+## Execution issues
 
-### Simulation Run Fails (iSolve.exe)
+### Simulation run fails (iSolve.exe)
 - **Symptom**: "iSolve.exe failed with return code" or no output.
 - **Cause**: Path, kernel (Acceleware/CUDA), or input file issue.
 - **Solution**:
@@ -55,7 +53,7 @@ This section addresses common issues encountered when using GOLIAT. Issues are g
   3. Check `logs/*.log` for solver errors (e.g., grid too fine).
   4. Ensure `manual_isolve: true` in config.
 
-### oSPARC Batch Submission Fails
+### oSPARC batch submission fails
 - **Symptom**: "Invalid API key" or "Job failed".
 - **Cause**: .env missing/invalid or quota exceeded.
 - **Solution**:
@@ -65,7 +63,7 @@ This section addresses common issues encountered when using GOLIAT. Issues are g
   4. For "RETRYING": Code auto-retries 3 times; check logs/osparc_submission_logs/.
   5. Cancel stuck jobs: `python scripts/cancel_all_jobs.py --config your_config.json`.
 
-### No Results Extracted
+### No results extracted
 - **Symptom**: Empty JSON/PKL or "No SAR data".
 - **Cause**: `do_extract: false` or simulation failed.
 - **Solution**:
@@ -73,17 +71,17 @@ This section addresses common issues encountered when using GOLIAT. Issues are g
   2. Verify simulation completed (check power_balance ~100%).
   3. Rerun extraction: `"do_setup": false, "do_run": false, "do_extract": true`.
 
-## Configuration Issues
+## Configuration issues
 
-### Config Loading Error
+### Config loading error
 - **Symptom**: "File not found" or "Unknown study_type".
 - **Cause**: Invalid path or missing `study_type`.
 - **Solution**:
   1. Use full path: `--config configs/near_field_config.json`.
   2. Ensure `study_type`: "near_field" or "far_field".
-  3. Validate JSON syntax.
+  3. Validate your JSON syntax. For a detailed guide on the configuration options, see the [Configuration Documentation](configuration.md).
 
-### Placement or Antenna Not Found
+### Placement or antenna not found
 - **Symptom**: "Could not find component" or invalid placement.
 - **Cause**: Custom config mismatch.
 - **Solution**:
@@ -91,9 +89,9 @@ This section addresses common issues encountered when using GOLIAT. Issues are g
   2. For custom, match `placement_scenarios` keys exactly.
   3. Antenna: Ensure freq in `antenna_config` keys.
 
-## GUI and Logging Issues
+## Gui and logging issues
 
-### GUI Freezes or No Progress
+### Gui freezes or no progress
 - **Symptom**: Window unresponsive.
 - **Cause**: Multiprocessing issue or long computation.
 - **Solution**:
@@ -101,7 +99,7 @@ This section addresses common issues encountered when using GOLIAT. Issues are g
   2. Check `logs/*.progress.log` for updates.
   3. Reduce grid size for faster tests.
 
-### Logs Not Generating
+### Logs not generating
 - **Symptom**: Empty `logs/` or no output.
 - **Cause**: Permissions or rotation lock.
 - **Solution**:
@@ -109,9 +107,9 @@ This section addresses common issues encountered when using GOLIAT. Issues are g
   2. Delete stale locks: `rm logs/log_rotation.lock`.
   3. Run with `--pid 1` for unique logs.
 
-## Disk Space Issues
+## Disk space issues
 
-### Running Out of Disk Space
+### Running out of disk space
 
 - **Symptom**: "No space left on device" or simulation failures.
 - **Cause**: Large simulation output files accumulating.
@@ -126,7 +124,7 @@ This section addresses common issues encountered when using GOLIAT. Issues are g
   3. Archive completed studies to external storage.
   4. See [Configuration Guide](configuration.md#execution-control) for cleanup options.
 
-## General Tips
+## General tips
 
 - Always check `logs/` and console for errors.
 - Rerun phases individually using `execution_control`.
