@@ -184,6 +184,7 @@ This object contains phantom-specific settings, such as which placements to run 
 | `phantom_definitions.{name}.distance_from_cheek` | number | `8` | The separation distance in millimeters for the "by_cheek" placement. |
 | `phantom_definitions.{name}.distance_from_eye` | number | `200` | The separation distance in millimeters for the "front_of_eyes" placement. |
 | `phantom_definitions.{name}.distance_from_belly` | number | `100` | The separation distance in millimeters for the "by_belly" placement. |
+| `phantom_definitions.{name}.lips` | array | `[0, 122, 31]` | The [x, y, z] coordinates of the center of the lips, used for the 'cheek' placement calculation. |
 
 ---
 
