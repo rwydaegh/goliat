@@ -5,37 +5,47 @@ import threading
 import time
 import traceback
 from queue import Empty, Queue
+from typing import TYPE_CHECKING, List, Union
 
 from .logging_manager import LoggingMixin
 from .utils import non_blocking_sleep, open_project
 
+if TYPE_CHECKING:
+    from logging import Logger
+
+    import s4l_v1.simulation.emfdtd
+
+    from .config import Config
+    from .gui_manager import QueueGUI
+    from .studies.base_study import BaseStudy
+
 
 class SimulationRunner(LoggingMixin):
-    """
-    Manages the execution of the simulation, either through the Sim4Life API
-    or by calling the iSolve.exe solver manually.
-    """
+    """Manages simulation execution via the Sim4Life API or iSolve.exe."""
 
     def __init__(
         self,
-        config,
-        project_path,
-        simulations,
-        verbose_logger,
-        progress_logger,
-        gui=None,
-        study=None,
+        config: "Config",
+        project_path: str,
+        simulations: Union[
+            "s4l_v1.simulation.emfdtd.Simulation",
+            List["s4l_v1.simulation.emfdtd.Simulation"],
+        ],
+        verbose_logger: "Logger",
+        progress_logger: "Logger",
+        gui: "QueueGUI" = None,
+        study: "BaseStudy" = None,
     ):
         """Initializes the SimulationRunner.
 
         Args:
-            config (Config): The configuration object for the study.
-            project_path (str): The file path to the Sim4Life project.
-            simulations (list or Simulation): A single simulation or a list of simulations to be run.
-            verbose_logger (logging.Logger): Logger for detailed, verbose output.
-            progress_logger (logging.Logger): Logger for high-level progress updates.
-            gui (QueueGUI, optional): The GUI proxy for sending updates to the main process. Defaults to None.
-            study (BaseStudy, optional): The parent study object, used for profiling and context. Defaults to None.
+            config: The configuration object for the study.
+            project_path: The file path to the Sim4Life project.
+            simulations: A single simulation or a list of simulations to run.
+            verbose_logger: Logger for detailed, verbose output.
+            progress_logger: Logger for high-level progress updates.
+            gui: The GUI proxy for sending updates to the main process.
+            study: The parent study object for profiling and context.
         """
         self.config = config
         self.project_path = project_path
@@ -51,9 +61,7 @@ class SimulationRunner(LoggingMixin):
         self.document = s4l_v1.document
 
     def run_all(self):
-        """
-        Runs all simulations in the list, managing GUI animations.
-        """
+        """Runs all simulations in the list, managing GUI animations."""
         total_sims = len(self.simulations)
         if self.gui:
             self.gui.update_stage_progress("Running Simulation", 0, total_sims)
@@ -84,11 +92,8 @@ class SimulationRunner(LoggingMixin):
             "\n--- All simulations finished ---", level="progress", log_type="success"
         )
 
-    def run(self, simulation):
-        """
-        Runs a single simulation, wrapping the entire process in a single subtask
-        for more accurate time estimation.
-        """
+    def run(self, simulation: "s4l_v1.simulation.emfdtd.Simulation"):
+        """Runs a single simulation, wrapped in a subtask for timing."""
         if not simulation:
             self._log(
                 "ERROR: Simulation object not found. Cannot run simulation.",
@@ -152,10 +157,8 @@ class SimulationRunner(LoggingMixin):
 
         return simulation
 
-    def _get_server_id(self, server_name):
-        """
-        Finds the full server identifier from a partial server name.
-        """
+    def _get_server_id(self, server_name: str) -> str:
+        """Finds the full server identifier from a partial server name."""
         if not server_name or server_name.lower() == "localhost":
             return None
 
@@ -190,10 +193,8 @@ class SimulationRunner(LoggingMixin):
         )
         raise RuntimeError(f"Server '{server_name}' not found.")
 
-    def _run_isolve_manual(self, simulation):
-        """
-        Finds iSolve.exe, runs it in a non-blocking way, and logs its output in real-time.
-        """
+    def _run_isolve_manual(self, simulation: "s4l_v1.simulation.emfdtd.Simulation"):
+        """Finds and runs iSolve.exe non-blockingly, logging its output in real-time."""
         # --- 1. Setup: Find paths and prepare command ---
         # The input file is now written in the run() method before this is called.
 
@@ -223,15 +224,12 @@ class SimulationRunner(LoggingMixin):
         command = [isolve_path, "-i", input_file_path]
 
         # --- 2. Non-blocking reader thread setup ---
-        def reader_thread(pipe, queue):
+        def reader_thread(pipe, queue: Queue):
             """Reads lines from a subprocess pipe and puts them onto a queue.
-
-            This function is designed to be run in a separate thread to allow for
-            non-blocking reading of a subprocess's stdout or stderr.
 
             Args:
                 pipe: The pipe to read from (e.g., process.stdout).
-                queue (Queue): The queue to put the read lines onto.
+                queue: The queue to put the read lines onto.
             """
             try:
                 for line in iter(pipe.readline, ""):
@@ -321,12 +319,12 @@ class SimulationRunner(LoggingMixin):
             self.verbose_logger.error(traceback.format_exc())
             raise
 
-    def _run_osparc_direct(self, simulation, server_name):
-        """
-        Submits a job directly to the oSPARC platform.
-        """
+    def _run_osparc_direct(
+        self, simulation: "s4l_v1.simulation.emfdtd.Simulation", server_name: str
+    ):
+        """Submits a job directly to the oSPARC platform."""
         try:
-            import XOsparcApiClient  # Only available in Sim4Life v8.2.2 and later.
+            import XOsparcApiClient  # Only available in Sim4Life v8.2.0 and later.
         except ImportError as e:
             self._log(
                 "Failed to import XOsparcApiClient. This module is required for direct oSPARC integration.",
@@ -334,7 +332,7 @@ class SimulationRunner(LoggingMixin):
                 log_type="error",
             )
             self._log(
-                "Please ensure you are using Sim4Life version 8.2.2 or higher.",
+                "Please ensure you are using Sim4Life version 8.2.0 or higher.",
                 level="progress",
                 log_type="info",
             )

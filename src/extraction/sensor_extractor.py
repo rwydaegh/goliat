@@ -1,36 +1,38 @@
 """Point sensor data extraction."""
 
 import traceback
+from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 import numpy as np
 
+if TYPE_CHECKING:
+    import s4l_v1.analysis as analysis
+
+    from ..results_extractor import ResultsExtractor
+
 
 class SensorExtractor:
-    """
-    Handles extraction of point sensor E-field data.
+    """Handles extraction of point sensor E-field data.
 
-    This class extracts time-domain E-field measurements from point sensors,
+    Extracts time-domain E-field measurements from point sensors,
     generates plots, and stores the raw data.
     """
 
-    def __init__(self, parent, results_data):
-        """
-        Initializes the SensorExtractor.
+    def __init__(self, parent: "ResultsExtractor", results_data: dict):
+        """Initializes the SensorExtractor.
 
         Args:
-            parent (ResultsExtractor): The parent ResultsExtractor instance.
-            results_data (dict): The dictionary to store the extracted data.
+            parent: The parent ResultsExtractor instance.
+            results_data: The dictionary to store the extracted data.
         """
         self.parent = parent
         self.results_data = results_data
         self.verbose_logger = parent.verbose_logger
         self.progress_logger = parent.progress_logger
 
-    def extract_point_sensor_data(self, simulation_extractor):
-        """
-        Extracts time-domain E-field data from point sensors, plots the
-        magnitude, and saves the raw data.
+    def extract_point_sensor_data(self, simulation_extractor: "analysis.Extractor"):
+        """Extracts E-field data from point sensors, plots magnitude, and saves raw data.
 
         Args:
             simulation_extractor: The results extractor from the simulation object.
@@ -130,7 +132,7 @@ class SensorExtractor:
                 self.verbose_logger.error(traceback.format_exc())
 
     def _save_plot(self, fig, ax):
-        """Save the point sensor plot to disk."""
+        """Saves the point sensor plot to disk."""
         import os
 
         ax.set(

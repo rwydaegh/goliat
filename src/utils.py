@@ -5,6 +5,10 @@ import logging
 import os
 import sys
 import time
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .studies.base_study import BaseStudy
 
 
 class StudyCancelledError(Exception):
@@ -14,17 +18,14 @@ class StudyCancelledError(Exception):
 
 
 class Profiler:
-    """
-    A simple profiler to track execution time and estimate remaining time for a series of runs.
-    """
+    """A simple profiler to track and estimate execution time for a series of runs."""
 
-    def __init__(self, config_path, study_type="sensitivity_analysis"):
+    def __init__(self, config_path: str, study_type: str = "sensitivity_analysis"):
         """Initializes the simple Profiler.
 
         Args:
-            config_path (str): The file path to the profiling configuration JSON.
-            study_type (str, optional): The key for the study-specific configuration.
-                                        Defaults to "sensitivity_analysis".
+            config_path: The file path to the profiling configuration JSON.
+            study_type: The key for the study-specific configuration.
         """
         self.config_path = config_path
         self.study_type = study_type
@@ -36,7 +37,7 @@ class Profiler:
         self.completed_runs = 0
         self.current_run_start_time = None
 
-    def _load_config(self):
+    def _load_config(self) -> dict:
         """Loads the profiling configuration for the specific study type."""
         try:
             with open(self.config_path, "r") as f:
@@ -45,7 +46,7 @@ class Profiler:
         except (FileNotFoundError, json.JSONDecodeError):
             return {"average_run_time": 60.0}  # Default value
 
-    def start_study(self, total_runs):
+    def start_study(self, total_runs: int):
         """Starts a new study, resetting counters."""
         self.total_runs = total_runs
         self.completed_runs = 0
@@ -64,15 +65,13 @@ class Profiler:
             self.completed_runs += 1
             self.current_run_start_time = None
 
-    def get_average_run_time(self):
-        """
-        Gets the average run time, prioritizing measured times over historical estimates.
-        """
+    def get_average_run_time(self) -> float:
+        """Gets the average run time, prioritizing measured times over historical estimates."""
         if self.run_times:
             return sum(self.run_times) / len(self.run_times)
         return self.profiling_config.get("average_run_time", 60.0)
 
-    def get_time_remaining(self):
+    def get_time_remaining(self) -> float:
         """Estimates the time remaining for the entire study."""
         if self.total_runs == 0:
             return 0
@@ -102,16 +101,16 @@ class Profiler:
         with open(self.config_path, "w") as f:
             json.dump(full_config, f, indent=4)
 
-    def get_elapsed(self):
+    def get_elapsed(self) -> float:
         """Gets the total elapsed time since the study started.
 
         Returns:
-            float: The elapsed time in seconds.
+            The elapsed time in seconds.
         """
         return time.monotonic() - self.start_time
 
     @contextlib.contextmanager
-    def subtask(self, name):
+    def subtask(self, name: str):
         """A context manager to time a subtask."""
         # This is a simplified version for the simple profiler, it does not need a stack.
         start_time = time.monotonic()
@@ -125,7 +124,7 @@ class Profiler:
             )
 
 
-def format_time(seconds):
+def format_time(seconds: float) -> str:
     """Formats seconds into a human-readable string (e.g., 1m 23s)."""
     seconds = int(seconds)
     if seconds < 60:
@@ -137,10 +136,8 @@ def format_time(seconds):
     return f"{hours}h {minutes}m {seconds}s"
 
 
-def non_blocking_sleep(seconds):
-    """
-    A non-blocking sleep that processes GUI events.
-    """
+def non_blocking_sleep(seconds: int):
+    """A non-blocking sleep that processes GUI events."""
     from PySide6.QtCore import QCoreApplication, QEventLoop, QTime
 
     end_time = QTime.currentTime().addSecs(int(seconds))
@@ -150,10 +147,8 @@ def non_blocking_sleep(seconds):
 
 
 @contextlib.contextmanager
-def profile(study, phase_name):
-    """
-    A context manager to profile a block of code (a 'phase').
-    """
+def profile(study: "BaseStudy", phase_name: str):
+    """A context manager to profile a block of code (a 'phase')."""
     # The 'run' phase is further divided into stages (simulations), so we don't start a master stage for it.
     if phase_name != "run":
         study.profiler.start_stage(phase_name)
@@ -184,9 +179,10 @@ def profile(study, phase_name):
 
 
 @contextlib.contextmanager
-def profile_subtask(study, task_name, instance_to_profile=None):
-    """
-    A comprehensive context manager for a 'subtask'. It handles:
+def profile_subtask(study: "BaseStudy", task_name: str, instance_to_profile=None):
+    """A context manager for a 'subtask'.
+
+    Handles:
     - High-level timing via study.profiler.
     - GUI stage animation.
     - Optional, detailed line-by-line profiling if configured.
@@ -249,9 +245,7 @@ def profile_subtask(study, task_name, instance_to_profile=None):
 
 
 def ensure_s4l_running():
-    """
-    Ensures that the Sim4Life application is running.
-    """
+    """Ensures that the Sim4Life application is running."""
     from s4l_v1._api import application
 
     if application.get_app_safe() is None:
@@ -264,10 +258,8 @@ def ensure_s4l_running():
         )
 
 
-def open_project(project_path):
-    """
-    Opens a Sim4Life project or creates a new one in memory.
-    """
+def open_project(project_path: str):
+    """Opens a Sim4Life project or creates a new one in memory."""
     import s4l_v1.document
 
     if not os.path.exists(project_path):
@@ -283,10 +275,8 @@ def open_project(project_path):
         s4l_v1.document.Open(project_path)
 
 
-def delete_project_file(project_path):
-    """
-    Deletes the project file if it exists.
-    """
+def delete_project_file(project_path: str):
+    """Deletes the project file if it exists."""
     if os.path.exists(project_path):
         logging.getLogger("verbose").info(
             f"Deleting existing project file: {project_path}",

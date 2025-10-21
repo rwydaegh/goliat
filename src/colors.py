@@ -16,18 +16,13 @@ COLOR_MAP = {
 }
 
 
-def get_color(log_type):
-    """
-    Retrieves the colorama color code for a given log type.
-
-    This function looks up the log type in the global COLOR_MAP and returns the
-    corresponding colorama Fore object. If the log type is not found, it defaults
-    to white.
+def get_color(log_type: str) -> str:
+    """Retrieves the colorama color code for a given log type.
 
     Args:
-        log_type (str): The type of log message (e.g., 'info', 'warning', 'error').
+        log_type: The type of log message (e.g., 'info', 'warning').
 
     Returns:
-        str: The colorama color code for the log type.
+        The colorama color code for the log type.
     """
     return COLOR_MAP.get(log_type, Fore.WHITE)

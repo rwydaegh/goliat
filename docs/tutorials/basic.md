@@ -6,7 +6,7 @@ This tutorial shows how to run a default near-field study using the provided con
 
 Follow the [Quick Start](../quick_start.md) to install dependencies and set up Sim4Life.
 
-## Step 1: Use the Default Config
+## Step 1: Use the default config
 
 The default near-field configuration is `configs/near_field_config.json`. For this tutorial, we limit to one phantom and frequency for simplicity.
 
@@ -18,7 +18,7 @@ Key settings in `near_field_config.json`:
 
 The config inherits from `base_config.json` for common settings like solver and gridding.
 
-## Step 2: Execute the Study
+## Step 2: Execute the study
 
 Run the study from the terminal:
 
@@ -27,8 +27,6 @@ python run_study.py --config configs/near_field_config.json
 ```
 
 - The GUI opens.
-- Click "Load Config" and select `near_field_config.json` (or specify via CLI).
-- Click "Run Study".
 - The process:
   1. Downloads the phantom and antenna model if not present.
   2. Builds the simulation scene: Loads the phantom, positions the antenna.
@@ -38,7 +36,7 @@ python run_study.py --config configs/near_field_config.json
 
 The GUI displays progress, estimated time, and logs. Check the console or `logs/` for detailed output.
 
-## Step 3: Examine the Results
+## Step 3: Examine the results
 
 Results are saved in `results/near_field/thelonious/700MHz/by_cheek/`:
 
@@ -59,7 +57,7 @@ Example from `sar_results.json`:
 
 SAR values are normalized to 1W input power.
 
-## Step 4: Run the Analysis Script
+## Step 4: Run the analysis script
 
 To aggregate and visualize results:
 
@@ -80,23 +78,13 @@ df = pd.read_csv("results/near_field/normalized_results_detailed.csv")
 print(df.describe())
 ```
 
-## Expected Results
-
-For thelonious/700MHz/cheek (approximate; varies by run):
-
-- Head SAR: 0.4-0.5 mW/kg.
-- Brain psSAR10g: 1.5-2.5 mW/kg.
-- Whole-body SAR: ~0.2 mW/kg.
-
-These are normalized values. For far-field, see the far-field config.
-
 ## Troubleshooting
 
 - "Phantom download failed": Ensure internet and email in `base_config.json`. Rerun to retry.
 - Simulation slow: Reduce frequencies or use coarser grid in config.
 - No output: Check `do_extract: true` in config; review logs for errors.
 
-## Next Steps
+## Next steps
 
 - Customize placements/frequencies: [Intermediate Tutorial](intermediate.md).
 - Run far-field: Change config to `far_field_config.json`.

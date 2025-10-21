@@ -2,7 +2,7 @@
 
 Welcome to GOLIAT! This guide will get you up and running with your first automated EMF dosimetry simulation in minutes. GOLIAT streamlines the entire process using Sim4Life, from scene setup to results analysis. We'll walk through a simple "Hello World" near-field simulation to calculate Specific Absorption Rate (SAR) in a digital human phantom.
 
-## 🎯 What You'll Achieve
+## 🎯 What you'll achieve
 
 By the end of this guide, you will have:
 - Cloned the GOLIAT repository.
@@ -15,14 +15,14 @@ By the end of this guide, you will have:
 
 Before you begin, please ensure you have the following:
 
--   **Sim4Life**: Version 8.2.2 or later, with a valid license. If you don't have it, you can download it from [ZMT Zurich](https://zmt.swiss/zurich-model-of-the-human-body/).
+-   **Sim4Life**: Version 8.2.0 or later, with a valid license. If you don't have it, you can download it from [ZMT Zurich](https://zmt.swiss/zurich-model-of-the-human-body/).
 -   **Python**: Version 3.11+ (GOLIAT is designed to use the Python distribution bundled with Sim4Life, so a separate Python installation is usually not required).
 -   **Digital Phantom Models**: GOLIAT will automatically download necessary phantom models (e.g., "thelonious" for a child, "eartha" for an adult) on its first run. You may be prompted to provide your email for licensing purposes.
 -   **Antenna Models**: Supported antenna models for various frequencies (e.g., a 700 MHz PIFA antenna) are also auto-downloaded as needed.
 
 **💡 Pro Tip**: If you're new to EMF dosimetry or Sim4Life, it's helpful to familiarize yourself with core concepts like SAR (Specific Absorption Rate – the rate at which electromagnetic energy is absorbed by biological tissue) and digital human phantoms (realistic 3D models of the human body used for simulation).
 
-## Step 1: Clone the Repository and Install Dependencies
+## Step 1: Clone the repository and install dependencies
 
 First, open your terminal or command prompt and clone the GOLIAT repository:
 
@@ -39,14 +39,14 @@ Next, install the required Python dependencies. It's crucial to use the Python e
 source .bashrc
 
 # Example .bashrc content for Windows (adjust path as necessary):
-# export PATH="/c/Program Files/Sim4Life_8.2.2/Python:$PATH"
-# export PYTHONPATH="/c/Program Files/Sim4Life_8.2.2/Python/Lib/site-packages:$PYTHONPATH"
+# export PATH="/c/Program Files/Sim4Life_8.2.0/Python:$PATH"
+# export PYTHONPATH="/c/Program Files/Sim4Life_8.2.0/Python/Lib/site-packages:$PYTHONPATH"
 
 # 2. Install Python packages
 pip install -r requirements.txt
 ```
 
-## Step 2: Configure Your First Study
+## Step 2: Configure your first study
 
 GOLIAT uses a flexible JSON-based configuration system located in the `configs/` directory. For your first simulation, we'll use a simple near-field configuration.
 
@@ -82,7 +82,7 @@ GOLIAT uses a flexible JSON-based configuration system located in the `configs/`
         DOWNLOAD_EMAIL=your_email@example.com
         ```
 
-## Step 3: Run Your First Simulation
+## Step 3: Run your first simulation
 
 Now you're ready to launch your first GOLIAT study! Execute the following command in your terminal:
 
@@ -103,7 +103,7 @@ python run_study.py --config configs/my_first_near_field_study.json
 ![GOLIAT GUI during simulation](img/gui_placeholder.png)
 *Placeholder for a screenshot of the GOLIAT GUI during a simulation run.*
 
-## Step 4: View and Analyze Results
+## Step 4: View and analyze results
 
 Once the simulation is complete, GOLIAT will save all results in a structured directory within the `results/` folder. For our example, you'll find outputs in `results/near_field/thelonious/700MHz/by_cheek/`.
 
@@ -125,12 +125,12 @@ This will generate additional CSV files and plots in the `results/` directory.
 
 **Troubleshooting**: Encountering issues? Refer to the [Troubleshooting Guide](troubleshooting.md) for common problems and solutions (e.g., Sim4Life licensing, Python path errors, disk space management).
 
-## Next Steps
+## Next steps
 
 Congratulations, you've successfully run your first GOLIAT simulation! Here's what you can do next:
 
 -   **Customize Your Studies**: Experiment with your configuration files to explore different frequencies, phantoms, and antenna placements.
--   **Manage Disk Space**: If running multiple simulations serially, enable automatic cleanup to save space: `"auto_cleanup_previous_results": ["output"]`. See [Configuration Guide](configuration.md#execution-control).
+- **Manage Disk Space**: If running multiple simulations serially, enable automatic cleanup to save space: `"auto_cleanup_previous_results": ["output"]`. See [Configuration Guide](configuration.md#execution-control).
 -   **Scale with the Cloud**: Learn how to leverage oSPARC for parallel, large-scale simulations by setting `"batch_run": true` in your config.
 -   **Explore Tutorials**: Dive deeper with our [Basic Tutorial](tutorials/basic.md) for more default runs, or the [Advanced Tutorial](tutorials/advanced.md) for batching and complex scenarios.
 

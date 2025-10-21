@@ -3,7 +3,7 @@ import logging
 import colorama
 
 
-def setup_console_logging():
+def setup_console_logging() -> logging.Logger:
     """Sets up a basic console logger with color."""
     colorama.init(autoreset=True)
     logger = logging.getLogger("osparc_batch")
@@ -14,8 +14,8 @@ def setup_console_logging():
     return logger
 
 
-def setup_job_logging(base_dir: str, job_id: str):
-    """Set up a unique log file for each job in a specific subdirectory."""
+def setup_job_logging(base_dir: str, job_id: str) -> logging.Logger:
+    """Sets up a unique log file for each job in a specific subdirectory."""
     from pathlib import Path
 
     log_dir = Path(base_dir) / "logs" / "osparc_submission_logs"

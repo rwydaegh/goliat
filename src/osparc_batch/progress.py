@@ -9,7 +9,9 @@ import colorama
 from src.osparc_batch.logging_utils import STATUS_COLORS
 
 
-def get_progress_report(input_files, job_statuses, file_to_job_id) -> str:
+def get_progress_report(
+    input_files: list[Path], job_statuses: dict, file_to_job_id: dict
+) -> str:
     """Generates a status summary and a colored file tree string."""
     report_lines = []
 

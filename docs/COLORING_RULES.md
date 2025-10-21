@@ -2,7 +2,7 @@
 
 This document outlines the rules for colorizing terminal output using the `colorama` library. The goal is to improve readability and draw the user's attention to the most critical information. All colors are defined in the `COLOR_MAP` dictionary in [`src/colors.py`](https://github.com/rwydaegh/goliat/blob/master/src/colors.py) to ensure consistency and ease of maintenance.
 
-## How to Use
+## How to use
 
 To apply a color, use the `_log` method from the `LoggingMixin` and specify the `log_type`.
 
@@ -14,7 +14,7 @@ self._log("File saved successfully.", level='progress', log_type='success')
 
 **Important**: When adding a `log_type`, do not change the existing `level` parameter (e.g., `level='progress'`). The `level` controls which log file the message goes to, while `log_type` only controls the terminal color.
 
-## Color-to-Type Mapping
+## Color-to-type mapping
 
 This table defines the intended use for each `log_type` and its corresponding color.
 

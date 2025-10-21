@@ -3,13 +3,14 @@ import subprocess
 import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from typing import Any, Callable
 
 from PySide6.QtCore import QObject, QTimer, Signal, Slot
 
 
 class Worker(QObject):
-    """Worker thread to run the oSPARC batch main logic and manage polling/downloads."""
+    """Worker thread for oSPARC batch logic, polling, and downloads."""
 
     finished = Signal()
     progress = Signal(str)
@@ -55,8 +56,8 @@ class Worker(QObject):
         """Starts the long-running task."""
         self.main_process_logic(self)
 
-    def _download_job_in_thread(self, job, solver, file_path):
-        """Helper to run a single download in a thread."""
+    def _download_job_in_thread(self, job, solver, file_path: Path):
+        """Runs a single download in a thread."""
         import osparc as osparc_module
 
         try:
@@ -169,7 +170,7 @@ class Worker(QObject):
                     self.job_statuses[job.id] = ("FAILED", time.time())
                     self.downloaded_jobs.add(job.id)
 
-        def _resubmit_job(self, file_path):
+        def _resubmit_job(self, file_path: Path):
             """Resubmits a failed job."""
             from src.osparc_batch.runner import (
                 _submit_job_in_process,
@@ -219,7 +220,7 @@ class Worker(QObject):
                 )
 
     @Slot(str, str)
-    def _update_job_status(self, job_id, status):
+    def _update_job_status(self, job_id: str, status: str):
         """Thread-safe method to update job status."""
         self.job_statuses[job_id] = (status, time.time())
 

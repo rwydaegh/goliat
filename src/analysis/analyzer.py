@@ -2,28 +2,29 @@ import json
 import logging
 import os
 import pickle
+from typing import TYPE_CHECKING
 
 import pandas as pd
 
-from ..config import Config
-from .base_strategy import BaseAnalysisStrategy
 from .plotter import Plotter
+
+if TYPE_CHECKING:
+    from ..config import Config
+    from .base_strategy import BaseAnalysisStrategy
 
 
 class Analyzer:
-    """
-    Analyzes the results of simulation studies using a strategy pattern.
-    """
+    """Analyzes simulation results using a strategy pattern."""
 
     def __init__(
-        self, config: Config, phantom_name: str, strategy: BaseAnalysisStrategy
+        self, config: "Config", phantom_name: str, strategy: "BaseAnalysisStrategy"
     ):
         """Initializes the Analyzer.
 
         Args:
-            config (Config): The configuration object for the study.
-            phantom_name (str): The name of the phantom model being analyzed.
-            strategy (BaseAnalysisStrategy): The analysis strategy to use (e.g., NearFieldAnalysisStrategy).
+            config: The configuration object for the study.
+            phantom_name: The name of the phantom model being analyzed.
+            strategy: The analysis strategy to use.
         """
         self.config = config
         self.base_dir = config.base_dir
@@ -51,9 +52,7 @@ class Analyzer:
         }
 
     def run_analysis(self):
-        """
-        Main method to run the full analysis pipeline using the selected strategy.
-        """
+        """Runs the full analysis pipeline using the selected strategy."""
         logging.getLogger("progress").info(
             f"--- Starting Results Analysis for Phantom: {self.phantom_name} ---",
             extra={"log_type": "header"},
@@ -80,20 +79,18 @@ class Analyzer:
         )
 
     def _process_single_result(
-        self, frequency_mhz, scenario_name, pos_name, orient_name
+        self, frequency_mhz: int, scenario_name: str, pos_name: str, orient_name: str
     ):
         """Processes a single simulation result file.
 
-        This method locates the result files (pickle and JSON) for a specific
-        simulation case, extracts the data using the current strategy, applies
-        any necessary bug fixes, and appends the processed data to the
-        aggregator lists.
+        Locates result files, extracts data using the current strategy, applies
+        bug fixes, and appends the processed data to the aggregator lists.
 
         Args:
-            frequency_mhz (int): The frequency of the simulation in MHz.
-            scenario_name (str): The name of the placement scenario (e.g., 'by_cheek').
-            pos_name (str): The name of the position within the scenario.
-            orient_name (str): The name of the orientation within the scenario.
+            frequency_mhz: The frequency of the simulation in MHz.
+            scenario_name: The name of the placement scenario (e.g., 'by_cheek').
+            pos_name: The name of the position within the scenario.
+            orient_name: The name of the orientation within the scenario.
         """
         if self.strategy.__class__.__name__ == "FarFieldAnalysisStrategy":
             # For far-field, pos_name is the full placement directory name
@@ -141,8 +138,10 @@ class Analyzer:
                 extra={"log_type": "error"},
             )
 
-    def _convert_units_and_cache(self, results_df, organ_results_df):
-        """Converts SAR units to mW/kg and caches both summary and organ-level results."""
+    def _convert_units_and_cache(
+        self, results_df: pd.DataFrame, organ_results_df: pd.DataFrame
+    ) -> pd.DataFrame:
+        """Converts SAR units to mW/kg and caches summary and organ-level results."""
         sar_columns = [col for col in results_df.columns if "SAR" in col]
         results_df[sar_columns] = results_df[sar_columns] * 1000
 
@@ -161,12 +160,14 @@ class Analyzer:
         )
         return results_df
 
-    def _export_reports(self, results_df, all_organ_results_df):
-        """Exports the aggregated results to CSV files and prints summaries to the log.
+    def _export_reports(
+        self, results_df: pd.DataFrame, all_organ_results_df: pd.DataFrame
+    ):
+        """Exports aggregated results to CSV files and logs summaries.
 
         Args:
-            results_df (pd.DataFrame): DataFrame containing the main aggregated results.
-            all_organ_results_df (pd.DataFrame): DataFrame containing detailed organ-level results.
+            results_df: DataFrame with main aggregated results.
+            all_organ_results_df: DataFrame with detailed organ-level results.
         """
         results_for_export = results_df.drop(columns=["input_power_w", "scenario"])
         logging.getLogger("progress").info(
@@ -213,12 +214,14 @@ class Analyzer:
             extra={"log_type": "success"},
         )
 
-    def _generate_plots(self, results_df, all_organ_results_df):
+    def _generate_plots(
+        self, results_df: pd.DataFrame, all_organ_results_df: pd.DataFrame
+    ):
         """Delegates plot generation to the current analysis strategy.
 
         Args:
-            results_df (pd.DataFrame): DataFrame containing the main aggregated results.
-            all_organ_results_df (pd.DataFrame): DataFrame containing detailed organ-level results.
+            results_df: DataFrame with main aggregated results.
+            all_organ_results_df: DataFrame with detailed organ-level results.
         """
         # This method is now delegated to the strategy
         self.strategy.generate_plots(self.plotter, results_df, all_organ_results_df)

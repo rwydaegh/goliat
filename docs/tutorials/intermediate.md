@@ -2,7 +2,7 @@
 
 This tutorial builds upon the [Basic Tutorial](basic.md) by demonstrating how to customize antenna placements and simulation frequencies in GOLIAT. You'll learn to modify configuration files to explore different exposure scenarios.
 
-## 🎯 What You'll Achieve
+## 🎯 What you'll achieve
 
 By the end of this tutorial, you will be able to:
 -   Create a custom configuration file for intermediate studies.
@@ -14,7 +14,7 @@ By the end of this tutorial, you will be able to:
 
 Ensure you have completed the [Basic Tutorial](basic.md) and have a working GOLIAT environment.
 
-## Step 1: Create a Custom Configuration File
+## Step 1: Create a custom configuration file
 
 Instead of modifying the default `near_field_config.json`, we'll create a new configuration file to keep your changes organized.
 
@@ -25,7 +25,7 @@ Instead of modifying the default `near_field_config.json`, we'll create a new co
 
 2.  Open `configs/my_intermediate_study.json` in your code editor.
 
-## Step 2: Define Multiple Frequencies
+## Step 2: Define multiple frequencies
 
 Let's add another frequency to our study. We'll simulate at both 700 MHz and 900 MHz.
 
@@ -46,7 +46,7 @@ Locate the `"frequencies_mhz"` array and modify it:
 }
 ```
 
-## Step 3: Specify Custom Antenna Placements
+## Step 3: Specify custom antenna placements
 
 GOLIAT allows you to define various antenna placement scenarios. We'll add a new placement called "by_ear" and enable it for the "thelonious" phantom.
 
@@ -96,7 +96,7 @@ GOLIAT allows you to define various antenna placement scenarios. We'll add a new
     }
     ```
 
-## Step 4: Run the Customized Study
+## Step 4: Run the customized study
 
 Save your `configs/my_intermediate_study.json` file. Now, execute the study using your new configuration:
 
@@ -112,7 +112,7 @@ GOLIAT will now run simulations for:
 
 You will see the GUI update as each simulation scenario is processed.
 
-## Step 5: Examine the Results
+## Step 5: Examine the results
 
 After the study completes, navigate to your `results/` directory. You will find new subdirectories corresponding to the additional frequency and placement:
 
@@ -136,7 +136,7 @@ This will generate aggregated CSVs and plots that include data from all frequenc
 -   **JSON Syntax Errors**: Ensure your JSON file is correctly formatted. Use a JSON validator if you encounter issues.
 -   **Simulation Time**: Running multiple frequencies and placements will increase the total simulation time. Consider using fewer scenarios for quick tests.
 
-## ➡️ Next Steps
+## ➡️ Next steps
 
 -   **Advanced Batching**: Learn how to run many simulations in parallel using oSPARC cloud batching in the [Advanced Tutorial](advanced.md).
 -   **Far-Field Studies**: Explore environmental exposure scenarios by configuring a far-field study.

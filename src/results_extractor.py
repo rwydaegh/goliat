@@ -1,5 +1,6 @@
 import json
 import os
+from typing import TYPE_CHECKING
 
 from .extraction.cleaner import Cleaner
 from .extraction.json_encoder import NumpyArrayEncoder
@@ -9,49 +10,55 @@ from .extraction.sar_extractor import SarExtractor
 from .extraction.sensor_extractor import SensorExtractor
 from .logging_manager import LoggingMixin
 
+if TYPE_CHECKING:
+    from logging import Logger
+
+    import s4l_v1.simulation.emfdtd
+
+    from .config import Config
+    from .gui_manager import QueueGUI
+    from .studies.base_study import BaseStudy
+
 
 class ResultsExtractor(LoggingMixin):
-    """
-    Orchestrates post-processing and data extraction from simulation results.
+    """Orchestrates post-processing and data extraction from simulation results.
 
-    This class coordinates specialized extraction modules to extract input power,
-    SAR statistics, power balance, and point sensor data from a completed
-    Sim4Life simulation. It also manages report generation and file cleanup.
+    Coordinates modules to extract power, SAR, and sensor data from a
+    Sim4Life simulation, then manages report generation and cleanup.
     """
 
     def __init__(
         self,
-        config,
-        simulation,
-        phantom_name,
-        frequency_mhz,
-        scenario_name,
-        position_name,
-        orientation_name,
-        study_type,
-        verbose_logger,
-        progress_logger,
-        free_space=False,
-        gui=None,
-        study=None,
+        config: "Config",
+        simulation: "s4l_v1.simulation.emfdtd.Simulation",
+        phantom_name: str,
+        frequency_mhz: int,
+        scenario_name: str,
+        position_name: str,
+        orientation_name: str,
+        study_type: str,
+        verbose_logger: "Logger",
+        progress_logger: "Logger",
+        free_space: bool = False,
+        gui: "QueueGUI" = None,
+        study: "BaseStudy" = None,
     ):
-        """
-        Initializes the ResultsExtractor.
+        """Initializes the ResultsExtractor.
 
         Args:
-            config (Config): The configuration object for the study.
-            simulation (s4l_v1.simulation.emfdtd.Simulation): The simulation object to extract results from.
-            phantom_name (str): The name of the phantom model used.
-            frequency_mhz (int): The simulation frequency in MHz.
-            scenario_name (str): The base name of the placement scenario.
-            position_name (str): The name of the position within the scenario.
-            orientation_name (str): The name of the orientation within the scenario.
-            study_type (str): The type of the study (e.g., 'near_field').
-            verbose_logger (logging.Logger): Logger for detailed output.
-            progress_logger (logging.Logger): Logger for progress updates.
-            free_space (bool): Flag indicating if the simulation was run in free space.
-            gui (QueueGUI, optional): The GUI proxy for updates.
-            study (BaseStudy, optional): The parent study object.
+            config: The configuration object for the study.
+            simulation: The simulation object to extract results from.
+            phantom_name: The name of the phantom model used.
+            frequency_mhz: The simulation frequency in MHz.
+            scenario_name: The base name of the placement scenario.
+            position_name: The name of the position within the scenario.
+            orientation_name: The name of the orientation within the scenario.
+            study_type: The type of the study (e.g., 'near_field').
+            verbose_logger: Logger for detailed output.
+            progress_logger: Logger for progress updates.
+            free_space: Flag indicating if the simulation was run in free space.
+            gui: The GUI proxy for updates.
+            study: The parent study object.
         """
         self.config = config
         self.simulation = simulation
@@ -75,12 +82,10 @@ class ResultsExtractor(LoggingMixin):
         self.units = units
 
     def extract(self):
-        """
-        Orchestrates the extraction of all relevant data from the simulation.
+        """Orchestrates the extraction of all relevant data from the simulation.
 
-        This is the main entry point for the class, which coordinates specialized
-        extraction modules to extract input power, SAR statistics, power balance,
-        and point sensor data, then saves the compiled results.
+        This is the main entry point for the class. It coordinates extraction
+        modules for power, SAR, and sensor data, then saves the results.
         """
         self._log("Extracting results...", log_type="progress")
         if not self.simulation:
@@ -143,8 +148,8 @@ class ResultsExtractor(LoggingMixin):
             cleaner = Cleaner(self)
             cleaner.cleanup_simulation_files()
 
-    def _save_json_results(self, results_data):
-        """Save the final results to JSON format."""
+    def _save_json_results(self, results_data: dict):
+        """Saves the final results to a JSON file."""
         results_dir = os.path.join(
             self.config.base_dir,
             "results",

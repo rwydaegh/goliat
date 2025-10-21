@@ -1,6 +1,9 @@
 import logging
 import time
 import traceback
+from logging import Logger
+from multiprocessing import Event
+from queue import Queue
 
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QAction
@@ -18,29 +21,34 @@ from PySide6.QtWidgets import (
 )
 
 from src.logging_manager import LoggingMixin, shutdown_loggers
+from src.profiler import Profiler
 from src.utils import format_time
 
 
 class QueueGUI(LoggingMixin):
-    """
-    A proxy for the main GUI, designed to operate in a separate process.
+    """A proxy for the main GUI, designed to operate in a separate process.
 
-    This class mimics the interface of the `ProgressGUI` but directs all its
-    calls to a `multiprocessing.Queue`. This allows a separate worker process
-    to send status updates, progress information, and commands to the main
-    GUI process in a thread-safe manner.
+    This class mimics the `ProgressGUI` interface but directs all calls to a
+    `multiprocessing.Queue`, allowing a worker process to send thread-safe
+    updates to the main GUI process.
     """
 
-    def __init__(self, queue, stop_event, profiler, progress_logger, verbose_logger):
-        """
-        Initializes the QueueGUI proxy.
+    def __init__(
+        self,
+        queue: "Queue",
+        stop_event: "Event",
+        profiler: "Profiler",
+        progress_logger: "Logger",
+        verbose_logger: "Logger",
+    ):
+        """Initializes the QueueGUI proxy.
 
         Args:
-            queue (multiprocessing.Queue): The queue for inter-process communication.
-            stop_event (multiprocessing.Event): An event to signal termination.
-            profiler (Profiler): The profiler instance for ETA calculations.
-            progress_logger (logging.Logger): Logger for progress messages.
-            verbose_logger (logging.Logger): Logger for detailed messages.
+            queue: The queue for inter-process communication.
+            stop_event: An event to signal termination.
+            profiler: The profiler instance for ETA calculations.
+            progress_logger: Logger for progress messages.
+            verbose_logger: Logger for detailed messages.
         """
         self.queue = queue
         self.stop_event = stop_event
@@ -48,18 +56,20 @@ class QueueGUI(LoggingMixin):
         self.progress_logger = progress_logger
         self.verbose_logger = verbose_logger
 
-    def log(self, message, level="verbose", log_type="default"):
+    def log(self, message: str, level: str = "verbose", log_type: str = "default"):
         """Sends a log message to the main GUI process via the queue."""
         if level == "progress":
             self.queue.put({"type": "status", "message": message, "log_type": log_type})
 
-    def update_overall_progress(self, current_step, total_steps):
+    def update_overall_progress(self, current_step: int, total_steps: int):
         """Sends an overall progress update to the queue."""
         self.queue.put(
             {"type": "overall_progress", "current": current_step, "total": total_steps}
         )
 
-    def update_stage_progress(self, stage_name, current_step, total_steps):
+    def update_stage_progress(
+        self, stage_name: str, current_step: int, total_steps: int
+    ):
         """Sends a stage-specific progress update to the queue."""
         self.queue.put(
             {
@@ -70,8 +80,8 @@ class QueueGUI(LoggingMixin):
             }
         )
 
-    def start_stage_animation(self, task_name, end_value):
-        """Sends a command to start a progress bar animation, including the estimated duration."""
+    def start_stage_animation(self, task_name: str, end_value: int):
+        """Sends a command to start a progress bar animation."""
         estimate = self.profiler.get_subtask_estimate(task_name)
         self.queue.put(
             {"type": "start_animation", "estimate": estimate, "end_value": end_value}
@@ -82,37 +92,40 @@ class QueueGUI(LoggingMixin):
         self.queue.put({"type": "end_animation"})
 
     def update_profiler(self):
-        """Sends the entire updated profiler object to the GUI process."""
+        """Sends the updated profiler object to the GUI process."""
         self.queue.put({"type": "profiler_update", "profiler": self.profiler})
 
     def process_events(self):
-        """A no-op method for interface compatibility with the real GUI."""
+        """A no-op method for interface compatibility."""
         pass
 
-    def is_stopped(self):
+    def is_stopped(self) -> bool:
         """Checks if the main process has signaled a stop request."""
         return self.stop_event.is_set()
 
 
 class ProgressGUI(QWidget):
-    """
-    The main graphical user interface for monitoring simulation progress.
+    """The main GUI for monitoring simulation progress.
 
-    This class provides a real-time view of the study's progress, including
-    overall and stage-specific progress bars, an ETA estimate, and a log of
-    status messages. It runs in the main process and communicates with the
-    worker process via a multiprocessing queue.
+    Provides a real-time view of the study's progress, including progress bars,
+    ETA, and a log of status messages. It runs in the main process and
+    communicates with the worker process via a multiprocessing queue.
     """
 
-    def __init__(self, queue, stop_event, process, window_title="Simulation Progress"):
-        """
-        Initializes the ProgressGUI window.
+    def __init__(
+        self,
+        queue: "Queue",
+        stop_event: "Event",
+        process,
+        window_title: str = "Simulation Progress",
+    ):
+        """Initializes the ProgressGUI window.
 
         Args:
-            queue (multiprocessing.Queue): The queue for receiving messages from the worker process.
-            stop_event (multiprocessing.Event): An event to signal termination to the worker process.
-            process (multiprocessing.Process): The worker process running the study.
-            window_title (str): The title of the GUI window.
+            queue: The queue for receiving messages from the worker process.
+            stop_event: An event to signal termination to the worker process.
+            process: The worker process running the study.
+            window_title: The title of the GUI window.
         """
         super().__init__()
         self.queue = queue
@@ -150,7 +163,7 @@ class ProgressGUI(QWidget):
         self.clock_timer.start(1000)
 
     def init_ui(self):
-        """Initializes and arranges all UI widgets in the main window."""
+        """Initializes and arranges all UI widgets."""
         self.setWindowTitle(self.window_title)
         self.layout = QVBoxLayout()
         self.grid_layout = QGridLayout()
@@ -209,7 +222,7 @@ class ProgressGUI(QWidget):
         self.tray_icon.activated.connect(self.tray_icon_activated)
 
     def process_queue(self):
-        """Periodically processes messages from the worker process queue to update the UI."""
+        """Processes messages from the worker process queue to update the UI."""
         from queue import Empty
 
         while not self.queue.empty():
@@ -249,7 +262,7 @@ class ProgressGUI(QWidget):
                 )
 
     def tray_icon_activated(self, reason):
-        """Handles activation of the system tray icon (e.g., a click)."""
+        """Handles activation of the system tray icon."""
         if reason == QSystemTrayIcon.ActivationReason.Trigger:
             self.show_from_tray()
 
@@ -264,7 +277,7 @@ class ProgressGUI(QWidget):
         self.tray_icon.hide()
 
     def stop_study(self):
-        """Sends a stop signal to the worker process and disables GUI controls."""
+        """Sends a stop signal to the worker process."""
         message = "--- Sending stop signal to study process ---"
         self.progress_logger.info(message, extra={"log_type": "warning"})
         self.verbose_logger.info(message, extra={"log_type": "warning"})
@@ -274,14 +287,16 @@ class ProgressGUI(QWidget):
 
         self.stop_event.set()
 
-    def update_overall_progress(self, current_step, total_steps):
+    def update_overall_progress(self, current_step: int, total_steps: int):
         """Updates the overall progress bar."""
         if total_steps > 0:
             progress_percent = (current_step / total_steps) * 100
             self.overall_progress_bar.setValue(int(progress_percent * 10))
             self.overall_progress_bar.setFormat(f"{progress_percent:.1f}%")
 
-    def update_stage_progress(self, stage_name, current_step, total_steps):
+    def update_stage_progress(
+        self, stage_name: str, current_step: int, total_steps: int
+    ):
         """Updates the stage-specific progress bar."""
         self.stage_label.setText(f"Current Stage: {stage_name}")
         self.total_steps_for_stage = total_steps
@@ -294,13 +309,12 @@ class ProgressGUI(QWidget):
         self.stage_progress_bar.setValue(final_value)
         self.stage_progress_bar.setFormat(f"{progress_percent * 100:.0f}%")
 
-    def start_stage_animation(self, estimated_duration, end_step):
-        """
-        Starts a smooth animation for the stage progress bar based on an estimated duration.
+    def start_stage_animation(self, estimated_duration: float, end_step: int):
+        """Starts a smooth animation for the stage progress bar.
 
         Args:
-            estimated_duration (float): The estimated time in seconds for the task.
-            end_step (int): The target step value for the animation.
+            estimated_duration: The estimated time in seconds for the task.
+            end_step: The target step value for the animation.
         """
         self.animation_start_time = time.monotonic()
         self.animation_duration = estimated_duration
@@ -347,12 +361,12 @@ class ProgressGUI(QWidget):
         percent = (current_value / 1000) * 100
         self.stage_progress_bar.setFormat(f"{percent:.0f}%")
 
-    def update_status(self, message, log_type="default"):
+    def update_status(self, message: str, log_type: str = "default"):
         """Appends a message to the status log text box."""
         self.status_text.append(message)
 
     def update_clock(self):
-        """Updates the elapsed time and estimated time remaining labels."""
+        """Updates the elapsed time and ETA labels."""
         elapsed_sec = time.monotonic() - self.start_time
         self.elapsed_label.setText(f"Elapsed: {format_time(elapsed_sec)}")
 
@@ -369,8 +383,8 @@ class ProgressGUI(QWidget):
         else:
             self.eta_label.setText("Time Remaining: N/A")
 
-    def study_finished(self, error=False):
-        """Handles the completion of the study, stopping timers and updating the UI."""
+    def study_finished(self, error: bool = False):
+        """Handles study completion, stopping timers and updating the UI."""
         self.clock_timer.stop()
         self.queue_timer.stop()
         self.end_stage_animation()
@@ -387,7 +401,7 @@ class ProgressGUI(QWidget):
         QTimer.singleShot(3000, self.close)
 
     def closeEvent(self, event):
-        """Handles the window close event, ensuring the worker process is terminated."""
+        """Handles the window close event, ensuring worker process termination."""
         if self.tray_icon.isVisible():
             self.tray_icon.hide()
 

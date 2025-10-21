@@ -1,23 +1,28 @@
 import logging
 import os
+from typing import TYPE_CHECKING
 
 import pandas as pd
 
 from .base_strategy import BaseAnalysisStrategy
 
+if TYPE_CHECKING:
+    from .analyzer import Analyzer
+    from .plotter import Plotter
+
 
 class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
-    """
-    Analysis strategy for far-field simulations.
-    """
+    """Analysis strategy for far-field simulations."""
 
-    def get_results_base_dir(self):
+    def get_results_base_dir(self) -> str:
+        """Gets the base directory for far-field results."""
         return os.path.join(self.base_dir, "results", "far_field", self.phantom_name)
 
-    def get_plots_dir(self):
+    def get_plots_dir(self) -> str:
+        """Gets the directory for saving far-field plots."""
         return os.path.join(self.base_dir, "plots", "far_field", self.phantom_name)
 
-    def load_and_process_results(self, analyzer):
+    def load_and_process_results(self, analyzer: "Analyzer"):
         frequencies = self.config.get_setting("frequencies_mhz", [])
         far_field_params = self.config.get_setting("far_field_setup/environmental", {})
         incident_directions = far_field_params.get("incident_directions", [])
@@ -33,20 +38,22 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
                         freq, "environmental", placement_name, ""
                     )
 
-    def get_normalization_factor(self, frequency_mhz, simulated_power_w):
-        # For far-field, we normalize to a power density of 1 W/m^2
-        # This should be handled in the simulation results, so factor is 1.0 here.
+    def get_normalization_factor(
+        self, frequency_mhz: int, simulated_power_w: float
+    ) -> float:
+        """Returns the normalization factor for far-field analysis (always 1.0)."""
+        # Far-field is normalized to 1 W/m^2 in the simulation itself.
         return 1.0
 
     def extract_data(
         self,
-        pickle_data,
-        frequency_mhz,
-        placement_name,
-        scenario_name,
-        sim_power,
-        norm_factor,
-    ):
+        pickle_data: dict,
+        frequency_mhz: int,
+        placement_name: str,
+        scenario_name: str,
+        sim_power: float,
+        norm_factor: float,
+    ) -> tuple[dict, list]:
         summary_results = pickle_data.get("summary_results", {})
         detailed_df = pickle_data.get("detailed_sar_stats")
 
@@ -76,13 +83,21 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
                 )
         return result_entry, organ_entries
 
-    def apply_bug_fixes(self, result_entry):
+    def apply_bug_fixes(self, result_entry: dict) -> dict:
+        """No bug fixes needed for far-field data."""
         return result_entry
 
-    def calculate_summary_stats(self, results_df):
+    def calculate_summary_stats(self, results_df: pd.DataFrame) -> pd.DataFrame:
+        """Calculates summary statistics for far-field results."""
         return results_df.groupby("frequency_mhz").mean(numeric_only=True)
 
-    def generate_plots(self, analyzer, plotter, results_df, all_organ_results_df):
+    def generate_plots(
+        self,
+        analyzer: "Analyzer",
+        plotter: "Plotter",
+        results_df: pd.DataFrame,
+        all_organ_results_df: pd.DataFrame,
+    ):
         logging.getLogger("progress").info(
             "\n--- Generating plots for far-field analysis ---",
             extra={"log_type": "header"},

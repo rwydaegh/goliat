@@ -4,19 +4,14 @@ from typing import Any, Dict
 
 
 def get_parameter_from_json(file_path: str, json_path: str) -> Any:
-    """
-    Extracts a nested parameter from a JSON file using a dot-separated path.
-
-    This function navigates through a nested dictionary loaded from a JSON file
-    to retrieve a value specified by a path string (e.g., "key1.key2.key3").
+    """Extracts a nested parameter from a JSON file using a dot-separated path.
 
     Args:
-        file_path (str): The absolute or relative path to the JSON file.
-        json_path (str): The dot-separated path representing the nested keys.
+        file_path: The path to the JSON file.
+        json_path: The dot-separated path to the nested key.
 
     Returns:
-        Any: The value found at the specified path, or None if the path is
-             invalid or the file does not exist.
+        The value found at the specified path, or None if not found.
     """
     if not os.path.exists(file_path):
         return None
@@ -35,23 +30,18 @@ def get_parameter_from_json(file_path: str, json_path: str) -> Any:
 
 
 def get_parameter(source_config: Dict[str, Any], context: Dict[str, Any]) -> Any:
-    """
-    Retrieves a parameter from a specified data source based on a configuration.
+    """Retrieves a parameter from a data source based on a configuration.
 
-    This function acts as a generic data retrieval interface. It uses a
-    `source_config` dictionary to determine the type of data source (e.g., 'json')
-    and the necessary parameters to access it. The `context` dictionary provides
-    dynamic values to format file paths or other parameters.
+    This function uses a `source_config` to determine the data source type
+    (e.g., 'json') and access parameters. The `context` dictionary provides
+    dynamic values for formatting file paths.
 
     Args:
-        source_config (Dict[str, Any]): A dictionary defining the data source,
-            including 'source_type', 'file_path_template', and 'json_path'.
-        context (Dict[str, Any]): A dictionary with contextual information
-            (e.g., frequency, phantom_name) to format the file path.
+        source_config: A dictionary defining the data source.
+        context: A dictionary with contextual information for formatting.
 
     Returns:
-        Any: The retrieved parameter value, or None if an error occurs during
-             retrieval.
+        The retrieved parameter value, or None on error.
     """
     source_type = source_config.get("source_type")
 
