@@ -86,7 +86,7 @@ class PlacementSetup(BaseSetup):
 
         # Find the "Ground" entity/entities ("PCB" of the phone excl. IFA antenna)
         ground_entities = [
-            e for e in antenna_group.Entities if "Ground" in e.Name
+            e for e in antenna_group.Entities if "Ground" in e.Name or "Substrate" in e.Name
         ]
 
         # Rename the entities to include the placement name for uniqueness

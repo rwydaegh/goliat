@@ -330,8 +330,7 @@ To run the complete test suite, your local development environment must use the 
 
 1.  Open the Command Palette (`Ctrl+Shift+P`).
 2.  Run the `Python: Select Interpreter` command.
-3.  Select `+ Enter interpreter path...` and find the `python.exe` in your Sim4Life installation directory (e.g., `C:\Program Files\Sim4Life\8.2\python\python.exe`).
-
+3.  Select `+ Enter interpreter path...` and find the `python.exe` in your Sim4Life installation directory (e.g., `C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe`).
 This configures VS Code to use the correct interpreter, which includes the `s4l_v1` library.
 
 ### Running tests locally
