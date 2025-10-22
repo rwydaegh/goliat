@@ -163,10 +163,7 @@ class PlacementSetup(BaseSetup):
                 f"Placement scenario '{self.base_placement_name}' not defined."
             )
 
-        if self.base_placement_name.startswith("by_cheek"):
-            position_offset = [0, 0, 0]
-        else:
-            position_offset = scenario["positions"].get(self.position_name, [0, 0, 0])
+        position_offset = scenario["positions"].get(self.position_name, [0, 0, 0])
         orientation_rotations = (
             scenario["orientations"].get(self.orientation_name, []).copy()
         )
