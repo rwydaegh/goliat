@@ -241,9 +241,11 @@ class PlacementSetup(BaseSetup):
 
             # Set the target point based on the ear
             distance = placements_config.get("distance_from_cheek", 8)
-            base_target_point[0] = ear_bbox_max[0] + distance
-            base_target_point[1] = ear_center[1]
-            base_target_point[2] = ear_center[2]
+            phantom_reference = scenario.get("phantom_reference", None) # get name of phantom reference point from config
+            vector_from_2D_ear_center = phantom_definition.get(phantom_reference, [0, 0, 0]) # center of the ear by default
+            base_target_point[0] = ear_bbox_max[0] + vector_from_2D_ear_center[0] + distance
+            base_target_point[1] = ear_center[1] + vector_from_2D_ear_center[1]
+            base_target_point[2] = ear_center[2] + vector_from_2D_ear_center[2]
 
         elif self.base_placement_name == "by_belly":
             trunk_bbox_name = f"{self.phantom_name.lower()}_Trunk_BBox"

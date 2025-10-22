@@ -267,7 +267,8 @@
       },
       "antenna_reference": {
         "distance_from_top": 10
-      }
+      },
+      "phantom_reference": "tragus"
     },
     "by_belly": {
       "bounding_box": "default",
@@ -295,6 +296,7 @@
       "chest_extension": 100,
       "back_of_head": -28,
       "lips": [0, 122, 31],
+      "tragus": [0, 7, -5],
       "placements": {
         "do_front_of_eyes": true,
         "do_by_belly": true,
@@ -310,6 +312,7 @@
       "chest_extension": 79,
       "back_of_head": -55,
       "lips": [24, 122, 418],
+      "tragus": [0, 14, -1],
       "placements": {
         "do_front_of_eyes": true,
         "do_by_belly": true,
