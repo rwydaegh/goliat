@@ -247,6 +247,9 @@
         "horizontal": [
           {"axis": "Y", "angle_deg": 90}
         ]
+      },
+      "antenna_reference": {
+        "distance_from_top": 10
       }
     },
     "by_cheek": {
@@ -261,6 +264,9 @@
         "tilt_base": [],
         "tilt_up": [{"axis": "X", "angle_deg": 10}],
         "tilt_down": [{"axis": "X", "angle_deg": -10}]
+      },
+      "antenna_reference": {
+        "distance_from_top": 10
       }
     },
     "by_belly": {
@@ -276,6 +282,9 @@
         "horizontal": [
           {"axis": "Y", "angle_deg": 90}
         ]
+      },
+      "antenna_reference": {
+        "distance_from_top": 10
       }
     }
   },

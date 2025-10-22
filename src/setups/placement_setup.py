@@ -84,6 +84,11 @@ class PlacementSetup(BaseSetup):
         if not antenna_group:
             raise RuntimeError("Could not find imported antenna group.")
 
+        # Find the "Ground" entity/entities ("PCB" of the phone excl. IFA antenna)
+        ground_entities = [
+            e for e in antenna_group.Entities if "Ground" in e.Name
+        ]
+
         # Rename the entities to include the placement name for uniqueness
         antenna_group.Name = f"{antenna_group.Name} ({self.placement_name})"
         if bbox_entity:
@@ -105,6 +110,11 @@ class PlacementSetup(BaseSetup):
         )
         final_transform = rot_stand_up * final_transform
 
+        # 2. Base translation to antenna reference point (speaker output of the mock-up phone)
+        reference_target_point = self._get_speaker_reference(ground_entities, upright_transform=final_transform)
+        base_translation = self.XCoreMath.Translation(reference_target_point)
+        final_transform = base_translation * final_transform
+
         # Special rotation for 'by_cheek' to align with YZ plane
         if self.base_placement_name.startswith("by_cheek"):
             self._log("Applying 'by_cheek' specific Z-rotation.", log_type="info")
@@ -113,7 +123,7 @@ class PlacementSetup(BaseSetup):
             )
             final_transform = rot_z_cheek * final_transform
 
-        # 2. Orientation Twist
+        # 3. Orientation Twist
         if orientation_rotations:
             for rot in orientation_rotations:
                 axis_map = {
@@ -126,7 +136,7 @@ class PlacementSetup(BaseSetup):
                 )
                 final_transform = rot_twist * final_transform
 
-        # 3. Final Translation
+        # 4. Final Translation
         final_target_point = self.model.Vec3(
             base_target_point[0] + position_offset[0],
             base_target_point[1] + position_offset[1],
@@ -261,3 +271,28 @@ class PlacementSetup(BaseSetup):
             raise ValueError(f"Invalid base placement name: {self.base_placement_name}")
 
         return base_target_point, orientation_rotations, position_offset
+
+    def _get_speaker_reference(self, ground_entities, upright_transform):
+        """
+        Function to find the speaker output reference location on the phone.
+        CAUTION: only works when the mock-up phone is in upright position in XZ-plane ("Stand-up") after applying transform!
+        """
+
+        if not ground_entities:
+            raise ValueError(
+                "No antenna 'Ground' entities found to calculate 'speaker' reference point."
+            )
+        
+        # Get Ground/PCB bounding box
+        ground_bbox_min, ground_bbox_max = self.model.GetBoundingBox(ground_entities, transform=upright_transform)
+        
+        # Find the speaker reference point
+        scenario = self.config.get_placement_scenario(self.base_placement_name)
+        distance_from_top = scenario["antenna_reference"].get("distance_from_top", 10) # speaker at 10 mm from top by deafault
+        reference_target_point = self.model.Vec3(
+            (ground_bbox_min[0] + ground_bbox_max[0]) / 2.0, # horizontal center of the phone
+            (ground_bbox_min[1] + ground_bbox_max[1]) / 2.0, # depth center of the phone
+            -(ground_bbox_max[2] - distance_from_top) # distance_from_top below (vertical) top part of phone, negative for transform to that position
+        )
+        
+        return reference_target_point
