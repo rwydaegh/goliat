@@ -130,7 +130,6 @@ python run_study.py --config configs/far_field_config.json
 ### Example 3: Cloud Batch Processing
 
 ```json
-// In config: enable oSPARC batching
 "execution_control": {
   "batch_run": true
 }
@@ -148,23 +147,26 @@ Supports up to 61 concurrent jobs with auto-retry on failures.
 For serial workflows where disk space is limited, enable automatic cleanup of previous simulation files. You can selectively clean different file types:
 
 ```json
-// Clean only output files (safest option)
 "execution_control": {
   "do_setup": true,
   "do_run": true,
   "do_extract": true,
   "auto_cleanup_previous_results": ["output"]
 }
+```
 
-// Clean output and input files (more aggressive)
+In this more aggressive example, both output and input files are cleaned up:
+```json
 "execution_control": {
   "do_setup": true,
   "do_run": true,
   "do_extract": true,
   "auto_cleanup_previous_results": ["output", "input"]
 }
+```
 
-// Clean everything including project files (use with caution!)
+This example cleans everything, including the project files (use with caution!):
+```json
 "execution_control": {
   "do_setup": true,
   "do_run": true,
