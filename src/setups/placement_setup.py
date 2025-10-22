@@ -261,10 +261,11 @@ class PlacementSetup(BaseSetup):
 
             belly_bbox_min, belly_bbox_max = self.model.GetBoundingBox([trunk_bbox])
             distance = placements_config.get("distance_from_belly", 50)
-
-            base_target_point[0] = (belly_bbox_min[0] + belly_bbox_max[0]) / 2.0
-            base_target_point[1] = belly_bbox_max[1] + distance
-            base_target_point[2] = (belly_bbox_min[2] + belly_bbox_max[2]) / 2.0
+            phantom_reference = scenario.get("phantom_reference", None) # get name of phantom reference point from config
+            vector_from_2D_belly_center = phantom_definition.get(phantom_reference, [0, 0, 0]) # center of the belly by default
+            base_target_point[0] = (belly_bbox_min[0] + belly_bbox_max[0]) / 2.0 + vector_from_2D_belly_center[0]
+            base_target_point[1] = belly_bbox_max[1] + vector_from_2D_belly_center[1] + distance
+            base_target_point[2] = (belly_bbox_min[2] + belly_bbox_max[2]) / 2.0 + + vector_from_2D_belly_center[2]
 
         else:
             raise ValueError(f"Invalid base placement name: {self.base_placement_name}")
