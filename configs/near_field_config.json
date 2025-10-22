@@ -300,7 +300,7 @@
       "lips": [0, 122, 31],
       "tragus": [0, 7, -5],
       "belly_button": [-5, 0, -140],
-      "nasion": [0, 0, 0],
+      "nasion": [-1, 0, 0],
       "placements": {
         "do_front_of_eyes": true,
         "do_by_belly": true,
@@ -318,7 +318,7 @@
       "lips": [24, 122, 418],
       "tragus": [0, 14, -1],
       "belly_button": [-6, 0, -171],
-      "nasion": [0, 0, 0],
+      "nasion": [-2, 0, 0],
       "placements": {
         "do_front_of_eyes": true,
         "do_by_belly": true,
