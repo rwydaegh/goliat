@@ -237,10 +237,10 @@
     "front_of_eyes": {
       "bounding_box": "default",
       "positions": {
-        "center": [0, 0, 0],
-        "left": [-25, 0, 0],
-        "right": [25, 0, 0],
-        "down": [0, 0, -60]
+        "center": [0, 0, -100],
+        "left": [-25, 0, -100],
+        "right": [25, 0, -100],
+        "up": [0, 0, -40]
       },
       "orientations": {
         "vertical": [],
