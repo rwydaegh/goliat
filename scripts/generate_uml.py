@@ -50,7 +50,10 @@ def generate_uml_diagram():
     )
 
     # Rename the output file
-    os.rename(os.path.join(output_dir, "classes_GOLIAT.puml"), f"{output_file}.puml")
+    new_puml_file = f"{output_file}.puml"
+    if os.path.exists(new_puml_file):
+        os.remove(new_puml_file)
+    os.rename(os.path.join(output_dir, "classes_GOLIAT.puml"), new_puml_file)
 
     print(f"UML diagram generated at {output_file}.puml")
 

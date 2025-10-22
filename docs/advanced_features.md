@@ -50,7 +50,7 @@ graph TD
     A -- Updates UI --> D[User];
 ```
 
-## 2. Gui (`gui_manager.py`)
+## 2. GUI (`gui_manager.py`)
 
 The GUI provides a real-time view of the study's progress. It runs in the main process and is designed to be responsive, even while the heavy computation happens elsewhere.
 

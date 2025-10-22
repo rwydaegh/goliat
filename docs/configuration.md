@@ -61,6 +61,15 @@ This object controls which phases of the workflow are executed. This is useful f
 | `batch_run` | boolean | `false` | If `true`, enables the oSPARC batch submission workflow. This is an advanced feature for running many simulations in parallel on the cloud. |
 | `auto_cleanup_previous_results` | array | `[]` | A list of file types to automatically delete **after** a simulation's results have been successfully extracted. This helps to preserve disk space in serial workflows. Valid values are: `"output"` (`*_Output.h5`), `"input"` (`*_Input.h5`), and `"smash"` (`*.smash`). **Warning**: This feature is incompatible with parallel or batch runs and should only be used when `do_setup`, `do_run`, and `do_extract` are all `true`. |
 
+The `do_setup` flag directly controls the project file (`.smash`) handling. Its behavior is summarized below:
+
+| `do_setup` Value | File Exists? | Action |
+| :--- | :--- | :--- |
+| `true` | Yes | **Delete and Override** with a new project. |
+| `true` | No | Create a new project. |
+| `false` | Yes | **Open and Use** the existing project. |
+| `false` | No | **Error** and terminate the program. |
+
 **Example: Extraction-Only Workflow**
 ```json
 "execution_control": {

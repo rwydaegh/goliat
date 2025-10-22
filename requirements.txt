@@ -1,3 +1,4 @@
+# Core
 numpy
 pandas
 tqdm
@@ -20,3 +21,4 @@ mkdocstrings[python]
 mkdocs-mermaid2-plugin
 mkdocs-git-revision-date-localized-plugin
 mkdocs-minify-plugin
+mkdocs-kroki-plugin
