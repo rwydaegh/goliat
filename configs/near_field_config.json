@@ -306,7 +306,7 @@
         "do_by_belly": true,
         "do_by_cheek": true,
         "distance_from_eye": 200,
-        "distance_from_belly": 100,
+        "distance_from_belly": 200,
         "distance_from_cheek": 8
       }
     },
@@ -324,7 +324,7 @@
         "do_by_belly": true,
         "do_by_cheek": true,
         "distance_from_eye": 200,
-        "distance_from_belly": 100,
+        "distance_from_belly": 200,
         "distance_from_cheek": 8
       }
     },
