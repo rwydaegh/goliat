@@ -185,9 +185,11 @@ class PlacementSetup(BaseSetup):
                 )
             eye_bbox_min, eye_bbox_max = self.model.GetBoundingBox(eye_entities)
             distance = placements_config.get("distance_from_eye", 200)
-            base_target_point[0] = (eye_bbox_min[0] + eye_bbox_max[0]) / 2.0
-            base_target_point[1] = eye_bbox_max[1] + distance
-            base_target_point[2] = (eye_bbox_min[2] + eye_bbox_max[2]) / 2.0
+            phantom_reference = scenario.get("phantom_reference", None) # get name of phantom reference point from config
+            vector_from_2D_eyes_center = placements_config.get(phantom_reference, [0, 0, 0]) # center of the belly by default
+            base_target_point[0] = (eye_bbox_min[0] + eye_bbox_max[0]) / 2.0 + vector_from_2D_eyes_center[0]
+            base_target_point[1] = eye_bbox_max[1] + vector_from_2D_eyes_center[1] + distance
+            base_target_point[2] = (eye_bbox_min[2] + eye_bbox_max[2]) / 2.0 + vector_from_2D_eyes_center[2]
 
         elif self.base_placement_name.startswith("by_cheek"):
             # Find ear and mouth entities
