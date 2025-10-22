@@ -163,10 +163,7 @@ class PlacementSetup(BaseSetup):
                 f"Placement scenario '{self.base_placement_name}' not defined."
             )
 
-        if self.base_placement_name.startswith("by_cheek"):
-            position_offset = [0, 0, 0]
-        else:
-            position_offset = scenario["positions"].get(self.position_name, [0, 0, 0])
+        position_offset = scenario["positions"].get(self.position_name, [0, 0, 0])
         orientation_rotations = (
             scenario["orientations"].get(self.orientation_name, []).copy()
         )
@@ -188,9 +185,11 @@ class PlacementSetup(BaseSetup):
                 )
             eye_bbox_min, eye_bbox_max = self.model.GetBoundingBox(eye_entities)
             distance = placements_config.get("distance_from_eye", 200)
-            base_target_point[0] = (eye_bbox_min[0] + eye_bbox_max[0]) / 2.0
-            base_target_point[1] = eye_bbox_max[1] + distance
-            base_target_point[2] = (eye_bbox_min[2] + eye_bbox_max[2]) / 2.0
+            phantom_reference = scenario.get("phantom_reference", None) # get name of phantom reference point from config
+            vector_from_2D_eyes_center = placements_config.get(phantom_reference, [0, 0, 0]) # center of the belly by default
+            base_target_point[0] = (eye_bbox_min[0] + eye_bbox_max[0]) / 2.0 + vector_from_2D_eyes_center[0]
+            base_target_point[1] = eye_bbox_max[1] + vector_from_2D_eyes_center[1] + distance
+            base_target_point[2] = (eye_bbox_min[2] + eye_bbox_max[2]) / 2.0 + vector_from_2D_eyes_center[2]
 
         elif self.base_placement_name.startswith("by_cheek"):
             # Find ear and mouth entities
@@ -241,9 +240,11 @@ class PlacementSetup(BaseSetup):
 
             # Set the target point based on the ear
             distance = placements_config.get("distance_from_cheek", 8)
-            base_target_point[0] = ear_bbox_max[0] + distance
-            base_target_point[1] = ear_center[1]
-            base_target_point[2] = ear_center[2]
+            phantom_reference = scenario.get("phantom_reference", None) # get name of phantom reference point from config
+            vector_from_2D_ear_center = phantom_definition.get(phantom_reference, [0, 0, 0]) # center of the ear by default
+            base_target_point[0] = ear_bbox_max[0] + vector_from_2D_ear_center[0] + distance
+            base_target_point[1] = ear_center[1] + vector_from_2D_ear_center[1]
+            base_target_point[2] = ear_center[2] + vector_from_2D_ear_center[2]
 
         elif self.base_placement_name == "by_belly":
             trunk_bbox_name = f"{self.phantom_name.lower()}_Trunk_BBox"
@@ -262,10 +263,11 @@ class PlacementSetup(BaseSetup):
 
             belly_bbox_min, belly_bbox_max = self.model.GetBoundingBox([trunk_bbox])
             distance = placements_config.get("distance_from_belly", 50)
-
-            base_target_point[0] = (belly_bbox_min[0] + belly_bbox_max[0]) / 2.0
-            base_target_point[1] = belly_bbox_max[1] + distance
-            base_target_point[2] = (belly_bbox_min[2] + belly_bbox_max[2]) / 2.0
+            phantom_reference = scenario.get("phantom_reference", None) # get name of phantom reference point from config
+            vector_from_2D_belly_center = phantom_definition.get(phantom_reference, [0, 0, 0]) # center of the belly by default
+            base_target_point[0] = (belly_bbox_min[0] + belly_bbox_max[0]) / 2.0 + vector_from_2D_belly_center[0]
+            base_target_point[1] = belly_bbox_max[1] + vector_from_2D_belly_center[1] + distance
+            base_target_point[2] = (belly_bbox_min[2] + belly_bbox_max[2]) / 2.0 + + vector_from_2D_belly_center[2]
 
         else:
             raise ValueError(f"Invalid base placement name: {self.base_placement_name}")
