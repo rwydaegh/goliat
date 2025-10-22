@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/img/logo.svg" alt="GOLIAT Logo">
+<img src="docs/img/goliat.svg" width="80%">
 
 ### Comprehensive automated near- and far-field SAR assessments using Sim4Life
 

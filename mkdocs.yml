@@ -9,7 +9,7 @@ edit_uri: edit/master/docs/
 
 theme:
   name: material
-  logo: img/logo.svg
+  logo: img/goliat.svg
   language: en
   features:
     - announce.dismiss
@@ -78,17 +78,17 @@ nav:
     - Basic: tutorials/basic.md
     - Intermediate: tutorials/intermediate.md
     - Advanced: tutorials/advanced.md
-  - Developer Guide: developer_guide.md
+  - Developer Guide:
+    - "Overview": developer_guide.md
+    - "Coloring Rules": coloring_rules.md
+    - "UML": uml.md
   - Reference:
-    - Technical Guide: technical_guide.md
-    - Advanced Features: advanced_features.md
-    - Configuration: configuration.md
-    - API Reference: api_reference.md
+    - "Technical Guide": technical_guide.md
+    - "Advanced Features": advanced_features.md
+    - "Configuration": configuration.md
+    - "API Reference": api_reference.md
   - Troubleshooting: troubleshooting.md
-  - Internals:
-    - Project Info: project_info.md
-    - Coloring Rules: COLORING_RULES.md
-    - UML: uml.md
+  - Project Info: project_info.md
 
 plugins:
   - search:
@@ -102,6 +102,8 @@ plugins:
   - git-revision-date-localized:
       enable_creation_date: true
       type: timeago
+  - kroki:
+      HttpMethod: POST
   - mkdocstrings:
       handlers:
         python:

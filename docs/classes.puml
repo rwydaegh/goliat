@@ -4,28 +4,42 @@ class "Analyzer" as src.analysis.analyzer.Analyzer {
   all_organ_results : list
   all_results : list
   base_dir
-  config
+  config : str
   phantom_name : str
   plotter
   results_base_dir
-  strategy
+  strategy : str
   tissue_group_definitions : dict
-  __init__(config: Config, phantom_name: str, strategy: BaseAnalysisStrategy)
-  _convert_units_and_cache(results_df, organ_results_df)
-  _export_reports(results_df, all_organ_results_df)
-  _generate_plots(results_df, all_organ_results_df)
-  _process_single_result(frequency_mhz, scenario_name, pos_name, orient_name)
+  __init__(config: 'Config', phantom_name: str, strategy: 'BaseAnalysisStrategy')
+  _convert_units_and_cache(results_df: pd.DataFrame, organ_results_df: pd.DataFrame) -> pd.DataFrame
+  _export_reports(results_df: pd.DataFrame, all_organ_results_df: pd.DataFrame)
+  _generate_plots(results_df: pd.DataFrame, all_organ_results_df: pd.DataFrame)
+  _process_single_result(frequency_mhz: int, scenario_name: str, pos_name: str, orient_name: str)
   run_analysis()
 }
 class "Antenna" as src.antenna.Antenna {
   antenna_config
-  config
-  frequency_mhz
-  __init__(config, frequency_mhz)
-  get_centered_antenna_path(centered_antennas_dir)
-  get_config_for_frequency()
-  get_model_type()
-  get_source_entity_name()
+  config : str
+  frequency_mhz : int
+  __init__(config: 'Config', frequency_mhz: int)
+  get_centered_antenna_path(centered_antennas_dir: str) -> str
+  get_config_for_frequency() -> dict
+  get_model_type() -> str
+  get_source_entity_name() -> str
+}
+class "BaseAnalysisStrategy" as src.analysis.base_strategy.BaseAnalysisStrategy {
+  base_dir
+  config : str
+  phantom_name : str
+  __init__(config: 'Config', phantom_name: str)
+  {abstract}apply_bug_fixes(result_entry: dict) -> dict
+  {abstract}calculate_summary_stats(results_df: pd.DataFrame) -> pd.DataFrame
+  {abstract}extract_data(pickle_data: dict, frequency_mhz: int, detailed_name: str, scenario_name: str, sim_power: float, norm_factor: float) -> tuple[dict, list]
+  {abstract}generate_plots(analyzer: 'Analyzer', plotter: 'Plotter', results_df: pd.DataFrame, all_organ_results_df: pd.DataFrame)
+  {abstract}get_normalization_factor(frequency_mhz: int, simulated_power_w: float) -> float
+  {abstract}get_plots_dir() -> str
+  {abstract}get_results_base_dir() -> str
+  {abstract}load_and_process_results(analyzer: 'Analyzer')
 }
 class "BaseAnalysisStrategy" as src.analysis.strategies.BaseAnalysisStrategy {
   base_dir
@@ -42,37 +56,37 @@ class "BaseAnalysisStrategy" as src.analysis.strategies.BaseAnalysisStrategy {
   {abstract}load_and_process_results(analyzer)
 }
 class "BaseSetup" as src.setups.base_setup.BaseSetup {
-  config
+  config : str
   emfdtd
   model
-  progress_logger
+  progress_logger : str
   s4l_v1
-  verbose_logger
-  __init__(config, verbose_logger, progress_logger)
-  _add_point_sensors(simulation, sim_bbox_entity_name)
-  _apply_simulation_time_and_termination(simulation, sim_bbox_entity, frequency_mhz)
-  _finalize_setup(project_manager, simulation, all_simulation_parts, frequency_mhz)
-  _setup_solver_settings(simulation)
-  {abstract}run_full_setup(project_manager)
+  verbose_logger : str
+  __init__(config: 'Config', verbose_logger: 'Logger', progress_logger: 'Logger')
+  _add_point_sensors(simulation: 'emfdtd.Simulation', sim_bbox_entity_name: str)
+  _apply_simulation_time_and_termination(simulation: 'emfdtd.Simulation', sim_bbox_entity: 'model.Entity', frequency_mhz: int)
+  _finalize_setup(project_manager: 'ProjectManager', simulation: 'emfdtd.Simulation', all_simulation_parts: list, frequency_mhz: int)
+  _setup_solver_settings(simulation: 'emfdtd.Simulation')
+  {abstract}run_full_setup(project_manager: 'ProjectManager')
 }
 class "BaseStudy" as src.studies.base_study.BaseStudy {
   base_dir
   config
-  gui : NoneType
+  gui : str
   line_profiler : NoneType
   profiler
   progress_logger : NoneType, RootLogger
   project_manager
-  study_type
+  study_type : str
   verbose_logger : NoneType, RootLogger
-  __init__(study_type, config_filename, gui, profiler)
+  __init__(study_type: str, config_filename: str, gui: 'QueueGUI', profiler)
   _check_for_stop_signal()
   {abstract}_run_study()
-  _setup_line_profiler(subtask_name, instance)
+  _setup_line_profiler(subtask_name: str, instance) -> tuple
   end_stage_animation()
   run()
-  start_stage_animation(task_name, end_value)
-  subtask(task_name, instance_to_profile)
+  start_stage_animation(task_name: str, end_value: int)
+  subtask(task_name: str, instance_to_profile)
 }
 class "BatchGUI" as src.osparc_batch.gui.BatchGUI {
   button_layout
@@ -95,43 +109,61 @@ class "BatchGUI" as src.osparc_batch.gui.BatchGUI {
   tray_icon_activated(reason)
 }
 class "BoundarySetup" as src.setups.boundary_setup.BoundarySetup {
-  simulation
-  __init__(config, simulation, verbose_logger, progress_logger)
+  simulation : str
+  __init__(config: 'Config', simulation: 'emfdtd.Simulation', verbose_logger: 'Logger', progress_logger: 'Logger')
   setup_boundary_conditions()
 }
-class "ColorFormatter" as src.logging_manager.ColorFormatter {
-  format(record)
+class "Cleaner" as src.extraction.cleaner.Cleaner {
+  parent : str
+  __init__(parent: 'ResultsExtractor')
+  _delete_files(cleanup_types: list, file_patterns: dict) -> int
+  _delete_single_file(file_path: str) -> bool
+  cleanup_simulation_files()
 }
-class "Config" as src.config.Config {
-  base_dir
+class "ColorFormatter" as src.logging_manager.ColorFormatter {
+  format(record: logging.LogRecord) -> str
+}
+class "Config" as src.config.Config <<input>> {
+  base_dir : str
   config
   config_path
   material_mapping
   material_mapping_path
   profiling_config
   profiling_config_path
-  __init__(base_dir, config_filename)
-  _load_config_with_inheritance(path)
-  _load_json(path)
-  _resolve_config_path(config_filename, base_path)
-  get_antenna_component_names(antenna_model_type)
-  get_antenna_config()
-  get_bandwidth()
-  get_excitation_type()
-  get_freespace_expansion()
-  get_gridding_parameters()
-  get_line_profiling_config()
-  get_manual_isolve()
-  get_material_mapping(phantom_name)
-  get_only_write_input_file()
-  get_osparc_credentials()
-  get_phantom_definition(phantom_name)
-  get_placement_scenario(scenario_name)
-  get_profiling_config(study_type)
-  get_server()
-  get_setting(path, default)
-  get_simulation_parameters()
-  get_solver_settings()
+  __init__(base_dir: str, config_filename: str)
+  _load_config_with_inheritance(path: str) -> dict
+  _load_json(path: str) -> dict
+  _resolve_config_path(config_filename: str, base_path: str) -> str
+  get_antenna_component_names(antenna_model_type: str) -> list
+  get_antenna_config() -> dict
+  get_auto_cleanup_previous_results() -> list
+  get_bandwidth() -> float
+  get_download_email() -> str
+  get_excitation_type() -> str
+  get_freespace_expansion() -> list
+  get_gridding_parameters() -> dict
+  get_line_profiling_config() -> dict
+  get_manual_isolve() -> bool
+  get_material_mapping(phantom_name: str) -> dict
+  get_only_write_input_file() -> bool
+  get_osparc_credentials() -> dict
+  get_phantom_definition(phantom_name: str) -> dict
+  get_placement_scenario(scenario_name: str) -> dict
+  get_profiling_config(study_type: str) -> dict
+  get_setting(path: str, default)
+  get_simulation_parameters() -> dict
+  get_solver_settings() -> dict
+}
+class "FarFieldAnalysisStrategy" as src.analysis.far_field_strategy.FarFieldAnalysisStrategy {
+  apply_bug_fixes(result_entry: dict) -> dict
+  calculate_summary_stats(results_df: pd.DataFrame) -> pd.DataFrame
+  extract_data(pickle_data: dict, frequency_mhz: int, placement_name: str, scenario_name: str, sim_power: float, norm_factor: float) -> tuple[dict, list]
+  generate_plots(analyzer: 'Analyzer', plotter: 'Plotter', results_df: pd.DataFrame, all_organ_results_df: pd.DataFrame)
+  get_normalization_factor(frequency_mhz: int, simulated_power_w: float) -> float
+  get_plots_dir() -> str
+  get_results_base_dir() -> str
+  load_and_process_results(analyzer: 'Analyzer')
 }
 class "FarFieldAnalysisStrategy" as src.analysis.strategies.FarFieldAnalysisStrategy {
   apply_bug_fixes(result_entry)
@@ -144,50 +176,61 @@ class "FarFieldAnalysisStrategy" as src.analysis.strategies.FarFieldAnalysisStra
   load_and_process_results(analyzer)
 }
 class "FarFieldSetup" as src.setups.far_field_setup.FarFieldSetup {
-  direction_name
+  direction_name : str
   document
-  frequency_mhz
-  phantom_name
-  polarization_name
-  project_manager
+  frequency_mhz : int
+  phantom_name : str
+  polarization_name : str
+  project_manager : str
   simulation_type
-  __init__(config, phantom_name, frequency_mhz, direction_name, polarization_name, project_manager, verbose_logger, progress_logger)
-  _apply_common_settings(simulation)
-  _create_or_get_simulation_bbox()
-  _create_simulation_entity(bbox_entity)
-  _finalize_setup(project_manager, simulation, frequency_mhz)
-  run_full_setup(phantom_setup)
+  __init__(config: 'Config', phantom_name: str, frequency_mhz: int, direction_name: str, polarization_name: str, project_manager: 'ProjectManager', verbose_logger: 'Logger', progress_logger: 'Logger')
+  _apply_common_settings(simulation: 'emfdtd.Simulation')
+  _create_or_get_simulation_bbox() -> 'model.Entity'
+  _create_simulation_entity(bbox_entity: 'model.Entity') -> 'emfdtd.Simulation'
+  _finalize_setup(project_manager: 'ProjectManager', simulation: 'emfdtd.Simulation', frequency_mhz: int)
+  run_full_setup(phantom_setup: 'PhantomSetup') -> 'emfdtd.Simulation'
 }
 class "FarFieldStudy" as src.studies.far_field_study.FarFieldStudy {
-  __init__(config_filename, gui)
-  _extract_results_for_project(phantom_name, freq, simulations_to_extract)
+  __init__(config_filename: str, gui: 'QueueGUI')
+  _extract_results_for_project(phantom_name: str, freq: int, simulations_to_extract: list)
   _run_study()
+  _validate_auto_cleanup_config(do_setup: bool, do_run: bool, do_extract: bool, auto_cleanup: list)
 }
 class "GriddingSetup" as src.setups.gridding_setup.GriddingSetup {
-  antenna
-  frequency_mhz : NoneType
-  placement_name
-  simulation
+  antenna : str
+  frequency_mhz : Optional[int]
+  placement_name : str
+  simulation : str
   units
-  __init__(config, simulation, placement_name, antenna, verbose_logger, progress_logger, frequency_mhz)
+  __init__(config: 'Config', simulation: 'emfdtd.Simulation', placement_name: str, antenna: 'Antenna', verbose_logger: 'Logger', progress_logger: 'Logger', frequency_mhz: Optional[int])
   _setup_main_grid()
-  _setup_subgrids(antenna_components)
-  setup_gridding(antenna_components)
+  _setup_subgrids(antenna_components: dict)
+  setup_gridding(antenna_components: dict)
 }
 class "LoggingMixin" as src.logging_manager.LoggingMixin {
-  _log(message, level, log_type)
+  _log(message: str, level: str, log_type: str)
 }
 class "MaterialSetup" as src.setups.material_setup.MaterialSetup {
   XCoreModeling
-  antenna
+  antenna : str
   database
   free_space : bool
-  phantom_name
-  simulation
-  __init__(config, simulation, antenna, phantom_name, verbose_logger, progress_logger, free_space)
-  _assign_antenna_materials(antenna_components)
+  phantom_name : str
+  simulation : str
+  __init__(config: 'Config', simulation: 'emfdtd.Simulation', antenna: 'Antenna', phantom_name: str, verbose_logger: 'Logger', progress_logger: 'Logger', free_space: bool)
+  _assign_antenna_materials(antenna_components: dict)
   _assign_phantom_materials()
-  assign_materials(antenna_components, phantom_only)
+  assign_materials(antenna_components: dict, phantom_only: bool)
+}
+class "NearFieldAnalysisStrategy" as src.analysis.near_field_strategy.NearFieldAnalysisStrategy {
+  apply_bug_fixes(result_entry: dict) -> dict
+  calculate_summary_stats(results_df: pd.DataFrame) -> pd.DataFrame
+  extract_data(pickle_data: dict, frequency_mhz: int, placement_name: str, scenario_name: str, sim_power: float, norm_factor: float) -> tuple[dict, list]
+  generate_plots(analyzer: 'Analyzer', plotter: 'Plotter', results_df: pd.DataFrame, all_organ_results_df: pd.DataFrame)
+  get_normalization_factor(frequency_mhz: int, simulated_power_w: float) -> float
+  get_plots_dir() -> str
+  get_results_base_dir() -> str
+  load_and_process_results(analyzer: 'Analyzer')
 }
 class "NearFieldAnalysisStrategy" as src.analysis.strategies.NearFieldAnalysisStrategy {
   apply_bug_fixes(result_entry)
@@ -201,118 +244,141 @@ class "NearFieldAnalysisStrategy" as src.analysis.strategies.NearFieldAnalysisSt
 }
 class "NearFieldSetup" as src.setups.near_field_setup.NearFieldSetup {
   XCoreModeling
-  antenna
+  antenna : str
   base_placement_name : str
   document
   free_space : bool
-  frequency_mhz
-  phantom_name
-  placement_name
-  __init__(config, phantom_name, frequency_mhz, placement_name, antenna, verbose_logger, progress_logger, free_space)
+  frequency_mhz : int
+  orientation_name : str
+  phantom_name : str
+  placement_name : str
+  position_name : str
+  __init__(config: 'Config', phantom_name: str, frequency_mhz: int, scenario_name: str, position_name: str, orientation_name: str, antenna: 'Antenna', verbose_logger: 'Logger', progress_logger: 'Logger', free_space: bool)
   _create_simulation_bbox()
-  _finalize_setup(project_manager, simulation, antenna_components)
-  _get_antenna_components()
+  _finalize_setup(project_manager: 'ProjectManager', simulation: 'emfdtd.Simulation', antenna_components: dict)
+  _get_antenna_components() -> dict
   _setup_bounding_boxes()
-  _setup_simulation_entity()
-  run_full_setup(project_manager, lock)
+  _setup_simulation_entity() -> 'emfdtd.Simulation'
+  run_full_setup(project_manager: 'ProjectManager', lock) -> 'emfdtd.Simulation'
 }
 class "NearFieldStudy" as src.studies.near_field_study.NearFieldStudy {
-  __init__(config_filename, gui)
-  _run_placement(phantom_name, freq, placement_name, do_setup, do_run, do_extract)
+  __init__(config_filename: str, gui: 'QueueGUI')
+  _run_placement(phantom_name: str, freq: int, scenario_name: str, position_name: str, orientation_name: str, do_setup: bool, do_run: bool, do_extract: bool)
   _run_study()
+  _validate_auto_cleanup_config(do_setup: bool, do_run: bool, do_extract: bool, auto_cleanup: list)
+}
+class "NumpyArrayEncoder" as src.extraction.json_encoder.NumpyArrayEncoder {
+  default(obj: Any) -> Any
 }
 class "PhantomSetup" as src.setups.phantom_setup.PhantomSetup {
   XCoreModeling
   data
   model
-  phantom_name
-  __init__(config, phantom_name, verbose_logger, progress_logger)
-  _log(message, log_type)
-  ensure_phantom_is_loaded()
+  phantom_name : str
+  __init__(config: 'Config', phantom_name: str, verbose_logger: 'Logger', progress_logger: 'Logger')
+  _log(message: str, log_type: str)
+  ensure_phantom_is_loaded() -> bool
 }
 class "PlacementSetup" as src.setups.placement_setup.PlacementSetup {
   XCoreMath
-  antenna
+  antenna : str
   base_placement_name : str
   free_space : bool
-  frequency_mhz
+  frequency_mhz : int
   orientation_name : str
-  phantom_name
-  placement_name
+  phantom_name : str
+  placement_name : str
   position_name : str
-  __init__(config, phantom_name, frequency_mhz, placement_name, antenna, verbose_logger, progress_logger, free_space)
-  _get_placement_details()
+  __init__(config: 'Config', phantom_name: str, frequency_mhz: int, scenario_name: str, position_name: str, orientation_name: str, antenna: 'Antenna', verbose_logger: 'Logger', progress_logger: 'Logger', free_space: bool)
+  _get_placement_details() -> tuple
   place_antenna()
 }
 class "Plotter" as src.analysis.plotter.Plotter {
-  plots_dir
-  __init__(plots_dir)
-  _plot_heatmap(fig, ax, data, title, cbar, cbar_ax)
-  plot_average_sar_bar(scenario_name, avg_results, progress_info)
-  plot_far_field_distribution_boxplot(results_df, metric)
-  plot_peak_sar_heatmap(organ_df, group_df, tissue_groups, value_col, title)
-  plot_peak_sar_line(summary_stats)
-  plot_pssar_line(scenario_name, avg_results)
-  plot_sar_distribution_boxplots(scenario_name, scenario_results_df)
-  plot_sar_heatmap(organ_df, group_df, tissue_groups)
-  plot_whole_body_sar_bar(avg_results)
+  plots_dir : str
+  __init__(plots_dir: str)
+  _plot_heatmap(fig, ax, data: pd.DataFrame, title: str, cbar: bool, cbar_ax)
+  plot_average_sar_bar(scenario_name: str, avg_results: pd.DataFrame, progress_info: pd.Series)
+  plot_far_field_distribution_boxplot(results_df: pd.DataFrame, metric: str)
+  plot_peak_sar_heatmap(organ_df: pd.DataFrame, group_df: pd.DataFrame, tissue_groups: dict, value_col: str, title: str)
+  plot_peak_sar_line(summary_stats: pd.DataFrame)
+  plot_pssar_line(scenario_name: str, avg_results: pd.DataFrame)
+  plot_sar_distribution_boxplots(scenario_name: str, scenario_results_df: pd.DataFrame)
+  plot_sar_heatmap(organ_df: pd.DataFrame, group_df: pd.DataFrame, tissue_groups: dict)
+  plot_whole_body_sar_bar(avg_results: pd.DataFrame)
+}
+class "PowerExtractor" as src.extraction.power_extractor.PowerExtractor {
+  config
+  document
+  frequency_mhz
+  parent : str
+  placement_name
+  progress_logger
+  results_data : dict
+  simulation
+  study_type
+  verbose_logger
+  __init__(parent: 'ResultsExtractor', results_data: dict)
+  _extract_far_field_power()
+  _extract_near_field_power(simulation_extractor: 'analysis.Extractor')
+  extract_input_power(simulation_extractor: 'analysis.Extractor')
+  extract_power_balance(simulation_extractor: 'analysis.Extractor')
 }
 class "Profiler" as src.profiler.Profiler {
   completed_phases : set
   completed_simulations : int
   completed_stages_in_phase : int
-  config_path
+  config_path : str
   current_phase : NoneType, str
   current_project : int
-  execution_control
+  execution_control : dict
   phase_start_time : NoneType
   phase_weights : dict
-  profiling_config
+  profiling_config : dict
   run_phase_total_duration : int
   start_time
-  study_type
+  study_type : str
   subtask_stack : list
   subtask_times : defaultdict
   total_projects : int
   total_simulations : int
   total_stages_in_phase : int
-  __init__(execution_control, profiling_config, study_type, config_path)
-  _calculate_phase_weights()
+  __init__(execution_control: dict, profiling_config: dict, study_type: str, config_path: str)
+  _calculate_phase_weights() -> dict
   complete_run_phase()
   end_stage()
-  get_subtask_estimate(task_name)
-  get_time_remaining(current_stage_progress)
-  get_weighted_progress(phase_name, phase_progress_ratio)
+  get_subtask_estimate(task_name: str) -> float
+  get_time_remaining(current_stage_progress: float) -> float
+  get_weighted_progress(phase_name: str, phase_progress_ratio: float) -> float
   save_estimates()
-  set_current_project(project_index)
-  set_project_scope(total_projects)
-  set_total_simulations(total)
-  start_stage(phase_name, total_stages)
+  set_current_project(project_index: int)
+  set_project_scope(total_projects: int)
+  set_total_simulations(total: int)
+  start_stage(phase_name: str, total_stages: int)
   update_and_save_estimates()
 }
 class "Profiler" as src.utils.Profiler {
   completed_runs : int
-  config_path
+  config_path : str
   current_run_start_time : NoneType
   profiling_config
   run_times : list
   start_time
   study_type : str
   total_runs : int
-  __init__(config_path, study_type)
-  _load_config()
+  __init__(config_path: str, study_type: str)
+  _load_config() -> dict
   end_run()
-  get_average_run_time()
-  get_elapsed()
-  get_time_remaining()
+  get_average_run_time() -> float
+  get_elapsed() -> float
+  get_time_remaining() -> float
   save_estimates()
   start_run()
-  start_study(total_runs)
-  subtask(name)
+  start_study(total_runs: int)
+  subtask(name: str)
 }
 class "ProgressGUI" as src.gui_manager.ProgressGUI {
   animation_active : bool
-  animation_duration : int
+  animation_duration : float, int
   animation_end_value : int
   animation_start_time : int
   animation_start_value : int
@@ -330,7 +396,7 @@ class "ProgressGUI" as src.gui_manager.ProgressGUI {
   profiler
   profiler_phase : NoneType
   progress_logger : NoneType, RootLogger
-  queue
+  queue : str
   queue_timer
   stage_label
   stage_progress_bar
@@ -338,114 +404,145 @@ class "ProgressGUI" as src.gui_manager.ProgressGUI {
   status_log_label
   status_text
   stop_button
-  stop_event
+  stop_event : str
   total_steps_for_stage : int
   tray_button
   tray_icon
   verbose_logger : NoneType, RootLogger
   window_title : str
-  __init__(queue, stop_event, process, window_title)
+  __init__(queue: 'Queue', stop_event: 'Event', process, window_title: str)
   closeEvent(event)
   end_stage_animation()
   hide_to_tray()
   init_ui()
   process_queue()
   show_from_tray()
-  start_stage_animation(estimated_duration, end_step)
+  start_stage_animation(estimated_duration: float, end_step: int)
   stop_study()
-  study_finished(error)
+  study_finished(error: bool)
   tray_icon_activated(reason)
   update_animation()
   update_clock()
-  update_overall_progress(current_step, total_steps)
-  update_stage_progress(stage_name, current_step, total_steps)
-  update_status(message, log_type)
+  update_overall_progress(current_step: int, total_steps: int)
+  update_stage_progress(stage_name: str, current_step: int, total_steps: int)
+  update_status(message: str, log_type: str)
 }
 class "<color:red>ProjectCorruptionError</color>" as src.project_manager.ProjectCorruptionError {
 }
 class "ProjectManager" as src.project_manager.ProjectManager {
-  config
+  config : str
   document
   execution_control
-  gui : NoneType
-  progress_logger
+  gui : str
+  progress_logger : str
   project_path : NoneType
-  verbose_logger
-  __init__(config, verbose_logger, progress_logger, gui)
-  _is_valid_smash_file()
+  verbose_logger : str
+  __init__(config: 'Config', verbose_logger: 'Logger', progress_logger: 'Logger', gui: 'QueueGUI')
+  _is_valid_smash_file() -> bool
   cleanup()
   close()
   create_new()
-  create_or_open_project(phantom_name, frequency_mhz, placement_name)
+  create_or_open_project(phantom_name: str, frequency_mhz: int, scenario_name: str, position_name: str, orientation_name: str)
   open()
   reload_project()
   save()
 }
 class "QueueGUI" as src.gui_manager.QueueGUI {
-  profiler
-  progress_logger
-  queue
-  stop_event
-  verbose_logger
-  __init__(queue, stop_event, profiler, progress_logger, verbose_logger)
+  profiler : str
+  progress_logger : str
+  queue : str
+  stop_event : str
+  verbose_logger : str
+  __init__(queue: 'Queue', stop_event: 'Event', profiler: 'Profiler', progress_logger: 'Logger', verbose_logger: 'Logger')
   end_stage_animation()
-  is_stopped()
-  log(message, level, log_type)
+  is_stopped() -> bool
+  log(message: str, level: str, log_type: str)
   {abstract}process_events()
-  start_stage_animation(task_name, end_value)
-  update_overall_progress(current_step, total_steps)
+  start_stage_animation(task_name: str, end_value: int)
+  update_overall_progress(current_step: int, total_steps: int)
   update_profiler()
-  update_stage_progress(stage_name, current_step, total_steps)
+  update_stage_progress(stage_name: str, current_step: int, total_steps: int)
+}
+class "Reporter" as src.extraction.reporter.Reporter {
+  parent : str
+  __init__(parent: 'ResultsExtractor')
+  _build_html_content(df: pd.DataFrame, tissue_groups: dict, group_sar_stats: dict, results_data: dict) -> str
+  _get_results_dir() -> str
+  _save_html_report(results_dir: str, df: pd.DataFrame, tissue_groups: dict, group_sar_stats: dict, results_data: dict)
+  _save_pickle_report(results_dir: str, df: pd.DataFrame, tissue_groups: dict, group_sar_stats: dict, results_data: dict)
+  save_reports(df: pd.DataFrame, tissue_groups: dict, group_sar_stats: dict, results_data: dict)
 }
 class "ResultsExtractor" as src.results_extractor.ResultsExtractor {
   analysis
-  config
+  config : str
   document
   free_space : bool
-  frequency_mhz
-  gui : NoneType
+  frequency_mhz : int
+  gui : str
+  orientation_name : str
+  phantom_name : str
+  placement_name : str
+  progress_logger : str
+  simulation : str
+  study : str
+  study_type : str
+  units
+  verbose_logger : str
+  __init__(config: 'Config', simulation: 's4l_v1.simulation.emfdtd.Simulation', phantom_name: str, frequency_mhz: int, scenario_name: str, position_name: str, orientation_name: str, study_type: str, verbose_logger: 'Logger', progress_logger: 'Logger', free_space: bool, gui: 'QueueGUI', study: 'BaseStudy')
+  _save_json_results(results_data: dict)
+  extract()
+}
+class "SarExtractor" as src.extraction.sar_extractor.SarExtractor {
+  analysis
+  config
+  document
+  parent : str
   phantom_name
   placement_name
   progress_logger
+  results_data : dict
   simulation
-  study : NoneType
-  study_type
   units
   verbose_logger
-  __init__(config, simulation, phantom_name, frequency_mhz, placement_name, study_type, verbose_logger, progress_logger, free_space, gui, study)
-  _calculate_group_sar(df, tissue_groups)
-  _define_tissue_groups(available_tissues)
-  _extract_input_power(simulation_extractor, results_data)
-  _extract_peak_sar_details(em_sensor_extractor, results_data)
-  _extract_point_sensor_data(simulation_extractor, results_data)
-  _extract_power_balance(simulation_extractor, results_data)
-  _extract_sar_statistics(simulation_extractor, results_data)
-  _save_reports(df, tissue_groups, group_sar_stats, results_data)
-  extract()
+  __init__(parent: 'ResultsExtractor', results_data: dict)
+  _calculate_group_sar(df: pd.DataFrame, tissue_groups: dict) -> dict
+  _define_tissue_groups(available_tissues: list) -> dict
+  extract_peak_sar_details(em_sensor_extractor: 'analysis.Extractor')
+  extract_sar_statistics(simulation_extractor: 'analysis.Extractor')
 }
-class "SimulationRunner" as src.simulation_runner.SimulationRunner {
-  config
-  document
-  gui : NoneType
+class "SensorExtractor" as src.extraction.sensor_extractor.SensorExtractor {
+  parent : str
   progress_logger
-  project_path
-  simulations : list
-  study : NoneType
+  results_data : dict
   verbose_logger
-  __init__(config, project_path, simulations, verbose_logger, progress_logger, gui, study)
-  _run_isolve_manual(simulation)
-  _run_osparc_direct(simulation, server_name)
-  run(simulation)
+  __init__(parent: 'ResultsExtractor', results_data: dict)
+  _save_plot(fig, ax)
+  extract_point_sensor_data(simulation_extractor: 'analysis.Extractor')
+}
+class "SimulationRunner" as src.simulation_runner.SimulationRunner <<control>> {
+  config : str
+  document
+  gui : str
+  progress_logger : str
+  project_path : str
+  simulations : list
+  study : str
+  verbose_logger : str
+  __init__(config: 'Config', project_path: str, simulations: Union['s4l_v1.simulation.emfdtd.Simulation', List['s4l_v1.simulation.emfdtd.Simulation']], verbose_logger: 'Logger', progress_logger: 'Logger', gui: 'QueueGUI', study: 'BaseStudy')
+  _get_server_id(server_name: str) -> str
+  _run_isolve_manual(simulation: 's4l_v1.simulation.emfdtd.Simulation')
+  _run_osparc_direct(simulation: 's4l_v1.simulation.emfdtd.Simulation', server_name: str)
+  run(simulation: 's4l_v1.simulation.emfdtd.Simulation')
   run_all()
 }
 class "SourceSetup" as src.setups.source_setup.SourceSetup {
-  antenna
+  antenna : str
   free_space : bool
-  frequency_mhz
-  simulation
+  frequency_mhz : int
+  simulation : str
   units
-  __init__(config, simulation, frequency_mhz, antenna, verbose_logger, progress_logger, free_space)
-  setup_source_and_sensors(antenna_components)
+  __init__(config: 'Config', simulation: 'emfdtd.Simulation', frequency_mhz: int, antenna: 'Antenna', verbose_logger: 'Logger', progress_logger: 'Logger', free_space: bool)
+  setup_source_and_sensors(antenna_components: dict)
 }
 class "<color:red>StudyCancelledError</color>" as src.utils.StudyCancelledError {
 }
@@ -473,16 +570,19 @@ class "Worker" as src.osparc_batch.worker.Worker {
   timer
   __init__(config_path: str, logger: logging.Logger, get_osparc_client_config_func: Callable[..., Any], download_and_process_results_func: Callable[..., Any], get_progress_report_func: Callable[..., str], main_process_logic_func: Callable[..., Any])
   _check_jobs_status()
-  _download_job_in_thread(job, solver, file_path)
-  _resubmit_job(file_path)
-  _update_job_status(job_id, status)
+  _download_job_in_thread(job, solver, file_path: Path)
+  _update_job_status(job_id: str, status: str)
   cancel_jobs()
   request_progress_report()
   run()
   stop()
 }
+src.analysis.far_field_strategy.FarFieldAnalysisStrategy --|> src.analysis.base_strategy.BaseAnalysisStrategy
+src.analysis.near_field_strategy.NearFieldAnalysisStrategy --|> src.analysis.base_strategy.BaseAnalysisStrategy
 src.analysis.strategies.FarFieldAnalysisStrategy --|> src.analysis.strategies.BaseAnalysisStrategy
 src.analysis.strategies.NearFieldAnalysisStrategy --|> src.analysis.strategies.BaseAnalysisStrategy
+src.extraction.power_extractor.PowerExtractor --|> src.logging_manager.LoggingMixin
+src.extraction.sar_extractor.SarExtractor --|> src.logging_manager.LoggingMixin
 src.gui_manager.QueueGUI --|> src.logging_manager.LoggingMixin
 src.project_manager.ProjectManager --|> src.logging_manager.LoggingMixin
 src.results_extractor.ResultsExtractor --|> src.logging_manager.LoggingMixin
@@ -503,7 +603,5 @@ src.analysis.plotter.Plotter --* src.analysis.analyzer.Analyzer : plotter
 src.config.Config --* src.studies.base_study.BaseStudy : config
 src.profiler.Profiler --* src.studies.base_study.BaseStudy : profiler
 src.project_manager.ProjectManager --* src.studies.base_study.BaseStudy : project_manager
-src.analysis.strategies.BaseAnalysisStrategy --o src.analysis.analyzer.Analyzer : strategy
-src.config.Config --o src.analysis.analyzer.Analyzer : config
 src.config.Config --o src.osparc_batch.worker.Worker : config
 @enduml
