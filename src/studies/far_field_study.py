@@ -86,11 +86,12 @@ class FarFieldStudy(BaseStudy):
                         # Check for a stop signal from the GUI at the start of each major iteration.
                         self._check_for_stop_signal()
 
-                        # Create a new, clean project for each frequency to avoid performance degradation.
-                        self.project_manager.create_or_open_project(phantom_name, freq)
+                        # Create or open the project file. This returns True if a new setup is needed.
+                        needs_setup = self.project_manager.create_or_open_project(phantom_name, freq)
 
-                        # The phantom must be loaded into each new project.
-                        phantom_setup.ensure_phantom_is_loaded()
+                        # The phantom must be loaded into each new project if we are setting it up.
+                        if do_setup and needs_setup:
+                            phantom_setup.ensure_phantom_is_loaded()
 
                         project_index = i * len(frequencies) + j + 1
                         self.profiler.set_current_project(project_index)
@@ -105,7 +106,7 @@ class FarFieldStudy(BaseStudy):
 
                         all_simulations = []
                         # 1. Setup Phase
-                        if do_setup:
+                        if do_setup and needs_setup:
                             with profile(self, "setup"):
                                 total_setups = len(incident_directions) * len(
                                     polarizations
