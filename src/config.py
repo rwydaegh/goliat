@@ -322,3 +322,121 @@ class Config:
             )
 
         return [t for t in cleanup_setting if t in valid_types]
+
+    def build_simulation_config(
+        self,
+        phantom_name: str,
+        frequency_mhz: int,
+        scenario_name: str = None,
+        position_name: str = None,
+        orientation_name: str = None,
+        direction_name: str = None,
+        polarization_name: str = None,
+    ) -> dict:
+        """Constructs a minimal, simulation-specific configuration dictionary.
+
+        This method is the core of the "Verify and Resume" feature. It creates a
+        "surgical" snapshot of the configuration that is unique to a single
+        simulation run. This snapshot is then hashed to determine if a valid,
+        reusable simulation already exists.
+
+        The key principle is to only include parameters that directly affect the
+        outcome of the specific simulation. For example, instead of including the
+        entire 'gridding_parameters' block, it surgically extracts only the
+        gridding value for the specific 'frequency_mhz' being used. This ensures
+        that a change to one frequency's gridding in the main config does not
+        invalidate the hashes for other, unaffected frequencies.
+
+        Args:
+            phantom_name: The name of the phantom model.
+            frequency_mhz: The simulation frequency in MHz.
+            scenario_name: (Near-Field) The base name of the placement scenario.
+            position_name: (Near-Field) The name of the position within the scenario.
+            orientation_name: (Near-Field) The name of the orientation.
+            direction_name: (Far-Field) The incident direction of the plane wave.
+            polarization_name: (Far-Field) The polarization of the plane wave.
+
+        Returns:
+            A dictionary containing the minimal, surgical configuration snapshot.
+        """
+        surgical_config = {}
+
+        # 1. Copy global parameters
+        global_keys = [
+            "study_type",
+            "simulation_parameters",
+            "solver_settings",
+            "manual_isolve",
+            "export_material_properties",
+        ]
+        for key in global_keys:
+            if key in self.config:
+                surgical_config[key] = self.config[key]
+
+        # 4. Surgically handle gridding parameters
+        gridding_params = self.get_gridding_parameters()
+        surgical_gridding = {}
+        # Copy non-frequency specific gridding params
+        for key, value in gridding_params.items():
+            if key != "global_gridding_per_frequency":
+                surgical_gridding[key] = value
+
+        # Extract only the relevant frequency's gridding value
+        if "global_gridding_per_frequency" in gridding_params:
+            freq_str = str(frequency_mhz)
+            if freq_str in gridding_params["global_gridding_per_frequency"]:
+                surgical_gridding["global_gridding_per_frequency"] = {
+                    freq_str: gridding_params["global_gridding_per_frequency"][freq_str]
+                }
+
+        surgical_config["gridding_parameters"] = surgical_gridding
+
+        # 2. Add simulation-specific identifiers
+        surgical_config["phantom"] = phantom_name
+        surgical_config["frequency_mhz"] = frequency_mhz
+
+        # 3. Surgically select study-specific parameters
+        study_type = self.get_setting("study_type")
+        if study_type == "near_field":
+            # Select the specific antenna config for the given frequency
+            surgical_config["antenna_config"] = self.get_setting(
+                f"antenna_config.{frequency_mhz}"
+            )
+
+            # Reconstruct placement_scenarios for the specific placement
+            original_scenario = self.get_placement_scenario(scenario_name)
+            surgical_config["placement_scenarios"] = {
+                scenario_name: {
+                    "positions": {
+                        position_name: original_scenario["positions"][position_name]
+                    },
+                    "orientations": {
+                        orientation_name: original_scenario["orientations"][
+                            orientation_name
+                        ]
+                    },
+                    "bounding_box": original_scenario.get("bounding_box", "default"),
+                }
+            }
+
+            # Select the specific phantom definition
+            surgical_config["phantom_definitions"] = {
+                phantom_name: self.get_phantom_definition(phantom_name)
+            }
+
+        elif study_type == "far_field":
+            # Surgically build the far_field_setup to be robust against future changes
+            original_ff_setup = self.get_setting("far_field_setup", {})
+            surgical_config["far_field_setup"] = {
+                "type": original_ff_setup.get("type"),
+                "environmental": {
+                    "incident_directions": [direction_name],
+                    "polarizations": [polarization_name],
+                },
+            }
+            # Also include the specific phantom definition
+            surgical_config["phantom_definitions"] = {
+                phantom_name: self.get_phantom_definition(phantom_name)
+            }
+
+        return surgical_config

@@ -1,3 +1,5 @@
+import hashlib
+import json
 import os
 from typing import TYPE_CHECKING
 
@@ -54,6 +56,94 @@ class ProjectManager(LoggingMixin):
             "execution_control", {"do_setup": True, "do_run": True, "do_extract": True}
         )
 
+    def _generate_config_hash(self, config_dict: dict) -> str:
+        """Generates a SHA256 hash for a configuration dictionary."""
+        # Serialize the dictionary to a canonical JSON string (sorted keys)
+        config_string = json.dumps(config_dict, sort_keys=True)
+        return hashlib.sha256(config_string.encode("utf-8")).hexdigest()
+
+    def write_simulation_metadata(self, meta_path: str, surgical_config: dict):
+        """Writes a simulation's surgical config and hash to a specified path.
+
+        Args:
+            meta_path: The full path to save the metadata file (e.g., .../results/.../config.meta.json).
+            surgical_config: The surgical configuration dictionary for the simulation.
+        """
+        config_hash = self._generate_config_hash(surgical_config)
+        metadata = {"config_hash": config_hash, "config_snapshot": surgical_config}
+
+        os.makedirs(os.path.dirname(meta_path), exist_ok=True)
+        with open(meta_path, "w") as f:
+            json.dump(metadata, f, indent=4)
+        self._log(
+            f"  - Saved configuration metadata to {os.path.basename(meta_path)}",
+            log_type="info",
+        )
+
+    def get_far_field_meta_path(
+        self,
+        phantom_name: str,
+        frequency_mhz: int,
+        direction_name: str,
+        polarization_name: str,
+    ) -> str:
+        """Constructs the standardized path for a far-field simulation's metadata file."""
+        results_dir = os.path.join(
+            self.config.base_dir,
+            "results",
+            "far_field",
+            phantom_name.lower(),
+            f"{frequency_mhz}MHz",
+        )
+        # The actual simulation-specific results are in a subdirectory
+        sim_specific_dir_name = f"environmental_{direction_name}_{polarization_name}"
+        meta_filename = "config.meta.json"
+        return os.path.join(results_dir, sim_specific_dir_name, meta_filename)
+
+    def verify_simulation_metadata(self, meta_path: str, surgical_config: dict) -> bool:
+        """Verifies if a simulation's metadata file exists and matches the current config.
+
+        Args:
+            meta_path: The full path to the metadata file to check.
+            surgical_config: The surgical configuration to compare against.
+
+        Returns:
+            True if the metadata is valid and matches, False otherwise.
+        """
+        if not os.path.exists(meta_path):
+            self._log(
+                f"  - No metadata file found for this simulation at {os.path.basename(meta_path)}. "
+                "Verification failed.",
+                log_type="info",
+            )
+            return False
+
+        try:
+            with open(meta_path, "r") as f:
+                metadata = json.load(f)
+
+            stored_hash = metadata.get("config_hash")
+            current_hash = self._generate_config_hash(surgical_config)
+
+            if stored_hash == current_hash:
+                self._log(
+                    f"  - Configuration hash matches for {os.path.basename(meta_path)}. Simulation is valid.",
+                    log_type="success",
+                )
+                return True
+            else:
+                self._log(
+                    f"  - Configuration hash mismatch for {os.path.basename(meta_path)}. Simulation is outdated.",
+                    log_type="warning",
+                )
+                return False
+        except (json.JSONDecodeError, KeyError):
+            self._log(
+                f"  - Metadata file {os.path.basename(meta_path)} is corrupted. Verification failed.",
+                log_type="error",
+            )
+            return False
+
     def _is_valid_smash_file(self) -> bool:
         """Checks if the project file is a valid, unlocked HDF5 file.
 
@@ -107,7 +197,8 @@ class ProjectManager(LoggingMixin):
         scenario_name: str = None,
         position_name: str = None,
         orientation_name: str = None,
-    ):
+        **kwargs,
+    ) -> bool:
         """Creates a new project or opens an existing one based on the 'do_setup' flag.
 
         Args:
@@ -173,43 +264,93 @@ class ProjectManager(LoggingMixin):
 
         do_setup = self.execution_control.get("do_setup", True)
 
-        if do_setup:
-            self._log(
-                "Execution control: 'do_setup' is true. Creating a new project.",
-                log_type="info",
-            )
-            self.create_new()
-        else:
-            self._log(
-                "Execution control: 'do_setup' is false. Attempting to open existing project.",
-                log_type="info",
-            )
-            if not os.path.exists(self.project_path):
-                old_project_path = self.project_path.replace("thelonious", "thelonius")
-                if os.path.exists(old_project_path):
-                    self._log(
-                        f"Project not found at primary path, but found with old 'thelonius' naming: {old_project_path}",
-                        log_type="warning",
-                    )
-                    self.project_path = old_project_path
-                else:
-                    error_msg = (
-                        f"ERROR: 'do_setup' is false, but project file not found at {self.project_path} "
-                        f"or with old naming. Cannot proceed."
-                    )
-                    self._log(error_msg, log_type="fatal")
-                    raise FileNotFoundError(error_msg)
+        # For far-field, direction and polarization are part of the unique signature,
+        # but they are not used in the file path, so we retrieve them from the setup logic if needed.
+        # This is a bit of a workaround but keeps the project manager's interface clean.
+        direction_name = None
+        polarization_name = None
+        if study_type == "far_field":
+            # This part is tricky as the project manager doesn't inherently know about direction/polarization.
+            # However, for the hash to be unique per simulation, we need it.
+            # We will assume for now that the calling context (the study) will handle this.
+            # Let's pass None for now and see if we need to refactor the study to provide it.
+            pass
 
-            try:
-                self.open()
-            except ProjectCorruptionError:
-                if (
-                    self.document
-                    and hasattr(self.document, "IsOpen")
-                    and self.document.IsOpen()
-                ):
-                    self.document.Close()
-                raise
+        surgical_config = self.config.build_simulation_config(
+            phantom_name=phantom_name,
+            frequency_mhz=frequency_mhz,
+            scenario_name=scenario_name,
+            position_name=position_name,
+            orientation_name=orientation_name,
+            direction_name=direction_name,
+            polarization_name=polarization_name,
+        )
+
+        if do_setup:
+            # For near-field, the logic is simple: one project, one metadata file.
+            if study_type == "near_field":
+                project_is_valid = self.verify_simulation_metadata(
+                    self.project_path + ".meta.json", surgical_config
+                )
+                if project_is_valid:
+                    self._log(
+                        "Verified existing project. Skipping setup.", log_type="info"
+                    )
+                    self.open()
+                    return False  # Indicate setup is not needed
+                else:
+                    self._log(
+                        "Existing project is invalid or out of date. Creating new project.",
+                        log_type="info",
+                    )
+                    self.create_new()
+                    # After a successful setup, write the metadata
+                    self.write_simulation_metadata(
+                        self.project_path + ".meta.json", surgical_config
+                    )
+                    return True  # Indicate setup was performed
+
+            # For far-field, the study class handles per-simulation verification.
+            # This method just ensures the main project file exists.
+            elif study_type == "far_field":
+                # The decision to create a new project is delegated to the study,
+                # which checks if a rebuild is needed.
+                needs_rebuild = kwargs.get("needs_project_rebuild", True)
+                if needs_rebuild and os.path.exists(self.project_path):
+                    self._log(
+                        "One or more simulations are outdated. Rebuilding project file.",
+                        log_type="info",
+                    )
+                    self.create_new()
+                elif not os.path.exists(self.project_path):
+                    self._log(
+                        "Project file does not exist. Creating new project.",
+                        log_type="info",
+                    )
+                    self.create_new()
+                else:
+                    self._log(
+                        "Project file exists and no rebuild is required. Opening.",
+                        log_type="info",
+                    )
+                    self.open()
+                return True  # Always return True for setup phase, study will skip sims internally
+
+        # Logic for do_setup = False remains the same
+        self._log(
+            "Execution control: 'do_setup' is false. Opening existing project without verification.",
+            log_type="info",
+        )
+        if not os.path.exists(self.project_path):
+            error_msg = (
+                f"ERROR: 'do_setup' is false, but project file not found at {self.project_path}. "
+                "Cannot proceed."
+            )
+            self._log(error_msg, log_type="fatal")
+            raise FileNotFoundError(error_msg)
+
+        self.open()
+        return False
 
     def create_new(self):
         """Creates a new, empty project in memory.
