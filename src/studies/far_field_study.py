@@ -86,11 +86,56 @@ class FarFieldStudy(BaseStudy):
                         # Check for a stop signal from the GUI at the start of each major iteration.
                         self._check_for_stop_signal()
 
-                        # Create or open the project file. This returns True if a new setup is needed.
-                        needs_setup = self.project_manager.create_or_open_project(phantom_name, freq)
+                        # --- Verification Phase ---
+                        # Always verify all configured simulations to get an accurate list of what's valid.
+                        all_configured_sims = [
+                            (d, p) for d in incident_directions for p in polarizations
+                        ]
+                        valid_sims_from_meta = []
+                        for direction, polarization in all_configured_sims:
+                            meta_path = self.project_manager.get_far_field_meta_path(
+                                phantom_name, freq, direction, polarization
+                            )
+                            surgical_config = self.config.build_simulation_config(
+                                phantom_name,
+                                freq,
+                                direction_name=direction,
+                                polarization_name=polarization,
+                            )
+                            if self.project_manager.verify_simulation_metadata(
+                                meta_path, surgical_config
+                            ):
+                                valid_sims_from_meta.append((direction, polarization))
 
-                        # The phantom must be loaded into each new project if we are setting it up.
-                        if do_setup and needs_setup:
+                        simulations_to_setup = []
+                        if do_setup:
+                            # If setup is enabled, the sims to set up are the ones that are NOT valid.
+                            simulations_to_setup = [
+                                sim
+                                for sim in all_configured_sims
+                                if sim not in valid_sims_from_meta
+                            ]
+
+                            if not simulations_to_setup:
+                                self._log(
+                                    "  - All simulations are up-to-date. Skipping setup phase.",
+                                    log_type="success",
+                                )
+                            elif len(simulations_to_setup) < sims_per_project:
+                                self._log(
+                                    f"  - {len(simulations_to_setup)}/{sims_per_project} simulations need setup.",
+                                    log_type="info",
+                                )
+
+                        needs_project_rebuild = bool(simulations_to_setup)
+                        self.project_manager.create_or_open_project(
+                            phantom_name,
+                            freq,
+                            needs_project_rebuild=needs_project_rebuild,
+                        )
+
+                        # The phantom must be loaded if we are creating a new project from scratch.
+                        if do_setup and needs_project_rebuild:
                             phantom_setup.ensure_phantom_is_loaded()
 
                         project_index = i * len(frequencies) + j + 1
@@ -104,137 +149,123 @@ class FarFieldStudy(BaseStudy):
                             log_type="header",
                         )
 
-                        all_simulations = []
                         # 1. Setup Phase
-                        if do_setup and needs_setup:
+                        if do_setup and simulations_to_setup:
                             with profile(self, "setup"):
-                                total_setups = len(incident_directions) * len(
-                                    polarizations
-                                )
+                                total_setups = len(simulations_to_setup)
                                 if self.gui:
                                     self.gui.update_stage_progress(
                                         "Setup", 0, total_setups
                                     )
 
-                                for k, direction_name in enumerate(incident_directions):
-                                    for (
-                                        polarization_index,
+                                for i, (direction_name, polarization_name) in enumerate(
+                                    simulations_to_setup
+                                ):
+                                    self._check_for_stop_signal()
+                                    self._log(
+                                        (
+                                            f"    - Setting up simulation {i+1}/{total_setups}: "
+                                            f"{direction_name}_{polarization_name}"
+                                        ),
+                                        level="progress",
+                                        log_type="progress",
+                                    )
+
+                                    setup = FarFieldSetup(
+                                        self.config,
+                                        phantom_name,
+                                        freq,
+                                        direction_name,
                                         polarization_name,
-                                    ) in enumerate(polarizations):
-                                        self._check_for_stop_signal()
-                                        setup_index = (
-                                            k * len(polarizations)
-                                            + polarization_index
-                                            + 1
-                                        )
-                                        self._log(
-                                            f"    - Setting up simulation {setup_index}/{total_setups}: "
-                                            f"{direction_name}_{polarization_name}",
-                                            level="progress",
-                                            log_type="progress",
+                                        self.project_manager,
+                                        self.verbose_logger,
+                                        self.progress_logger,
+                                    )
+                                    with self.subtask(
+                                        "setup_simulation", instance_to_profile=setup
+                                    ) as wrapper:
+                                        simulation = wrapper(setup.run_full_setup)(
+                                            phantom_setup
                                         )
 
-                                        setup = FarFieldSetup(
-                                            self.config,
+                                    if simulation:
+                                        meta_path = self.project_manager.get_far_field_meta_path(
                                             phantom_name,
                                             freq,
                                             direction_name,
                                             polarization_name,
-                                            self.project_manager,
-                                            self.verbose_logger,
-                                            self.progress_logger,
+                                        )
+                                        surgical_config = (
+                                            self.config.build_simulation_config(
+                                                phantom_name,
+                                                freq,
+                                                direction_name=direction_name,
+                                                polarization_name=polarization_name,
+                                            )
+                                        )
+                                        self.project_manager.write_simulation_metadata(
+                                            meta_path, surgical_config
+                                        )
+                                    else:
+                                        self._log(
+                                            f"    - Setup failed for {direction_name}_{polarization_name}",
+                                            level="progress",
+                                            log_type="error",
                                         )
 
-                                        # The context manager handles timing,
-                                        # GUI animations, and optional line profiling.
-                                        with self.subtask(
-                                            "setup_simulation",
-                                            instance_to_profile=setup,
-                                        ) as wrapper:
-                                            simulation = wrapper(setup.run_full_setup)(
-                                                phantom_setup
-                                            )
+                                    if self.gui:
+                                        progress = self.profiler.get_weighted_progress(
+                                            "setup", (i + 1) / total_setups
+                                        )
+                                        self.gui.update_overall_progress(
+                                            int(progress), 100
+                                        )
+                                        self.gui.update_stage_progress(
+                                            "Setup", i + 1, total_setups
+                                        )
 
-                                        if simulation:
-                                            all_simulations.append(
-                                                (
-                                                    simulation,
-                                                    direction_name,
-                                                    polarization_name,
-                                                )
-                                            )
-                                        else:
-                                            self._log(
-                                                f"    - Setup failed for {direction_name}_{polarization_name}",
-                                                level="progress",
-                                                log_type="error",
-                                            )
-
-                                        if self.gui:
-                                            progress = (
-                                                self.profiler.get_weighted_progress(
-                                                    "setup", setup_index / total_setups
-                                                )
-                                            )
-                                            self.gui.update_overall_progress(
-                                                int(progress), 100
-                                            )
-                                            self.gui.update_stage_progress(
-                                                "Setup", setup_index, total_setups
-                                            )
-
-                                # Save the project after the entire setup phase for this project is complete.
                                 self._log(
                                     "  - Saving project after setup phase...",
                                     level="progress",
                                     log_type="progress",
                                 )
                                 self.project_manager.save()
-                        else:
-                            # If not setting up, filter simulations from the existing project based on the config
-                            import s4l_v1.document
 
-                            all_sims_in_doc = list(s4l_v1.document.AllSimulations)
+                        # After setup (or if setup was skipped), determine the final list of simulations for run/extract.
+                        import s4l_v1.document
 
-                            # Get the desired simulation names from the config
-                            config_directions = self.config.get_setting(
-                                "far_field_setup.environmental.incident_directions", []
-                            )
-                            config_polarizations = self.config.get_setting(
-                                "far_field_setup.environmental.polarizations", []
-                            )
+                        all_sims_in_doc = list(s4l_v1.document.AllSimulations)
+                        all_simulations = []
 
-                            # Reconstruct the expected simulation names from the config
-                            expected_sim_names_thelonious = [
-                                f"EM_FDTD_{phantom_name}_{freq}MHz_{d}_{p}"
-                                for d in config_directions
-                                for p in config_polarizations
-                            ]
-                            expected_sim_names_thelonius = [
-                                f"EM_FDTD_{phantom_name.replace('thelonious', 'thelonius')}_{freq}MHz_{d}_{p}"
-                                for d in config_directions
-                                for p in config_polarizations
-                            ]
-                            expected_sim_names = (
-                                expected_sim_names_thelonious
-                                + expected_sim_names_thelonius
+                        # The sims to process are those in the config that are either valid or were just set up.
+                        sims_to_process = valid_sims_from_meta + simulations_to_setup
+
+                        for direction, polarization in sims_to_process:
+                            sim_name_base = f"EM_FDTD_{phantom_name}_{freq}MHz_{direction}_{polarization}"
+                            sim_name_legacy = sim_name_base.replace(
+                                "thelonious", "thelonius"
                             )
 
-                            # Filter the simulations from the document
-                            sims_to_process = [
-                                sim
-                                for sim in all_sims_in_doc
-                                if sim.Name in expected_sim_names
-                            ]
+                            found_sim = next(
+                                (
+                                    s
+                                    for s in all_sims_in_doc
+                                    if s.Name == sim_name_base
+                                    or s.Name == sim_name_legacy
+                                ),
+                                None,
+                            )
 
-                            # Recreate the all_simulations tuple structure
-                            all_simulations = []
-                            for sim in sims_to_process:
-                                parts = sim.Name.split("_")
-                                direction_name = "_".join(parts[4:-1])
-                                polarization_name = parts[-1]
+                            if found_sim:
                                 all_simulations.append(
-                                    (sim, direction_name, polarization_name)
+                                    (found_sim, direction, polarization)
+                                )
+                            else:
+                                # This can happen if a setup failed or if do_setup=false and the sim isn't in the project.
+                                self._log(
+                                    f"  - WARNING: Configured simulation for {direction}_{polarization} "
+                                    "not found in the project file. It will be skipped.",
+                                    log_type="warning",
                                 )
 
                         if not all_simulations:
