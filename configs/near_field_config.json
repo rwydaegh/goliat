@@ -237,26 +237,22 @@
     "front_of_eyes": {
       "bounding_box": "default",
       "positions": {
-        "center": [0, 0, -100],
-        "left": [-25, 0, -100],
-        "right": [25, 0, -100],
-        "up": [0, 0, -40]
+        "center": [0, 0, 0],
+        "left": [-25, 0, 0],
+        "right": [25, 0, 0],
+        "down": [0, 0, -60]
       },
       "orientations": {
         "vertical": [],
         "horizontal": [
           {"axis": "Y", "angle_deg": 90}
         ]
-      },
-      "antenna_reference": {
-        "distance_from_top": 10
-      },
-      "phantom_reference": "nasion"
+      }
     },
     "by_cheek": {
       "bounding_box": "default",
       "positions": {
-        "base": [0, 0, 0]
+        "tragus": [0, 0, 0]
       },
       "orientations": {
         "cheek_base": [{"axis": "Z", "angle_deg": 15}],
@@ -265,11 +261,7 @@
         "tilt_base": [],
         "tilt_up": [{"axis": "X", "angle_deg": 10}],
         "tilt_down": [{"axis": "X", "angle_deg": -10}]
-      },
-      "antenna_reference": {
-        "distance_from_top": 10
-      },
-      "phantom_reference": "tragus"
+      }
     },
     "by_belly": {
       "bounding_box": "default",
@@ -284,11 +276,7 @@
         "horizontal": [
           {"axis": "Y", "angle_deg": 90}
         ]
-      },
-      "antenna_reference": {
-        "distance_from_top": 10
-      },
-      "phantom_reference": "belly_button"
+      }
     }
   },
   "phantom_definitions": {
@@ -298,15 +286,12 @@
       "chest_extension": 100,
       "back_of_head": -28,
       "lips": [0, 122, 31],
-      "tragus": [0, 7, -5],
-      "belly_button": [-5, 0, -140],
-      "nasion": [-1, 0, 0],
       "placements": {
         "do_front_of_eyes": true,
         "do_by_belly": true,
         "do_by_cheek": true,
         "distance_from_eye": 200,
-        "distance_from_belly": 200,
+        "distance_from_belly": 100,
         "distance_from_cheek": 8
       }
     },
@@ -316,15 +301,12 @@
       "chest_extension": 79,
       "back_of_head": -55,
       "lips": [24, 122, 418],
-      "tragus": [0, 14, -1],
-      "belly_button": [-6, 0, -171],
-      "nasion": [-2, 0, 0],
       "placements": {
         "do_front_of_eyes": true,
         "do_by_belly": true,
         "do_by_cheek": true,
         "distance_from_eye": 200,
-        "distance_from_belly": 200,
+        "distance_from_belly": 100,
         "distance_from_cheek": 8
       }
     },
