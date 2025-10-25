@@ -303,7 +303,7 @@ The `Config` class uses a powerful inheritance mechanism to avoid duplicating se
 
 **Project Management**:
 
-*   **`project_manager.py`**: This class is critical for reliability. The underlying `.smash` project files can become corrupted or locked. The `_is_valid_smash_file` method is a key defensive measure. It first attempts to rename the file to itself (a trick to check for file locks on Windows) and then uses `h5py` to ensure the file is a valid HDF5 container before attempting to open it in the simulation software. This prevents the application from crashing on a corrupted file.
+*   **`project_manager.py`**: This class is critical for reliability. It now includes a "Verify and Resume" feature. Before starting a setup, it generates a "surgical" snapshot of all relevant simulation parameters and calculates its hash. This hash is stored in a `.smash.meta.json` file alongside the project. On subsequent runs, it compares the current configuration's hash to the stored one. If they match, the setup is skipped, saving significant time. If they don't, the old project is deleted and rebuilt, ensuring correctness. This prevents unnecessary work and safely resumes interrupted studies.
 
 This integrated system of GUI, logging, profiling, and configuration management provides a robust and user-friendly framework for running complex scientific simulations.
 
