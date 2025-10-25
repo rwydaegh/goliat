@@ -322,3 +322,59 @@ class Config:
             )
 
         return [t for t in cleanup_setting if t in valid_types]
+
+    def build_simulation_config(self, phantom_name: str, frequency_mhz: int, scenario_name: str = None, position_name: str = None, orientation_name: str = None, direction_name: str = None, polarization_name: str = None) -> dict:
+        """
+        Constructs a minimal, simulation-specific configuration dictionary
+        that uniquely defines a single simulation setup.
+        """
+        
+        surgical_config = {}
+
+        # 1. Copy global parameters
+        global_keys = [
+            "study_type",
+            "simulation_parameters",
+            "gridding_parameters",
+            "solver_settings",
+            "manual_isolve",
+            "export_material_properties"
+        ]
+        for key in global_keys:
+            if key in self.config:
+                surgical_config[key] = self.config[key]
+
+        # 2. Add simulation-specific identifiers
+        surgical_config['phantom'] = phantom_name
+        surgical_config['frequency_mhz'] = frequency_mhz
+
+        # 3. Surgically select study-specific parameters
+        study_type = self.get_setting("study_type")
+        if study_type == "near_field":
+            # Select the specific antenna config for the given frequency
+            surgical_config["antenna_config"] = self.get_setting(f"antenna_config.{frequency_mhz}")
+            
+            # Reconstruct placement_scenarios for the specific placement
+            original_scenario = self.get_placement_scenario(scenario_name)
+            surgical_config["placement_scenarios"] = {
+                scenario_name: {
+                    "positions": {position_name: original_scenario["positions"][position_name]},
+                    "orientations": {orientation_name: original_scenario["orientations"][orientation_name]},
+                    "bounding_box": original_scenario.get("bounding_box", "default")
+                }
+            }
+            
+            # Select the specific phantom definition
+            surgical_config["phantom_definitions"] = {
+                phantom_name: self.get_phantom_definition(phantom_name)
+            }
+
+        elif study_type == "far_field":
+            # For far-field, the entire far_field_setup block defines the project
+            surgical_config["far_field_setup"] = self.get_setting("far_field_setup")
+            # Also include the specific phantom definition
+            surgical_config["phantom_definitions"] = {
+                phantom_name: self.get_phantom_definition(phantom_name)
+            }
+
+        return surgical_config

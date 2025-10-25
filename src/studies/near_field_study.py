@@ -188,7 +188,11 @@ class NearFieldStudy(BaseStudy):
             simulation = None
 
             # 1. Setup Simulation
-            if do_setup:
+            needs_setup = self.project_manager.create_or_open_project(
+                phantom_name, freq, scenario_name, position_name, orientation_name
+            )
+
+            if do_setup and needs_setup:
                 with profile(self, "setup"):
                     if self.gui:
                         self.gui.update_stage_progress("Setup", 0, 1)
@@ -225,10 +229,6 @@ class NearFieldStudy(BaseStudy):
                         progress = self.profiler.get_weighted_progress("setup", 1.0)
                         self.gui.update_overall_progress(int(progress), 100)
                         self.gui.update_stage_progress("Setup", 1, 1)
-            else:
-                self.project_manager.create_or_open_project(
-                    phantom_name, freq, scenario_name, position_name, orientation_name
-                )
 
             # ALWAYS get a fresh simulation handle from the document before run/extract
             import s4l_v1.document
