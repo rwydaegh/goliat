@@ -241,17 +241,13 @@ class FarFieldStudy(BaseStudy):
                         sims_to_process = valid_sims_from_meta + simulations_to_setup
 
                         for direction, polarization in sims_to_process:
-                            sim_name_base = f"EM_FDTD_{phantom_name}_{freq}MHz_{direction}_{polarization}"
-                            sim_name_legacy = sim_name_base.replace(
-                                "thelonious", "thelonius"
-                            )
+                            sim_name = f"EM_FDTD_{phantom_name}_{freq}MHz_{direction}_{polarization}"
 
                             found_sim = next(
                                 (
                                     s
                                     for s in all_sims_in_doc
-                                    if s.Name == sim_name_base
-                                    or s.Name == sim_name_legacy
+                                    if s.Name == sim_name
                                 ),
                                 None,
                             )

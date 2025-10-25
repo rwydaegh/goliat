@@ -234,29 +234,15 @@ class NearFieldStudy(BaseStudy):
             import s4l_v1.document
 
             if s4l_v1.document.AllSimulations:
-                # First, try to find the simulation with the correct "thelonious" name.
-                sim_name_correct = f"EM_FDTD_{phantom_name}_{freq}MHz_{placement_name}"
+                sim_name= f"EM_FDTD_{phantom_name}_{freq}MHz_{placement_name}"
                 simulation = next(
                     (
                         s
                         for s in s4l_v1.document.AllSimulations
-                        if s.Name == sim_name_correct
+                        if s.Name == sim_name
                     ),
                     None,
                 )
-
-                # If not found, check for the old "thelonius" name.
-                if not simulation:
-                    foo = phantom_name.replace("thelonious", "thelonius")
-                    sim_name_old = f"EM_FDTD_{foo}_{freq}MHz_{placement_name}"
-                    simulation = next(
-                        (
-                            s
-                            for s in s4l_v1.document.AllSimulations
-                            if s.Name == sim_name_old
-                        ),
-                        None,
-                    )
 
             if not simulation:
                 self._log(
@@ -301,21 +287,9 @@ class NearFieldStudy(BaseStudy):
                         None,
                     )
 
-                    # If not found, check for the old "thelonius" name.
-                    if not reloaded_simulation:
-                        sim_name_old = sim_name.replace("thelonious", "thelonius")
-                        reloaded_simulation = next(
-                            (
-                                s
-                                for s in s4l_v1.document.AllSimulations
-                                if s.Name == sim_name_old
-                            ),
-                            None,
-                        )
-
                     if not reloaded_simulation:
                         raise RuntimeError(
-                            f"Could not find simulation '{sim_name}' (or '{sim_name_old}') after reloading project."
+                            f"Could not find simulation '{sim_name}' after reloading project."
                         )
 
                     extractor = ResultsExtractor(
