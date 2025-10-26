@@ -24,14 +24,23 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
 
     def load_and_process_results(self, analyzer: "Analyzer"):
         """Iterates through near-field simulation results and processes each one."""
-        frequencies = self.config.get_antenna_config().keys()
-        placement_scenarios = self.config.get_setting("placement_scenarios", {})
+        antenna_config = self.config.get_antenna_config()
+        if not antenna_config:
+            return
+        frequencies = antenna_config.keys()
+        placement_scenarios = self.config.get_setting("placement_scenarios")
+        if not placement_scenarios:
+            return
 
         for freq in frequencies:
             frequency_mhz = int(freq)
             for scenario_name, scenario_def in placement_scenarios.items():
+                if not scenario_def:
+                    continue
                 positions = scenario_def.get("positions", {})
                 orientations = scenario_def.get("orientations", {})
+                if not positions or not orientations:
+                    continue
                 for pos_name in positions.keys():
                     for orient_name in orientations.keys():
                         analyzer._process_single_result(frequency_mhz, scenario_name, pos_name, orient_name)
@@ -108,21 +117,23 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
                 )
         return result_entry, organ_entries
 
-    def apply_bug_fixes(self, result_entry: dict) -> dict:
-        """Applies a workaround for Head SAR being miscategorized as Trunk SAR.
-
-        Args:
-            result_entry: The data entry for a single simulation result.
-
-        Returns:
-            The corrected result entry.
-        """
-        placement = result_entry["placement"].lower()
-        if placement.startswith("front_of_eyes") or placement.startswith("by_cheek"):
-            if pd.isna(result_entry.get("SAR_head")) and pd.notna(result_entry.get("SAR_trunk")):
-                result_entry["SAR_head"] = result_entry["SAR_trunk"]
-                result_entry["SAR_trunk"] = pd.NA
-        return result_entry
+    # def apply_bug_fixes(self, result_entry: dict) -> dict:
+    #     """Applies a workaround for Head SAR being miscategorized as Trunk SAR.
+    #
+    #     Args:
+    #         result_entry: The data entry for a single simulation result.
+    #
+    #     Returns:
+    #         The corrected result entry.
+    #     """
+    #     placement = result_entry.get("placement", "").lower()
+    #     if placement.startswith("front_of_eyes") or placement.startswith("by_cheek"):
+    #         sar_head = result_entry.get("SAR_head")
+    #         sar_trunk = result_entry.get("SAR_trunk")
+    #         if bool(pd.isna(sar_head)) and bool(pd.notna(sar_trunk)):
+    #             result_entry["SAR_head"] = sar_trunk
+    #             result_entry["SAR_trunk"] = pd.NA
+    #     return result_entry
 
     def calculate_summary_stats(self, results_df: pd.DataFrame) -> pd.DataFrame:
         """Calculates summary statistics, including completion progress.
@@ -133,22 +144,33 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
         Returns:
             A DataFrame with mean SAR values and a 'progress' column.
         """
-        placement_scenarios = self.config.get_setting("placement_scenarios", {})
+        placement_scenarios = self.config.get_setting("placement_scenarios")
         placements_per_scenario = {}
         logging.getLogger("progress").info(
             "\n--- Calculating Total Possible Placements per Scenario ---",
             extra={"log_type": "header"},
         )
-        for name, definition in placement_scenarios.items():
-            total = len(definition.get("positions", {})) * len(definition.get("orientations", {}))
-            placements_per_scenario[name] = total
-            logging.getLogger("progress").info(f"- Scenario '{name}': {total} placements", extra={"log_type": "info"})
+        if placement_scenarios:
+            for name, definition in placement_scenarios.items():
+                if not definition:
+                    continue
+                total = len(definition.get("positions", {})) * len(definition.get("orientations", {}))
+                placements_per_scenario[name] = total
+                logging.getLogger("progress").info(f"- Scenario '{name}': {total} placements", extra={"log_type": "info"})
+
         summary_stats = results_df.groupby(["scenario", "frequency_mhz"]).mean(numeric_only=True)
         completion_counts = results_df.groupby(["scenario", "frequency_mhz"]).size()
-        summary_stats["progress"] = summary_stats.index.map(
-            lambda idx: f"{completion_counts.get(idx, 0)}/{placements_per_scenario.get(idx, 0)}"
-        )
-        return summary_stats
+
+        # Define a mapping function that safely handles potential missing keys
+        def get_progress(idx):
+            scenario_name = idx  # Index is a tuple (scenario, frequency)
+            completed = completion_counts.get(idx, 0)
+            total = placements_per_scenario.get(scenario_name, 0)
+            return f"{completed}/{total}"
+
+        if not summary_stats.empty:
+            summary_stats["progress"] = summary_stats.index.map(get_progress)  # type: ignore
+        return pd.DataFrame(summary_stats)
 
     def generate_plots(
         self,
@@ -177,9 +199,10 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
                 extra={"log_type": "header"},
             )
             scenario_results_df = results_df[results_df["scenario"] == scenario_name]
-            scenario_summary_stats = summary_stats.loc[scenario_name]
-            avg_results = scenario_summary_stats.drop(columns=["progress"])
-            progress_info = scenario_summary_stats["progress"]
-            plotter.plot_average_sar_bar(scenario_name, avg_results, progress_info)
-            plotter.plot_pssar_line(scenario_name, avg_results)
-            plotter.plot_sar_distribution_boxplots(scenario_name, scenario_results_df)
+            if scenario_name in summary_stats.index:
+                scenario_summary_stats = summary_stats.loc[scenario_name]
+                avg_results = scenario_summary_stats.drop(columns=["progress"])
+                progress_info = scenario_summary_stats["progress"]
+                plotter.plot_average_sar_bar(scenario_name, pd.DataFrame(avg_results), pd.Series(progress_info))
+                plotter.plot_pssar_line(scenario_name, pd.DataFrame(avg_results))
+            plotter.plot_sar_distribution_boxplots(scenario_name, pd.DataFrame(scenario_results_df))

@@ -4,7 +4,7 @@ import shutil
 import traceback
 import zipfile
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from src.osparc_batch.logging_utils import setup_console_logging
 
@@ -67,7 +67,7 @@ def _submit_job_in_process(
     client_cfg: "osparc.Configuration",
     solver_key: str,
     solver_version: str,
-) -> tuple["osparc.Job", "osparc.Solver"]:
+) -> Optional[tuple["osparc.Job", "osparc.Solver"]]:
     """Helper function to run the oSPARC submission in a separate process."""
     import osparc as osparc_module
 

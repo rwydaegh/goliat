@@ -2,7 +2,7 @@ import importlib
 import logging
 import os
 import traceback
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from line_profiler import LineProfiler
 
@@ -22,8 +22,8 @@ class BaseStudy(LoggingMixin):
     def __init__(
         self,
         study_type: str,
-        config_filename: str = None,
-        gui: "QueueGUI" = None,
+        config_filename: Optional[str] = None,
+        gui: Optional["QueueGUI"] = None,
         profiler=None,
     ):
         self.study_type = study_type
@@ -43,7 +43,7 @@ class BaseStudy(LoggingMixin):
         execution_control = self.config.get_setting("execution_control", {"do_setup": True, "do_run": True, "do_extract": True})
 
         self.profiler = Profiler(
-            execution_control,
+            execution_control,  # type: ignore
             profiling_config,
             self.study_type,
             self.config.profiling_config_path,

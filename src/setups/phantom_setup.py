@@ -28,8 +28,8 @@ class PhantomSetup(BaseSetup):
         self.data = s4l_v1.data
         self.XCoreModeling = XCoreModeling
 
-    def _log(self, message: str, log_type: str = "default"):
-        self.verbose_logger.info(message, extra={"log_type": log_type})
+    def _log(self, message: str, level: str = "verbose", log_type: str = "default"):
+        super()._log(message, level, log_type)
 
     def ensure_phantom_is_loaded(self) -> bool:
         """Ensures the phantom model is loaded, downloading it if necessary."""

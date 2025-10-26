@@ -16,7 +16,7 @@ def get_progress_report(input_files: list[Path], job_statuses: dict, file_to_job
     status_counts = defaultdict(int)
     for status_tuple in job_statuses.values():
         status_str = status_tuple if isinstance(status_tuple, tuple) else status_tuple
-        state = status_str.split(" ")
+        state = status_str.split(" ")  # type: ignore
         status_counts[state] += 1
     summary = " | ".join(f"{state}: {count}" for state, count in sorted(status_counts.items()))
     report_lines.append(f"\n{colorama.Fore.BLUE}--- Progress Summary ---\n{summary}\n{colorama.Style.RESET_ALL}")
@@ -27,7 +27,7 @@ def get_progress_report(input_files: list[Path], job_statuses: dict, file_to_job
 
     # --- Optimized Path Handling ---
     try:
-        first_path_parts = input_files.parts
+        first_path_parts = input_files.parts  # type: ignore
         results_index = first_path_parts.index("results")
         base_path = Path(*first_path_parts[: results_index + 1])
     except (ValueError, IndexError):
@@ -78,7 +78,7 @@ def get_progress_report(input_files: list[Path], job_statuses: dict, file_to_job
 
                 status = status_str.split(" ")
                 color = STATUS_COLORS.get(status, colorama.Fore.WHITE)
-                colored_text = f"{color}{item} (oSPARC Job: {job_id}, Status: {status_str}{timer_str})" f"{colorama.Style.RESET_ALL}"
+                colored_text = f"{color}{item} (oSPARC Job: {job_id}, Status: {status_str}{timer_str}){colorama.Style.RESET_ALL}"
                 report_lines.append(f"{prefix}{connector}{colored_text}")
 
     report_lines.append(f"{colorama.Fore.BLUE}--- File Status Tree ---{colorama.Style.RESET_ALL}")

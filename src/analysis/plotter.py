@@ -107,7 +107,7 @@ class Plotter:
             ax.set_title(f"Average Normalized psSAR10g for Scenario: {scenario_name}")
             ax.set_xlabel("Frequency (MHz)")
             ax.set_ylabel("Normalized psSAR10g (mW/kg)")
-            ax.legend([LEGEND_LABELS.get(col, col) for col in pssar_columns])
+            ax.legend([label for col in pssar_columns if (label := LEGEND_LABELS.get(col, col)) is not None])
             ax.set_xticks(avg_results.index)
         else:
             ax.text(0.5, 0.5, "No psSAR10g data found", ha="center", va="center")
@@ -202,8 +202,11 @@ class Plotter:
         organ_pivot = organ_pivot[sorted_columns]
 
         group_pivot = group_df.pivot_table(index="group", columns="frequency_mhz", values="avg_sar")
-        mean_group_sar = group_pivot.mean(axis=1).sort_values(ascending=False)
-        group_pivot = group_pivot.reindex(mean_group_sar.index)
+        if isinstance(group_pivot, pd.DataFrame) and not group_pivot.empty:
+            mean_group_sar = group_pivot.mean(axis=1)
+            if isinstance(mean_group_sar, pd.Series):
+                mean_group_sar = mean_group_sar.sort_values(ascending=False)
+                group_pivot = group_pivot.reindex(mean_group_sar.index)
 
         if organ_pivot.empty:
             return
@@ -248,7 +251,7 @@ class Plotter:
             tick_label.set_rotation(0)
             tick_label.set_color(group_colors.get(f"{tick_label.get_text().lower()}_group", "black"))
 
-        plt.tight_layout(rect=[0, 0, 0.95, 0.98])
+        plt.tight_layout(rect=(0, 0, 0.95, 0.98))
         fig.savefig(os.path.join(self.plots_dir, "heatmap_sar_summary.png"))
         plt.close(fig)
 
@@ -267,8 +270,11 @@ class Plotter:
         organ_pivot = organ_pivot.reindex(mean_organ_sar.index)
 
         group_pivot = group_df.pivot_table(index="group", columns="frequency_mhz", values=value_col)
-        mean_group_sar = group_pivot.mean(axis=1).sort_values(ascending=False)
-        group_pivot = group_pivot.reindex(mean_group_sar.index)
+        if isinstance(group_pivot, pd.DataFrame) and not group_pivot.empty:
+            mean_group_sar = group_pivot.mean(axis=1)
+            if isinstance(mean_group_sar, pd.Series):
+                mean_group_sar = mean_group_sar.sort_values(ascending=False)
+                group_pivot = group_pivot.reindex(mean_group_sar.index)
 
         if organ_pivot.empty:
             return
@@ -311,6 +317,6 @@ class Plotter:
             tick_label.set_rotation(0)
             tick_label.set_color(group_colors.get(f"{tick_label.get_text().lower()}_group", "black"))
 
-        plt.tight_layout(rect=[0, 0, 0.95, 0.98])
+        plt.tight_layout(rect=(0, 0, 0.95, 0.98))
         fig.savefig(os.path.join(self.plots_dir, f"heatmap_{value_col}_summary.png"))
         plt.close(fig)

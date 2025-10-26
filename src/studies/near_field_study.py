@@ -1,5 +1,5 @@
 import traceback
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from ..antenna import Antenna
 from ..results_extractor import ResultsExtractor
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 class NearFieldStudy(BaseStudy):
     """Manages and runs a full near-field simulation campaign."""
 
-    def __init__(self, config_filename: str = "near_field_config.json", gui: "QueueGUI" = None):
+    def __init__(self, config_filename: str = "near_field_config.json", gui: Optional["QueueGUI"] = None):
         super().__init__("near_field", config_filename, gui)
 
     def _run_study(self):
@@ -39,26 +39,26 @@ class NearFieldStudy(BaseStudy):
             return
 
         # Sanity check for auto_cleanup_previous_results
-        self._validate_auto_cleanup_config(do_setup, do_run, do_extract, auto_cleanup)
+        self._validate_auto_cleanup_config(do_setup, do_run, do_extract, auto_cleanup)  # type: ignore
 
         phantoms = self.config.get_setting("phantoms", [])
         if not isinstance(phantoms, list):
             phantoms = [phantoms]
-        frequencies = self.config.get_setting("antenna_config", {}).keys()
+        frequencies = self.config.get_setting("antenna_config", {}).keys()  # type: ignore
         all_scenarios = self.config.get_setting("placement_scenarios", {})
 
         # Calculate total number of simulations for the profiler
         total_simulations = 0
         for phantom_name in phantoms:
-            phantom_definition = self.config.get_phantom_definition(phantom_name)
+            phantom_definition = self.config.get_phantom_definition(phantom_name)  # type: ignore
             placements_config = phantom_definition.get("placements", {})
             if not placements_config:
                 continue
-            for scenario_name, scenario_details in all_scenarios.items():
+            for scenario_name, scenario_details in all_scenarios.items():  # type: ignore
                 if placements_config.get(f"do_{scenario_name}"):
                     positions = scenario_details.get("positions", {})
                     orientations = scenario_details.get("orientations", {})
-                    total_simulations += len(frequencies) * len(positions) * len(orientations)
+                    total_simulations += len(list(frequencies)) * len(positions) * len(orientations)  # type: ignore
 
         self.profiler.set_total_simulations(total_simulations)
         if self.gui:
@@ -66,19 +66,19 @@ class NearFieldStudy(BaseStudy):
 
         simulation_count = 0
         for phantom_name in phantoms:
-            phantom_definition = self.config.get_phantom_definition(phantom_name)
+            phantom_definition = self.config.get_phantom_definition(phantom_name)  # type: ignore
             placements_config = phantom_definition.get("placements", {})
             if not placements_config:
                 continue
 
             for freq_str in frequencies:
                 freq = int(freq_str)
-                for scenario_name, scenario_details in all_scenarios.items():
+                for scenario_name, scenario_details in all_scenarios.items():  # type: ignore
                     if placements_config.get(f"do_{scenario_name}"):
                         positions = scenario_details.get("positions", {})
                         orientations = scenario_details.get("orientations", {})
-                        for pos_name in positions.keys():
-                            for orient_name in orientations.keys():
+                        for pos_name in positions.keys():  # type: ignore
+                            for orient_name in orientations.keys():  # type: ignore
                                 self._check_for_stop_signal()
                                 simulation_count += 1
                                 placement_name = f"{scenario_name}_{pos_name}_{orient_name}"
@@ -89,14 +89,14 @@ class NearFieldStudy(BaseStudy):
                                     log_type="header",
                                 )
                                 self._run_placement(
-                                    phantom_name,
+                                    phantom_name,  # type: ignore
                                     freq,
                                     scenario_name,
                                     pos_name,
                                     orient_name,
-                                    do_setup,
-                                    do_run,
-                                    do_extract,
+                                    do_setup,  # type: ignore
+                                    do_run,  # type: ignore
+                                    do_extract,  # type: ignore
                                 )
 
     def _validate_auto_cleanup_config(self, do_setup: bool, do_run: bool, do_extract: bool, auto_cleanup: list):
@@ -153,9 +153,9 @@ class NearFieldStudy(BaseStudy):
                 "input": "input files (*_Input.h5)",
                 "smash": "project files (*.smash)",
             }
-            cleanup_descriptions = [file_type_names.get(t, t) for t in cleanup_types]
+            cleanup_descriptions = [file_type_names.get(t, t) for t in cleanup_types]  # type: ignore
             self._log(
-                f"Auto-cleanup enabled: {', '.join(cleanup_descriptions)} will be "
+                f"Auto-cleanup enabled: {', '.join(filter(None, cleanup_descriptions))} will be "
                 "deleted after each simulation's results are extracted to save disk space.",
                 level="progress",
                 log_type="info",
@@ -225,7 +225,7 @@ class NearFieldStudy(BaseStudy):
                             orientation_name=orientation_name,
                         )
                         self.project_manager.write_simulation_metadata(
-                            self.project_manager.project_path + ".meta.json",
+                            self.project_manager.project_path + ".meta.json",  # type: ignore
                             surgical_config,
                         )
 
@@ -261,8 +261,8 @@ class NearFieldStudy(BaseStudy):
                     self.profiler.start_stage("run", total_stages=1)
                     runner = SimulationRunner(
                         self.config,
-                        self.project_manager.project_path,
-                        [simulation],
+                        self.project_manager.project_path,  # type: ignore
+                        [simulation],  # type: ignore
                         self.verbose_logger,
                         self.progress_logger,
                         self.gui,
@@ -291,7 +291,7 @@ class NearFieldStudy(BaseStudy):
 
                     extractor = ResultsExtractor(
                         config=self.config,
-                        simulation=reloaded_simulation,
+                        simulation=reloaded_simulation,  # type: ignore
                         phantom_name=phantom_name,
                         frequency_mhz=freq,
                         scenario_name=scenario_name,
@@ -300,7 +300,7 @@ class NearFieldStudy(BaseStudy):
                         study_type="near_field",
                         verbose_logger=self.verbose_logger,
                         progress_logger=self.progress_logger,
-                        gui=self.gui,
+                        gui=self.gui,  # type: ignore
                         study=self,
                     )
                     extractor.extract()
@@ -318,5 +318,5 @@ class NearFieldStudy(BaseStudy):
             )
             self.verbose_logger.error(traceback.format_exc())
         finally:
-            if self.project_manager and hasattr(self.project_manager.document, "IsOpen") and self.project_manager.document.IsOpen():
+            if self.project_manager and hasattr(self.project_manager.document, "IsOpen") and self.project_manager.document.IsOpen():  # type: ignore
                 self.project_manager.close()

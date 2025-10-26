@@ -96,7 +96,7 @@ def cancel_all_jobs(config_path: str, max_jobs: int):
                 ]:
                     main_logger.info(f"Cancelling job {job.id} with status {status.state}...")
                     solvers_api.stop_job(solver_key, solver_version, job.id)
-                    main_logger.info(f"{colorama.Fore.GREEN}Successfully sent cancel signal to job " f"{job.id}.{colorama.Style.RESET_ALL}")
+                    main_logger.info(f"{colorama.Fore.GREEN}Successfully sent cancel signal to job {job.id}.{colorama.Style.RESET_ALL}")
                     cancelled_jobs_count += 1
                 else:
                     pass

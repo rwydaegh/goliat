@@ -2,8 +2,8 @@ import logging
 import time
 import traceback
 from logging import Logger
-from multiprocessing import Event
-from queue import Queue
+from multiprocessing import Process, Queue
+from multiprocessing.synchronize import Event
 
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QAction
@@ -35,8 +35,8 @@ class QueueGUI(LoggingMixin):
 
     def __init__(
         self,
-        queue: "Queue",
-        stop_event: "Event",
+        queue: Queue,
+        stop_event: Event,
         profiler: "Profiler",
         progress_logger: "Logger",
         verbose_logger: "Logger",
@@ -108,9 +108,9 @@ class ProgressGUI(QWidget):
 
     def __init__(
         self,
-        queue: "Queue",
-        stop_event: "Event",
-        process,
+        queue: Queue,
+        stop_event: Event,
+        process: Process,
         window_title: str = "Simulation Progress",
     ):
         """Initializes the ProgressGUI window.
@@ -159,32 +159,32 @@ class ProgressGUI(QWidget):
     def init_ui(self):
         """Initializes and arranges all UI widgets."""
         self.setWindowTitle(self.window_title)
-        self.layout = QVBoxLayout()
+        layout = QVBoxLayout()
         self.grid_layout = QGridLayout()
 
         self.overall_progress_label = QLabel("Overall Progress:")
-        self.layout.addWidget(self.overall_progress_label)
+        layout.addWidget(self.overall_progress_label)
         self.overall_progress_bar = QProgressBar(self)
         self.overall_progress_bar.setRange(0, 1000)
-        self.layout.addWidget(self.overall_progress_bar)
+        layout.addWidget(self.overall_progress_bar)
 
         self.stage_label = QLabel("Current Stage:")
-        self.layout.addWidget(self.stage_label)
+        layout.addWidget(self.stage_label)
         self.stage_progress_bar = QProgressBar(self)
         self.stage_progress_bar.setRange(0, 1000)
-        self.layout.addWidget(self.stage_progress_bar)
+        layout.addWidget(self.stage_progress_bar)
 
         self.elapsed_label = QLabel("Elapsed: N/A")
         self.eta_label = QLabel("Time Remaining: N/A")
         self.grid_layout.addWidget(self.elapsed_label, 0, 0)
         self.grid_layout.addWidget(self.eta_label, 0, 1)
-        self.layout.addLayout(self.grid_layout)
+        layout.addLayout(self.grid_layout)
 
         self.status_log_label = QLabel("Status Log:")
-        self.layout.addWidget(self.status_log_label)
+        layout.addWidget(self.status_log_label)
         self.status_text = QTextEdit(self)
         self.status_text.setReadOnly(True)
-        self.layout.addWidget(self.status_text)
+        layout.addWidget(self.status_text)
 
         self.button_layout = QHBoxLayout()
         self.stop_button = QPushButton("Stop")
@@ -193,9 +193,9 @@ class ProgressGUI(QWidget):
         self.tray_button.clicked.connect(self.hide_to_tray)
         self.button_layout.addWidget(self.stop_button)
         self.button_layout.addWidget(self.tray_button)
-        self.layout.addLayout(self.button_layout)
+        layout.addLayout(self.button_layout)
 
-        self.setLayout(self.layout)
+        self.setLayout(layout)
 
         self.tray_icon = QSystemTrayIcon(self)
         style = self.style()

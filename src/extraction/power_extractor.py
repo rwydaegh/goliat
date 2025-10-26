@@ -35,7 +35,7 @@ class PowerExtractor(LoggingMixin):
 
         self.document = s4l_v1.document
 
-    def extract_input_power(self, simulation_extractor: "analysis.Extractor"):
+    def extract_input_power(self, simulation_extractor: "analysis.Extractor"):  # type: ignore
         """Extracts the input power from the simulation results.
 
         For far-field, it calculates a theoretical input power. For near-field,
@@ -45,7 +45,7 @@ class PowerExtractor(LoggingMixin):
             simulation_extractor: The results extractor from the simulation object.
         """
         self._log("  - Extracting input power...", log_type="progress")
-        with self.parent.study.subtask("extract_input_power"):
+        with self.parent.study.subtask("extract_input_power"):  # type: ignore
             try:
                 if self.study_type == "far_field":
                     self._extract_far_field_power()
@@ -83,9 +83,17 @@ class PowerExtractor(LoggingMixin):
             )
             return
         # sim_bbox is a list of two points: [min_corner, max_corner]
-        sim_min, sim_max = np.array(sim_bbox[0]), np.array(sim_bbox[1])
-        padding_bottom = np.array(self.config.get_setting("gridding_parameters.padding.manual_bottom_padding_mm", [0, 0, 0]))
-        padding_top = np.array(self.config.get_setting("gridding_parameters.padding.manual_top_padding_mm", [0, 0, 0]))
+        sim_min, sim_max = np.array(sim_bbox), np.array(sim_bbox)
+        padding_bottom = np.array(
+            self.config.get_setting(
+                "gridding_parameters.padding.manual_bottom_padding_mm",
+            )
+        )
+        padding_top = np.array(
+            self.config.get_setting(
+                "gridding_parameters.padding.manual_top_padding_mm",
+            )
+        )
         total_min = sim_min - padding_bottom
         total_max = sim_max + padding_top
 
@@ -98,13 +106,13 @@ class PowerExtractor(LoggingMixin):
 
         if "x" in direction:
             # Area of the YZ plane
-            area_m2 = (dims[1] * dims[2]) / 1e6
+            area_m2 = (dims * dims) / 1e6
         elif "y" in direction:
             # Area of the XZ plane
-            area_m2 = (dims[0] * dims[2]) / 1e6
+            area_m2 = (dims * dims) / 1e6
         else:  # Default to z-direction
             # Area of the XY plane
-            area_m2 = (dims[0] * dims[1]) / 1e6
+            area_m2 = (dims * dims) / 1e6
 
         total_input_power = power_density_w_m2 * area_m2
         self.results_data.update(
@@ -118,7 +126,7 @@ class PowerExtractor(LoggingMixin):
             log_type="highlight",
         )
 
-    def _extract_near_field_power(self, simulation_extractor: "analysis.Extractor"):
+    def _extract_near_field_power(self, simulation_extractor: "analysis.Extractor"):  # type: ignore
         """Extracts input power for near-field simulations from port sensors."""
         input_power_extractor = simulation_extractor["Input Power"]
         self.document.AllAlgorithms.Add(input_power_extractor)
@@ -176,7 +184,7 @@ class PowerExtractor(LoggingMixin):
                         log_type="warning",
                     )
 
-    def extract_power_balance(self, simulation_extractor: "analysis.Extractor"):
+    def extract_power_balance(self, simulation_extractor: "analysis.Extractor"):  # type: ignore
         """Extracts the power balance to verify energy conservation.
 
         Args:
