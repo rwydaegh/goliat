@@ -17,7 +17,7 @@ repos:
     rev: 7.0.0
     hooks:
       - id: flake8
-        args: ["--max-line-length=120", "--extend-ignore=E203,W503"]
+        args: ["--max-line-length=140", "--extend-ignore=E203,W503"]
         exclude: ^(archive/|analysis/|osparc_api_example/|post_process_results/|docs/)
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
