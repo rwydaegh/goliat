@@ -264,20 +264,17 @@ class PlacementSetup(BaseSetup):
         
         self._log("--- Target Rotation Feature ---", log_type="header")
         self._log("Rotating Grid entity to align with phone's orientation...", log_type="info")
-
+    
         # Get the Grid entity that controls FDTD gridding
         grid_entity = self._get_grid_entity()
         
         if grid_entity:
-            # Extract ONLY the rotation component from final_transform
-            # We need to create a rotation-only transform without translation
-            rotation_only = self._extract_rotation_only(final_transform)
+            # Apply the phone's final transform directly to the Grid
+            # Since Grid starts at origin (0,0,0), translation components shouldn't affect it
+            # Only the rotation will take effect
+            self._log(f"Applying transform to Grid:\n{final_transform.Matrix4}", log_type="verbose")
             
-            self._log(f"Extracted rotation (no translation):\n{rotation_only.Matrix4}", log_type="verbose")
-            
-            # Apply only the rotation to the Grid
-            # The Grid starts at (0,0,0), and we only rotate it - no translation
-            grid_entity.ApplyTransform(rotation_only)
+            grid_entity.ApplyTransform(final_transform)
             self._log(f"Successfully rotated Grid entity to align with phone orientation.", log_type="success")
             self._log("Phone remains in its original rotated position.", log_type="info")
             self._log("Computational grid is now aligned with phone's plane for efficient gridding.", log_type="success")
@@ -286,37 +283,6 @@ class PlacementSetup(BaseSetup):
         
         self._log(f"Target rotation complete.", log_type="success")
     
-    def _extract_rotation_only(self, transform):
-        """Extract only the rotation component from a transformation matrix, removing translation."""
-        # Get the 4x4 matrix from the transform
-        matrix = transform.Matrix4
-        
-        # Create a new transform with only rotation (zero translation)
-        # The rotation is in the upper-left 3x3 submatrix
-        # The translation is in the rightmost column (indices [0][3], [1][3], [2][3])
-        # We create a new rotation by extracting the 3x3 rotation matrix
-        
-        rotation_only = self.XCoreMath.Transform()
-        
-        # Set the rotation part (copy the 3x3 rotation matrix)
-        # The Matrix4 is a 4x4 array where:
-        # - [0:3, 0:3] contains the rotation
-        # - [0:3, 3] contains the translation
-        # We want to keep rotation but zero out translation
-        
-        # Create a rotation from the existing rotation matrix
-        # We can do this by manually constructing the matrix
-        for i in range(3):
-            for j in range(3):
-                rotation_only.Matrix4[i][j] = matrix[i][j]
-        
-        # Ensure translation components are zero
-        rotation_only.Matrix4[0][3] = 0
-        rotation_only.Matrix4[1][3] = 0
-        rotation_only.Matrix4[2][3] = 0
-        
-        return rotation_only
-
     def _get_phantom_entities(self):
         """Get all phantom-related entities."""
         all_entities = self.model.AllEntities()
