@@ -27,9 +27,7 @@ def set_view_and_capture(view_name, direction, file_path):
     filename_prefix = os.path.splitext(os.path.basename(file_path))[0]
 
     # The C++ signature requires separate folder and prefix arguments, not a full path.
-    s4l_v1.renderer.SaveScreenCapture(
-        output_folder=folder, output_prefix=filename_prefix
-    )
+    s4l_v1.renderer.SaveScreenCapture(output_folder=folder, output_prefix=filename_prefix)
 
 
 def get_phantom_entity(phantom_name):
@@ -55,9 +53,7 @@ def main():
     # Set the output directory to be the same as the project file's directory.
     project_file_path = s4l_v1.document.FilePath
     if not project_file_path or not os.path.isabs(project_file_path):
-        print(
-            f"Error: Could not get a valid project path from Sim4Life. Received: '{project_file_path}'"
-        )
+        print(f"Error: Could not get a valid project path from Sim4Life. Received: '{project_file_path}'")
         return
     screenshots_dir = os.path.join(os.path.dirname(project_file_path), "screenshots")
     print(screenshots_dir)

@@ -52,9 +52,7 @@ class NearFieldSetup(BaseSetup):
         self.document = self.s4l_v1.document
         self.XCoreModeling = XCoreModeling
 
-    def run_full_setup(
-        self, project_manager: "ProjectManager", lock=None
-    ) -> "emfdtd.Simulation":
+    def run_full_setup(self, project_manager: "ProjectManager", lock=None) -> "emfdtd.Simulation":
         """Executes the full sequence of setup steps."""
         self._log("Running full simulation setup...", log_type="progress")
 
@@ -113,9 +111,7 @@ class NearFieldSetup(BaseSetup):
         )
         gridding_setup.setup_gridding(antenna_components)
 
-        boundary_setup = BoundarySetup(
-            self.config, simulation, self.verbose_logger, self.progress_logger
-        )
+        boundary_setup = BoundarySetup(self.config, simulation, self.verbose_logger, self.progress_logger)
         boundary_setup.setup_boundary_conditions()
 
         source_setup = SourceSetup(
@@ -151,18 +147,12 @@ class NearFieldSetup(BaseSetup):
         )
         if not antenna_group:
             antenna_group = next(
-                (
-                    e
-                    for e in all_entities
-                    if hasattr(e, "Name") and e.Name == initial_name
-                ),
+                (e for e in all_entities if hasattr(e, "Name") and e.Name == initial_name),
                 None,
             )
 
         if not antenna_group:
-            raise RuntimeError(
-                f"Could not find antenna group. Looked for '{placed_name}' and '{initial_name}'."
-            )
+            raise RuntimeError(f"Could not find antenna group. Looked for '{placed_name}' and '{initial_name}'.")
 
         flat_component_list = []
         for entity in antenna_group.Entities:
@@ -180,28 +170,18 @@ class NearFieldSetup(BaseSetup):
 
         phantom_config = self.config.get_phantom_definition(self.phantom_name.lower())
         if not phantom_config:
-            raise ValueError(
-                f"Configuration for '{self.phantom_name.lower()}' not found."
-            )
+            raise ValueError(f"Configuration for '{self.phantom_name.lower()}' not found.")
 
         head_bbox_name = f"{self.phantom_name.lower()}_Head_BBox"
         trunk_bbox_name = f"{self.phantom_name.lower()}_Trunk_BBox"
 
-        entities_to_delete = [
-            e
-            for e in all_entities
-            if hasattr(e, "Name") and e.Name in [head_bbox_name, trunk_bbox_name]
-        ]
+        entities_to_delete = [e for e in all_entities if hasattr(e, "Name") and e.Name in [head_bbox_name, trunk_bbox_name]]
         for entity in entities_to_delete:
-            self._log(
-                f"  - Deleting existing entity: {entity.Name}", log_type="verbose"
-            )
+            self._log(f"  - Deleting existing entity: {entity.Name}", log_type="verbose")
             entity.Delete()
 
         all_entities = self.model.AllEntities()
-        tissue_entities = [
-            e for e in all_entities if isinstance(e, self.XCoreModeling.TriangleMesh)
-        ]
+        tissue_entities = [e for e in all_entities if isinstance(e, self.XCoreModeling.TriangleMesh)]
         bbox_min, bbox_max = self.model.GetBoundingBox(tissue_entities)
 
         # Head BBox
@@ -219,9 +199,7 @@ class NearFieldSetup(BaseSetup):
         back_of_head_y = phantom_config.get("back_of_head", bbox_min[1])
         head_bbox_min_vec = self.model.Vec3(head_x_min, back_of_head_y, head_y_sep)
         head_bbox_max_vec = self.model.Vec3(head_x_max, bbox_max[1], bbox_max[2])
-        head_bbox = self.XCoreModeling.CreateWireBlock(
-            head_bbox_min_vec, head_bbox_max_vec
-        )
+        head_bbox = self.XCoreModeling.CreateWireBlock(head_bbox_min_vec, head_bbox_max_vec)
         head_bbox.Name = head_bbox_name
         self._log("  - Head BBox created.", log_type="info")
 
@@ -230,9 +208,7 @@ class NearFieldSetup(BaseSetup):
         chest_y_ext = phantom_config["chest_extension"]
         trunk_bbox_min_vec = self.model.Vec3(bbox_min[0], bbox_min[1], trunk_z_sep)
         trunk_bbox_max_vec = self.model.Vec3(bbox_max[0], chest_y_ext, head_y_sep)
-        trunk_bbox = self.XCoreModeling.CreateWireBlock(
-            trunk_bbox_min_vec, trunk_bbox_max_vec
-        )
+        trunk_bbox = self.XCoreModeling.CreateWireBlock(trunk_bbox_min_vec, trunk_bbox_max_vec)
         trunk_bbox.Name = trunk_bbox_name
         self._log("  - Trunk BBox created.", log_type="info")
 
@@ -240,49 +216,28 @@ class NearFieldSetup(BaseSetup):
         """Creates the main simulation bounding box."""
         if self.free_space:
             antenna_bbox_entity = next(
-                (
-                    e
-                    for e in self.model.AllEntities()
-                    if hasattr(e, "Name") and "Antenna bounding box" in e.Name
-                ),
+                (e for e in self.model.AllEntities() if hasattr(e, "Name") and "Antenna bounding box" in e.Name),
                 None,
             )
-            antenna_bbox_min, antenna_bbox_max = self.model.GetBoundingBox(
-                [antenna_bbox_entity]
-            )
+            antenna_bbox_min, antenna_bbox_max = self.model.GetBoundingBox([antenna_bbox_entity])
             expansion = self.config.get_freespace_expansion()
             sim_bbox_min = np.array(antenna_bbox_min) - np.array(expansion)
             sim_bbox_max = np.array(antenna_bbox_max) + np.array(expansion)
-            sim_bbox = self.XCoreModeling.CreateWireBlock(
-                self.model.Vec3(sim_bbox_min), self.model.Vec3(sim_bbox_max)
-            )
+            sim_bbox = self.XCoreModeling.CreateWireBlock(self.model.Vec3(sim_bbox_min), self.model.Vec3(sim_bbox_max))
             sim_bbox.Name = "freespace_simulation_bbox"
             self._log("  - Created free-space simulation BBox.", log_type="info")
         else:
             antenna_bbox_entity = next(
-                (
-                    e
-                    for e in self.model.AllEntities()
-                    if hasattr(e, "Name") and "Antenna bounding box" in e.Name
-                ),
+                (e for e in self.model.AllEntities() if hasattr(e, "Name") and "Antenna bounding box" in e.Name),
                 None,
             )
-            placement_scenario_config = self.config.get_placement_scenario(
-                self.base_placement_name
-            )
-            bounding_box_setting = placement_scenario_config.get(
-                "bounding_box", "default"
-            )
+            placement_scenario_config = self.config.get_placement_scenario(self.base_placement_name)
+            bounding_box_setting = placement_scenario_config.get("bounding_box", "default")
 
-            self._log(
-                f"  - Bounding box setting: '{bounding_box_setting}'", log_type="info"
-            )
+            self._log(f"  - Bounding box setting: '{bounding_box_setting}'", log_type="info")
 
             # Warn user for unusual combinations
-            if (
-                self.base_placement_name in ["front_of_eyes", "by_cheek"]
-                and bounding_box_setting == "trunk"
-            ):
+            if self.base_placement_name in ["front_of_eyes", "by_cheek"] and bounding_box_setting == "trunk":
                 self._log(
                     (
                         f"WARNING: Using a 'trunk' bounding box for the '{self.base_placement_name}' "
@@ -290,10 +245,7 @@ class NearFieldSetup(BaseSetup):
                     ),
                     log_type="warning",
                 )
-            if (
-                self.base_placement_name == "by_belly"
-                and bounding_box_setting == "head"
-            ):
+            if self.base_placement_name == "by_belly" and bounding_box_setting == "head":
                 self._log(
                     (
                         f"WARNING: Using a 'head' bounding box for the '{self.base_placement_name}' "
@@ -305,11 +257,7 @@ class NearFieldSetup(BaseSetup):
             entities_to_bound = [antenna_bbox_entity]
 
             if bounding_box_setting == "full_body":
-                phantom_entities = [
-                    e
-                    for e in self.model.AllEntities()
-                    if isinstance(e, self.XCoreModeling.TriangleMesh)
-                ]
+                phantom_entities = [e for e in self.model.AllEntities() if isinstance(e, self.XCoreModeling.TriangleMesh)]
                 entities_to_bound.extend(phantom_entities)
             else:
                 bbox_map = {
@@ -321,26 +269,16 @@ class NearFieldSetup(BaseSetup):
 
                 key = bounding_box_setting
                 if key == "default":
-                    key = (
-                        "default_head"
-                        if self.base_placement_name in ["front_of_eyes", "by_cheek"]
-                        else "default_other"
-                    )
+                    key = "default_head" if self.base_placement_name in ["front_of_eyes", "by_cheek"] else "default_other"
 
                 if key in bbox_map:
                     bbox_name = f"{self.phantom_name.lower()}_{bbox_map[key]}"
                     entities_to_bound.append(self.model.AllEntities()[bbox_name])
 
-            combined_bbox_min, combined_bbox_max = self.model.GetBoundingBox(
-                entities_to_bound
-            )
-            sim_bbox = self.XCoreModeling.CreateWireBlock(
-                combined_bbox_min, combined_bbox_max
-            )
+            combined_bbox_min, combined_bbox_max = self.model.GetBoundingBox(entities_to_bound)
+            sim_bbox = self.XCoreModeling.CreateWireBlock(combined_bbox_min, combined_bbox_max)
             sim_bbox.Name = f"{self.placement_name.lower()}_simulation_bbox"
-            self._log(
-                f"  - Combined BBox created for {self.placement_name}.", log_type="info"
-            )
+            self._log(f"  - Combined BBox created for {self.placement_name}.", log_type="info")
 
     def _setup_simulation_entity(self) -> "emfdtd.Simulation":
         """Creates and configures the base EM-FDTD simulation entity."""
@@ -350,9 +288,7 @@ class NearFieldSetup(BaseSetup):
             for sim in list(self.document.AllSimulations):
                 self.document.AllSimulations.Remove(sim)
 
-        sim_name = (
-            f"EM_FDTD_{self.phantom_name}_{self.frequency_mhz}MHz_{self.placement_name}"
-        )
+        sim_name = f"EM_FDTD_{self.phantom_name}_{self.frequency_mhz}MHz_{self.placement_name}"
         if self.free_space:
             sim_name += "_freespace"
         simulation = self.emfdtd.Simulation()
@@ -372,21 +308,13 @@ class NearFieldSetup(BaseSetup):
             sim_bbox_name = f"{self.placement_name.lower()}_simulation_bbox"
 
         sim_bbox_entity = next(
-            (
-                e
-                for e in self.model.AllEntities()
-                if hasattr(e, "Name") and e.Name == sim_bbox_name
-            ),
+            (e for e in self.model.AllEntities() if hasattr(e, "Name") and e.Name == sim_bbox_name),
             None,
         )
         if not sim_bbox_entity:
-            raise RuntimeError(
-                f"Could not find simulation bounding box: '{sim_bbox_name}'"
-            )
+            raise RuntimeError(f"Could not find simulation bounding box: '{sim_bbox_name}'")
 
-        self._apply_simulation_time_and_termination(
-            simulation, sim_bbox_entity, self.frequency_mhz
-        )
+        self._apply_simulation_time_and_termination(simulation, sim_bbox_entity, self.frequency_mhz)
 
         return simulation
 
@@ -398,9 +326,7 @@ class NearFieldSetup(BaseSetup):
     ):
         """Gathers entities and calls the finalization method from the base class."""
         all_antenna_parts = list(antenna_components.values())
-        point_sensor_entities = [
-            e for e in self.model.AllEntities() if "Point Sensor Entity" in e.Name
-        ]
+        point_sensor_entities = [e for e in self.model.AllEntities() if "Point Sensor Entity" in e.Name]
 
         if self.free_space:
             sim_bbox_name = "freespace_simulation_bbox"
@@ -408,30 +334,13 @@ class NearFieldSetup(BaseSetup):
             sim_bbox_name = f"{self.placement_name.lower()}_simulation_bbox"
 
         sim_bbox_entity = next(
-            (
-                e
-                for e in self.model.AllEntities()
-                if hasattr(e, "Name") and e.Name == sim_bbox_name
-            ),
+            (e for e in self.model.AllEntities() if hasattr(e, "Name") and e.Name == sim_bbox_name),
             None,
         )
         if not sim_bbox_entity:
-            raise RuntimeError(
-                f"Could not find simulation bounding box: '{sim_bbox_name}' for voxelization."
-            )
+            raise RuntimeError(f"Could not find simulation bounding box: '{sim_bbox_name}' for voxelization.")
 
-        phantom_entities = [
-            e
-            for e in self.model.AllEntities()
-            if isinstance(e, self.XCoreModeling.TriangleMesh)
-        ]
-        all_simulation_parts = (
-            phantom_entities
-            + all_antenna_parts
-            + point_sensor_entities
-            + [sim_bbox_entity]
-        )
+        phantom_entities = [e for e in self.model.AllEntities() if isinstance(e, self.XCoreModeling.TriangleMesh)]
+        all_simulation_parts = phantom_entities + all_antenna_parts + point_sensor_entities + [sim_bbox_entity]
 
-        super()._finalize_setup(
-            project_manager, simulation, all_simulation_parts, self.frequency_mhz
-        )
+        super()._finalize_setup(project_manager, simulation, all_simulation_parts, self.frequency_mhz)

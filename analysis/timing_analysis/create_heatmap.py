@@ -17,9 +17,7 @@ def create_heatmap(csv_path, output_dir):
     # Pivot the data to create a matrix suitable for a heatmap
     # We will use Frequency as the y-axis, Simulation Index as the x-axis,
     # and Setup Time as the values.
-    heatmap_data = df.pivot_table(
-        index="Frequency (MHz)", columns="Simulation Index", values="Setup Time (s)"
-    )
+    heatmap_data = df.pivot_table(index="Frequency (MHz)", columns="Simulation Index", values="Setup Time (s)")
 
     # Create the heatmap
     plt.figure(figsize=(16, 8))
@@ -58,9 +56,7 @@ def create_run_time_heatmap(csv_path, output_dir):
     df = pd.read_csv(csv_path)
 
     # Pivot the data to create a matrix suitable for a heatmap
-    heatmap_data = df.pivot_table(
-        index="Frequency (MHz)", columns="Simulation Index", values="Run Time (s)"
-    )
+    heatmap_data = df.pivot_table(index="Frequency (MHz)", columns="Simulation Index", values="Run Time (s)")
 
     # Create the heatmap
     plt.figure(figsize=(16, 8))

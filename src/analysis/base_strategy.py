@@ -43,9 +43,7 @@ class BaseAnalysisStrategy(ABC):
         pass
 
     @abstractmethod
-    def get_normalization_factor(
-        self, frequency_mhz: int, simulated_power_w: float
-    ) -> float:
+    def get_normalization_factor(self, frequency_mhz: int, simulated_power_w: float) -> float:
         """Calculates the normalization factor for SAR values.
 
         Args:

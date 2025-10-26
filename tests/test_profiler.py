@@ -7,9 +7,7 @@ from src.profiler import Profiler
 def profiler_instance():
     execution_control = {"do_setup": True, "do_run": True, "do_extract": True}
     profiling_config = {"avg_setup_time": 10, "avg_run_time": 20, "avg_extract_time": 5}
-    return Profiler(
-        execution_control, profiling_config, "near_field", "dummy_path.json"
-    )
+    return Profiler(execution_control, profiling_config, "near_field", "dummy_path.json")
 
 
 @pytest.mark.skip_on_ci

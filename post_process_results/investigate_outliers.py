@@ -25,10 +25,7 @@ def investigate_outliers():
 
     # --- 2. Investigate "front_of_eyes" 700 MHz outliers ---
     print("\n--- Investigating 'front_of_eyes' 700 MHz Outliers ---")
-    foe_700_df = results_df[
-        (results_df["scenario"] == "front_of_eyes")
-        & (results_df["frequency_mhz"] == 700)
-    ].copy()
+    foe_700_df = results_df[(results_df["scenario"] == "front_of_eyes") & (results_df["frequency_mhz"] == 700)].copy()
 
     for metric in ["psSAR10g_brain", "psSAR10g_eyes"]:
         # Standard definition of an outlier
@@ -41,11 +38,7 @@ def investigate_outliers():
 
         print(f"\nOutliers for {metric} (Threshold > {outlier_threshold:.2f} mW/kg):")
         if not outliers.empty:
-            print(
-                outliers[["placement", metric]]
-                .sort_values(by=metric, ascending=False)
-                .to_string()
-            )
+            print(outliers[["placement", metric]].sort_values(by=metric, ascending=False).to_string())
         else:
             print("No outliers found.")
 
@@ -68,15 +61,9 @@ def investigate_outliers():
 
         outliers = freq_df[freq_df[metric] > outlier_threshold]
 
-        print(
-            f"\nOutliers for psSAR10g_skin at {freq} MHz (Threshold > {outlier_threshold:.2f} mW/kg):"
-        )
+        print(f"\nOutliers for psSAR10g_skin at {freq} MHz (Threshold > {outlier_threshold:.2f} mW/kg):")
         if not outliers.empty:
-            print(
-                outliers[["placement", metric]]
-                .sort_values(by=metric, ascending=False)
-                .to_string()
-            )
+            print(outliers[["placement", metric]].sort_values(by=metric, ascending=False).to_string())
         else:
             print("No outliers found.")
 

@@ -140,9 +140,7 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
                 orientations = scenario_def.get("orientations", {})
                 for pos_name in positions.keys():
                     for orient_name in orientations.keys():
-                        analyzer._process_single_result(
-                            frequency_mhz, scenario_name, pos_name, orient_name
-                        )
+                        analyzer._process_single_result(frequency_mhz, scenario_name, pos_name, orient_name)
 
     def get_normalization_factor(self, frequency_mhz, simulated_power_w):
         """Calculates the normalization factor based on the target power defined in the antenna configuration.
@@ -157,11 +155,7 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
         antenna_configs = self.config.get_antenna_config()
         freq_config = antenna_configs.get(str(frequency_mhz), {})
         target_power_mw = freq_config.get("target_power_mW")
-        if (
-            target_power_mw is not None
-            and pd.notna(simulated_power_w)
-            and simulated_power_w > 0
-        ):
+        if target_power_mw is not None and pd.notna(simulated_power_w) and simulated_power_w > 0:
             target_power_w = target_power_mw / 1000.0
             return target_power_w / simulated_power_w
         return 1.0
@@ -212,18 +206,10 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
                         "frequency_mhz": frequency_mhz,
                         "placement": placement_name,
                         "tissue": row["Tissue"],
-                        "mass_avg_sar_mw_kg": row["Mass-Averaged SAR"]
-                        * norm_factor
-                        * 1000,
-                        "peak_sar_10g_mw_kg": row.get(peak_sar_col, pd.NA)
-                        * norm_factor
-                        * 1000,
-                        "min_local_sar_mw_kg": row.get("Min. local SAR", pd.NA)
-                        * norm_factor
-                        * 1000,
-                        "max_local_sar_mw_kg": row.get("Max. local SAR", pd.NA)
-                        * norm_factor
-                        * 1000,
+                        "mass_avg_sar_mw_kg": row["Mass-Averaged SAR"] * norm_factor * 1000,
+                        "peak_sar_10g_mw_kg": row.get(peak_sar_col, pd.NA) * norm_factor * 1000,
+                        "min_local_sar_mw_kg": row.get("Min. local SAR", pd.NA) * norm_factor * 1000,
+                        "max_local_sar_mw_kg": row.get("Max. local SAR", pd.NA) * norm_factor * 1000,
                     }
                 )
         return result_entry, organ_entries
@@ -239,9 +225,7 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
         """
         placement = result_entry["placement"].lower()
         if placement.startswith("front_of_eyes") or placement.startswith("by_cheek"):
-            if pd.isna(result_entry.get("SAR_head")) and pd.notna(
-                result_entry.get("SAR_trunk")
-            ):
+            if pd.isna(result_entry.get("SAR_head")) and pd.notna(result_entry.get("SAR_trunk")):
                 result_entry["SAR_head"] = result_entry["SAR_trunk"]
                 result_entry["SAR_trunk"] = pd.NA
         return result_entry
@@ -262,16 +246,10 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
             extra={"log_type": "header"},
         )
         for name, definition in placement_scenarios.items():
-            total = len(definition.get("positions", {})) * len(
-                definition.get("orientations", {})
-            )
+            total = len(definition.get("positions", {})) * len(definition.get("orientations", {}))
             placements_per_scenario[name] = total
-            logging.getLogger("progress").info(
-                f"- Scenario '{name}': {total} placements", extra={"log_type": "info"}
-            )
-        summary_stats = results_df.groupby(["scenario", "frequency_mhz"]).mean(
-            numeric_only=True
-        )
+            logging.getLogger("progress").info(f"- Scenario '{name}': {total} placements", extra={"log_type": "info"})
+        summary_stats = results_df.groupby(["scenario", "frequency_mhz"]).mean(numeric_only=True)
         completion_counts = results_df.groupby(["scenario", "frequency_mhz"]).size()
         summary_stats["progress"] = summary_stats.index.map(
             lambda idx: f"{completion_counts.get(idx, 0)}/{placements_per_scenario.get(idx[0], 0)}"
@@ -327,12 +305,8 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
         for freq in frequencies:
             for direction_name in incident_directions:
                 for polarization_name in polarizations:
-                    placement_name = (
-                        f"environmental_{direction_name}_{polarization_name}"
-                    )
-                    analyzer._process_single_result(
-                        freq, "environmental", placement_name, ""
-                    )
+                    placement_name = f"environmental_{direction_name}_{polarization_name}"
+                    analyzer._process_single_result(freq, "environmental", placement_name, "")
 
     def get_normalization_factor(self, frequency_mhz, simulated_power_w):
         # For far-field, we normalize to a power density of 1 W/m^2
@@ -369,10 +343,8 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
                         "frequency_mhz": frequency_mhz,
                         "placement": placement_name,
                         "tissue": row["Tissue"],
-                        "mass_avg_sar_mw_kg": row["Mass-Averaged SAR"]
-                        * 1000,  # Already normalized in extractor
-                        "peak_sar_10g_mw_kg": row.get(peak_sar_col, pd.NA)
-                        * 1000,  # Already normalized
+                        "mass_avg_sar_mw_kg": row["Mass-Averaged SAR"] * 1000,  # Already normalized in extractor
+                        "peak_sar_10g_mw_kg": row.get(peak_sar_col, pd.NA) * 1000,  # Already normalized
                     }
                 )
         return result_entry, organ_entries
@@ -395,19 +367,9 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
         plotter.plot_far_field_distribution_boxplot(results_df, metric="peak_sar")
 
         # Prepare data for heatmaps
-        organ_sar_df = (
-            all_organ_results_df.groupby(["tissue", "frequency_mhz"])
-            .agg(avg_sar=("mass_avg_sar_mw_kg", "mean"))
-            .reset_index()
-        )
+        organ_sar_df = all_organ_results_df.groupby(["tissue", "frequency_mhz"]).agg(avg_sar=("mass_avg_sar_mw_kg", "mean")).reset_index()
 
-        organ_pssar_df = (
-            all_organ_results_df.groupby(["tissue", "frequency_mhz"])[
-                "peak_sar_10g_mw_kg"
-            ]
-            .mean()
-            .reset_index()
-        )
+        organ_pssar_df = all_organ_results_df.groupby(["tissue", "frequency_mhz"])["peak_sar_10g_mw_kg"].mean().reset_index()
 
         group_summary_data = []
         # tissue_groups defined in analyzer
@@ -416,11 +378,7 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
                 continue
             # Create a case-insensitive regex pattern to match any of the tissue keywords
             pattern = "|".join(tissues)
-            group_df = all_organ_results_df[
-                all_organ_results_df["tissue"].str.contains(
-                    pattern, case=False, na=False
-                )
-            ]
+            group_df = all_organ_results_df[all_organ_results_df["tissue"].str.contains(pattern, case=False, na=False)]
 
             if not group_df.empty:
                 summary = (
@@ -434,17 +392,11 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
                 summary["group"] = group_name.replace("_group", "").capitalize()
                 group_summary_data.append(summary)
 
-        group_summary_df = (
-            pd.concat(group_summary_data, ignore_index=True)
-            if group_summary_data
-            else pd.DataFrame()
-        )
+        group_summary_df = pd.concat(group_summary_data, ignore_index=True) if group_summary_data else pd.DataFrame()
 
         if not group_summary_df.empty:
             group_sar_summary = group_summary_df[["group", "frequency_mhz", "avg_sar"]]
-            group_pssar_summary = group_summary_df[
-                ["group", "frequency_mhz", "peak_sar_10g_mw_kg"]
-            ]
+            group_pssar_summary = group_summary_df[["group", "frequency_mhz", "peak_sar_10g_mw_kg"]]
 
             plotter.plot_peak_sar_heatmap(
                 organ_sar_df,

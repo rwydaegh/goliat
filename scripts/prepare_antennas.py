@@ -76,9 +76,7 @@ def center_antenna_and_export_sab(file_path, output_dir):
 
     # --- 4. Create Final Bounding Box ---
     final_bbox = model.GetBoundingBox(antenna_group.Entities)
-    bbox_entity = XCoreModeling.CreateWireBlock(
-        Vec3(final_bbox[0]), Vec3(final_bbox[1])
-    )
+    bbox_entity = XCoreModeling.CreateWireBlock(Vec3(final_bbox[0]), Vec3(final_bbox[1]))
     bbox_entity.Name = "Antenna bounding box"
 
     # --- 5. Export to .sab and Close ---
@@ -102,11 +100,7 @@ def main():
 
     os.makedirs(centered_dir, exist_ok=True)
 
-    files_to_process = [
-        os.path.join(source_dir, f)
-        for f in os.listdir(source_dir)
-        if f.endswith(".smash")
-    ]
+    files_to_process = [os.path.join(source_dir, f) for f in os.listdir(source_dir) if f.endswith(".smash")]
 
     if not files_to_process:
         logger.warning(f"No .smash files found to process in '{source_dir}'.")
@@ -117,9 +111,7 @@ def main():
         try:
             center_antenna_and_export_sab(file_path, centered_dir)
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred while processing {os.path.basename(file_path)}: {e}"
-            )
+            logger.error(f"An unexpected error occurred while processing {os.path.basename(file_path)}: {e}")
             if s4l_v1.document.IsOpen():
                 s4l_v1.document.Close()
 

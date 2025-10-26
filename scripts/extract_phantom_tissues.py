@@ -38,9 +38,7 @@ def extract_tissues(phantom_name):
     # Set up and load the phantom
     phantom_setup = PhantomSetup(config, phantom_name, logger, logger)
     if not phantom_setup.ensure_phantom_is_loaded():
-        print(
-            f"Could not load phantom {phantom_name}. It may need to be downloaded first."
-        )
+        print(f"Could not load phantom {phantom_name}. It may need to be downloaded first.")
         return
 
     # Get all entities and extract tissue names
@@ -48,9 +46,7 @@ def extract_tissues(phantom_name):
 
     all_entities = s4l_v1.model.AllEntities()
 
-    phantom_entity = next(
-        (e for e in all_entities if phantom_name.lower() in e.Name.lower()), None
-    )
+    phantom_entity = next((e for e in all_entities if phantom_name.lower() in e.Name.lower()), None)
 
     if not phantom_entity:
         print(f"Could not find the phantom entity for '{phantom_name}' after loading.")
@@ -59,9 +55,7 @@ def extract_tissues(phantom_name):
     # Tissue entities are identified as TriangleMesh objects within the model
     import XCoreModeling
 
-    tissue_entities = [
-        e for e in all_entities if isinstance(e, XCoreModeling.TriangleMesh)
-    ]
+    tissue_entities = [e for e in all_entities if isinstance(e, XCoreModeling.TriangleMesh)]
     tissue_names = sorted([tissue.Name for tissue in tissue_entities])
 
     print(f"Found {len(tissue_names)} tissues in '{phantom_name}'.")
@@ -78,9 +72,7 @@ def extract_tissues(phantom_name):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Extract tissue names from a Sim4Life phantom."
-    )
+    parser = argparse.ArgumentParser(description="Extract tissue names from a Sim4Life phantom.")
     parser.add_argument(
         "phantom_name",
         type=str,

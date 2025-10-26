@@ -62,9 +62,7 @@ def setup_loggers(process_id: str = None) -> tuple[logging.Logger, logging.Logge
             time.sleep(0.1)
 
     try:
-        log_files = [
-            os.path.join(log_dir, f) for f in os.listdir(log_dir) if f.endswith(".log")
-        ]
+        log_files = [os.path.join(log_dir, f) for f in os.listdir(log_dir) if f.endswith(".log")]
         log_files.sort(key=os.path.getctime)
         while len(log_files) >= 30:
             try:
@@ -119,12 +117,8 @@ def setup_loggers(process_id: str = None) -> tuple[logging.Logger, logging.Logge
     verbose_logger.addHandler(verbose_stream_handler)
     verbose_logger.propagate = False
 
-    progress_logger.info(
-        f"--- Progress logging started for file: {os.path.abspath(progress_log_filename)} ---"
-    )
-    verbose_logger.info(
-        f"--- Main logging started for file: {os.path.abspath(main_log_filename)} ---"
-    )
+    progress_logger.info(f"--- Progress logging started for file: {os.path.abspath(progress_log_filename)} ---")
+    verbose_logger.info(f"--- Main logging started for file: {os.path.abspath(main_log_filename)} ---")
 
     return progress_logger, verbose_logger, session_timestamp
 

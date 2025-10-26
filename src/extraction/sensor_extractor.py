@@ -41,9 +41,7 @@ class SensorExtractor:
 
         with self.parent.study.subtask("extract_point_sensor_data"):
             try:
-                num_sensors = self.parent.config.get_setting(
-                    "simulation_parameters.number_of_point_sensors", 0
-                )
+                num_sensors = self.parent.config.get_setting("simulation_parameters.number_of_point_sensors", 0)
                 if num_sensors == 0:
                     return
 
@@ -52,9 +50,7 @@ class SensorExtractor:
                 fig, ax = plt.subplots()
                 ax.grid(True, which="major", axis="y", linestyle="--")
 
-                point_source_order = self.parent.config.get_setting(
-                    "simulation_parameters.point_source_order", []
-                )
+                point_source_order = self.parent.config.get_setting("simulation_parameters.point_source_order", [])
                 point_sensor_results = {}
 
                 for i in range(num_sensors):
@@ -153,6 +149,4 @@ class SensorExtractor:
         plot_filepath = os.path.join(results_dir, "point_sensor_data.png")
         plt.savefig(plot_filepath, dpi=300)
         plt.close(fig)
-        self.parent._log(
-            f"  - Point sensor plot saved to: {plot_filepath}", log_type="info"
-        )
+        self.parent._log(f"  - Point sensor plot saved to: {plot_filepath}", log_type="info")

@@ -15,9 +15,7 @@ if TYPE_CHECKING:
 class NearFieldStudy(BaseStudy):
     """Manages and runs a full near-field simulation campaign."""
 
-    def __init__(
-        self, config_filename: str = "near_field_config.json", gui: "QueueGUI" = None
-    ):
+    def __init__(self, config_filename: str = "near_field_config.json", gui: "QueueGUI" = None):
         super().__init__("near_field", config_filename, gui)
 
     def _run_study(self):
@@ -60,9 +58,7 @@ class NearFieldStudy(BaseStudy):
                 if placements_config.get(f"do_{scenario_name}"):
                     positions = scenario_details.get("positions", {})
                     orientations = scenario_details.get("orientations", {})
-                    total_simulations += (
-                        len(frequencies) * len(positions) * len(orientations)
-                    )
+                    total_simulations += len(frequencies) * len(positions) * len(orientations)
 
         self.profiler.set_total_simulations(total_simulations)
         if self.gui:
@@ -85,9 +81,7 @@ class NearFieldStudy(BaseStudy):
                             for orient_name in orientations.keys():
                                 self._check_for_stop_signal()
                                 simulation_count += 1
-                                placement_name = (
-                                    f"{scenario_name}_{pos_name}_{orient_name}"
-                                )
+                                placement_name = f"{scenario_name}_{pos_name}_{orient_name}"
                                 self._log(
                                     f"\n--- Processing Simulation {simulation_count}/{total_simulations}: "
                                     f"{phantom_name}, {freq}MHz, {placement_name} ---",
@@ -105,9 +99,7 @@ class NearFieldStudy(BaseStudy):
                                     do_extract,
                                 )
 
-    def _validate_auto_cleanup_config(
-        self, do_setup: bool, do_run: bool, do_extract: bool, auto_cleanup: list
-    ):
+    def _validate_auto_cleanup_config(self, do_setup: bool, do_run: bool, do_extract: bool, auto_cleanup: list):
         """Validates the auto_cleanup_previous_results configuration.
 
         Args:
@@ -151,9 +143,7 @@ class NearFieldStudy(BaseStudy):
                 log_type="warning",
             )
             # Force disable auto-cleanup to prevent data corruption
-            self.config.config["execution_control"][
-                "auto_cleanup_previous_results"
-            ] = []
+            self.config.config["execution_control"]["auto_cleanup_previous_results"] = []
 
         # Inform user that auto-cleanup is active
         cleanup_types = self.config.get_auto_cleanup_previous_results()
@@ -214,12 +204,8 @@ class NearFieldStudy(BaseStudy):
                             self.progress_logger,
                         )
 
-                        with self.subtask(
-                            "setup_simulation", instance_to_profile=setup
-                        ) as wrapper:
-                            simulation = wrapper(setup.run_full_setup)(
-                                self.project_manager
-                            )
+                        with self.subtask("setup_simulation", instance_to_profile=setup) as wrapper:
+                            simulation = wrapper(setup.run_full_setup)(self.project_manager)
 
                         if not simulation:
                             self._log(
@@ -249,9 +235,7 @@ class NearFieldStudy(BaseStudy):
                             self.gui.update_stage_progress("Setup", 1, 1)
             else:
                 # If not doing setup, just open the project, which will also perform verification
-                self.project_manager.create_or_open_project(
-                    phantom_name, freq, scenario_name, position_name, orientation_name
-                )
+                self.project_manager.create_or_open_project(phantom_name, freq, scenario_name, position_name, orientation_name)
 
             # ALWAYS get a fresh simulation handle from the document before run/extract
             import s4l_v1.document
@@ -298,18 +282,12 @@ class NearFieldStudy(BaseStudy):
 
                     sim_name = simulation.Name
                     reloaded_simulation = next(
-                        (
-                            s
-                            for s in s4l_v1.document.AllSimulations
-                            if s.Name == sim_name
-                        ),
+                        (s for s in s4l_v1.document.AllSimulations if s.Name == sim_name),
                         None,
                     )
 
                     if not reloaded_simulation:
-                        raise RuntimeError(
-                            f"Could not find simulation '{sim_name}' after reloading project."
-                        )
+                        raise RuntimeError(f"Could not find simulation '{sim_name}' after reloading project.")
 
                     extractor = ResultsExtractor(
                         config=self.config,
@@ -340,9 +318,5 @@ class NearFieldStudy(BaseStudy):
             )
             self.verbose_logger.error(traceback.format_exc())
         finally:
-            if (
-                self.project_manager
-                and hasattr(self.project_manager.document, "IsOpen")
-                and self.project_manager.document.IsOpen()
-            ):
+            if self.project_manager and hasattr(self.project_manager.document, "IsOpen") and self.project_manager.document.IsOpen():
                 self.project_manager.close()

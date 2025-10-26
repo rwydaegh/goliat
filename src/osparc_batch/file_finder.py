@@ -18,9 +18,7 @@ def find_input_files(config: "Config") -> list[Path]:
 
     Supports both far-field and near-field study types.
     """
-    main_logger.info(
-        f"{colorama.Fore.MAGENTA}--- Searching for input files based on configuration ---"
-    )
+    main_logger.info(f"{colorama.Fore.MAGENTA}--- Searching for input files based on configuration ---")
     results_base_dir = Path(config.base_dir) / "results"
     study_type = config.get_setting("study_type")
     phantoms = config.get_setting("phantoms", [])
@@ -46,31 +44,19 @@ def find_input_files(config: "Config") -> list[Path]:
     for phantom in phantoms:
         for freq in frequencies:
             if study_type == "far_field":
-                all_input_files.extend(
-                    _find_far_field_input_files(config, results_base_dir, phantom, freq)
-                )
+                all_input_files.extend(_find_far_field_input_files(config, results_base_dir, phantom, freq))
             elif study_type == "near_field":
-                all_input_files.extend(
-                    _find_near_field_input_files(
-                        config, results_base_dir, phantom, freq
-                    )
-                )
+                all_input_files.extend(_find_near_field_input_files(config, results_base_dir, phantom, freq))
 
     if not all_input_files:
-        main_logger.error(
-            f"{colorama.Fore.RED}ERROR: Could not find any input files to process."
-        )
+        main_logger.error(f"{colorama.Fore.RED}ERROR: Could not find any input files to process.")
         sys.exit(1)
 
-    main_logger.info(
-        f"{colorama.Fore.GREEN}--- Found a total of {len(all_input_files)} input files to process. ---"
-    )
+    main_logger.info(f"{colorama.Fore.GREEN}--- Found a total of {len(all_input_files)} input files to process. ---")
     return all_input_files
 
 
-def _find_far_field_input_files(
-    config: "Config", results_base_dir: Path, phantom: str, freq: int
-) -> list[Path]:
+def _find_far_field_input_files(config: "Config", results_base_dir: Path, phantom: str, freq: int) -> list[Path]:
     """Finds input files for far-field simulations.
 
     Far-field has multiple files per phantom/frequency (one for each
@@ -81,36 +67,26 @@ def _find_far_field_input_files(
     results_folder = project_dir / f"{project_filename_base}.smash_Results"
 
     if not results_folder.exists():
-        main_logger.warning(
-            f"{colorama.Fore.YELLOW}WARNING: Results directory does not exist: {results_folder}"
-        )
+        main_logger.warning(f"{colorama.Fore.YELLOW}WARNING: Results directory does not exist: {results_folder}")
         return []
 
     found_files = list(results_folder.glob("*_Input.h5"))
     if not found_files:
-        main_logger.warning(
-            f"{colorama.Fore.YELLOW}WARNING: No input files found in: {results_folder}"
-        )
+        main_logger.warning(f"{colorama.Fore.YELLOW}WARNING: No input files found in: {results_folder}")
         return []
 
-    main_logger.info(
-        f"{colorama.Fore.CYAN}Found {len(found_files)} raw input file(s) in: {results_folder}"
-    )
+    main_logger.info(f"{colorama.Fore.CYAN}Found {len(found_files)} raw input file(s) in: {results_folder}")
 
     # --- Grouping Logic ---
     far_field_setup = config.get_setting("far_field_setup", {}).get("environmental", {})
     if not far_field_setup:
-        main_logger.warning(
-            f"{colorama.Fore.YELLOW}WARNING: No 'environmental' far-field setup in config. Using all found files."
-        )
+        main_logger.warning(f"{colorama.Fore.YELLOW}WARNING: No 'environmental' far-field setup in config. Using all found files.")
         return found_files
 
     inc_dirs = far_field_setup.get("incident_directions", [])
     pols = far_field_setup.get("polarizations", [])
     expected_count = len(inc_dirs) * len(pols)
-    main_logger.info(
-        f"Expected file count per batch: {expected_count} ({len(inc_dirs)} dirs x {len(pols)} pols)"
-    )
+    main_logger.info(f"Expected file count per batch: {expected_count} ({len(inc_dirs)} dirs x {len(pols)} pols)")
 
     if len(found_files) < expected_count:
         main_logger.warning(
@@ -119,28 +95,20 @@ def _find_far_field_input_files(
         )
         return found_files
 
-    files_with_mtime = sorted(
-        [(f, f.stat().st_mtime) for f in found_files], key=lambda x: x, reverse=True
-    )
+    files_with_mtime = sorted([(f, f.stat().st_mtime) for f in found_files], key=lambda x: x, reverse=True)
 
     main_logger.info("Analyzing file timestamps to find the latest batch...")
     latest_files = files_with_mtime[:expected_count]
 
     # Simple approach: take the N youngest files
     selected_files = [f for f, _ in latest_files]
-    main_logger.info(
-        f"{colorama.Fore.GREEN}Selected the latest {len(selected_files)} files based on modification time."
-    )
+    main_logger.info(f"{colorama.Fore.GREEN}Selected the latest {len(selected_files)} files based on modification time.")
 
     # --- Time Gap Analysis ---
     if len(latest_files) > 1:
-        time_diffs = [
-            latest_files[i] - latest_files[i + 1] for i in range(len(latest_files) - 1)
-        ]
+        time_diffs = [latest_files[i] - latest_files[i + 1] for i in range(len(latest_files) - 1)]
         time_diffs_str = ", ".join([f"{diff:.2f}s" for diff in time_diffs])
-        main_logger.info(
-            f"{colorama.Fore.YELLOW}Time gaps between files: [{time_diffs_str}]."
-        )
+        main_logger.info(f"{colorama.Fore.YELLOW}Time gaps between files: [{time_diffs_str}].")
 
         if len(time_diffs) > 3:
             max_diff = max(time_diffs)
@@ -155,12 +123,9 @@ def _find_far_field_input_files(
                         f"Potential old input file detected!{colorama.Style.RESET_ALL}"
                     )
                     main_logger.warning(
-                        f"The largest time gap ({max_diff:.2f}s) is significantly larger than "
-                        f"expected (mean: {mean_diff:.2f}s)."
+                        f"The largest time gap ({max_diff:.2f}s) is significantly larger than " f"expected (mean: {mean_diff:.2f}s)."
                     )
-                    main_logger.warning(
-                        "Please verify the input files are from the correct batch."
-                    )
+                    main_logger.warning("Please verify the input files are from the correct batch.")
 
                     response = input("Do you want to continue anyway? (y/n): ").lower()
                     if response != "y":
@@ -170,9 +135,7 @@ def _find_far_field_input_files(
     # --- Cleanup Logic ---
     unselected_files = [f for f, _ in files_with_mtime[expected_count:]]
     if unselected_files:
-        main_logger.info(
-            f"{colorama.Fore.YELLOW}--- Deleting {len(unselected_files)} older input files ---"
-        )
+        main_logger.info(f"{colorama.Fore.YELLOW}--- Deleting {len(unselected_files)} older input files ---")
         for f in unselected_files:
             try:
                 f.unlink()
@@ -183,9 +146,7 @@ def _find_far_field_input_files(
     return selected_files
 
 
-def _find_near_field_input_files(
-    config: "Config", results_base_dir: Path, phantom: str, freq: int
-) -> list[Path]:
+def _find_near_field_input_files(config: "Config", results_base_dir: Path, phantom: str, freq: int) -> list[Path]:
     """Finds input files for near-field simulations.
 
     Near-field has one file per phantom/frequency/placement combination.
@@ -198,9 +159,7 @@ def _find_near_field_input_files(
     placements_config = phantom_definition.get("placements", {})
 
     if not placements_config:
-        main_logger.warning(
-            f"{colorama.Fore.YELLOW}WARNING: No placement config found for phantom '{phantom}'."
-        )
+        main_logger.warning(f"{colorama.Fore.YELLOW}WARNING: No placement config found for phantom '{phantom}'.")
         return []
 
     # Build list of enabled placements
@@ -215,40 +174,24 @@ def _find_near_field_input_files(
                     enabled_placements.append(placement_name)
 
     if not enabled_placements:
-        main_logger.warning(
-            f"{colorama.Fore.YELLOW}WARNING: No enabled placements found for phantom '{phantom}'."
-        )
+        main_logger.warning(f"{colorama.Fore.YELLOW}WARNING: No enabled placements found for phantom '{phantom}'.")
         return []
 
-    main_logger.info(
-        f"Looking for {len(enabled_placements)} placement(s) for {phantom} at {freq}MHz"
-    )
+    main_logger.info(f"Looking for {len(enabled_placements)} placement(s) for {phantom} at {freq}MHz")
 
     # Search for input files in each placement directory
     for placement_name in enabled_placements:
-        project_dir = (
-            results_base_dir
-            / "near_field"
-            / phantom.lower()
-            / f"{freq}MHz"
-            / placement_name
-        )
-        project_filename_base = (
-            f"near_field_{phantom.lower()}_{freq}MHz_{placement_name}"
-        )
+        project_dir = results_base_dir / "near_field" / phantom.lower() / f"{freq}MHz" / placement_name
+        project_filename_base = f"near_field_{phantom.lower()}_{freq}MHz_{placement_name}"
         results_folder = project_dir / f"{project_filename_base}.smash_Results"
 
         if not results_folder.exists():
-            main_logger.warning(
-                f"{colorama.Fore.YELLOW}WARNING: Results directory does not exist: {results_folder}"
-            )
+            main_logger.warning(f"{colorama.Fore.YELLOW}WARNING: Results directory does not exist: {results_folder}")
             continue
 
         found_files = list(results_folder.glob("*_Input.h5"))
         if not found_files:
-            main_logger.warning(
-                f"{colorama.Fore.YELLOW}WARNING: No input files found in: {results_folder}"
-            )
+            main_logger.warning(f"{colorama.Fore.YELLOW}WARNING: No input files found in: {results_folder}")
             continue
 
         # For near-field, we expect exactly one input file per placement

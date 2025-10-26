@@ -28,9 +28,7 @@ except NameError:
 class BaseSetup(LoggingMixin):
     """Abstract base class for all simulation setups."""
 
-    def __init__(
-        self, config: "Config", verbose_logger: "Logger", progress_logger: "Logger"
-    ):
+    def __init__(self, config: "Config", verbose_logger: "Logger", progress_logger: "Logger"):
         """Initializes the base setup.
 
         Args:
@@ -58,23 +56,18 @@ class BaseSetup(LoggingMixin):
 
         # Time Calculation
         time_multiplier = sim_params.get("simulation_time_multiplier", 5)
-        self._log(
-            f"  - Using simulation time multiplier: {time_multiplier}", log_type="info"
-        )
+        self._log(f"  - Using simulation time multiplier: {time_multiplier}", log_type="info")
 
         bbox = self.model.GetBoundingBox([sim_bbox_entity])
         if not bbox or len(bbox) < 2:
             self._log(
-                f"  - ERROR: Could not get a valid bounding box for entity '{sim_bbox_entity.Name}'. "
-                f"Skipping time calculation.",
+                f"  - ERROR: Could not get a valid bounding box for entity '{sim_bbox_entity.Name}'. " f"Skipping time calculation.",
                 log_type="error",
             )
             return
         bbox_min, bbox_max = bbox
 
-        diagonal_length_m = (
-            np.linalg.norm(np.array(bbox_max) - np.array(bbox_min)) / 1000.0
-        )
+        diagonal_length_m = np.linalg.norm(np.array(bbox_max) - np.array(bbox_min)) / 1000.0
 
         time_to_travel_s = (time_multiplier * diagonal_length_m) / 299792458
         sim_time_periods = time_to_travel_s / (1 / (frequency_mhz * 1e6))
@@ -88,22 +81,16 @@ class BaseSetup(LoggingMixin):
         )
 
         # Termination Criteria
-        term_level = sim_params.get(
-            "global_auto_termination", "GlobalAutoTerminationWeak"
-        )
+        term_level = sim_params.get("global_auto_termination", "GlobalAutoTerminationWeak")
         self._log(f"  - Setting termination criteria to: {term_level}", log_type="info")
         term_options = simulation.SetupSettings.GlobalAutoTermination.enum
         if hasattr(term_options, term_level):
-            simulation.SetupSettings.GlobalAutoTermination = getattr(
-                term_options, term_level
-            )
+            simulation.SetupSettings.GlobalAutoTermination = getattr(term_options, term_level)
 
         if term_level == "GlobalAutoTerminationUserDefined":
             convergence_db = sim_params.get("convergence_level_dB", -30)
             simulation.SetupSettings.ConvergenceLevel = convergence_db
-            self._log(
-                f"    - Convergence level set to: {convergence_db} dB", log_type="info"
-            )
+            self._log(f"    - Convergence level set to: {convergence_db} dB", log_type="info")
 
     def _setup_solver_settings(self, simulation: "emfdtd.Simulation"):
         """Configures solver settings, including kernel."""
@@ -119,9 +106,7 @@ class BaseSetup(LoggingMixin):
 
         if kernel_type == "acceleware":
             solver.Kernel = solver.Kernel.enum.AXware
-            self._log(
-                "    - Solver kernel set to: Acceleware (AXware)", log_type="info"
-            )
+            self._log("    - Solver kernel set to: Acceleware (AXware)", log_type="info")
         elif kernel_type == "cuda":
             solver.Kernel = solver.Kernel.enum.Cuda
             self._log("    - Solver kernel set to: Cuda", log_type="info")
@@ -138,17 +123,11 @@ class BaseSetup(LoggingMixin):
         Returns:
             The main simulation object.
         """
-        raise NotImplementedError(
-            "The 'run_full_setup' method must be implemented by a subclass."
-        )
+        raise NotImplementedError("The 'run_full_setup' method must be implemented by a subclass.")
 
-    def _add_point_sensors(
-        self, simulation: "emfdtd.Simulation", sim_bbox_entity_name: str
-    ):
+    def _add_point_sensors(self, simulation: "emfdtd.Simulation", sim_bbox_entity_name: str):
         """Adds point sensors at the corners of the simulation bounding box."""
-        num_points = self.config.get_setting(
-            "simulation_parameters.number_of_point_sensors", 0
-        )
+        num_points = self.config.get_setting("simulation_parameters.number_of_point_sensors", 0)
         if num_points == 0:
             self._log(
                 "  - Skipping point sensor creation (0 points requested).",
@@ -180,9 +159,7 @@ class BaseSetup(LoggingMixin):
             "top_right_up": (bbox_max, bbox_max, bbox_max),
         }
 
-        point_source_order = self.config.get_setting(
-            "simulation_parameters.point_source_order", list(corner_map.keys())
-        )
+        point_source_order = self.config.get_setting("simulation_parameters.point_source_order", list(corner_map.keys()))
 
         for i in range(num_points):
             corner_name = point_source_order[i]
@@ -197,11 +174,7 @@ class BaseSetup(LoggingMixin):
             point_entity_name = f"Point Sensor Entity {i+1} ({corner_name})"
 
             existing_entity = next(
-                (
-                    e
-                    for e in self.model.AllEntities()
-                    if hasattr(e, "Name") and e.Name == point_entity_name
-                ),
+                (e for e in self.model.AllEntities() if hasattr(e, "Name") and e.Name == point_entity_name),
                 None,
             )
 
@@ -212,11 +185,7 @@ class BaseSetup(LoggingMixin):
                 )
                 continue
 
-            point_entity = self.model.CreatePoint(
-                self.model.Vec3(
-                    corner_coords[0][0], corner_coords[1][1], corner_coords[2][2]
-                )
-            )
+            point_entity = self.model.CreatePoint(self.model.Vec3(corner_coords[0][0], corner_coords[1][1], corner_coords[2][2]))
             point_entity.Name = point_entity_name
             point_sensor = self.emfdtd.PointSensorSettings()
             point_sensor.Name = f"Point Sensor {i+1}"
@@ -291,9 +260,7 @@ class BaseSetup(LoggingMixin):
             output_dir = "analysis/cpw/data"
             if not os.path.exists(output_dir):
                 os.makedirs(output_dir)
-            output_path = os.path.join(
-                output_dir, f"material_properties_{frequency_mhz}.pkl"
-            )
+            output_path = os.path.join(output_dir, f"material_properties_{frequency_mhz}.pkl")
             with open(output_path, "wb") as f:
                 pickle.dump(material_properties, f)
             self._log(

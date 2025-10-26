@@ -47,58 +47,38 @@ class PlacementSetup(BaseSetup):
             log_type="header",
         )
 
-        phantom_definition = self.config.get_phantom_definition(
-            self.phantom_name.lower()
-        )
-        if not self.free_space and not phantom_definition.get("placements", {}).get(
-            f"do_{self.base_placement_name}"
-        ):
+        phantom_definition = self.config.get_phantom_definition(self.phantom_name.lower())
+        if not self.free_space and not phantom_definition.get("placements", {}).get(f"do_{self.base_placement_name}"):
             self._log(
                 f"Placement '{self.base_placement_name}' is disabled in the configuration.",
                 log_type="info",
             )
             return
 
-        base_target_point, orientation_rotations, position_offset = (
-            self._get_placement_details()
-        )
+        base_target_point, orientation_rotations, position_offset = self._get_placement_details()
 
         # Import antenna model
-        antenna_path = self.antenna.get_centered_antenna_path(
-            os.path.join(self.config.base_dir, "data", "antennas", "centered")
-        )
+        antenna_path = self.antenna.get_centered_antenna_path(os.path.join(self.config.base_dir, "data", "antennas", "centered"))
         imported_entities = list(self.model.Import(antenna_path))
 
         antenna_group = next(
-            (
-                e
-                for e in imported_entities
-                if "Antenna" in e.Name and "bounding box" not in e.Name
-            ),
+            (e for e in imported_entities if "Antenna" in e.Name and "bounding box" not in e.Name),
             None,
         )
-        bbox_entity = next(
-            (e for e in imported_entities if "bounding box" in e.Name), None
-        )
+        bbox_entity = next((e for e in imported_entities if "bounding box" in e.Name), None)
 
         if not antenna_group:
             raise RuntimeError("Could not find imported antenna group.")
 
         # Find the "Ground" entity/entities ("PCB" of the phone excl. IFA antenna)
-        ground_entities = [
-            e
-            for e in antenna_group.Entities
-            if "Ground" in e.Name or "Substrate" in e.Name
-        ]
+        ground_entities = [e for e in antenna_group.Entities if "Ground" in e.Name or "Substrate" in e.Name]
 
         # Rename the entities to include the placement name for uniqueness
         antenna_group.Name = f"{antenna_group.Name} ({self.placement_name})"
         if bbox_entity:
             bbox_entity.Name = f"{bbox_entity.Name} ({self.placement_name})"
 
-        entities_to_transform = (
-            [antenna_group, bbox_entity] if bbox_entity else [antenna_group]
-        )
+        entities_to_transform = [antenna_group, bbox_entity] if bbox_entity else [antenna_group]
 
         # --- Transformation Composition ---
         self._log("Composing final transformation...", log_type="progress")
@@ -107,24 +87,18 @@ class PlacementSetup(BaseSetup):
         final_transform = self.XCoreMath.Transform()
 
         # 1. Stand-up Rotation
-        rot_stand_up = self.XCoreMath.Rotation(
-            self.XCoreMath.Vec3(1, 0, 0), np.deg2rad(90)
-        )
+        rot_stand_up = self.XCoreMath.Rotation(self.XCoreMath.Vec3(1, 0, 0), np.deg2rad(90))
         final_transform = rot_stand_up * final_transform
 
         # 2. Base translation to antenna reference point (speaker output of the mock-up phone)
-        reference_target_point = self._get_speaker_reference(
-            ground_entities, upright_transform=final_transform
-        )
+        reference_target_point = self._get_speaker_reference(ground_entities, upright_transform=final_transform)
         base_translation = self.XCoreMath.Translation(reference_target_point)
         final_transform = base_translation * final_transform
 
         # Special rotation for 'by_cheek' to align with YZ plane
         if self.base_placement_name.startswith("by_cheek"):
             self._log("Applying 'by_cheek' specific Z-rotation.", log_type="info")
-            rot_z_cheek = self.XCoreMath.Rotation(
-                self.XCoreMath.Vec3(0, 0, 1), np.deg2rad(-90)
-            )
+            rot_z_cheek = self.XCoreMath.Rotation(self.XCoreMath.Vec3(0, 0, 1), np.deg2rad(-90))
             final_transform = rot_z_cheek * final_transform
 
         # 3. Orientation Twist
@@ -135,9 +109,7 @@ class PlacementSetup(BaseSetup):
                     "Y": self.XCoreMath.Vec3(0, 1, 0),
                     "Z": self.XCoreMath.Vec3(0, 0, 1),
                 }
-                rot_twist = self.XCoreMath.Rotation(
-                    axis_map[rot["axis"].upper()], np.deg2rad(rot["angle_deg"])
-                )
+                rot_twist = self.XCoreMath.Rotation(axis_map[rot["axis"].upper()], np.deg2rad(rot["angle_deg"]))
                 final_transform = rot_twist * final_transform
 
         # 4. Final Translation
@@ -163,65 +135,39 @@ class PlacementSetup(BaseSetup):
 
         scenario = self.config.get_placement_scenario(self.base_placement_name)
         if not scenario:
-            raise ValueError(
-                f"Placement scenario '{self.base_placement_name}' not defined."
-            )
+            raise ValueError(f"Placement scenario '{self.base_placement_name}' not defined.")
 
         position_offset = scenario["positions"].get(self.position_name, [0, 0, 0])
-        orientation_rotations = (
-            scenario["orientations"].get(self.orientation_name, []).copy()
-        )
+        orientation_rotations = scenario["orientations"].get(self.orientation_name, []).copy()
 
         all_entities = self.model.AllEntities()
-        phantom_definition = self.config.get_phantom_definition(
-            self.phantom_name.lower()
-        )
+        phantom_definition = self.config.get_phantom_definition(self.phantom_name.lower())
         placements_config = phantom_definition.get("placements", {})
         base_target_point = self.model.Vec3(0, 0, 0)
 
         if self.base_placement_name == "front_of_eyes":
-            eye_entities = [
-                e for e in all_entities if "Eye" in e.Name or "Cornea" in e.Name
-            ]
+            eye_entities = [e for e in all_entities if "Eye" in e.Name or "Cornea" in e.Name]
             if not eye_entities:
-                raise ValueError(
-                    "No eye or cornea entities found for 'Eyes' placement."
-                )
+                raise ValueError("No eye or cornea entities found for 'Eyes' placement.")
             eye_bbox_min, eye_bbox_max = self.model.GetBoundingBox(eye_entities)
             distance = placements_config.get("distance_from_eye", 200)
-            phantom_reference = scenario.get(
-                "phantom_reference", None
-            )  # get name of phantom reference point from config
-            vector_from_2D_eyes_center = placements_config.get(
-                phantom_reference, [0, 0, 0]
-            )  # center of the belly by default
-            base_target_point[0] = (
-                eye_bbox_min[0] + eye_bbox_max[0]
-            ) / 2.0 + vector_from_2D_eyes_center[0]
-            base_target_point[1] = (
-                eye_bbox_max[1] + vector_from_2D_eyes_center[1] + distance
-            )
-            base_target_point[2] = (
-                eye_bbox_min[2] + eye_bbox_max[2]
-            ) / 2.0 + vector_from_2D_eyes_center[2]
+            phantom_reference = scenario.get("phantom_reference", None)  # get name of phantom reference point from config
+            vector_from_2D_eyes_center = placements_config.get(phantom_reference, [0, 0, 0])  # center of the belly by default
+            base_target_point[0] = (eye_bbox_min[0] + eye_bbox_max[0]) / 2.0 + vector_from_2D_eyes_center[0]
+            base_target_point[1] = eye_bbox_max[1] + vector_from_2D_eyes_center[1] + distance
+            base_target_point[2] = (eye_bbox_min[2] + eye_bbox_max[2]) / 2.0 + vector_from_2D_eyes_center[2]
 
         elif self.base_placement_name.startswith("by_cheek"):
             # Find ear and mouth entities
             ear_skin = next(
-                (
-                    e
-                    for e in all_entities
-                    if hasattr(e, "Name") and e.Name == "Ear_skin"
-                ),
+                (e for e in all_entities if hasattr(e, "Name") and e.Name == "Ear_skin"),
                 None,
             )
 
             lips_point = phantom_definition.get("lips")
 
             if not ear_skin or not lips_point:
-                raise ValueError(
-                    "Could not find 'Ear_skin' entity or 'lips' definition for 'Cheek' placement."
-                )
+                raise ValueError("Could not find 'Ear_skin' entity or 'lips' definition for 'Cheek' placement.")
 
             # Get center points
             ear_bbox_min, ear_bbox_max = self.model.GetBoundingBox([ear_skin])
@@ -231,9 +177,7 @@ class PlacementSetup(BaseSetup):
                 (ear_bbox_min[1] + ear_bbox_max[1]) / 2.0,
                 (ear_bbox_min[2] + ear_bbox_max[2]) / 2.0,
             )
-            mouth_center = self.XCoreMath.Vec3(
-                lips_point[0], lips_point[1], lips_point[2]
-            )
+            mouth_center = self.XCoreMath.Vec3(lips_point[0], lips_point[1], lips_point[2])
 
             # Calculate angle for base alignment
             direction_vector = mouth_center - ear_center
@@ -254,50 +198,28 @@ class PlacementSetup(BaseSetup):
 
             # Set the target point based on the ear
             distance = placements_config.get("distance_from_cheek", 8)
-            phantom_reference = scenario.get(
-                "phantom_reference", None
-            )  # get name of phantom reference point from config
-            vector_from_2D_ear_center = phantom_definition.get(
-                phantom_reference, [0, 0, 0]
-            )  # center of the ear by default
-            base_target_point[0] = (
-                ear_bbox_max[0] + vector_from_2D_ear_center[0] + distance
-            )
+            phantom_reference = scenario.get("phantom_reference", None)  # get name of phantom reference point from config
+            vector_from_2D_ear_center = phantom_definition.get(phantom_reference, [0, 0, 0])  # center of the ear by default
+            base_target_point[0] = ear_bbox_max[0] + vector_from_2D_ear_center[0] + distance
             base_target_point[1] = ear_center[1] + vector_from_2D_ear_center[1]
             base_target_point[2] = ear_center[2] + vector_from_2D_ear_center[2]
 
         elif self.base_placement_name == "by_belly":
             trunk_bbox_name = f"{self.phantom_name.lower()}_Trunk_BBox"
             trunk_bbox = next(
-                (
-                    e
-                    for e in all_entities
-                    if hasattr(e, "Name") and e.Name == trunk_bbox_name
-                ),
+                (e for e in all_entities if hasattr(e, "Name") and e.Name == trunk_bbox_name),
                 None,
             )
             if not trunk_bbox:
-                raise ValueError(
-                    f"Could not find '{trunk_bbox_name}' entity for 'Belly' placement."
-                )
+                raise ValueError(f"Could not find '{trunk_bbox_name}' entity for 'Belly' placement.")
 
             belly_bbox_min, belly_bbox_max = self.model.GetBoundingBox([trunk_bbox])
             distance = placements_config.get("distance_from_belly", 50)
-            phantom_reference = scenario.get(
-                "phantom_reference", None
-            )  # get name of phantom reference point from config
-            vector_from_2D_belly_center = phantom_definition.get(
-                phantom_reference, [0, 0, 0]
-            )  # center of the belly by default
-            base_target_point[0] = (
-                belly_bbox_min[0] + belly_bbox_max[0]
-            ) / 2.0 + vector_from_2D_belly_center[0]
-            base_target_point[1] = (
-                belly_bbox_max[1] + vector_from_2D_belly_center[1] + distance
-            )
-            base_target_point[2] = (
-                belly_bbox_min[2] + belly_bbox_max[2]
-            ) / 2.0 + +vector_from_2D_belly_center[2]
+            phantom_reference = scenario.get("phantom_reference", None)  # get name of phantom reference point from config
+            vector_from_2D_belly_center = phantom_definition.get(phantom_reference, [0, 0, 0])  # center of the belly by default
+            base_target_point[0] = (belly_bbox_min[0] + belly_bbox_max[0]) / 2.0 + vector_from_2D_belly_center[0]
+            base_target_point[1] = belly_bbox_max[1] + vector_from_2D_belly_center[1] + distance
+            base_target_point[2] = (belly_bbox_min[2] + belly_bbox_max[2]) / 2.0 + +vector_from_2D_belly_center[2]
 
         else:
             raise ValueError(f"Invalid base placement name: {self.base_placement_name}")
@@ -311,25 +233,17 @@ class PlacementSetup(BaseSetup):
         """
 
         if not ground_entities:
-            raise ValueError(
-                "No antenna 'Ground' entities found to calculate 'speaker' reference point."
-            )
+            raise ValueError("No antenna 'Ground' entities found to calculate 'speaker' reference point.")
 
         # Get Ground/PCB bounding box
-        ground_bbox_min, ground_bbox_max = self.model.GetBoundingBox(
-            ground_entities, transform=upright_transform
-        )
+        ground_bbox_min, ground_bbox_max = self.model.GetBoundingBox(ground_entities, transform=upright_transform)
 
         # Find the speaker reference point
         scenario = self.config.get_placement_scenario(self.base_placement_name)
-        distance_from_top = scenario["antenna_reference"].get(
-            "distance_from_top", 10
-        )  # speaker at 10 mm from top by deafault
+        distance_from_top = scenario["antenna_reference"].get("distance_from_top", 10)  # speaker at 10 mm from top by deafault
         reference_target_point = self.model.Vec3(
-            (ground_bbox_min[0] + ground_bbox_max[0])
-            / 2.0,  # horizontal center of the phone
-            (ground_bbox_min[1] + ground_bbox_max[1])
-            / 2.0,  # depth center of the phone
+            (ground_bbox_min[0] + ground_bbox_max[0]) / 2.0,  # horizontal center of the phone
+            (ground_bbox_min[1] + ground_bbox_max[1]) / 2.0,  # depth center of the phone
             -(
                 ground_bbox_max[2] - distance_from_top
             ),  # distance_from_top below (vertical) top part of phone, negative for transform to that position
