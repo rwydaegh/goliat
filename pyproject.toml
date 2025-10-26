@@ -50,7 +50,8 @@ exclude = [
   "post_process_results",
 ]
 pythonVersion = "3.11"
-reportMissingImports = true
+reportMissingImports = false
+reportMissingModuleSource = false
 stubPath = "stubs"
 
 [tool.ruff]

@@ -4,6 +4,7 @@ import os
 import sys
 import traceback
 
+
 def initial_setup():
     """
     Performs all initial checks and setup procedures.
@@ -16,7 +17,7 @@ def initial_setup():
     scripts_dir = os.path.join(base_dir, "scripts")
     if scripts_dir not in sys.path:
         sys.path.insert(0, scripts_dir)
-    
+
     from utils import (
         check_python_interpreter,
         check_repo_root,
@@ -38,17 +39,17 @@ def initial_setup():
     else:
         check_python_interpreter()
 
+
 # --- Pre-check and Setup ---
 initial_setup()
 
 try:
     from PySide6.QtWidgets import QApplication
-    from dotenv import load_dotenv
 except ImportError:
     is_sim4life_interpreter = "Sim4Life" in sys.executable
     print("=" * 80)
     print("ERROR: Could not start the application.")
-    
+
     if not is_sim4life_interpreter:
         print("You are not using a Sim4Life Python interpreter.")
         print("Please ensure you are using the Python executable from your Sim4Life installation.")
@@ -65,7 +66,7 @@ except ImportError:
             if scripts_dir not in sys.path:
                 sys.path.insert(0, scripts_dir)
             from utils import install_requirements
-            
+
             install_requirements(os.path.join(base_dir, "requirements.txt"))
             print("\nDependencies installed. Restarting the script...")
             # Restart the script to ensure new packages are loaded
@@ -75,16 +76,16 @@ except ImportError:
             print(f"\nFailed to install dependencies automatically: {e}")
             print("Please run the following command in your terminal:")
             print(f"   {sys.executable} -m pip install -r requirements.txt")
-            
+
     print("=" * 80)
     sys.exit(1)
 # --- End Pre-check ---
 
-from src.config import Config
-from src.gui_manager import ProgressGUI, QueueGUI
-from src.logging_manager import setup_loggers, shutdown_loggers
-from src.osparc_batch.runner import main as run_osparc_batch
-from src.studies.base_study import StudyCancelledError
+from src.config import Config  # noqa: E402
+from src.gui_manager import ProgressGUI, QueueGUI  # noqa: E402
+from src.logging_manager import setup_loggers, shutdown_loggers  # noqa: E402
+from src.osparc_batch.runner import main as run_osparc_batch  # noqa: E402
+from src.studies.base_study import StudyCancelledError  # noqa: E402
 
 # Ensure the src directory is in the Python path
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
@@ -291,6 +292,7 @@ def main():
             print(f"Traceback:\n{tb_str}")
         finally:
             shutdown_loggers()
+
 
 if __name__ == "__main__":
     # This is crucial for multiprocessing to work correctly on Windows
