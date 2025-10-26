@@ -74,25 +74,6 @@
     }
   },
   "placement_scenarios": {
-    "front_of_eyes": {
-      "bounding_box": "default",
-      "positions": {
-        "center": [0, 0, -100],
-        "left": [-25, 0, -100],
-        "right": [25, 0, -100],
-        "up": [0, 0, -40]
-      },
-      "orientations": {
-        "vertical": [],
-        "horizontal": [
-          {"axis": "Y", "angle_deg": 90}
-        ]
-      },
-      "antenna_reference": {
-        "distance_from_top": 10
-      },
-      "phantom_reference": "nasion"
-    },
     "by_cheek": {
       "bounding_box": "default",
       "positions": {
@@ -109,26 +90,10 @@
       "antenna_reference": {
         "distance_from_top": 10
       },
-      "phantom_reference": "tragus"
-    },
-    "by_belly": {
-      "bounding_box": "default",
-      "positions": {
-        "center": [0, 0, 0],
-        "left": [-150, 0, 0],
-        "right": [150, 0, 0],
-        "up": [0, 0, 100]
-      },
-      "orientations": {
-        "vertical": [],
-        "horizontal": [
-          {"axis": "Y", "angle_deg": 90}
-        ]
-      },
-      "antenna_reference": {
-        "distance_from_top": 10
-      },
-      "phantom_reference": "belly_button"
+      "phantom_reference": "tragus",
+      "target_rotation": {
+        "enabled": true
+      }
     }
   },
   "phantom_definitions": {

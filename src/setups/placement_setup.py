@@ -126,6 +126,14 @@ class PlacementSetup(BaseSetup):
         for entity in entities_to_transform:
             entity.ApplyTransform(final_transform)
 
+        # --- Target Rotation Feature ---
+        scenario = self.config.get_placement_scenario(self.base_placement_name)
+        target_rotation_config = scenario.get("target_rotation", {})
+        
+        if target_rotation_config.get("enabled", False) and not self.free_space:
+            self._log("Applying target rotation feature...", log_type="header")
+            self._apply_target_rotation(entities_to_transform, final_transform, target_rotation_config)
+
         self._log("--- Transformation Sequence Complete ---", log_type="success")
 
     def _get_placement_details(self) -> tuple:
@@ -250,3 +258,114 @@ class PlacementSetup(BaseSetup):
         )
 
         return reference_target_point
+
+    def _apply_target_rotation(self, phone_entities, final_transform, target_rotation_config):
+        """Rotate the Grid entity to align computational grid with the phone's orientation."""
+        
+        self._log("--- Target Rotation Feature ---", log_type="header")
+        self._log("Rotating Grid entity to align with phone's orientation...", log_type="info")
+
+        # Get the Grid entity that controls FDTD gridding
+        grid_entity = self._get_grid_entity()
+        
+        if grid_entity:
+            # Extract ONLY the rotation component from final_transform
+            # We need to create a rotation-only transform without translation
+            rotation_only = self._extract_rotation_only(final_transform)
+            
+            self._log(f"Extracted rotation (no translation):\n{rotation_only.Matrix4}", log_type="verbose")
+            
+            # Apply only the rotation to the Grid
+            # The Grid starts at (0,0,0), and we only rotate it - no translation
+            grid_entity.ApplyTransform(rotation_only)
+            self._log(f"Successfully rotated Grid entity to align with phone orientation.", log_type="success")
+            self._log("Phone remains in its original rotated position.", log_type="info")
+            self._log("Computational grid is now aligned with phone's plane for efficient gridding.", log_type="success")
+        else:
+            self._log(f"Warning: Grid entity not found. Computational grid will not be rotated.", log_type="warning")
+        
+        self._log(f"Target rotation complete.", log_type="success")
+    
+    def _extract_rotation_only(self, transform):
+        """Extract only the rotation component from a transformation matrix, removing translation."""
+        # Get the 4x4 matrix from the transform
+        matrix = transform.Matrix4
+        
+        # Create a new transform with only rotation (zero translation)
+        # The rotation is in the upper-left 3x3 submatrix
+        # The translation is in the rightmost column (indices [0][3], [1][3], [2][3])
+        # We create a new rotation by extracting the 3x3 rotation matrix
+        
+        rotation_only = self.XCoreMath.Transform()
+        
+        # Set the rotation part (copy the 3x3 rotation matrix)
+        # The Matrix4 is a 4x4 array where:
+        # - [0:3, 0:3] contains the rotation
+        # - [0:3, 3] contains the translation
+        # We want to keep rotation but zero out translation
+        
+        # Create a rotation from the existing rotation matrix
+        # We can do this by manually constructing the matrix
+        for i in range(3):
+            for j in range(3):
+                rotation_only.Matrix4[i][j] = matrix[i][j]
+        
+        # Ensure translation components are zero
+        rotation_only.Matrix4[0][3] = 0
+        rotation_only.Matrix4[1][3] = 0
+        rotation_only.Matrix4[2][3] = 0
+        
+        return rotation_only
+
+    def _get_phantom_entities(self):
+        """Get all phantom-related entities."""
+        all_entities = self.model.AllEntities()
+        phantom_entities = []
+        phantom_name_lower = self.phantom_name.lower()
+        
+        for e in all_entities:
+            if hasattr(e, "Name"):
+                # Check if entity name contains the phantom name
+                if phantom_name_lower in e.Name.lower():
+                    phantom_entities.append(e)
+        
+        return phantom_entities
+
+    def _get_bbox_entities(self):
+        """Get all bounding box entities (excluding antenna bbox)."""
+        all_entities = self.model.AllEntities()
+        bbox_entities = []
+        
+        for e in all_entities:
+            if hasattr(e, "Name"):
+                # Include bbox entities but exclude antenna-specific bboxes
+                if ("BBox" in e.Name or "bbox" in e.Name or "bounding box" in e.Name):
+                    # Exclude antenna bounding boxes (already handled in phone_entities)
+                    if self.placement_name not in e.Name:
+                        bbox_entities.append(e)
+        
+        return bbox_entities
+
+    def _get_sensor_entities(self):
+        """Get all sensor entities."""
+        all_entities = self.model.AllEntities()
+        sensor_entities = []
+        
+        for e in all_entities:
+            if hasattr(e, "Name"):
+                if "Sensor" in e.Name or "sensor" in e.Name:
+                    sensor_entities.append(e)
+        
+        return sensor_entities
+    
+    def _get_grid_entity(self):
+        """Get the Grid entity that controls FDTD gridding in Sim4Life."""
+        all_entities = self.model.AllEntities()
+        
+        for e in all_entities:
+            if hasattr(e, "Name"):
+                # In Sim4Life, the computational grid entity is typically named "Grid"
+                if e.Name == "Grid":
+                    return e
+        
+        return None
