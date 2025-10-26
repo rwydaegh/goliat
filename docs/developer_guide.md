@@ -104,13 +104,13 @@ class DipoleSetup(BaseSetup):
 
 1. Fork the repo.
 2. Create branch: `git checkout -b feature/new-setup`.
-3. Code: Follow style (Black-formatted, type hints).
+3. Code: Follow style (Ruff-formatted, type hints).
 4. Test locally: `pytest`.
 5. Commit: `git commit -m "Add dipole setup"`.
 6. PR to main: Describe changes, reference issues.
 
 PR requirements:
-- Lint with Black: `black src/`.
+- Run pre-commit: `pre-commit run --all-files`.
 - Tests: Add for new features.
 - Docs: Update user_guide.md if user-facing.
 
@@ -128,10 +128,9 @@ For UML (docs/classes.puml): Use PlantUML viewer or VS Code extension.
 
 ## Code style
 
-- Formatter: Black (pip install black).
-- Imports: isort.
-- Linting: flake8.
-- Types: Use typing (e.g., Dict[str, Any]).
+- Formatting & Linting: Ruff (replaces Black, flake8, isort).
+- Type Checking: Pyright.
+- Types: Use typing (e.g., `Dict[str, Any]`).
 - Docs: Google-style docstrings.
 
 Pre-commit hook (install: `pre-commit install`):
@@ -139,14 +138,16 @@ Pre-commit hook (install: `pre-commit install`):
 ```yaml
 # .pre-commit-config.yaml
 repos:
-  - repo: https://github.com/psf/black
-    rev: 23.3.0
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.2 # Or newer
     hooks:
-      - id: black
-  - repo: https://github.com/pycqa/isort
-    rev: 5.12.0
+      - id: ruff-format
+      - id: ruff
+        args: [--fix]
+  - repo: https://github.com/RobertCraigie/pyright-python
+    rev: v1.1.407 # Or newer
     hooks:
-      - id: isort
+      - id: pyright
 ```
 
 Run: `pre-commit run`.
