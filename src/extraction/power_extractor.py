@@ -83,7 +83,7 @@ class PowerExtractor(LoggingMixin):
             )
             return
         # sim_bbox is a list of two points: [min_corner, max_corner]
-        sim_min, sim_max = np.array(sim_bbox), np.array(sim_bbox)
+        sim_min, sim_max = np.array(sim_bbox[0]), np.array(sim_bbox[1])
         padding_bottom = np.array(
             self.config.get_setting(
                 "gridding_parameters.padding.manual_bottom_padding_mm",
@@ -106,13 +106,13 @@ class PowerExtractor(LoggingMixin):
 
         if "x" in direction:
             # Area of the YZ plane
-            area_m2 = (dims * dims) / 1e6
+            area_m2 = (dims[1] * dims[2]) / 1e6
         elif "y" in direction:
             # Area of the XZ plane
-            area_m2 = (dims * dims) / 1e6
+            area_m2 = (dims[0] * dims[2]) / 1e6
         else:  # Default to z-direction
             # Area of the XY plane
-            area_m2 = (dims * dims) / 1e6
+            area_m2 = (dims[0] * dims[1]) / 1e6
 
         total_input_power = power_density_w_m2 * area_m2
         self.results_data.update(
