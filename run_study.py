@@ -4,16 +4,89 @@ import os
 import sys
 import traceback
 
-from PySide6.QtWidgets import QApplication
+def initial_setup():
+    """
+    Performs all initial checks and setup procedures.
+    - Ensures correct python interpreter is used.
+    - Installs dependencies if missing.
+    - Prepares data files.
+    """
+    # Temporarily add scripts to path to find utils
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+    scripts_dir = os.path.join(base_dir, "scripts")
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
+    
+    from utils import (
+        check_python_interpreter,
+        check_repo_root,
+        install_requirements,
+        prepare_data,
+    )
 
-from scripts.utils import initial_setup
+    data_dir = os.path.join(os.getcwd(), "data")
+    os.makedirs(data_dir, exist_ok=True)
+    lock_file = os.path.join(data_dir, ".setup_done")
+
+    if not os.path.exists(lock_file):
+        check_repo_root()
+        check_python_interpreter()
+        install_requirements(os.path.join(os.getcwd(), "requirements.txt"))
+        prepare_data(os.getcwd())
+        with open(lock_file, "w") as f:
+            f.write("Setup complete.")
+    else:
+        check_python_interpreter()
+
+# --- Pre-check and Setup ---
+initial_setup()
+
+try:
+    from PySide6.QtWidgets import QApplication
+    from dotenv import load_dotenv
+except ImportError:
+    is_sim4life_interpreter = "Sim4Life" in sys.executable
+    print("=" * 80)
+    print("ERROR: Could not start the application.")
+    
+    if not is_sim4life_interpreter:
+        print("You are not using a Sim4Life Python interpreter.")
+        print("Please ensure you are using the Python executable from your Sim4Life installation.")
+        print("See the documentation for instructions on how to set up your environment.")
+    else:
+        print("Critical dependencies are missing.")
+        print("This can happen if you haven't installed the project requirements.")
+        print("Attempting to install now...")
+        print("=" * 80)
+        try:
+            # Temporarily add scripts to path to find utils
+            base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+            scripts_dir = os.path.join(base_dir, "scripts")
+            if scripts_dir not in sys.path:
+                sys.path.insert(0, scripts_dir)
+            from utils import install_requirements
+            
+            install_requirements(os.path.join(base_dir, "requirements.txt"))
+            print("\nDependencies installed. Restarting the script...")
+            # Restart the script to ensure new packages are loaded
+            executable = f'"{sys.executable}"' if " " in sys.executable else sys.executable
+            os.execv(executable, [executable] + sys.argv)
+        except Exception as e:
+            print(f"\nFailed to install dependencies automatically: {e}")
+            print("Please run the following command in your terminal:")
+            print(f"   {sys.executable} -m pip install -r requirements.txt")
+            
+    print("=" * 80)
+    sys.exit(1)
+# --- End Pre-check ---
+
 from src.config import Config
 from src.gui_manager import ProgressGUI, QueueGUI
 from src.logging_manager import setup_loggers, shutdown_loggers
 from src.osparc_batch.runner import main as run_osparc_batch
 from src.studies.base_study import StudyCancelledError
 
-# Ensure the src directory is in the Python path and run startup checks
+# Ensure the src directory is in the Python path
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
@@ -149,9 +222,6 @@ def main():
     # The main process only needs a minimal logger setup for the GUI.
     progress_logger, verbose_logger, _ = setup_loggers(process_id=process_id)
 
-    # Run initial setup once in the main process
-    initial_setup()
-
     config = Config(base_dir, config_filename)
     execution_control = config.get_setting("execution_control", {})
     use_gui = config.get_setting("use_gui", True)
@@ -221,12 +291,6 @@ def main():
             print(f"Traceback:\n{tb_str}")
         finally:
             shutdown_loggers()
-
-    # Clean up the lock file on exit
-    lock_file = os.path.join(base_dir, ".setup_done")
-    if os.path.exists(lock_file):
-        os.remove(lock_file)
-
 
 if __name__ == "__main__":
     # This is crucial for multiprocessing to work correctly on Windows

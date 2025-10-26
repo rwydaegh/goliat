@@ -3,8 +3,8 @@
     "study_type": "far_field",
     "execution_control": {
         "do_setup": true,
-        "do_run": false,
-        "do_extract": false,
+        "do_run": true,
+        "do_extract": true,
         "only_write_input_file": false,
         "batch_run": false
     },

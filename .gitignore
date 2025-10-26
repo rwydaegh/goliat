@@ -20,6 +20,7 @@ analysis/sensitivity_analysis/plots/
 # Data
 data/
 !data/material_name_mapping.json
+data/.setup_done
 
 # Logs
 logs/
@@ -54,3 +55,6 @@ analysis/sensitivity_analysis/configs/
 
 resume_logic_brainstorm.md
 resume_logic_plan.md
+
+# Python build artifacts
+src/*.egg-info/

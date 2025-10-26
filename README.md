@@ -85,7 +85,7 @@ cd goliat
 
 # 2. Install dependencies (uses Sim4Life's Python)
 source .bashrc
-pip install -r requirements.txt
+python -m pip install -r requirements.txt # always use python -m for Sim4Life's interpreter
 
 # 3. Run your first simulation
 python run_study.py --config configs/near_field_config.json

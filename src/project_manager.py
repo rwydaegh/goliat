@@ -141,28 +141,6 @@ class ProjectManager(LoggingMixin):
                     f"  - Configuration hash mismatch for {os.path.basename(meta_path)}. Simulation is outdated.",
                     log_type="warning",
                 )
-                # --- Start of added debug code ---
-                self._log(
-                    "--- DEBUG: CONFIGURATION MISMATCH ---",
-                    level="progress",
-                    log_type="error",
-                )
-                stored_config = metadata.get("config_snapshot", {})
-
-                self._log(
-                    "--- Stored Config Snapshot ---",
-                    level="progress",
-                    log_type="header",
-                )
-                self.progress_logger.info(json.dumps(stored_config, indent=4))
-
-                self._log(
-                    "--- Newly Generated Surgical Config ---",
-                    level="progress",
-                    log_type="header",
-                )
-                self.progress_logger.info(json.dumps(surgical_config, indent=4))
-                # --- End of added debug code ---
                 return False
         except (json.JSONDecodeError, KeyError):
             self._log(

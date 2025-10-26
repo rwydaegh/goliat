@@ -3,9 +3,9 @@
   "study_type": "near_field",
   "execution_control": {
       "do_setup": true,
+      "do_run": true,
       "only_write_input_file": false,
-      "do_run": false,
-      "do_extract": false,
+      "do_extract": true,
       "batch_run": false,
       "auto_cleanup_previous_results": []
   },

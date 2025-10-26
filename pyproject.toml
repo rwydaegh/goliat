@@ -5,17 +5,25 @@ authors = [
 dependencies = [
   "numpy",
   "pandas",
-  "tqdm",
   "gdown",
   "seaborn",
   "line-profiler",
   "pytest",
   "scienceplots",
-  "osparc-client",
   "PySide6",
   "osparc",
   "colorama",
   "python-dotenv",
+]
+description = "A Python framework for dosimetric assessments using Sim4Life."
+license = {file = "LICENSE"}
+name = "goliat"
+readme = "README.md"
+requires-python = ">=3.8"
+version = "0.2.0"
+
+[project.optional-dependencies]
+docs = [
   "mkdocs",
   "mkdocs-material==9.5.3",
   "pymdown-extensions==10.7",
@@ -25,12 +33,6 @@ dependencies = [
   "mkdocs-minify-plugin",
   "mkdocs-kroki-plugin",
 ]
-description = "A Python framework for dosimetric assessments using Sim4Life."
-license = {file = "LICENSE"}
-name = "goliat"
-readme = "README.md"
-requires-python = ">=3.8"
-version = "0.2.0"
 
 [tool.codespell]
 ignore-words-list = "Studi"

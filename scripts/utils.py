@@ -6,38 +6,20 @@ import sys
 
 def install_requirements(requirements_path):
     """
-    Checks if the packages listed in requirements.txt are installed and installs them if not.
+    Installs packages from a requirements file using 'python -m pip install'.
     """
-    import pkg_resources
-
     if not os.path.exists(requirements_path):
-        logging.warning(f"requirements.txt not found at '{requirements_path}'. Skipping installation.")
+        logging.warning(f"'{requirements_path}' not found. Skipping installation.")
         return
 
-    with open(requirements_path, "r") as f:
-        requirements = [line.strip() for line in f if line.strip() and not line.startswith("#")]
-
-    missing_packages = []
-    for package in requirements:
-        try:
-            # Attempt to parse the requirement to get the package name
-            req = pkg_resources.Requirement.parse(package)
-            pkg_resources.get_distribution(req.project_name)
-        except pkg_resources.DistributionNotFound:
-            missing_packages.append(package)
-        except ValueError:
-            logging.warning(f"Could not parse package requirement: {package}")
-
-    if missing_packages:
-        logging.info(f"Missing packages: {', '.join(missing_packages)}. Installing...")
-        try:
-            subprocess.check_call([sys.executable, "-m", "pip", "install", *missing_packages])
-            logging.info("All missing packages installed.")
-        except subprocess.CalledProcessError as e:
-            logging.error(f"Failed to install packages: {e}")
-            sys.exit(1)
-    else:
-        logging.info("All required packages are already installed.")
+    logging.info(f"Installing packages from '{requirements_path}'...")
+    try:
+        # Using '-m pip' ensures we use the pip associated with the current python interpreter
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", requirements_path])
+        logging.info("All required packages are installed.")
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Failed to install packages: {e}")
+        sys.exit(1)
 
 
 def check_repo_root():
@@ -137,7 +119,7 @@ def check_python_interpreter():
 
         update_bashrc(selected_python)
 
-        print("\nConfiguration updated. Please restart your terminal and run the script again.")
+        print("\n .bashrc file updated. Please restart your terminal, run source .bashrc, and run the script again this time with the correct python.")
         sys.exit(0)
 
     except (ValueError, IndexError):
@@ -154,45 +136,18 @@ def prepare_data(base_dir):
     data_dir = os.path.join(base_dir, "data")
     phantoms_dir = os.path.join(data_dir, "phantoms")
     if not os.path.exists(phantoms_dir) or len(os.listdir(phantoms_dir)) < 4:
-        logging.getLogger("verbose").info(
-            "Phantoms directory is missing or incomplete. Downloading phantoms...",
-            extra={"log_type": "info"},
-        )
-        download_and_extract_data(base_dir, logging.getLogger("verbose"))
+        logging.info("Phantoms directory is missing or incomplete. Downloading phantoms...")
+        download_and_extract_data(base_dir, logging.getLogger())
     else:
-        logging.getLogger("verbose").info("Phantoms already exist. Skipping download.", extra={"log_type": "info"})
+        logging.info("Phantoms already exist. Skipping download.")
 
     centered_dir = os.path.join(data_dir, "antennas", "centered")
     if not os.path.exists(centered_dir) or not os.listdir(centered_dir):
-        logging.getLogger("verbose").info(
-            "Centered antenna directory is empty. Preparing antennas...",
-            extra={"log_type": "info"},
-        )
+        logging.info("Centered antenna directory is empty. Preparing antennas...")
         prepare_antennas_script = os.path.join(base_dir, "scripts", "prepare_antennas.py")
         python_exe = sys.executable
         subprocess.run([python_exe, prepare_antennas_script], check=True)
     else:
-        logging.getLogger("verbose").info(
-            "Centered antennas already exist. Skipping preparation.",
-            extra={"log_type": "info"},
-        )
+        logging.info("Centered antennas already exist. Skipping preparation.")
 
 
-def initial_setup():
-    """
-    Runs all initial checks and setup procedures, but only if a lock file is not present.
-    """
-    lock_file = os.path.join(os.getcwd(), ".setup_done")
-    if os.path.exists(lock_file):
-        logging.info("Setup has already been performed. Skipping.")
-        return
-
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    check_repo_root()
-    check_python_interpreter()
-    install_requirements(os.path.join(os.getcwd(), "requirements.txt"))
-    prepare_data(os.getcwd())
-
-    # Create the lock file to indicate setup is complete
-    with open(lock_file, "w") as f:
-        f.write("Setup complete.")

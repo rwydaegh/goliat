@@ -116,13 +116,22 @@ PR requirements:
 
 ## Building docs
 
-Use MkDocs:
+To build the documentation, you first need to install the documentation-specific dependencies.
 
 ```bash
-mkdocs serve  # Local server at http://127.0.0.1:8000
+# Install docs dependencies
+pip install -r requirements-docs.txt
 ```
 
-Build: `mkdocs build` – outputs to site/.
+Then, you can use MkDocs to serve the documentation locally or build the static site.
+
+```bash
+# Serve the docs locally
+mkdocs serve  # Local server at http://127.0.0.1:8000
+
+# Build the static site
+mkdocs build  # Outputs to site/
+```
 
 For UML (docs/classes.puml): Use PlantUML viewer or VS Code extension.
 
