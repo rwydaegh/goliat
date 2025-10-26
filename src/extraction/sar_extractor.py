@@ -93,20 +93,16 @@ class SarExtractor(LoggingMixin):
 
                 all_regions_row = df[df["Tissue"] == "All Regions"]
                 if not all_regions_row.empty:
-                    mass_averaged_sar = all_regions_row["Mass-Averaged SAR"]
-                    if isinstance(mass_averaged_sar, pd.Series) and not mass_averaged_sar.empty:
-                        mass_averaged_sar_val = mass_averaged_sar.iloc
-                        if self.parent.study_type == "near_field":
-                            sar_key = "head_SAR" if self.placement_name.lower() in ["front_of_eyes", "by_cheek"] else "trunk_SAR"
-                            self.results_data[sar_key] = float(mass_averaged_sar_val)  # type: ignore
-                        else:
-                            self.results_data["whole_body_sar"] = float(mass_averaged_sar_val)  # type: ignore
+                    mass_averaged_sar = all_regions_row["Mass-Averaged SAR"].iloc[0]
+                    if self.parent.study_type == "near_field":
+                        sar_key = "head_SAR" if self.placement_name.lower() in ["front_of_eyes", "by_cheek"] else "trunk_SAR"
+                        self.results_data[sar_key] = float(mass_averaged_sar)
+                    else:
+                        self.results_data["whole_body_sar"] = float(mass_averaged_sar)
 
                     peak_sar_col_name = "Peak Spatial-Average SAR[IEEE/IEC62704-1] (10g)"
                     if peak_sar_col_name in all_regions_row.columns:
-                        peak_sar_val = all_regions_row[peak_sar_col_name]
-                        if isinstance(peak_sar_val, pd.Series) and not peak_sar_val.empty:
-                            self.results_data["peak_sar_10g_W_kg"] = float(peak_sar_val.iloc)  # type: ignore
+                        self.results_data["peak_sar_10g_W_kg"] = float(all_regions_row[peak_sar_col_name].iloc[0])
 
                 self.extract_peak_sar_details(em_sensor_extractor)
                 self.results_data.update(
