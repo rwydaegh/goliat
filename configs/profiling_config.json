@@ -1,7 +1,7 @@
 {
     "near_field": {
-        "avg_setup_time": 53.32799999999406,
-        "avg_setup_simulation": 26.687000000005355,
+        "avg_setup_time": 74.45300000000134,
+        "avg_setup_simulation": 27.81300000000192,
         "avg_extract_time": 15.405999999959022,
         "avg_run_write_input_file": 21.25800000000163,
         "avg_run_isolve_execution": 6.648499999981141,
@@ -13,8 +13,8 @@
         "avg_extract_point_sensor_data": 0.06300000002374873
     },
     "far_field": {
-        "avg_setup_simulation": 42.40600000001723,
-        "avg_setup_time": 52.875,
+        "avg_setup_simulation": 29.98399999999674,
+        "avg_setup_time": 34.93800000000192,
         "avg_extract_input_power": 0.125,
         "avg_extract_sar_statistics": 11.547000000020489,
         "avg_extract_point_sensor_data": 0.1720000000204891,

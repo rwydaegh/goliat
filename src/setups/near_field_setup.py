@@ -58,14 +58,8 @@ class NearFieldSetup(BaseSetup):
         """Executes the full sequence of setup steps."""
         self._log("Running full simulation setup...", log_type="progress")
 
-        # Create or open the project file. This is the first step.
-        project_manager.create_or_open_project(
-            self.phantom_name,
-            self.frequency_mhz,
-            self.base_placement_name,
-            self.position_name,
-            self.orientation_name,
-        )
+        # The project is now created/opened by the study, not the setup.
+        # This method assumes a valid project is already open.
 
         if not self.free_space:
             phantom_setup = PhantomSetup(

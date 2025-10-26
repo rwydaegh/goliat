@@ -148,9 +148,9 @@ class Config:
             phantom_name: The name of the phantom.
 
         Returns:
-            The configuration for the specified phantom.
+            The configuration for the specified phantom, or an empty dict if not found.
         """
-        return self.config.get("phantom_definitions", {}).get(phantom_name)
+        return self.config.get("phantom_definitions", {}).get(phantom_name, {})
 
     def get_material_mapping(self, phantom_name: str) -> dict:
         """Gets the material name mapping for a specific phantom.
@@ -434,9 +434,9 @@ class Config:
                     "polarizations": [polarization_name],
                 },
             }
-            # Also include the specific phantom definition
-            surgical_config["phantom_definitions"] = {
-                phantom_name: self.get_phantom_definition(phantom_name)
-            }
+            # Also include the specific phantom definition, if it's not empty
+            phantom_def = self.get_phantom_definition(phantom_name)
+            if phantom_def:
+                surgical_config["phantom_definitions"] = {phantom_name: phantom_def}
 
         return surgical_config
