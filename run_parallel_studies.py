@@ -10,17 +10,10 @@ from copy import deepcopy
 
 import colorama
 
-from scripts.utils import initial_setup
-
 # Ensure the src directory is in the Python path
 base_dir = os.path.abspath(os.path.dirname(__file__))
 if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
-
-
-# --- Centralized Startup ---
-initial_setup()
-# --- End Centralized Startup ---
 
 
 def setup_console_logging():

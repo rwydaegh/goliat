@@ -1,24 +1,2 @@
-# Core
-numpy
-pandas
-tqdm
-gdown
-seaborn
-line-profiler
-pytest
-scienceplots
-osparc-client
-PySide6
-osparc
-colorama
-python-dotenv
-
-# Documentation
-mkdocs
-mkdocs-material==9.5.3
-pymdown-extensions==10.7
-mkdocstrings[python]
-mkdocs-mermaid2-plugin
-mkdocs-git-revision-date-localized-plugin
-mkdocs-minify-plugin
-mkdocs-kroki-plugin
+# Install the project in editable mode, using pyproject.toml as the source of truth.
+-e .
