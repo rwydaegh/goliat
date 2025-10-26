@@ -15,7 +15,6 @@ if TYPE_CHECKING:
 
     from ..config import Config
     from ..project_manager import ProjectManager
-    from .phantom_setup import PhantomSetup
 
 
 class FarFieldSetup(BaseSetup):
@@ -41,7 +40,7 @@ class FarFieldSetup(BaseSetup):
         self.simulation_type = self.config.get_setting("far_field_setup/type", "environmental")
         self.document = self.s4l_v1.document
 
-    def run_full_setup(self, phantom_setup: "PhantomSetup") -> "emfdtd.Simulation":
+    def run_full_setup(self, project_manager: "ProjectManager") -> "emfdtd.Simulation":
         """Executes the full setup sequence for a single far-field simulation."""
         self._log("--- Setting up single Far-Field sim ---", log_type="header")
 
@@ -90,7 +89,7 @@ class FarFieldSetup(BaseSetup):
             plane_wave_source.Psi = 90
 
         simulation.Add(plane_wave_source, [bbox_entity])
-        self.document.AllSimulations.Add(simulation)
+        self.document.AllSimulations.Add(simulation)  # type: ignore
 
         self._apply_simulation_time_and_termination(simulation, bbox_entity, self.frequency_mhz)
 
@@ -128,7 +127,7 @@ class FarFieldSetup(BaseSetup):
         material_setup = MaterialSetup(
             self.config,
             simulation,
-            None,
+            None,  # type: ignore
             self.phantom_name,
             self.verbose_logger,
             self.progress_logger,
@@ -139,8 +138,8 @@ class FarFieldSetup(BaseSetup):
         gridding_setup = GriddingSetup(
             self.config,
             simulation,
-            None,
-            None,
+            None,  # type: ignore
+            None,  # type: ignore
             self.verbose_logger,
             self.progress_logger,
             frequency_mhz=self.frequency_mhz,
@@ -154,16 +153,6 @@ class FarFieldSetup(BaseSetup):
 
         self._setup_solver_settings(simulation)
 
-        self._finalize_setup(self.project_manager, simulation, self.frequency_mhz)
-        self._log("Common settings applied.", log_type="success")
-
-    def _finalize_setup(
-        self,
-        project_manager: "ProjectManager",
-        simulation: "emfdtd.Simulation",
-        frequency_mhz: int,
-    ):
-        """Gathers entities and calls the finalization method from the base class."""
         bbox_entity = next(
             (e for e in self.model.AllEntities() if hasattr(e, "Name") and e.Name == "far_field_simulation_bbox"),
             None,
@@ -178,4 +167,5 @@ class FarFieldSetup(BaseSetup):
 
         all_simulation_parts = phantom_entities + [bbox_entity] + point_sensor_entities
 
-        super()._finalize_setup(project_manager, simulation, all_simulation_parts, frequency_mhz)
+        super()._finalize_setup(self.project_manager, simulation, all_simulation_parts, self.frequency_mhz)
+        self._log("Common settings applied.", log_type="success")

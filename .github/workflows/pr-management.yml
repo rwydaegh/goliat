@@ -11,8 +11,8 @@ jobs:
     permissions:
       pull-requests: write
     steps:
-      - name: Label PR based on branch name
-        uses: actions/labeler@v5
-        with:
-          repo-token: "${{ secrets.GITHUB_TOKEN }}"
-          configuration-path: .github/labeler.yml
+    - name: Label PR based on branch name
+      uses: actions/labeler@v5
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        configuration-path: .github/labeler.yml

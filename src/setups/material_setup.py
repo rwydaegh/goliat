@@ -36,14 +36,14 @@ class MaterialSetup(BaseSetup):
         self.database = s4l_v1.materials.database
         self.XCoreModeling = XCoreModeling
 
-    def assign_materials(self, antenna_components: dict = None, phantom_only: bool = False):
+    def assign_materials(self, antenna_components: dict | None = None, phantom_only: bool = False):
         """Assigns materials to the simulation entities."""
         self._log("Assigning materials...", log_type="progress")
 
         # Background material
-        background_settings = self.simulation.raw.BackgroundMaterialSettings()
-        air_material = self.database["Generic 1.1"]["Air"]
-        self.simulation.raw.AssignMaterial(background_settings, air_material)
+        background_settings = self.simulation.raw.BackgroundMaterialSettings()  # type: ignore
+        air_material = self.database["Generic 1.1"]["Air"]  # type: ignore
+        self.simulation.raw.AssignMaterial(background_settings, air_material)  # type: ignore
 
         # Phantom materials
         if not self.free_space:
@@ -82,7 +82,7 @@ class MaterialSetup(BaseSetup):
 
             for material_name, entities in material_groups.items():
                 try:
-                    mat = self.database["IT'IS 4.2"][material_name]
+                    mat = self.database["IT'IS 4.2"][material_name]  # type: ignore
                     material_settings = self.emfdtd.MaterialSettings()
                     self.simulation.LinkMaterialWithDatabase(material_settings, mat)
                     self.simulation.Add(material_settings, entities)
@@ -132,7 +132,7 @@ class MaterialSetup(BaseSetup):
                 else:
                     try:
                         db_name = "IT'IS 4.2" if "Rogers" in mat_name else "Generic 1.1"
-                        mat = self.database[db_name][mat_name]
+                        mat = self.database[db_name][mat_name]  # type: ignore
                         self.simulation.LinkMaterialWithDatabase(material_settings, mat)
                         self.simulation.Add(material_settings, [entity])
                         self._log(

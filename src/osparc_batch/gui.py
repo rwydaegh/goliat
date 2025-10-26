@@ -32,7 +32,7 @@ class BatchGUI(QWidget):
     def init_ui(self):
         """Initializes the user interface components."""
         self.setWindowTitle("oSPARC Batch Runner")
-        self.layout = QVBoxLayout()
+        layout = QVBoxLayout()
 
         self.button_layout = QHBoxLayout()
         self.progress_button = QPushButton("Print Progress")
@@ -51,9 +51,9 @@ class BatchGUI(QWidget):
         self.button_layout.addWidget(self.force_stop_button)
         self.button_layout.addWidget(self.stop_and_cancel_button)
         self.button_layout.addWidget(self.tray_button)
-        self.layout.addLayout(self.button_layout)
+        layout.addLayout(self.button_layout)
 
-        self.setLayout(self.layout)
+        self.setLayout(layout)
 
         self.tray_icon = QSystemTrayIcon(self)
         style = self.style()
@@ -79,7 +79,7 @@ class BatchGUI(QWidget):
         self.force_stop_button.setEnabled(False)
         self.stop_and_cancel_button.setEnabled(False)
         self.stop_run_requested.emit()
-        QApplication.instance().quit()
+        QApplication.instance().quit()  # type: ignore
 
     def stop_and_cancel_jobs(self):
         """Stops the main batch process and cancels all running jobs."""

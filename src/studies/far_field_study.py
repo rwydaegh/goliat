@@ -1,5 +1,5 @@
 import traceback
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from ..results_extractor import ResultsExtractor
 from ..setups.far_field_setup import FarFieldSetup
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 class FarFieldStudy(BaseStudy):
     """Manages a far-field simulation study."""
 
-    def __init__(self, config_filename: str = "far_field_config.json", gui: "QueueGUI" = None):
+    def __init__(self, config_filename: str = "far_field_config.json", gui: Optional["QueueGUI"] = None):
         super().__init__("far_field", config_filename, gui)
 
     def _run_study(self):
@@ -45,13 +45,13 @@ class FarFieldStudy(BaseStudy):
             )
 
         # Sanity check for auto_cleanup_previous_results
-        self._validate_auto_cleanup_config(do_setup, do_run, do_extract, auto_cleanup)
+        self._validate_auto_cleanup_config(do_setup, do_run, do_extract, auto_cleanup)  # type: ignore
 
-        phantoms = self.config.get_setting("phantoms", [])
-        frequencies = self.config.get_setting("frequencies_mhz", [])
+        phantoms = self.config.get_setting("phantoms", []) or []
+        frequencies = self.config.get_setting("frequencies_mhz", []) or []
         far_field_params = self.config.get_setting("far_field_setup.environmental", {})
-        incident_directions = far_field_params.get("incident_directions", [])
-        polarizations = far_field_params.get("polarizations", [])
+        incident_directions = far_field_params.get("incident_directions", []) if far_field_params else []
+        polarizations = far_field_params.get("polarizations", []) if far_field_params else []
 
         total_simulations = len(phantoms) * len(frequencies) * len(incident_directions) * len(polarizations)
 
@@ -70,9 +70,9 @@ class FarFieldStudy(BaseStudy):
             self.gui.update_overall_progress(0, 100)  # Initialize GUI progress
 
         simulation_count = 0
-        for phantom_name in phantoms:
+        for phantom_name in phantoms:  # type: ignore
             phantom_setup = PhantomSetup(self.config, phantom_name, self.verbose_logger, self.progress_logger)
-            for freq in frequencies:
+            for freq in frequencies:  # type: ignore
                 for direction_name in incident_directions:
                     for polarization_name in polarizations:
                         self._check_for_stop_signal()
@@ -88,9 +88,9 @@ class FarFieldStudy(BaseStudy):
                             freq,
                             direction_name,
                             polarization_name,
-                            do_setup,
-                            do_run,
-                            do_extract,
+                            do_setup,  # type: ignore
+                            do_run,  # type: ignore
+                            do_extract,  # type: ignore
                             phantom_setup,
                         )
 
@@ -156,7 +156,7 @@ class FarFieldStudy(BaseStudy):
                             polarization_name=polarization_name,
                         )
                         self.project_manager.write_simulation_metadata(
-                            self.project_manager.project_path + ".meta.json",
+                            self.project_manager.project_path + ".meta.json",  # type: ignore
                             surgical_config,
                         )
 
@@ -194,8 +194,8 @@ class FarFieldStudy(BaseStudy):
                 with profile(self, "run"):
                     runner = SimulationRunner(
                         self.config,
-                        self.project_manager.project_path,
-                        [simulation],
+                        self.project_manager.project_path,  # type: ignore
+                        [simulation],  # type: ignore
                         self.verbose_logger,
                         self.progress_logger,
                         self.gui,
@@ -218,7 +218,7 @@ class FarFieldStudy(BaseStudy):
 
                     extractor = ResultsExtractor(
                         config=self.config,
-                        simulation=reloaded_simulation,
+                        simulation=reloaded_simulation,  # type: ignore
                         phantom_name=phantom_name,
                         frequency_mhz=freq,
                         scenario_name="environmental",
@@ -227,7 +227,7 @@ class FarFieldStudy(BaseStudy):
                         study_type="far_field",
                         verbose_logger=self.verbose_logger,
                         progress_logger=self.progress_logger,
-                        gui=self.gui,
+                        gui=self.gui,  # type: ignore
                         study=self,
                     )
                     extractor.extract()
@@ -237,7 +237,7 @@ class FarFieldStudy(BaseStudy):
             self._log(f"ERROR during simulation: {e}", log_type="error")
             self.verbose_logger.error(traceback.format_exc())
         finally:
-            if self.project_manager and hasattr(self.project_manager.document, "IsOpen") and self.project_manager.document.IsOpen():
+            if self.project_manager and hasattr(self.project_manager.document, "IsOpen") and self.project_manager.document.IsOpen():  # type: ignore
                 self.project_manager.close()
 
     def _validate_auto_cleanup_config(self, do_setup: bool, do_run: bool, do_extract: bool, auto_cleanup: list):

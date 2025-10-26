@@ -22,7 +22,7 @@ class GriddingSetup(BaseSetup):
         antenna: "Antenna",
         verbose_logger: "Logger",
         progress_logger: "Logger",
-        frequency_mhz: int = None,
+        frequency_mhz: int | None = None,
     ):
         super().__init__(config, verbose_logger, progress_logger)
         self.simulation = simulation
@@ -34,7 +34,7 @@ class GriddingSetup(BaseSetup):
 
         self.units = s4l_v1.units
 
-    def setup_gridding(self, antenna_components: dict = None):
+    def setup_gridding(self, antenna_components: dict | None = None):
         """Sets up the main grid and subgrids for the simulation."""
         self._log("Setting up gridding...", log_type="progress")
         self._setup_main_grid()
@@ -99,7 +99,7 @@ class GriddingSetup(BaseSetup):
             self.simulation.GlobalGridSettings.AutoRefinement = s4l_refinement_level
             added_grid_settings.AutoRefinement = s4l_refinement_level
             self._log(
-                f"  - Global and added automatic grid set with refinement level: {user_refinement_level} " f"({s4l_refinement_level})",
+                f"  - Global and added automatic grid set with refinement level: {user_refinement_level} ({s4l_refinement_level})",
                 log_type="verbose",
             )
 

@@ -1,6 +1,6 @@
 import json
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from .extraction.cleaner import Cleaner
 from .extraction.json_encoder import NumpyArrayEncoder
@@ -40,8 +40,8 @@ class ResultsExtractor(LoggingMixin):
         verbose_logger: "Logger",
         progress_logger: "Logger",
         free_space: bool = False,
-        gui: "QueueGUI" = None,
-        study: "BaseStudy" = None,
+        gui: "Optional[QueueGUI]" = None,
+        study: "Optional[BaseStudy]" = None,
     ):
         """Initializes the ResultsExtractor.
 
@@ -120,7 +120,7 @@ class ResultsExtractor(LoggingMixin):
             )
 
         # Extract point sensor data
-        if self.config.get_setting("simulation_parameters.number_of_point_sensors", 0) > 0:
+        if self.config.get_setting("simulation_parameters.number_of_point_sensors", 0) > 0:  # type: ignore
             if self.gui:
                 self.gui.update_stage_progress("Extracting Point Sensors", 75, 100)
 

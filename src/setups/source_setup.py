@@ -85,7 +85,7 @@ class SourceSetup(BaseSetup):
                     self.units.Hz,
                 )
                 self._log(
-                    f"  - Set extracted frequencies from {start_freq_hz/1e6} MHz to {end_freq_hz/1e6} MHz.",
+                    f"  - Set extracted frequencies from {start_freq_hz / 1e6} MHz to {end_freq_hz / 1e6} MHz.",
                     log_type="info",
                 )
 

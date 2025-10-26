@@ -2,10 +2,14 @@ import logging
 import os
 import time
 from datetime import datetime
+from typing import TYPE_CHECKING, Optional
 
 from colorama import Style, init
 
 from .colors import get_color
+
+if TYPE_CHECKING:
+    from .gui_manager import QueueGUI
 
 
 class ColorFormatter(logging.Formatter):
@@ -26,7 +30,7 @@ class ColorFormatter(logging.Formatter):
         return f"{color}{message}{Style.RESET_ALL}"
 
 
-def setup_loggers(process_id: str = None) -> tuple[logging.Logger, logging.Logger, str]:
+def setup_loggers(process_id: Optional[str] = None) -> tuple[logging.Logger, logging.Logger, str]:
     """Initializes and configures the dual-logging system.
 
     Sets up two loggers:
@@ -139,6 +143,10 @@ class LoggingMixin:
     Provides a `_log` method that directs messages to the appropriate logger
     ('progress' or 'verbose') and, if available, to the GUI.
     """
+
+    progress_logger: logging.Logger
+    verbose_logger: logging.Logger
+    gui: Optional["QueueGUI"]
 
     def _log(self, message: str, level: str = "verbose", log_type: str = "default"):
         """Logs a message with a specified level and color-coding type.
