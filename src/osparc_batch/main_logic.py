@@ -25,7 +25,7 @@ def main_process_logic(worker: "Worker"):
 
     try:
         base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-        worker.client_cfg = get_osparc_client_config(worker.config, osparc_module)
+        worker.client_cfg = get_osparc_client_config(worker.config, osparc_module)  # type: ignore
 
         solver_key = "simcore/services/comp/isolve-gpu"
         solver_version = "2.2.212"
@@ -37,7 +37,7 @@ def main_process_logic(worker: "Worker"):
                 executor.submit(
                     _submit_job_in_process,
                     fp,
-                    worker.client_cfg,
+                    worker.client_cfg,  # type: ignore
                     solver_key,
                     solver_version,
                 ): fp
@@ -50,13 +50,12 @@ def main_process_logic(worker: "Worker"):
                     if result:
                         job, solver = result
                         worker.running_jobs[file_path] = (job, solver)
-                        setup_job_logging(base_dir, job.id)
-                        job_logger = logging.getLogger(f"job_{job.id}")
-                        job_logger.info(f"Job {job.id} submitted for input file {file_path.name} " f"at path {file_path}.")
+                        if job.id:
+                            setup_job_logging(base_dir, job.id)
+                            job_logger = logging.getLogger(f"job_{job.id}")
+                            job_logger.info(f"Job {job.id} submitted for input file {file_path.name} at path {file_path}.")
                 except Exception as exc:
-                    main_logger.error(
-                        f"ERROR: Submitting job for {file_path.name} generated an exception: " f"{exc}\n{traceback.format_exc()}"
-                    )
+                    main_logger.error(f"ERROR: Submitting job for {file_path.name} generated an exception: {exc}\n{traceback.format_exc()}")
 
         if not worker.running_jobs:
             main_logger.error("ERROR: No jobs were successfully submitted. Exiting.")

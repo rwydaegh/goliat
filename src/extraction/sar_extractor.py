@@ -39,7 +39,7 @@ class SarExtractor(LoggingMixin):
         self.document = s4l_v1.document
         self.units = units
 
-    def extract_sar_statistics(self, simulation_extractor: "analysis.Extractor"):
+    def extract_sar_statistics(self, simulation_extractor: "analysis.Extractor"):  # type: ignore
         """Extracts detailed SAR statistics for all tissues.
 
         Runs the `SarStatisticsEvaluator` and processes its output into a
@@ -49,7 +49,7 @@ class SarExtractor(LoggingMixin):
             simulation_extractor: The results extractor from the simulation object.
         """
         self._log("  - Extracting SAR statistics for all tissues...", log_type="progress")
-        with self.parent.study.subtask("extract_sar_statistics"):
+        with self.parent.study.subtask("extract_sar_statistics"):  # type: ignore
             try:
                 em_sensor_extractor = simulation_extractor["Overall Field"]
                 em_sensor_extractor.FrequencySettings.ExtractedFrequency = "All"
@@ -79,7 +79,8 @@ class SarExtractor(LoggingMixin):
                     for i in range(results.NumberOfRows())
                 ]
 
-                df = pd.DataFrame(data, columns=columns)
+                df = pd.DataFrame(data)
+                df.columns = columns
                 numeric_cols = [col for col in df.columns if col != "Tissue"]
                 df[numeric_cols] = df[numeric_cols].apply(pd.to_numeric, errors="coerce").fillna(0)
 
@@ -92,16 +93,20 @@ class SarExtractor(LoggingMixin):
 
                 all_regions_row = df[df["Tissue"] == "All Regions"]
                 if not all_regions_row.empty:
-                    mass_averaged_sar = all_regions_row["Mass-Averaged SAR"].iloc[0]
-                    if self.parent.study_type == "near_field":
-                        sar_key = "head_SAR" if self.placement_name.lower() in ["front_of_eyes", "by_cheek"] else "trunk_SAR"
-                        self.results_data[sar_key] = float(mass_averaged_sar)
-                    else:
-                        self.results_data["whole_body_sar"] = float(mass_averaged_sar)
+                    mass_averaged_sar = all_regions_row["Mass-Averaged SAR"]
+                    if isinstance(mass_averaged_sar, pd.Series) and not mass_averaged_sar.empty:
+                        mass_averaged_sar_val = mass_averaged_sar.iloc
+                        if self.parent.study_type == "near_field":
+                            sar_key = "head_SAR" if self.placement_name.lower() in ["front_of_eyes", "by_cheek"] else "trunk_SAR"
+                            self.results_data[sar_key] = float(mass_averaged_sar_val)  # type: ignore
+                        else:
+                            self.results_data["whole_body_sar"] = float(mass_averaged_sar_val)  # type: ignore
 
                     peak_sar_col_name = "Peak Spatial-Average SAR[IEEE/IEC62704-1] (10g)"
                     if peak_sar_col_name in all_regions_row.columns:
-                        self.results_data["peak_sar_10g_W_kg"] = float(all_regions_row[peak_sar_col_name].iloc[0])
+                        peak_sar_val = all_regions_row[peak_sar_col_name]
+                        if isinstance(peak_sar_val, pd.Series) and not peak_sar_val.empty:
+                            self.results_data["peak_sar_10g_W_kg"] = float(peak_sar_val.iloc)  # type: ignore
 
                 self.extract_peak_sar_details(em_sensor_extractor)
                 self.results_data.update(
@@ -145,7 +150,7 @@ class SarExtractor(LoggingMixin):
             return tissue_groups
 
         self._log(
-            "  - WARNING: '_tissue_groups' not found in material mapping. " "Falling back to keyword-based tissue grouping.",
+            "  - WARNING: '_tissue_groups' not found in material mapping. Falling back to keyword-based tissue grouping.",
             log_type="warning",
         )
         groups = {
@@ -190,7 +195,7 @@ class SarExtractor(LoggingMixin):
                 }
         return group_sar_data
 
-    def extract_peak_sar_details(self, em_sensor_extractor: "analysis.Extractor"):
+    def extract_peak_sar_details(self, em_sensor_extractor: "analysis.Extractor"):  # type: ignore
         """Extracts detailed information about the peak spatial-average SAR (psSAR).
 
         Args:

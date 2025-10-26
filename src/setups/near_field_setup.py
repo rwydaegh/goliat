@@ -128,7 +128,25 @@ class NearFieldSetup(BaseSetup):
         sim_bbox_name = f"{self.placement_name.lower()}_simulation_bbox"
         self._add_point_sensors(simulation, sim_bbox_name)
 
-        self._finalize_setup(project_manager, simulation, antenna_components)
+        all_antenna_parts = list(antenna_components.values())
+        point_sensor_entities = [e for e in self.model.AllEntities() if "Point Sensor Entity" in e.Name]
+
+        if self.free_space:
+            sim_bbox_name = "freespace_simulation_bbox"
+        else:
+            sim_bbox_name = f"{self.placement_name.lower()}_simulation_bbox"
+
+        sim_bbox_entity = next(
+            (e for e in self.model.AllEntities() if hasattr(e, "Name") and e.Name == sim_bbox_name),
+            None,
+        )
+        if not sim_bbox_entity:
+            raise RuntimeError(f"Could not find simulation bounding box: '{sim_bbox_name}' for voxelization.")
+
+        phantom_entities = [e for e in self.model.AllEntities() if isinstance(e, self.XCoreModeling.TriangleMesh)]
+        all_simulation_parts = phantom_entities + all_antenna_parts + point_sensor_entities + [sim_bbox_entity]
+
+        super()._finalize_setup(project_manager, simulation, all_simulation_parts, self.frequency_mhz)
 
         self._log("Full simulation setup complete.", log_type="success")
         return simulation
@@ -284,9 +302,9 @@ class NearFieldSetup(BaseSetup):
         """Creates and configures the base EM-FDTD simulation entity."""
         self._log("Setting up simulation entity...", log_type="progress")
 
-        if self.document.AllSimulations:
-            for sim in list(self.document.AllSimulations):
-                self.document.AllSimulations.Remove(sim)
+        if self.document.AllSimulations:  # type: ignore
+            for sim in list(self.document.AllSimulations):  # type: ignore
+                self.document.AllSimulations.Remove(sim)  # type: ignore
 
         sim_name = f"EM_FDTD_{self.phantom_name}_{self.frequency_mhz}MHz_{self.placement_name}"
         if self.free_space:
@@ -298,7 +316,7 @@ class NearFieldSetup(BaseSetup):
 
         simulation.Frequency = self.frequency_mhz, s4l_v1.units.MHz
 
-        self.document.AllSimulations.Add(simulation)
+        self.document.AllSimulations.Add(simulation)  # type: ignore
 
         self._setup_solver_settings(simulation)
 
@@ -317,30 +335,3 @@ class NearFieldSetup(BaseSetup):
         self._apply_simulation_time_and_termination(simulation, sim_bbox_entity, self.frequency_mhz)
 
         return simulation
-
-    def _finalize_setup(
-        self,
-        project_manager: "ProjectManager",
-        simulation: "emfdtd.Simulation",
-        antenna_components: dict,
-    ):
-        """Gathers entities and calls the finalization method from the base class."""
-        all_antenna_parts = list(antenna_components.values())
-        point_sensor_entities = [e for e in self.model.AllEntities() if "Point Sensor Entity" in e.Name]
-
-        if self.free_space:
-            sim_bbox_name = "freespace_simulation_bbox"
-        else:
-            sim_bbox_name = f"{self.placement_name.lower()}_simulation_bbox"
-
-        sim_bbox_entity = next(
-            (e for e in self.model.AllEntities() if hasattr(e, "Name") and e.Name == sim_bbox_name),
-            None,
-        )
-        if not sim_bbox_entity:
-            raise RuntimeError(f"Could not find simulation bounding box: '{sim_bbox_name}' for voxelization.")
-
-        phantom_entities = [e for e in self.model.AllEntities() if isinstance(e, self.XCoreModeling.TriangleMesh)]
-        all_simulation_parts = phantom_entities + all_antenna_parts + point_sensor_entities + [sim_bbox_entity]
-
-        super()._finalize_setup(project_manager, simulation, all_simulation_parts, self.frequency_mhz)

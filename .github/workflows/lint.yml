@@ -1,0 +1,66 @@
+# .github/workflows/lint.yml
+name: Lint
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  schedule:
+  - cron: 0 0 * * 1     # Every Monday
+  workflow_dispatch:
+
+jobs:
+  auto-update:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+
+    - name: Install pre-commit
+      run: pip install pre-commit
+
+    - name: Run autoupdate
+      run: pre-commit autoupdate
+
+    - name: Create a pull request with updated versions
+      uses: peter-evans/create-pull-request@v6
+      with:
+        branch: update/pre-commit-hooks
+        title: 'chore(deps): update pre-commit hooks'
+        commit-message: 'chore(deps): update pre-commit hooks'
+        labels: |
+          ci/cd
+          enhancement
+
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Setup uv
+      uses: astral-sh/setup-uv@v1
+      with:
+        enable-cache: true
+
+    - name: Install dependencies
+      run: |
+        uv pip install --system pre-commit
+        uv pip install --system -e .
+
+    - name: Run pre-commit hooks
+      run: pre-commit run --all-files
+      env:
+        SKIP: pyright

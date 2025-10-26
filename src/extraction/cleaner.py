@@ -28,7 +28,14 @@ class Cleaner:
         if not cleanup_types:
             return
 
+        if self.parent.study is None:
+            self.parent._log("  - WARNING: Study object is not available. Skipping cleanup.", log_type="warning")
+            return
+
         project_path = self.parent.study.project_manager.project_path
+        if not project_path:
+            self.parent._log("  - WARNING: Project path is not set. Skipping cleanup.", log_type="warning")
+            return
         project_dir = os.path.dirname(project_path)
         project_filename = os.path.basename(project_path)
         results_dir = os.path.join(project_dir, project_filename + "_Results")

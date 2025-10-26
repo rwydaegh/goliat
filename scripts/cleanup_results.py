@@ -80,7 +80,7 @@ def main():
     args = parser.parse_args()
 
     if not args.near_field and not args.far_field:
-        logger.error(f"{colorama.Fore.RED}Error: Please specify at least one field type to clean up " f"(--near-field and/or --far-field).")
+        logger.error(f"{colorama.Fore.RED}Error: Please specify at least one field type to clean up (--near-field and/or --far-field).")
         parser.print_help()
         sys.exit(1)
 

@@ -1,5 +1,6 @@
 import json
 import os
+from typing import Optional
 
 from dotenv import load_dotenv
 
@@ -216,7 +217,7 @@ class Config:
 
     def get_line_profiling_config(self) -> dict:
         """Gets the 'line_profiling' settings."""
-        return self.get_setting("line_profiling", {})
+        return self.get_setting("line_profiling", {}) or {}
 
     def get_download_email(self) -> str:
         """Gets the download email from environment variables."""
@@ -253,7 +254,9 @@ class Config:
 
     def get_only_write_input_file(self) -> bool:
         """Gets the 'only_write_input_file' flag from 'execution_control'."""
-        return self.get_setting("execution_control.only_write_input_file", False)
+        result = self.get_setting("execution_control.only_write_input_file", False)
+        assert isinstance(result, bool)
+        return result
 
     def get_auto_cleanup_previous_results(self) -> list:
         """Gets the 'auto_cleanup_previous_results' setting from 'execution_control'.
@@ -278,9 +281,7 @@ class Config:
         if not isinstance(cleanup_setting, list):
             import logging
 
-            logging.warning(
-                f"'auto_cleanup_previous_results' should be a list, got {type(cleanup_setting)}. " "Disabling cleanup for safety."
-            )
+            logging.warning(f"'auto_cleanup_previous_results' should be a list, got {type(cleanup_setting)}. Disabling cleanup for safety.")
             return []
 
         # Validate file types
@@ -289,7 +290,7 @@ class Config:
         if invalid_types:
             import logging
 
-            logging.warning(f"Invalid file types in 'auto_cleanup_previous_results': {invalid_types}. " f"Valid types are: {valid_types}")
+            logging.warning(f"Invalid file types in 'auto_cleanup_previous_results': {invalid_types}. Valid types are: {valid_types}")
 
         return [t for t in cleanup_setting if t in valid_types]
 
@@ -297,11 +298,11 @@ class Config:
         self,
         phantom_name: str,
         frequency_mhz: int,
-        scenario_name: str = None,
-        position_name: str = None,
-        orientation_name: str = None,
-        direction_name: str = None,
-        polarization_name: str = None,
+        scenario_name: Optional[str] = None,
+        position_name: Optional[str] = None,
+        orientation_name: Optional[str] = None,
+        direction_name: Optional[str] = None,
+        polarization_name: Optional[str] = None,
     ) -> dict:
         """Constructs a minimal, simulation-specific configuration dictionary.
 
@@ -370,14 +371,16 @@ class Config:
             surgical_config["antenna_config"] = self.get_setting(f"antenna_config.{frequency_mhz}")
 
             # Reconstruct placement_scenarios for the specific placement
-            original_scenario = self.get_placement_scenario(scenario_name)
-            surgical_config["placement_scenarios"] = {
-                scenario_name: {
-                    "positions": {position_name: original_scenario["positions"][position_name]},
-                    "orientations": {orientation_name: original_scenario["orientations"][orientation_name]},
-                    "bounding_box": original_scenario.get("bounding_box", "default"),
-                }
-            }
+            if scenario_name:
+                original_scenario = self.get_placement_scenario(scenario_name)
+                if original_scenario and position_name and orientation_name:
+                    surgical_config["placement_scenarios"] = {
+                        scenario_name: {
+                            "positions": {position_name: original_scenario["positions"][position_name]},
+                            "orientations": {orientation_name: original_scenario["orientations"][orientation_name]},
+                            "bounding_box": original_scenario.get("bounding_box", "default"),
+                        }
+                    }
 
             # Select the specific phantom definition
             surgical_config["phantom_definitions"] = {phantom_name: self.get_phantom_definition(phantom_name)}
@@ -385,13 +388,14 @@ class Config:
         elif study_type == "far_field":
             # Surgically build the far_field_setup to be robust against future changes
             original_ff_setup = self.get_setting("far_field_setup", {})
-            surgical_config["far_field_setup"] = {
-                "type": original_ff_setup.get("type"),
-                "environmental": {
-                    "incident_directions": [direction_name],
-                    "polarizations": [polarization_name],
-                },
-            }
+            if original_ff_setup:
+                surgical_config["far_field_setup"] = {
+                    "type": original_ff_setup.get("type"),
+                    "environmental": {
+                        "incident_directions": [direction_name],
+                        "polarizations": [polarization_name],
+                    },
+                }
             # Also include the specific phantom definition, if it's not empty
             phantom_def = self.get_phantom_definition(phantom_name)
             if phantom_def:

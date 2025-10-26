@@ -190,4 +190,4 @@ class Analyzer:
             all_organ_results_df: DataFrame with detailed organ-level results.
         """
         # This method is now delegated to the strategy
-        self.strategy.generate_plots(self.plotter, results_df, all_organ_results_df)
+        self.strategy.generate_plots(self, self.plotter, results_df, all_organ_results_df)

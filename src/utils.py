@@ -139,8 +139,8 @@ def non_blocking_sleep(seconds: int):
     from PySide6.QtCore import QCoreApplication, QEventLoop, QTime
 
     end_time = QTime.currentTime().addSecs(int(seconds))
-    while QTime.currentTime() < end_time:
-        QCoreApplication.processEvents(QEventLoop.AllEvents, 50)
+    while QTime.currentTime() < end_time:  # type: ignore
+        QCoreApplication.processEvents(QEventLoop.AllEvents, 50)  # type: ignore
         time.sleep(0.05)
 
 
@@ -192,7 +192,6 @@ def profile_subtask(study: "BaseStudy", task_name: str, instance_to_profile=None
     # Check if line profiling is enabled for this specific subtask
     line_profiling_config = study.config.get_line_profiling_config()
     if instance_to_profile and line_profiling_config.get("enabled", False) and task_name in line_profiling_config.get("subtasks", {}):
-
         study._log(
             f"  - Activating line profiler for subtask: {task_name}",
             level="verbose",

@@ -160,7 +160,7 @@ def split_config(config_path, num_splits, logger):
         sys.exit(1)
 
     logger.info(
-        f"Smart split strategy: {phantom_splits} phantom group(s) × " f"{item_splits} {items_name} group(s) = {total_splits} total configs"
+        f"Smart split strategy: {phantom_splits} phantom group(s) × {item_splits} {items_name} group(s) = {total_splits} total configs"
     )
 
     # Split phantoms and items into groups
@@ -199,7 +199,7 @@ def split_config(config_path, num_splits, logger):
         new_config_path = os.path.join(output_dir, f"{config_filename}_{i}.json")
         with open(new_config_path, "w") as f:
             json.dump(new_config, f, indent=2)
-        logger.info(f"  - Created: {os.path.basename(new_config_path)} " f"(phantoms: {phantoms}, {items_name}: {len(items_subset)})")
+        logger.info(f"  - Created: {os.path.basename(new_config_path)} (phantoms: {phantoms}, {items_name}: {len(items_subset)})")
 
     return output_dir
 

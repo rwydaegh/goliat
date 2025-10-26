@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 # Define a dummy 'profile' decorator if the script is not run with kernprof
 try:
     # This will succeed if the script is run with kernprof
-    profile
+    profile  # type: ignore
 except NameError:
     # If not, define a dummy decorator that does nothing
     def profile(func):
@@ -61,7 +61,7 @@ class BaseSetup(LoggingMixin):
         bbox = self.model.GetBoundingBox([sim_bbox_entity])
         if not bbox or len(bbox) < 2:
             self._log(
-                f"  - ERROR: Could not get a valid bounding box for entity '{sim_bbox_entity.Name}'. " f"Skipping time calculation.",
+                f"  - ERROR: Could not get a valid bounding box for entity '{sim_bbox_entity.Name}'. Skipping time calculation.",
                 log_type="error",
             )
             return
@@ -161,7 +161,9 @@ class BaseSetup(LoggingMixin):
 
         point_source_order = self.config.get_setting("simulation_parameters.point_source_order", list(corner_map.keys()))
 
-        for i in range(num_points):
+        for i in range(int(num_points)):  # type: ignore
+            if point_source_order is None:
+                continue
             corner_name = point_source_order[i]
             corner_coords = corner_map.get(corner_name)
             if corner_coords is None:
@@ -171,7 +173,7 @@ class BaseSetup(LoggingMixin):
                 )
                 continue
 
-            point_entity_name = f"Point Sensor Entity {i+1} ({corner_name})"
+            point_entity_name = f"Point Sensor Entity {i + 1} ({corner_name})"
 
             existing_entity = next(
                 (e for e in self.model.AllEntities() if hasattr(e, "Name") and e.Name == point_entity_name),
@@ -188,14 +190,14 @@ class BaseSetup(LoggingMixin):
             point_entity = self.model.CreatePoint(self.model.Vec3(corner_coords[0][0], corner_coords[1][1], corner_coords[2][2]))
             point_entity.Name = point_entity_name
             point_sensor = self.emfdtd.PointSensorSettings()
-            point_sensor.Name = f"Point Sensor {i+1}"
+            point_sensor.Name = f"Point Sensor {i + 1}"
             simulation.Add(point_sensor, [point_entity])
             self._log(
                 f"  - Added point sensor at {corner_coords} ({corner_name})",
                 log_type="info",
             )
 
-    @profile
+    @profile  # type: ignore
     def _finalize_setup(
         self,
         project_manager: "ProjectManager",

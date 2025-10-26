@@ -59,7 +59,7 @@ class Reporter:
         if self.parent.study_type == "far_field":
             # For far-field, placement_name is constructed from scenario, polarization, and direction
             # e.g., environmental_theta_x_pos
-            placement_name = f"{self.parent.scenario_name}_{self.parent.position_name}_{self.parent.orientation_name}"
+            placement_name = f"{self.parent.placement_name}"
             return os.path.join(base_path, placement_name)
 
         # For near-field, placement_name is already the final directory component
@@ -123,7 +123,8 @@ class Reporter:
         html_content += pd.DataFrame.from_dict(group_sar_stats, orient="index").to_html()
 
         html_content += "<h2>Peak SAR Details</h2>"
-        peak_sar_df = pd.DataFrame.from_dict(results_data.get("peak_sar_details", {}), orient="index", columns=["Value"])
+        peak_sar_df = pd.DataFrame.from_dict(results_data.get("peak_sar_details", {}), orient="index")
+        peak_sar_df.columns = ["Value"]
         peak_sar_df.index.name = "Parameter"
         html_content += peak_sar_df.to_html()
 

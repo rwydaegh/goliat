@@ -40,13 +40,14 @@ def find_input_files(config: "Config") -> list[Path]:
     if not all([study_type, phantoms]):
         raise ValueError("Config must specify 'study_type' and 'phantoms'.")
 
-    all_input_files = []
-    for phantom in phantoms:
-        for freq in frequencies:
-            if study_type == "far_field":
-                all_input_files.extend(_find_far_field_input_files(config, results_base_dir, phantom, freq))
-            elif study_type == "near_field":
-                all_input_files.extend(_find_near_field_input_files(config, results_base_dir, phantom, freq))
+    all_input_files: list[Path] = []
+    if phantoms:
+        for phantom in phantoms:
+            for freq in frequencies:
+                if study_type == "far_field":
+                    all_input_files.extend(_find_far_field_input_files(config, results_base_dir, phantom, freq))
+                elif study_type == "near_field":
+                    all_input_files.extend(_find_near_field_input_files(config, results_base_dir, phantom, freq))
 
     if not all_input_files:
         main_logger.error(f"{colorama.Fore.RED}ERROR: Could not find any input files to process.")
@@ -78,7 +79,12 @@ def _find_far_field_input_files(config: "Config", results_base_dir: Path, phanto
     main_logger.info(f"{colorama.Fore.CYAN}Found {len(found_files)} raw input file(s) in: {results_folder}")
 
     # --- Grouping Logic ---
-    far_field_setup = config.get_setting("far_field_setup", {}).get("environmental", {})
+    far_field_setup_config = config.get_setting("far_field_setup", {})
+    if not far_field_setup_config:
+        main_logger.warning(f"{colorama.Fore.YELLOW}WARNING: No 'far_field_setup' in config. Using all found files.")
+        return found_files
+
+    far_field_setup = far_field_setup_config.get("environmental", {})
     if not far_field_setup:
         main_logger.warning(f"{colorama.Fore.YELLOW}WARNING: No 'environmental' far-field setup in config. Using all found files.")
         return found_files
@@ -90,8 +96,7 @@ def _find_far_field_input_files(config: "Config", results_base_dir: Path, phanto
 
     if len(found_files) < expected_count:
         main_logger.warning(
-            f"{colorama.Fore.YELLOW}WARNING: Not enough files for a full batch "
-            f"({len(found_files)}/{expected_count}). Using all available."
+            f"{colorama.Fore.YELLOW}WARNING: Not enough files for a full batch ({len(found_files)}/{expected_count}). Using all available."
         )
         return found_files
 
@@ -106,7 +111,7 @@ def _find_far_field_input_files(config: "Config", results_base_dir: Path, phanto
 
     # --- Time Gap Analysis ---
     if len(latest_files) > 1:
-        time_diffs = [latest_files[i] - latest_files[i + 1] for i in range(len(latest_files) - 1)]
+        time_diffs = [latest_files[i] - latest_files[i + 1] for i in range(len(latest_files) - 1)]  # type: ignore
         time_diffs_str = ", ".join([f"{diff:.2f}s" for diff in time_diffs])
         main_logger.info(f"{colorama.Fore.YELLOW}Time gaps between files: [{time_diffs_str}].")
 
@@ -123,7 +128,7 @@ def _find_far_field_input_files(config: "Config", results_base_dir: Path, phanto
                         f"Potential old input file detected!{colorama.Style.RESET_ALL}"
                     )
                     main_logger.warning(
-                        f"The largest time gap ({max_diff:.2f}s) is significantly larger than " f"expected (mean: {mean_diff:.2f}s)."
+                        f"The largest time gap ({max_diff:.2f}s) is significantly larger than expected (mean: {mean_diff:.2f}s)."
                     )
                     main_logger.warning("Please verify the input files are from the correct batch.")
 
@@ -151,12 +156,12 @@ def _find_near_field_input_files(config: "Config", results_base_dir: Path, phant
 
     Near-field has one file per phantom/frequency/placement combination.
     """
-    input_files = []
+    input_files: list[Path] = []
 
     # Get placement scenarios from config
     all_scenarios = config.get_setting("placement_scenarios", {})
     phantom_definition = config.get_phantom_definition(phantom)
-    placements_config = phantom_definition.get("placements", {})
+    placements_config = phantom_definition.get("placements", {}) if phantom_definition else {}
 
     if not placements_config:
         main_logger.warning(f"{colorama.Fore.YELLOW}WARNING: No placement config found for phantom '{phantom}'.")
@@ -164,14 +169,15 @@ def _find_near_field_input_files(config: "Config", results_base_dir: Path, phant
 
     # Build list of enabled placements
     enabled_placements = []
-    for scenario_name, scenario_details in all_scenarios.items():
-        if placements_config.get(f"do_{scenario_name}"):
-            positions = scenario_details.get("positions", {})
-            orientations = scenario_details.get("orientations", {})
-            for pos_name in positions.keys():
-                for orient_name in orientations.keys():
-                    placement_name = f"{scenario_name}_{pos_name}_{orient_name}"
-                    enabled_placements.append(placement_name)
+    if all_scenarios:
+        for scenario_name, scenario_details in all_scenarios.items():
+            if placements_config.get(f"do_{scenario_name}"):
+                positions = scenario_details.get("positions", {})
+                orientations = scenario_details.get("orientations", {})
+                for pos_name in positions.keys():
+                    for orient_name in orientations.keys():
+                        placement_name = f"{scenario_name}_{pos_name}_{orient_name}"
+                        enabled_placements.append(placement_name)
 
     if not enabled_placements:
         main_logger.warning(f"{colorama.Fore.YELLOW}WARNING: No enabled placements found for phantom '{phantom}'.")
@@ -214,7 +220,7 @@ def _find_near_field_input_files(config: "Config", results_base_dir: Path, phant
         else:
             selected_file = found_files
 
-        main_logger.info(f"{colorama.Fore.CYAN}Found input file: {selected_file.name}")
-        input_files.append(selected_file)
+        main_logger.info(f"{colorama.Fore.CYAN}Found input file: {selected_file.name}")  # type: ignore
+        input_files.append(selected_file)  # type: ignore
 
     return input_files

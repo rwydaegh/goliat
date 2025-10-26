@@ -13,8 +13,8 @@
         "avg_extract_point_sensor_data": 0.06300000002374873
     },
     "far_field": {
-        "avg_setup_simulation": 29.98399999999674,
-        "avg_setup_time": 34.93800000000192,
+        "avg_setup_simulation": 21.055800000000453,
+        "avg_setup_time": 37.18800000000192,
         "avg_extract_input_power": 0.125,
         "avg_extract_sar_statistics": 11.547000000020489,
         "avg_extract_point_sensor_data": 0.1720000000204891,

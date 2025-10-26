@@ -240,7 +240,7 @@ class PlacementSetup(BaseSetup):
 
         # Find the speaker reference point
         scenario = self.config.get_placement_scenario(self.base_placement_name)
-        distance_from_top = scenario["antenna_reference"].get("distance_from_top", 10)  # speaker at 10 mm from top by deafault
+        distance_from_top = scenario["antenna_reference"].get("distance_from_top", 10)  # speaker at 10 mm from top by default
         reference_target_point = self.model.Vec3(
             (ground_bbox_min[0] + ground_bbox_max[0]) / 2.0,  # horizontal center of the phone
             (ground_bbox_min[1] + ground_bbox_max[1]) / 2.0,  # depth center of the phone

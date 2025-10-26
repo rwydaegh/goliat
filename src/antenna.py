@@ -35,11 +35,11 @@ class Antenna:
 
     def get_model_type(self) -> str:
         """Gets the antenna model type (e.g., 'PIFA', 'IFA')."""
-        return self.get_config_for_frequency().get("model_type")
+        return str(self.get_config_for_frequency().get("model_type"))
 
     def get_source_entity_name(self) -> str:
         """Gets the name of the source entity in the CAD model."""
-        return self.get_config_for_frequency().get("source_name")
+        return str(self.get_config_for_frequency().get("source_name"))
 
     def get_centered_antenna_path(self, centered_antennas_dir: str) -> str:
         """Constructs the path to the centered .sab antenna file.

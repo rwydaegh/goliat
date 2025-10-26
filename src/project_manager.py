@@ -1,7 +1,7 @@
 import hashlib
 import json
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import h5py
 import s4l_v1.model as s4l_model
@@ -34,7 +34,7 @@ class ProjectManager(LoggingMixin):
         config: "Config",
         verbose_logger: "Logger",
         progress_logger: "Logger",
-        gui: "QueueGUI" = None,
+        gui: Optional["QueueGUI"] = None,
     ):
         """Initializes the ProjectManager.
 
@@ -51,7 +51,7 @@ class ProjectManager(LoggingMixin):
         import s4l_v1.document
 
         self.document = s4l_v1.document
-        self.project_path = None
+        self.project_path: Optional[str] = None
         self.execution_control = self.config.get_setting("execution_control", {"do_setup": True, "do_run": True, "do_extract": True})
 
     def _generate_config_hash(self, config_dict: dict) -> str:
@@ -78,7 +78,7 @@ class ProjectManager(LoggingMixin):
             log_type="info",
         )
 
-    def verify_simulation_metadata(self, meta_path: str, surgical_config: dict, smash_path: str = None) -> bool:
+    def verify_simulation_metadata(self, meta_path: str, surgical_config: dict, smash_path: Optional[str] = None) -> bool:
         """Verifies if a simulation's metadata file exists and matches the current config.
 
         Args:
@@ -92,7 +92,7 @@ class ProjectManager(LoggingMixin):
         """
         if not os.path.exists(meta_path):
             self._log(
-                f"  - No metadata file found for this simulation at {os.path.basename(meta_path)}. " "Verification failed.",
+                f"  - No metadata file found for this simulation at {os.path.basename(meta_path)}. Verification failed.",
                 log_type="info",
             )
             return False
@@ -219,9 +219,9 @@ class ProjectManager(LoggingMixin):
         self,
         phantom_name: str,
         frequency_mhz: int,
-        scenario_name: str = None,
-        position_name: str = None,
-        orientation_name: str = None,
+        scenario_name: Optional[str] = None,
+        position_name: Optional[str] = None,
+        orientation_name: Optional[str] = None,
         **kwargs,
     ) -> bool:
         """Creates a new project or opens an existing one based on the 'do_setup' flag.
@@ -293,6 +293,8 @@ class ProjectManager(LoggingMixin):
         self.project_path = os.path.join(project_dir, project_filename).replace("\\", "/")
         self._log(f"Project path set to: {self.project_path}", log_type="info")
 
+        if self.execution_control is None:
+            self.execution_control = {}
         do_setup = self.execution_control.get("do_setup", True)
 
         # For far-field, direction and polarization are part of the unique signature,
@@ -320,8 +322,8 @@ class ProjectManager(LoggingMixin):
                 "Execution control: 'do_setup' is false. Opening existing project without verification.",
                 log_type="info",
             )
-            if not os.path.exists(self.project_path):
-                error_msg = f"ERROR: 'do_setup' is false, but project file not found at {self.project_path}. " "Cannot proceed."
+            if not self.project_path or not os.path.exists(self.project_path):
+                error_msg = f"ERROR: 'do_setup' is false, but project file not found at {self.project_path}. Cannot proceed."
                 self._log(error_msg, log_type="fatal")
                 raise FileNotFoundError(error_msg)
             self.open()
@@ -347,7 +349,7 @@ class ProjectManager(LoggingMixin):
         Closes any open document, deletes the existing project file and its
         cache, then creates a new unsaved project.
         """
-        if self.document and hasattr(self.document, "IsOpen") and self.document.IsOpen():
+        if self.document and hasattr(self.document, "IsOpen") and self.document.IsOpen():  # type: ignore
             self._log(
                 "Closing existing document before creating a new one to release file lock.",
                 log_type="info",
@@ -408,13 +410,14 @@ class ProjectManager(LoggingMixin):
 
         self._log(f"Opening project with Sim4Life: {self.project_path}", log_type="info")
         try:
-            open_project(self.project_path)
+            if self.project_path:
+                open_project(self.project_path)
         except Exception as e:
             self._log(
                 f"ERROR: Sim4Life failed to open project file, it is likely corrupted: {e}",
                 log_type="fatal",
             )
-            if self.document and hasattr(self.document, "IsOpen") and self.document.IsOpen():
+            if self.document and hasattr(self.document, "IsOpen") and self.document.IsOpen():  # type: ignore
                 self.document.Close()
             raise ProjectCorruptionError(f"Sim4Life could not open corrupted file: {self.project_path}")
 
@@ -438,12 +441,12 @@ class ProjectManager(LoggingMixin):
 
     def cleanup(self):
         """Closes any open project."""
-        if self.document and hasattr(self.document, "IsOpen") and self.document.IsOpen():
+        if self.document and hasattr(self.document, "IsOpen") and self.document.IsOpen():  # type: ignore
             self.close()
 
     def reload_project(self):
         """Saves, closes, and re-opens the project to load simulation results."""
-        if self.document and hasattr(self.document, "IsOpen") and self.document.IsOpen():
+        if self.document and hasattr(self.document, "IsOpen") and self.document.IsOpen():  # type: ignore
             self._log("Saving and reloading project to load results...", log_type="info")
             self.save()
             self.close()

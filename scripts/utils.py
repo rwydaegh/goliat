@@ -84,7 +84,7 @@ def update_bashrc(selected_python_path):
 
     # Prepare the new path line
     drive, path_rest = os.path.splitdrive(selected_python_path)
-    bash_path = f'/{drive.strip(":")}{path_rest.replace(os.sep, "/")}'
+    bash_path = f"/{drive.strip(':')}{path_rest.replace(os.sep, '/')}"
     new_path_line = f'export PATH="{bash_path}:$PATH"\n'
 
     # Overwrite the file with just the new path
@@ -121,7 +121,7 @@ def check_python_interpreter():
 
     print("Found the following supported Sim4Life Python executables (8.2 or 9.0):")
     for i, p in enumerate(viable_pythons):
-        print(f"  [{i+1}] {p}")
+        print(f"  [{i + 1}] {p}")
 
     try:
         choice = input("Select the version to use (e.g., '1') or press Enter to cancel: ")
