@@ -18,11 +18,7 @@ def deep_merge(source: dict, destination: dict) -> dict:
         The merged dictionary.
     """
     for key, value in source.items():
-        if (
-            isinstance(value, dict)
-            and key in destination
-            and isinstance(destination[key], dict)
-        ):
+        if isinstance(value, dict) and key in destination and isinstance(destination[key], dict):
             deep_merge(value, destination[key])
         else:
             destination[key] = value
@@ -41,12 +37,8 @@ class Config:
         """
         self.base_dir = base_dir
         self.config_path = self._resolve_config_path(config_filename, self.base_dir)
-        self.material_mapping_path = os.path.join(
-            self.base_dir, "data", "material_name_mapping.json"
-        )
-        self.profiling_config_path = os.path.join(
-            self.base_dir, "configs", "profiling_config.json"
-        )
+        self.material_mapping_path = os.path.join(self.base_dir, "data", "material_name_mapping.json")
+        self.profiling_config_path = os.path.join(self.base_dir, "configs", "profiling_config.json")
 
         self.config = self._load_config_with_inheritance(self.config_path)
         self.material_mapping = self._load_json(self.material_mapping_path)
@@ -104,9 +96,7 @@ class Config:
         config = self._load_json(path)
 
         if "extends" in config:
-            base_config_path = self._resolve_config_path(
-                config["extends"], base_path=os.path.dirname(path)
-            )
+            base_config_path = self._resolve_config_path(config["extends"], base_path=os.path.dirname(path))
             base_config = self._load_config_with_inheritance(base_config_path)
             config = deep_merge(config, base_config)
 
@@ -179,11 +169,7 @@ class Config:
         Returns:
             A list of component names.
         """
-        return (
-            self.config.get("antenna_config", {})
-            .get("components", {})
-            .get(antenna_model_type)
-        )
+        return self.config.get("antenna_config", {}).get("components", {}).get(antenna_model_type)
 
     def get_manual_isolve(self) -> bool:
         """Gets the 'manual_isolve' boolean flag."""
@@ -191,9 +177,7 @@ class Config:
 
     def get_freespace_expansion(self) -> list:
         """Gets the freespace antenna bounding box expansion in millimeters."""
-        return self.get_simulation_parameters().get(
-            "freespace_antenna_bbox_expansion_mm", [10, 10, 10]
-        )
+        return self.get_simulation_parameters().get("freespace_antenna_bbox_expansion_mm", [10, 10, 10])
 
     def get_excitation_type(self) -> str:
         """Gets the simulation excitation type (e.g., 'Harmonic', 'Gaussian')."""
@@ -226,9 +210,7 @@ class Config:
         if study_type not in self.profiling_config:
             import logging
 
-            logging.warning(
-                f"Profiling configuration not defined for study type: {study_type}. Returning empty configuration."
-            )
+            logging.warning(f"Profiling configuration not defined for study type: {study_type}. Returning empty configuration.")
             return {}
         return self.profiling_config[study_type]
 
@@ -240,9 +222,7 @@ class Config:
         """Gets the download email from environment variables."""
         email = os.getenv("DOWNLOAD_EMAIL")
         if not email:
-            raise ValueError(
-                "Missing DOWNLOAD_EMAIL. Please set this in your .env file."
-            )
+            raise ValueError("Missing DOWNLOAD_EMAIL. Please set this in your .env file.")
         return email
 
     def get_osparc_credentials(self) -> dict:
@@ -261,11 +241,7 @@ class Config:
             "api_version": "v0",
         }
 
-        missing = [
-            key
-            for key, value in credentials.items()
-            if value is None and key != "api_version"
-        ]
+        missing = [key for key, value in credentials.items() if value is None and key != "api_version"]
         if missing:
             raise ValueError(
                 f"Missing oSPARC credentials: {', '.join(missing)}. "
@@ -288,9 +264,7 @@ class Config:
         Returns:
             A list of file types to clean up (e.g., ["output", "input"]).
         """
-        cleanup_setting = self.get_setting(
-            "execution_control.auto_cleanup_previous_results", []
-        )
+        cleanup_setting = self.get_setting("execution_control.auto_cleanup_previous_results", [])
 
         # Handle legacy boolean format for backwards compatibility
         if isinstance(cleanup_setting, bool):
@@ -305,8 +279,7 @@ class Config:
             import logging
 
             logging.warning(
-                f"'auto_cleanup_previous_results' should be a list, got {type(cleanup_setting)}. "
-                "Disabling cleanup for safety."
+                f"'auto_cleanup_previous_results' should be a list, got {type(cleanup_setting)}. " "Disabling cleanup for safety."
             )
             return []
 
@@ -316,10 +289,7 @@ class Config:
         if invalid_types:
             import logging
 
-            logging.warning(
-                f"Invalid file types in 'auto_cleanup_previous_results': {invalid_types}. "
-                f"Valid types are: {valid_types}"
-            )
+            logging.warning(f"Invalid file types in 'auto_cleanup_previous_results': {invalid_types}. " f"Valid types are: {valid_types}")
 
         return [t for t in cleanup_setting if t in valid_types]
 
@@ -385,9 +355,7 @@ class Config:
         if "global_gridding_per_frequency" in gridding_params:
             freq_str = str(frequency_mhz)
             if freq_str in gridding_params["global_gridding_per_frequency"]:
-                surgical_gridding["global_gridding_per_frequency"] = {
-                    freq_str: gridding_params["global_gridding_per_frequency"][freq_str]
-                }
+                surgical_gridding["global_gridding_per_frequency"] = {freq_str: gridding_params["global_gridding_per_frequency"][freq_str]}
 
         surgical_config["gridding_parameters"] = surgical_gridding
 
@@ -399,30 +367,20 @@ class Config:
         study_type = self.get_setting("study_type")
         if study_type == "near_field":
             # Select the specific antenna config for the given frequency
-            surgical_config["antenna_config"] = self.get_setting(
-                f"antenna_config.{frequency_mhz}"
-            )
+            surgical_config["antenna_config"] = self.get_setting(f"antenna_config.{frequency_mhz}")
 
             # Reconstruct placement_scenarios for the specific placement
             original_scenario = self.get_placement_scenario(scenario_name)
             surgical_config["placement_scenarios"] = {
                 scenario_name: {
-                    "positions": {
-                        position_name: original_scenario["positions"][position_name]
-                    },
-                    "orientations": {
-                        orientation_name: original_scenario["orientations"][
-                            orientation_name
-                        ]
-                    },
+                    "positions": {position_name: original_scenario["positions"][position_name]},
+                    "orientations": {orientation_name: original_scenario["orientations"][orientation_name]},
                     "bounding_box": original_scenario.get("bounding_box", "default"),
                 }
             }
 
             # Select the specific phantom definition
-            surgical_config["phantom_definitions"] = {
-                phantom_name: self.get_phantom_definition(phantom_name)
-            }
+            surgical_config["phantom_definitions"] = {phantom_name: self.get_phantom_definition(phantom_name)}
 
         elif study_type == "far_field":
             # Surgically build the far_field_setup to be robust against future changes

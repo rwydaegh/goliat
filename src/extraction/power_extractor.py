@@ -70,17 +70,11 @@ class PowerExtractor(LoggingMixin):
 
         try:
             bbox_entity = next(
-                (
-                    e
-                    for e in s4l_v1.model.AllEntities()
-                    if hasattr(e, "Name") and e.Name == "far_field_simulation_bbox"
-                ),
+                (e for e in s4l_v1.model.AllEntities() if hasattr(e, "Name") and e.Name == "far_field_simulation_bbox"),
                 None,
             )
             if not bbox_entity:
-                raise RuntimeError(
-                    "Could not find 'far_field_simulation_bbox' entity in the project."
-                )
+                raise RuntimeError("Could not find 'far_field_simulation_bbox' entity in the project.")
             sim_bbox = s4l_v1.model.GetBoundingBox([bbox_entity])
         except RuntimeError as e:
             self._log(
@@ -90,16 +84,8 @@ class PowerExtractor(LoggingMixin):
             return
         # sim_bbox is a list of two points: [min_corner, max_corner]
         sim_min, sim_max = np.array(sim_bbox[0]), np.array(sim_bbox[1])
-        padding_bottom = np.array(
-            self.config.get_setting(
-                "gridding_parameters.padding.manual_bottom_padding_mm", [0, 0, 0]
-            )
-        )
-        padding_top = np.array(
-            self.config.get_setting(
-                "gridding_parameters.padding.manual_top_padding_mm", [0, 0, 0]
-            )
-        )
+        padding_bottom = np.array(self.config.get_setting("gridding_parameters.padding.manual_bottom_padding_mm", [0, 0, 0]))
+        padding_top = np.array(self.config.get_setting("gridding_parameters.padding.manual_top_padding_mm", [0, 0, 0]))
         total_min = sim_min - padding_bottom
         total_max = sim_max + padding_top
 
@@ -203,17 +189,12 @@ class PowerExtractor(LoggingMixin):
             power_balance_extractor.Update()
 
             power_balance_data = {
-                key: power_balance_extractor.Data.DataSimpleDataCollection.FieldValue(
-                    key, 0
-                )
+                key: power_balance_extractor.Data.DataSimpleDataCollection.FieldValue(key, 0)
                 for key in power_balance_extractor.Data.DataSimpleDataCollection.Keys()
                 if key != "Balance"
             }
 
-            if (
-                self.parent.study_type == "far_field"
-                and "input_power_W" in self.results_data
-            ):
+            if self.parent.study_type == "far_field" and "input_power_W" in self.results_data:
                 power_balance_data["Pin"] = self.results_data["input_power_W"]
                 self._log(
                     f"    - Overwriting Pin with theoretical value: {float(power_balance_data['Pin']):.4e} W",
@@ -221,9 +202,7 @@ class PowerExtractor(LoggingMixin):
                 )
 
             pin = power_balance_data.get("Pin", 0.0)
-            p_out = power_balance_data.get("DielLoss", 0.0) + power_balance_data.get(
-                "RadPower", 0.0
-            )
+            p_out = power_balance_data.get("DielLoss", 0.0) + power_balance_data.get("RadPower", 0.0)
             balance = 100 * (p_out / pin) if pin > 1e-9 else float("nan")
 
             power_balance_data["Balance"] = balance
@@ -231,7 +210,5 @@ class PowerExtractor(LoggingMixin):
             self.results_data["power_balance"] = power_balance_data
 
         except Exception as e:
-            self._log(
-                f"  - WARNING: Could not extract power balance: {e}", log_type="warning"
-            )
+            self._log(f"  - WARNING: Could not extract power balance: {e}", log_type="warning")
             self.verbose_logger.error(traceback.format_exc())

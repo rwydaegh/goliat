@@ -120,10 +120,7 @@ class ResultsExtractor(LoggingMixin):
             )
 
         # Extract point sensor data
-        if (
-            self.config.get_setting("simulation_parameters.number_of_point_sensors", 0)
-            > 0
-        ):
+        if self.config.get_setting("simulation_parameters.number_of_point_sensors", 0) > 0:
             if self.gui:
                 self.gui.update_stage_progress("Extracting Point Sensors", 75, 100)
 
@@ -155,9 +152,7 @@ class ResultsExtractor(LoggingMixin):
         os.makedirs(results_dir, exist_ok=True)
         results_filepath = os.path.join(results_dir, "sar_results.json")
 
-        final_results_data = {
-            k: v for k, v in results_data.items() if not k.startswith("_temp")
-        }
+        final_results_data = {k: v for k, v in results_data.items() if not k.startswith("_temp")}
 
         with open(results_filepath, "w") as f:
             json.dump(final_results_data, f, indent=4, cls=NumpyArrayEncoder)

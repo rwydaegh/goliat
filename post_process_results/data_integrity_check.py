@@ -36,34 +36,22 @@ def run_data_integrity_checks():
         print("Found rows with NaN values for 'psSAR10g_eyes':")
         print(nan_eye_sar[["frequency_mhz", "placement", "psSAR10g_eyes"]])
     else:
-        print(
-            "No NaN values found for 'psSAR10g_eyes' in the 'front_of_eyes' scenario."
-        )
+        print("No NaN values found for 'psSAR10g_eyes' in the 'front_of_eyes' scenario.")
 
     print("\nValue counts for 'psSAR10g_eyes' at each frequency:")
-    print(
-        foe_df.groupby("frequency_mhz")["psSAR10g_eyes"].apply(
-            lambda x: x.notna().sum()
-        )
-    )
+    print(foe_df.groupby("frequency_mhz")["psSAR10g_eyes"].apply(lambda x: x.notna().sum()))
 
     # --- 3. Fix Correlation Plot & Add Formula Fit ---
     print("\n--- Generating Corrected Correlation Plot with Linear Fit ---")
     plots_dir = "post_process_results/plots"
 
     front_of_eyes_df = results_df[results_df["scenario"] == "front_of_eyes"].copy()
-    front_of_eyes_df["SAR_head"] = pd.to_numeric(
-        front_of_eyes_df["SAR_head"], errors="coerce"
-    )
-    front_of_eyes_df["psSAR10g_eyes"] = pd.to_numeric(
-        front_of_eyes_df["psSAR10g_eyes"], errors="coerce"
-    )
+    front_of_eyes_df["SAR_head"] = pd.to_numeric(front_of_eyes_df["SAR_head"], errors="coerce")
+    front_of_eyes_df["psSAR10g_eyes"] = pd.to_numeric(front_of_eyes_df["psSAR10g_eyes"], errors="coerce")
     correlation_df = front_of_eyes_df.dropna(subset=["SAR_head", "psSAR10g_eyes"])
 
     # Perform linear regression
-    slope, intercept, r_value, p_value, std_err = stats.linregress(
-        correlation_df["SAR_head"], correlation_df["psSAR10g_eyes"]
-    )
+    slope, intercept, r_value, p_value, std_err = stats.linregress(correlation_df["SAR_head"], correlation_df["psSAR10g_eyes"])
     r_squared = r_value**2
 
     print(f"Linear Regression Fit: Eye_SAR = {slope:.2f} * Head_SAR + {intercept:.2f}")
@@ -87,9 +75,7 @@ def run_data_integrity_checks():
     y_vals = intercept + slope * x_vals
     ax.plot(x_vals, y_vals, "--", color="red", label=f"Linear Fit (R²={r_squared:.2f})")
 
-    ax.set_title(
-        "Correlation between Head SAR and Eye psSAR10g\n(front_of_eyes scenario)"
-    )
+    ax.set_title("Correlation between Head SAR and Eye psSAR10g\n(front_of_eyes scenario)")
     ax.set_xlabel("Normalized Head SAR (mW/kg)")
     ax.set_ylabel("Normalized psSAR10g Eyes (mW/kg)")
     ax.legend()

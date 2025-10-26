@@ -74,15 +74,13 @@ def main(config_path: str) -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Run a batch of simulations on oSPARC with a progress GUI. "
-        "Supports both far-field and near-field studies."
+        description="Run a batch of simulations on oSPARC with a progress GUI. " "Supports both far-field and near-field studies."
     )
     parser.add_argument(
         "--config",
         type=str,
         required=True,
-        help="Path to the configuration file (e.g., 'configs/near_field_config.json' or "
-        "'configs/far_field_config.json').",
+        help="Path to the configuration file (e.g., 'configs/near_field_config.json' or " "'configs/far_field_config.json').",
     )
     args = parser.parse_args()
     main(args.config)

@@ -36,9 +36,7 @@ def merge_data(volume_data_path, material_properties_path, mapping_file_path):
     reverse_mapping = {v: k for k, v in name_mapping.items()}
 
     # Apply the mapping to the material dataframe
-    material_df["Tissue"] = (
-        material_df["Name"].map(reverse_mapping).fillna(material_df["Name"])
-    )
+    material_df["Tissue"] = material_df["Name"].map(reverse_mapping).fillna(material_df["Name"])
 
     # Merge the dataframes
     merged_df = pd.merge(volume_df, material_df, on="Tissue")
@@ -189,9 +187,7 @@ def plot_required_gridding_per_freq(df, frequency_mhz):
     wavelength = c / (frequency_mhz * 1e6)
 
     # Calculate required grid size in mm for CPW=10
-    df["RequiredGridSize_mm"] = (
-        wavelength / (10 * np.sqrt(df["RelativePermittivity"]))
-    ) * 1000
+    df["RequiredGridSize_mm"] = (wavelength / (10 * np.sqrt(df["RelativePermittivity"]))) * 1000
 
     # Filter for the first half of the log scale
     min_grid = df["RequiredGridSize_mm"].min()
@@ -248,9 +244,7 @@ def get_required_gridding_for_tissue(df, tissue_name, cpw_target=10):
 
     # Calculate required grid size in mm for the target CPW
     wavelength = c / (tissue_df["Frequency"] * 1e6)
-    tissue_df["RequiredGridSize_mm"] = (
-        wavelength / (cpw_target * np.sqrt(tissue_df["RelativePermittivity"]))
-    ) * 1000
+    tissue_df["RequiredGridSize_mm"] = (wavelength / (cpw_target * np.sqrt(tissue_df["RelativePermittivity"]))) * 1000
 
     # Create a dictionary of {frequency: grid_size}
     gridding_dict = tissue_df.set_index("Frequency")["RequiredGridSize_mm"].to_dict()
@@ -335,9 +329,7 @@ if __name__ == "__main__":
         mapping_path = "material_name_mapping.json"
 
         if not os.path.exists(material_props_path):
-            print(
-                f"Warning: Material properties file not found for {freq} MHz. Skipping."
-            )
+            print(f"Warning: Material properties file not found for {freq} MHz. Skipping.")
             continue
 
         merged_data = merge_data(volume_pickle_path, material_props_path, mapping_path)
@@ -346,13 +338,9 @@ if __name__ == "__main__":
         # Calculate CPW once
         c = 299792458  # Speed of light in m/s
         wavelength = c / (freq * 1e6)
-        grid_size_mm = config.get("simulation_parameters", {}).get(
-            "global_gridding", 1.0
-        )
+        grid_size_mm = config.get("simulation_parameters", {}).get("global_gridding", 1.0)
         grid_size_m = grid_size_mm / 1000.0
-        merged_data["CPW"] = wavelength / (
-            grid_size_m * np.sqrt(merged_data["RelativePermittivity"])
-        )
+        merged_data["CPW"] = wavelength / (grid_size_m * np.sqrt(merged_data["RelativePermittivity"]))
 
         all_merged_data.append(merged_data)
 
@@ -378,20 +366,14 @@ if __name__ == "__main__":
             eye_volumes = eye_df.drop_duplicates(subset=["Tissue"])
 
             total_eye_volume = eye_volumes["Total Volume"].sum()
-            vitreous_humor_volume = eye_volumes[
-                eye_volumes["Tissue"] == "Eye_vitreous_humor"
-            ]["Total Volume"].iloc[0]
+            vitreous_humor_volume = eye_volumes[eye_volumes["Tissue"] == "Eye_vitreous_humor"]["Total Volume"].iloc[0]
 
             percentage = (vitreous_humor_volume / total_eye_volume) * 100
 
             print(f"\n--- Analysis of Eye (Vitreous Humor) Volume ---")
-            print(
-                f"The volume of the Eye (Vitreous Humor) is: {vitreous_humor_volume:.4e} m^3"
-            )
+            print(f"The volume of the Eye (Vitreous Humor) is: {vitreous_humor_volume:.4e} m^3")
             print(f"The total volume of the eye is: {total_eye_volume:.4e} m^3")
-            print(
-                f"The Eye (Vitreous Humor) makes up {percentage:.2f}% of the total eye volume."
-            )
+            print(f"The Eye (Vitreous Humor) makes up {percentage:.2f}% of the total eye volume.")
             print(f"------------------------------------------------\n")
 
         critical_tissues = [
@@ -411,15 +393,9 @@ if __name__ == "__main__":
         )
 
         # --- Step 4: Get and print the required gridding for the eye ---
-        required_gridding = get_required_gridding_for_tissue(
-            combined_df, "Eye_vitreous_humor", cpw_target=10
-        )
+        required_gridding = get_required_gridding_for_tissue(combined_df, "Eye_vitreous_humor", cpw_target=10)
         if required_gridding:
             print("\n--- Required Gridding for Eye (Vitreous Humor) at CPW=10 ---")
             # Format as a JSON string for easy copy-pasting
-            print(
-                json.dumps(
-                    {"global_gridding_per_frequency": required_gridding}, indent=4
-                )
-            )
+            print(json.dumps({"global_gridding_per_frequency": required_gridding}, indent=4))
             print("----------------------------------------------------------\n")

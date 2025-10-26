@@ -25,33 +25,21 @@ def investigate_belly_eye_data():
     # --- 2. Isolate and inspect the specific data ---
     belly_df = results_df[results_df["scenario"] == "by_belly"].copy()
 
-    eye_sar_by_freq = belly_df.groupby("frequency_mhz")["psSAR10g_eyes"].agg(
-        ["mean", "sum", "count", "max"]
-    )
+    eye_sar_by_freq = belly_df.groupby("frequency_mhz")["psSAR10g_eyes"].agg(["mean", "sum", "count", "max"])
 
     print("\n--- Aggregated 'psSAR10g_eyes' data for 'by_belly' scenario ---")
     print(eye_sar_by_freq.to_string())
 
     print("\n--- Detailed data for frequencies > 1450 MHz ---")
     high_freq_belly_eye_df = belly_df[belly_df["frequency_mhz"] > 1450]
-    print(
-        high_freq_belly_eye_df[
-            ["frequency_mhz", "placement", "psSAR10g_eyes"]
-        ].to_string()
-    )
+    print(high_freq_belly_eye_df[["frequency_mhz", "placement", "psSAR10g_eyes"]].to_string())
 
     print("\n--- Conclusion ---")
     if (eye_sar_by_freq["max"][eye_sar_by_freq.index > 1450] == 0).all():
-        print(
-            "The psSAR10g in the eyes for the 'by_belly' scenario is consistently ZERO for all frequencies above 1450 MHz."
-        )
-        print(
-            "The line plot is not missing data; it correctly shows that the value drops to zero and stays there."
-        )
+        print("The psSAR10g in the eyes for the 'by_belly' scenario is consistently ZERO for all frequencies above 1450 MHz.")
+        print("The line plot is not missing data; it correctly shows that the value drops to zero and stays there.")
     else:
-        print(
-            "The data for frequencies > 1450 MHz is not consistently zero. Further investigation needed."
-        )
+        print("The data for frequencies > 1450 MHz is not consistently zero. Further investigation needed.")
 
     print("\n--- Investigation Finished ---")
 

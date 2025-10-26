@@ -31,9 +31,7 @@ class BoundarySetup(BaseSetup):
 
         # Set Boundary Type (e.g., UpmlCpml)
         bc_type = boundary_config.get("type", "UpmlCpml")
-        self._log(
-            f"  - Setting global boundary conditions to: {bc_type}", log_type="info"
-        )
+        self._log(f"  - Setting global boundary conditions to: {bc_type}", log_type="info")
 
         global_boundaries = self.simulation.GlobalBoundarySettings
         if global_boundaries:
@@ -59,11 +57,7 @@ class BoundarySetup(BaseSetup):
         strength = boundary_config.get("strength", "Medium").capitalize()
         self._log(f"  - Setting PML strength to: {strength}", log_type="info")
 
-        boundary_settings_list = [
-            x
-            for x in self.simulation.AllSettings
-            if isinstance(x, self.emfdtd.BoundarySettings)
-        ]
+        boundary_settings_list = [x for x in self.simulation.AllSettings if isinstance(x, self.emfdtd.BoundarySettings)]
         if not boundary_settings_list:
             self._log(
                 "  - No BoundarySettings found in simulation. Cannot set PML strength.",
@@ -76,9 +70,7 @@ class BoundarySetup(BaseSetup):
         strength_enum = boundary_settings.PmlStrength.enum
         if hasattr(strength_enum, strength):
             boundary_settings.PmlStrength = getattr(strength_enum, strength)
-            self._log(
-                f"    - Successfully set PmlStrength to {strength}", log_type="verbose"
-            )
+            self._log(f"    - Successfully set PmlStrength to {strength}", log_type="verbose")
         else:
             self._log(
                 f"    - Warning: Invalid PML strength '{strength}'. Using default (Medium).",

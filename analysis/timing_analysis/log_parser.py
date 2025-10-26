@@ -25,83 +25,51 @@ def parse_log_file(log_file_path):
         frequency_mhz = int(re.search(r"(\d+)MHz", frequency_str).group(1))
 
         # --- Extract total setup time ---
-        finished_setup_match = re.search(
-            r"--- Finished: setup \(took ([\d.]+)s\) ---", block
-        )
-        total_setup_time = (
-            float(finished_setup_match.group(1)) if finished_setup_match else None
-        )
+        finished_setup_match = re.search(r"--- Finished: setup \(took ([\d.]+)s\) ---", block)
+        total_setup_time = float(finished_setup_match.group(1)) if finished_setup_match else None
 
         # --- Extract total time for BaseSetup._finalize_setup ---
         base_setup_finalize_match = re.search(
             r"Total time: ([\d.]+) s\s+File: .*base_setup\.py\s+Function: BaseSetup\._finalize_setup",
             block,
         )
-        base_setup_finalize_time = (
-            float(base_setup_finalize_match.group(1))
-            if base_setup_finalize_match
-            else None
-        )
+        base_setup_finalize_time = float(base_setup_finalize_match.group(1)) if base_setup_finalize_match else None
 
         # --- Extract total time for FarFieldSetup.run_full_setup ---
         far_field_run_full_setup_match = re.search(
             r"Total time: ([\d.]+) s\s+File: .*far_field_setup\.py\s+Function: FarFieldSetup\.run_full_setup",
             block,
         )
-        far_field_run_full_setup_time = (
-            float(far_field_run_full_setup_match.group(1))
-            if far_field_run_full_setup_match
-            else None
-        )
+        far_field_run_full_setup_time = float(far_field_run_full_setup_match.group(1)) if far_field_run_full_setup_match else None
 
         # --- Extract total time for FarFieldSetup._create_simulation_entity ---
         far_field_create_entity_match = re.search(
             r"Total time: ([\d.]+) s\s+File: .*far_field_setup\.py\s+Function: FarFieldSetup\._create_simulation_entity",
             block,
         )
-        far_field_create_entity_time = (
-            float(far_field_create_entity_match.group(1))
-            if far_field_create_entity_match
-            else None
-        )
+        far_field_create_entity_time = float(far_field_create_entity_match.group(1)) if far_field_create_entity_match else None
 
         # --- Extract total time for FarFieldSetup._apply_common_settings ---
         far_field_apply_common_match = re.search(
             r"Total time: ([\d.]+) s\s+File: .*far_field_setup\.py\s+Function: FarFieldSetup\._apply_common_settings",
             block,
         )
-        far_field_apply_common_time = (
-            float(far_field_apply_common_match.group(1))
-            if far_field_apply_common_match
-            else None
-        )
+        far_field_apply_common_time = float(far_field_apply_common_match.group(1)) if far_field_apply_common_match else None
 
         # --- Extract total time for FarFieldSetup._finalize_setup ---
         far_field_finalize_match = re.search(
             r"Total time: ([\d.]+) s\s+File: .*far_field_setup\.py\s+Function: FarFieldSetup\._finalize_setup",
             block,
         )
-        far_field_finalize_time = (
-            float(far_field_finalize_match.group(1))
-            if far_field_finalize_match
-            else None
-        )
+        far_field_finalize_time = float(far_field_finalize_match.group(1)) if far_field_finalize_match else None
 
         # --- Extract simulation time in periods ---
-        sim_time_periods_match = re.search(
-            r"Simulation time set to ([\d.]+) periods", block
-        )
-        sim_time_periods = (
-            float(sim_time_periods_match.group(1)) if sim_time_periods_match else None
-        )
+        sim_time_periods_match = re.search(r"Simulation time set to ([\d.]+) periods", block)
+        sim_time_periods = float(sim_time_periods_match.group(1)) if sim_time_periods_match else None
 
         # --- Extract grid resolution ---
-        grid_resolution_match = re.search(
-            r"frequency-specific \(\d+MHz\) resolution: ([\d.]+) mm", block
-        )
-        grid_resolution = (
-            float(grid_resolution_match.group(1)) if grid_resolution_match else None
-        )
+        grid_resolution_match = re.search(r"frequency-specific \(\d+MHz\) resolution: ([\d.]+) mm", block)
+        grid_resolution = float(grid_resolution_match.group(1)) if grid_resolution_match else None
 
         data.append(
             {

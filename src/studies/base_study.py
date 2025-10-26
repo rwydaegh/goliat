@@ -31,9 +31,7 @@ class BaseStudy(LoggingMixin):
         self.verbose_logger = logging.getLogger("verbose")
         self.progress_logger = logging.getLogger("progress")
 
-        self.base_dir = os.path.dirname(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        )
+        self.base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
         self.config = Config(
             self.base_dir,
@@ -42,9 +40,7 @@ class BaseStudy(LoggingMixin):
 
         # Get study-specific profiling config
         profiling_config = self.config.get_profiling_config(self.study_type)
-        execution_control = self.config.get_setting(
-            "execution_control", {"do_setup": True, "do_run": True, "do_extract": True}
-        )
+        execution_control = self.config.get_setting("execution_control", {"do_setup": True, "do_run": True, "do_extract": True})
 
         self.profiler = Profiler(
             execution_control,
@@ -54,9 +50,7 @@ class BaseStudy(LoggingMixin):
         )
         self.line_profiler = None
 
-        self.project_manager = ProjectManager(
-            self.config, self.verbose_logger, self.progress_logger, self.gui
-        )
+        self.project_manager = ProjectManager(self.config, self.verbose_logger, self.progress_logger, self.gui)
 
     def _check_for_stop_signal(self):
         """Checks if the GUI has requested a stop."""
@@ -89,9 +83,7 @@ class BaseStudy(LoggingMixin):
                 log_type="warning",
             )
         except Exception as e:
-            self._log(
-                f"--- FATAL ERROR in study: {e} ---", level="progress", log_type="fatal"
-            )
+            self._log(f"--- FATAL ERROR in study: {e} ---", level="progress", log_type="fatal")
             self.verbose_logger.error(traceback.format_exc())
         finally:
             self._log(
@@ -106,17 +98,13 @@ class BaseStudy(LoggingMixin):
 
     def _run_study(self):
         """Executes the specific study. Must be implemented by subclasses."""
-        raise NotImplementedError(
-            "The '_run_study' method must be implemented by a subclass."
-        )
+        raise NotImplementedError("The '_run_study' method must be implemented by a subclass.")
 
     def _setup_line_profiler(self, subtask_name: str, instance) -> tuple:
         """Sets up the line profiler for a specific subtask if configured."""
         line_profiling_config = self.config.get_line_profiling_config()
 
-        if not line_profiling_config.get(
-            "enabled", False
-        ) or subtask_name not in line_profiling_config.get("subtasks", {}):
+        if not line_profiling_config.get("enabled", False) or subtask_name not in line_profiling_config.get("subtasks", {}):
             return None, lambda func: func
 
         self._log(

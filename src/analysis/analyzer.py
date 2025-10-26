@@ -16,9 +16,7 @@ if TYPE_CHECKING:
 class Analyzer:
     """Analyzes simulation results using a strategy pattern."""
 
-    def __init__(
-        self, config: "Config", phantom_name: str, strategy: "BaseAnalysisStrategy"
-    ):
+    def __init__(self, config: "Config", phantom_name: str, strategy: "BaseAnalysisStrategy"):
         """Initializes the Analyzer.
 
         Args:
@@ -60,9 +58,7 @@ class Analyzer:
         self.strategy.load_and_process_results(self)
 
         if not self.all_results:
-            logging.getLogger("progress").info(
-                "--- No results found to analyze. ---", extra={"log_type": "warning"}
-            )
+            logging.getLogger("progress").info("--- No results found to analyze. ---", extra={"log_type": "warning"})
             return
 
         results_df = pd.DataFrame(self.all_results)
@@ -70,17 +66,11 @@ class Analyzer:
 
         results_df = self._convert_units_and_cache(results_df, all_organ_results_df)
         self._export_reports(results_df, all_organ_results_df)
-        self.strategy.generate_plots(
-            self, self.plotter, results_df, all_organ_results_df
-        )
+        self.strategy.generate_plots(self, self.plotter, results_df, all_organ_results_df)
 
-        logging.getLogger("progress").info(
-            "--- Analysis Finished ---", extra={"log_type": "success"}
-        )
+        logging.getLogger("progress").info("--- Analysis Finished ---", extra={"log_type": "success"})
 
-    def _process_single_result(
-        self, frequency_mhz: int, scenario_name: str, pos_name: str, orient_name: str
-    ):
+    def _process_single_result(self, frequency_mhz: int, scenario_name: str, pos_name: str, orient_name: str):
         """Processes a single simulation result file.
 
         Locates result files, extracts data using the current strategy, applies
@@ -98,9 +88,7 @@ class Analyzer:
         else:
             detailed_placement_name = f"{scenario_name}_{pos_name}_{orient_name}"
 
-        results_dir = os.path.join(
-            self.results_base_dir, f"{frequency_mhz}MHz", detailed_placement_name
-        )
+        results_dir = os.path.join(self.results_base_dir, f"{frequency_mhz}MHz", detailed_placement_name)
         pickle_path = os.path.join(results_dir, "sar_stats_all_tissues.pkl")
         json_path = os.path.join(results_dir, "sar_results.json")
 
@@ -118,9 +106,7 @@ class Analyzer:
                 sar_results = json.load(f)
 
             simulated_power_w = sar_results.get("input_power_W", float("nan"))
-            normalization_factor = self.strategy.get_normalization_factor(
-                frequency_mhz, simulated_power_w
-            )
+            normalization_factor = self.strategy.get_normalization_factor(frequency_mhz, simulated_power_w)
             result_entry, organ_entries = self.strategy.extract_data(
                 pickle_data,
                 frequency_mhz,
@@ -138,16 +124,12 @@ class Analyzer:
                 extra={"log_type": "error"},
             )
 
-    def _convert_units_and_cache(
-        self, results_df: pd.DataFrame, organ_results_df: pd.DataFrame
-    ) -> pd.DataFrame:
+    def _convert_units_and_cache(self, results_df: pd.DataFrame, organ_results_df: pd.DataFrame) -> pd.DataFrame:
         """Converts SAR units to mW/kg and caches summary and organ-level results."""
         sar_columns = [col for col in results_df.columns if "SAR" in col]
         results_df[sar_columns] = results_df[sar_columns] * 1000
 
-        output_pickle_path = os.path.join(
-            self.results_base_dir, "aggregated_results.pkl"
-        )
+        output_pickle_path = os.path.join(self.results_base_dir, "aggregated_results.pkl")
         os.makedirs(os.path.dirname(output_pickle_path), exist_ok=True)
 
         cached_data = {"summary_results": results_df, "organ_results": organ_results_df}
@@ -160,9 +142,7 @@ class Analyzer:
         )
         return results_df
 
-    def _export_reports(
-        self, results_df: pd.DataFrame, all_organ_results_df: pd.DataFrame
-    ):
+    def _export_reports(self, results_df: pd.DataFrame, all_organ_results_df: pd.DataFrame):
         """Exports aggregated results to CSV files and logs summaries.
 
         Args:
@@ -174,30 +154,18 @@ class Analyzer:
             "\n--- Full Normalized Results per Simulation (in mW/kg) ---",
             extra={"log_type": "header"},
         )
-        with pd.option_context(
-            "display.max_rows", None, "display.max_columns", None, "display.width", 1000
-        ):
-            logging.getLogger("progress").info(
-                results_for_export.sort_values(by=["frequency_mhz", "placement"])
-            )
+        with pd.option_context("display.max_rows", None, "display.max_columns", None, "display.width", 1000):
+            logging.getLogger("progress").info(results_for_export.sort_values(by=["frequency_mhz", "placement"]))
         summary_stats = self.strategy.calculate_summary_stats(results_df)
         logging.getLogger("progress").info(
             "\n--- Summary Statistics (Mean) of Normalized SAR per Scenario and Frequency (in mW/kg) ---",
             extra={"log_type": "header"},
         )
-        with pd.option_context(
-            "display.max_rows", None, "display.max_columns", None, "display.width", 1000
-        ):
+        with pd.option_context("display.max_rows", None, "display.max_columns", None, "display.width", 1000):
             logging.getLogger("progress").info(summary_stats)
-        detailed_csv_path = os.path.join(
-            self.results_base_dir, "normalized_results_detailed.csv"
-        )
-        summary_csv_path = os.path.join(
-            self.results_base_dir, "normalized_results_summary.csv"
-        )
-        organ_csv_path = os.path.join(
-            self.results_base_dir, "normalized_results_organs.csv"
-        )
+        detailed_csv_path = os.path.join(self.results_base_dir, "normalized_results_detailed.csv")
+        summary_csv_path = os.path.join(self.results_base_dir, "normalized_results_summary.csv")
+        organ_csv_path = os.path.join(self.results_base_dir, "normalized_results_organs.csv")
         results_for_export.to_csv(detailed_csv_path, index=False)
         summary_stats.to_csv(summary_csv_path)
         all_organ_results_df.to_csv(organ_csv_path, index=False)
@@ -214,9 +182,7 @@ class Analyzer:
             extra={"log_type": "success"},
         )
 
-    def _generate_plots(
-        self, results_df: pd.DataFrame, all_organ_results_df: pd.DataFrame
-    ):
+    def _generate_plots(self, results_df: pd.DataFrame, all_organ_results_df: pd.DataFrame):
         """Delegates plot generation to the current analysis strategy.
 
         Args:

@@ -32,9 +32,7 @@ def download_and_extract_data(base_dir, logger):
         os.makedirs(data_dir)
 
     # Download the folder content
-    logger.info(
-        f"{colorama.Fore.CYAN}Downloading data from {gdrive_url} into {data_dir}..."
-    )
+    logger.info(f"{colorama.Fore.CYAN}Downloading data from {gdrive_url} into {data_dir}...")
     gdown.download_folder(gdrive_url, output=data_dir, quiet=False)
 
     logger.info(f"{colorama.Fore.GREEN}Data download complete.")

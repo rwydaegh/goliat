@@ -52,9 +52,7 @@ class ProjectManager(LoggingMixin):
 
         self.document = s4l_v1.document
         self.project_path = None
-        self.execution_control = self.config.get_setting(
-            "execution_control", {"do_setup": True, "do_run": True, "do_extract": True}
-        )
+        self.execution_control = self.config.get_setting("execution_control", {"do_setup": True, "do_run": True, "do_extract": True})
 
     def _generate_config_hash(self, config_dict: dict) -> str:
         """Generates a SHA256 hash for a configuration dictionary."""
@@ -80,9 +78,7 @@ class ProjectManager(LoggingMixin):
             log_type="info",
         )
 
-    def verify_simulation_metadata(
-        self, meta_path: str, surgical_config: dict, smash_path: str = None
-    ) -> bool:
+    def verify_simulation_metadata(self, meta_path: str, surgical_config: dict, smash_path: str = None) -> bool:
         """Verifies if a simulation's metadata file exists and matches the current config.
 
         Args:
@@ -96,8 +92,7 @@ class ProjectManager(LoggingMixin):
         """
         if not os.path.exists(meta_path):
             self._log(
-                f"  - No metadata file found for this simulation at {os.path.basename(meta_path)}. "
-                "Verification failed.",
+                f"  - No metadata file found for this simulation at {os.path.basename(meta_path)}. " "Verification failed.",
                 log_type="info",
             )
             return False
@@ -217,9 +212,7 @@ class ProjectManager(LoggingMixin):
                 pass
             return True
         except OSError as e:
-            self._log(
-                f"  - HDF5 format error in {self.project_path}: {e}", log_type="error"
-            )
+            self._log(f"  - HDF5 format error in {self.project_path}: {e}", log_type="error")
             return False
 
     def create_or_open_project(
@@ -259,9 +252,7 @@ class ProjectManager(LoggingMixin):
                     orientation_name,
                 ]
             ):
-                raise ValueError(
-                    "For near-field studies, all placement parameters are required."
-                )
+                raise ValueError("For near-field studies, all placement parameters are required.")
             placement_name = f"{scenario_name}_{position_name}_{orientation_name}"
             project_dir = os.path.join(
                 self.config.base_dir,
@@ -283,9 +274,7 @@ class ProjectManager(LoggingMixin):
                     orientation_name,
                 ]
             ):
-                raise ValueError(
-                    "For far-field studies, all placement parameters are required."
-                )
+                raise ValueError("For far-field studies, all placement parameters are required.")
 
             placement_name = f"{scenario_name}_{position_name}_{orientation_name}"
             project_dir = os.path.join(
@@ -301,9 +290,7 @@ class ProjectManager(LoggingMixin):
             raise ValueError(f"Unknown study_type '{study_type}' in config.")
 
         os.makedirs(project_dir, exist_ok=True)
-        self.project_path = os.path.join(project_dir, project_filename).replace(
-            "\\", "/"
-        )
+        self.project_path = os.path.join(project_dir, project_filename).replace("\\", "/")
         self._log(f"Project path set to: {self.project_path}", log_type="info")
 
         do_setup = self.execution_control.get("do_setup", True)
@@ -334,10 +321,7 @@ class ProjectManager(LoggingMixin):
                 log_type="info",
             )
             if not os.path.exists(self.project_path):
-                error_msg = (
-                    f"ERROR: 'do_setup' is false, but project file not found at {self.project_path}. "
-                    "Cannot proceed."
-                )
+                error_msg = f"ERROR: 'do_setup' is false, but project file not found at {self.project_path}. " "Cannot proceed."
                 self._log(error_msg, log_type="fatal")
                 raise FileNotFoundError(error_msg)
             self.open()
@@ -345,9 +329,7 @@ class ProjectManager(LoggingMixin):
 
         # If do_setup is true, we verify the project.
         # The study is responsible for creating the project if this method returns True.
-        project_is_valid = self.verify_simulation_metadata(
-            self.project_path + ".meta.json", surgical_config
-        )
+        project_is_valid = self.verify_simulation_metadata(self.project_path + ".meta.json", surgical_config)
         if project_is_valid:
             self._log("Verified existing project. Skipping setup.", log_type="info")
             self.open()
@@ -365,11 +347,7 @@ class ProjectManager(LoggingMixin):
         Closes any open document, deletes the existing project file and its
         cache, then creates a new unsaved project.
         """
-        if (
-            self.document
-            and hasattr(self.document, "IsOpen")
-            and self.document.IsOpen()
-        ):
+        if self.document and hasattr(self.document, "IsOpen") and self.document.IsOpen():
             self._log(
                 "Closing existing document before creating a new one to release file lock.",
                 log_type="info",
@@ -387,8 +365,7 @@ class ProjectManager(LoggingMixin):
             project_filename_base = os.path.basename(self.project_path)
             for item in os.listdir(project_dir):
                 is_cache_file = item.startswith(f".{project_filename_base}") or (
-                    item.startswith(project_filename_base)
-                    and item != project_filename_base
+                    item.startswith(project_filename_base) and item != project_filename_base
                 )
 
                 if is_cache_file:
@@ -410,9 +387,7 @@ class ProjectManager(LoggingMixin):
             "Initializing model by creating and deleting a dummy block...",
             log_type="verbose",
         )
-        dummy_block = s4l_model.CreateSolidBlock(
-            s4l_model.Vec3(0, 0, 0), s4l_model.Vec3(1, 1, 1)
-        )
+        dummy_block = s4l_model.CreateSolidBlock(s4l_model.Vec3(0, 0, 0), s4l_model.Vec3(1, 1, 1))
         dummy_block.Delete()
         self._log("Model initialized, ready for population.", log_type="verbose")
 
@@ -429,13 +404,9 @@ class ProjectManager(LoggingMixin):
                 f"ERROR: Project file {self.project_path} is corrupted or locked.",
                 log_type="fatal",
             )
-            raise ProjectCorruptionError(
-                f"File is not a valid or accessible HDF5 file: {self.project_path}"
-            )
+            raise ProjectCorruptionError(f"File is not a valid or accessible HDF5 file: {self.project_path}")
 
-        self._log(
-            f"Opening project with Sim4Life: {self.project_path}", log_type="info"
-        )
+        self._log(f"Opening project with Sim4Life: {self.project_path}", log_type="info")
         try:
             open_project(self.project_path)
         except Exception as e:
@@ -443,15 +414,9 @@ class ProjectManager(LoggingMixin):
                 f"ERROR: Sim4Life failed to open project file, it is likely corrupted: {e}",
                 log_type="fatal",
             )
-            if (
-                self.document
-                and hasattr(self.document, "IsOpen")
-                and self.document.IsOpen()
-            ):
+            if self.document and hasattr(self.document, "IsOpen") and self.document.IsOpen():
                 self.document.Close()
-            raise ProjectCorruptionError(
-                f"Sim4Life could not open corrupted file: {self.project_path}"
-            )
+            raise ProjectCorruptionError(f"Sim4Life could not open corrupted file: {self.project_path}")
 
     def save(self):
         """Saves the currently active project to its designated file path.
@@ -473,23 +438,13 @@ class ProjectManager(LoggingMixin):
 
     def cleanup(self):
         """Closes any open project."""
-        if (
-            self.document
-            and hasattr(self.document, "IsOpen")
-            and self.document.IsOpen()
-        ):
+        if self.document and hasattr(self.document, "IsOpen") and self.document.IsOpen():
             self.close()
 
     def reload_project(self):
         """Saves, closes, and re-opens the project to load simulation results."""
-        if (
-            self.document
-            and hasattr(self.document, "IsOpen")
-            and self.document.IsOpen()
-        ):
-            self._log(
-                "Saving and reloading project to load results...", log_type="info"
-            )
+        if self.document and hasattr(self.document, "IsOpen") and self.document.IsOpen():
+            self._log("Saving and reloading project to load results...", log_type="info")
             self.save()
             self.close()
 

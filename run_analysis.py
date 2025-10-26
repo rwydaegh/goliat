@@ -28,12 +28,8 @@ def main():
     """
     Main entry point for the analysis script.
     """
-    parser = argparse.ArgumentParser(
-        description="Run analysis for near-field or far-field studies."
-    )
-    parser.add_argument(
-        "--config", type=str, required=True, help="Path to the configuration file."
-    )
+    parser = argparse.ArgumentParser(description="Run analysis for near-field or far-field studies.")
+    parser.add_argument("--config", type=str, required=True, help="Path to the configuration file.")
     args = parser.parse_args()
 
     # Setup logging
@@ -43,16 +39,12 @@ def main():
 
     phantoms = config.get_setting("phantoms", [])
     if not phantoms:
-        logging.getLogger("progress").error(
-            "No phantoms found in the configuration file."
-        )
+        logging.getLogger("progress").error("No phantoms found in the configuration file.")
         return
 
     study_type = config.get_setting("study_type")
     if not study_type:
-        logging.getLogger("progress").error(
-            "'study_type' not found in the configuration file."
-        )
+        logging.getLogger("progress").error("'study_type' not found in the configuration file.")
         return
 
     for phantom_name in phantoms:

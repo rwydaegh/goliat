@@ -15,9 +15,7 @@ if TYPE_CHECKING:
 class FarFieldStudy(BaseStudy):
     """Manages a far-field simulation study."""
 
-    def __init__(
-        self, config_filename: str = "far_field_config.json", gui: "QueueGUI" = None
-    ):
+    def __init__(self, config_filename: str = "far_field_config.json", gui: "QueueGUI" = None):
         super().__init__("far_field", config_filename, gui)
 
     def _run_study(self):
@@ -55,12 +53,7 @@ class FarFieldStudy(BaseStudy):
         incident_directions = far_field_params.get("incident_directions", [])
         polarizations = far_field_params.get("polarizations", [])
 
-        total_simulations = (
-            len(phantoms)
-            * len(frequencies)
-            * len(incident_directions)
-            * len(polarizations)
-        )
+        total_simulations = len(phantoms) * len(frequencies) * len(incident_directions) * len(polarizations)
 
         # Inform the profiler about the total number of simulations for accurate ETA
         self.profiler.set_total_simulations(total_simulations)
@@ -78,9 +71,7 @@ class FarFieldStudy(BaseStudy):
 
         simulation_count = 0
         for phantom_name in phantoms:
-            phantom_setup = PhantomSetup(
-                self.config, phantom_name, self.verbose_logger, self.progress_logger
-            )
+            phantom_setup = PhantomSetup(self.config, phantom_name, self.verbose_logger, self.progress_logger)
             for freq in frequencies:
                 for direction_name in incident_directions:
                     for polarization_name in polarizations:
@@ -146,9 +137,7 @@ class FarFieldStudy(BaseStudy):
                             self.verbose_logger,
                             self.progress_logger,
                         )
-                        with self.subtask(
-                            "setup_simulation", instance_to_profile=setup
-                        ) as wrapper:
+                        with self.subtask("setup_simulation", instance_to_profile=setup) as wrapper:
                             simulation = wrapper(setup.run_full_setup)(phantom_setup)
 
                         if not simulation:
@@ -221,17 +210,11 @@ class FarFieldStudy(BaseStudy):
                     self.project_manager.reload_project()
                     sim_name = simulation.Name
                     reloaded_simulation = next(
-                        (
-                            s
-                            for s in s4l_v1.document.AllSimulations
-                            if s.Name == sim_name
-                        ),
+                        (s for s in s4l_v1.document.AllSimulations if s.Name == sim_name),
                         None,
                     )
                     if not reloaded_simulation:
-                        raise RuntimeError(
-                            f"Could not find simulation '{sim_name}' after reloading."
-                        )
+                        raise RuntimeError(f"Could not find simulation '{sim_name}' after reloading.")
 
                     extractor = ResultsExtractor(
                         config=self.config,
@@ -254,16 +237,10 @@ class FarFieldStudy(BaseStudy):
             self._log(f"ERROR during simulation: {e}", log_type="error")
             self.verbose_logger.error(traceback.format_exc())
         finally:
-            if (
-                self.project_manager
-                and hasattr(self.project_manager.document, "IsOpen")
-                and self.project_manager.document.IsOpen()
-            ):
+            if self.project_manager and hasattr(self.project_manager.document, "IsOpen") and self.project_manager.document.IsOpen():
                 self.project_manager.close()
 
-    def _validate_auto_cleanup_config(
-        self, do_setup: bool, do_run: bool, do_extract: bool, auto_cleanup: list
-    ):
+    def _validate_auto_cleanup_config(self, do_setup: bool, do_run: bool, do_extract: bool, auto_cleanup: list):
         """Validates the auto_cleanup_previous_results configuration."""
         if not auto_cleanup:
             return
@@ -280,12 +257,8 @@ class FarFieldStudy(BaseStudy):
                 "ERROR: 'auto_cleanup_previous_results' is not compatible with 'batch_run'. Disabling.",
                 log_type="error",
             )
-            self.config.config["execution_control"][
-                "auto_cleanup_previous_results"
-            ] = []
+            self.config.config["execution_control"]["auto_cleanup_previous_results"] = []
 
         cleanup_types = self.config.get_auto_cleanup_previous_results()
         if cleanup_types:
-            self._log(
-                f"Auto-cleanup enabled for: {', '.join(cleanup_types)}", log_type="info"
-            )
+            self._log(f"Auto-cleanup enabled for: {', '.join(cleanup_types)}", log_type="info")

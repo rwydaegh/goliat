@@ -99,13 +99,9 @@ class Profiler:
 
     def complete_run_phase(self):
         """Stores the total duration of the 'run' phase from its subtasks."""
-        self.run_phase_total_duration = sum(
-            self.subtask_times.get("run_simulation_total", [0])
-        )
+        self.run_phase_total_duration = sum(self.subtask_times.get("run_simulation_total", [0]))
 
-    def get_weighted_progress(
-        self, phase_name: str, phase_progress_ratio: float
-    ) -> float:
+    def get_weighted_progress(self, phase_name: str, phase_progress_ratio: float) -> float:
         """Calculates the overall study progress based on phase weights.
 
         Args:
@@ -149,27 +145,19 @@ class Profiler:
         if not self.current_phase:
             return 0
 
-        ordered_phases = [
-            p
-            for p in ["setup", "run", "extract"]
-            if self.execution_control.get(f"do_{p}", False)
-        ]
+        ordered_phases = [p for p in ["setup", "run", "extract"] if self.execution_control.get(f"do_{p}", False)]
         try:
             current_phase_index = ordered_phases.index(self.current_phase)
         except ValueError:
             return 0
 
-        current_phase_total_time = self.profiling_config.get(
-            f"avg_{self.current_phase}_time", 60
-        )
+        current_phase_total_time = self.profiling_config.get(f"avg_{self.current_phase}_time", 60)
         time_in_current_phase = current_phase_total_time * (1 - current_stage_progress)
 
         time_for_future_phases = 0
         for i in range(current_phase_index + 1, len(ordered_phases)):
             future_phase = ordered_phases[i]
-            time_for_future_phases += self.profiling_config.get(
-                f"avg_{future_phase}_time", 60
-            )
+            time_for_future_phases += self.profiling_config.get(f"avg_{future_phase}_time", 60)
 
         eta = time_in_current_phase + time_for_future_phases
         return max(0, eta)

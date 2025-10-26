@@ -81,18 +81,14 @@ def study_process_wrapper(queue, stop_event, config_filename, process_id):
         )
 
         # The study will use the QueueGUI to send updates back to the main process.
-        gui_proxy = QueueGUI(
-            queue, stop_event, profiler, progress_logger, verbose_logger
-        )
+        gui_proxy = QueueGUI(queue, stop_event, profiler, progress_logger, verbose_logger)
 
         if study_type == "near_field":
             study = NearFieldStudy(config_filename=config_filename, gui=gui_proxy)
         elif study_type == "far_field":
             study = FarFieldStudy(config_filename=config_filename, gui=gui_proxy)
         else:
-            raise ValueError(
-                f"Unknown or missing study type '{study_type}' in {config_filename}"
-            )
+            raise ValueError(f"Unknown or missing study type '{study_type}' in {config_filename}")
 
         study.profiler = profiler
         study.run()
@@ -135,9 +131,7 @@ def main():
         default="Simulation Progress",
         help="Set the title of the GUI window.",
     )
-    parser.add_argument(
-        "--pid", type=str, default=None, help="The process ID for logging."
-    )
+    parser.add_argument("--pid", type=str, default=None, help="The process ID for logging.")
     args = parser.parse_args()
     config_filename = args.config
     process_id = args.pid
@@ -207,17 +201,11 @@ def main():
             console_logger = ConsoleLogger(progress_logger, verbose_logger)
 
             if study_type == "near_field":
-                study = NearFieldStudy(
-                    config_filename=config_filename, gui=console_logger
-                )
+                study = NearFieldStudy(config_filename=config_filename, gui=console_logger)
             elif study_type == "far_field":
-                study = FarFieldStudy(
-                    config_filename=config_filename, gui=console_logger
-                )
+                study = FarFieldStudy(config_filename=config_filename, gui=console_logger)
             else:
-                raise ValueError(
-                    f"Unknown or missing study type '{study_type}' in {config_filename}"
-                )
+                raise ValueError(f"Unknown or missing study type '{study_type}' in {config_filename}")
 
             study.profiler = profiler
             study.run()

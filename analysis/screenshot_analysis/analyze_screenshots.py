@@ -10,12 +10,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # --- Control Flags ---
-DO_PLOTS = (
-    True  # Set to False to disable generating plot images for individual analyses
-)
-DO_INDIVIDUAL_REPORTS = (
-    True  # Set to False to disable generating individual perforation summary text files
-)
+DO_PLOTS = True  # Set to False to disable generating plot images for individual analyses
+DO_INDIVIDUAL_REPORTS = True  # Set to False to disable generating individual perforation summary text files
 
 
 def get_color_frequencies(image_path):
@@ -40,9 +36,7 @@ def get_color_frequencies(image_path):
 
             bounding_box = None
             if not red_pixels:
-                logging.warning(
-                    f"No red pixels found in {image_path}. Analyzing full image."
-                )
+                logging.warning(f"No red pixels found in {image_path}. Analyzing full image.")
                 min_x, min_y, max_x, max_y = 0, 0, width - 1, height - 1
             else:
                 # Find the most prominent horizontal and vertical lines
@@ -54,9 +48,7 @@ def get_color_frequencies(image_path):
                 top_y = [y for y, count in y_counts.most_common(2)]
 
                 if len(top_x) < 2 or len(top_y) < 2:
-                    logging.warning(
-                        f"Could not define a bounding box from red lines in {image_path}. Analyzing full image."
-                    )
+                    logging.warning(f"Could not define a bounding box from red lines in {image_path}. Analyzing full image.")
                     min_x, min_y, max_x, max_y = 0, 0, width - 1, height - 1
                 else:
                     min_x, max_x = min(top_x), max(top_x)
@@ -137,9 +129,7 @@ def plot_colors_in_3d_interactive(image_path, color_counts, output_dir):
         print("\n---")
         print("Warning: 'plotly' is not installed. Cannot create interactive 3D plot.")
         print("Please install it by running the following command in your terminal:")
-        print(
-            f'"C:/Program Files/Sim4Life_8.2.0.16876/Python/python.exe" -m pip install plotly'
-        )
+        print(f'"C:/Program Files/Sim4Life_8.2.0.16876/Python/python.exe" -m pip install plotly')
         print("---\n")
         return
 
@@ -161,10 +151,7 @@ def plot_colors_in_3d_interactive(image_path, color_counts, output_dir):
 
     # Create a string representation of the color for hover text and marker color
     color_strings = [f"rgb({r},{g},{b})" for r, g, b in rgb]
-    hover_text = [
-        f"RGB: ({r}, {g}, {b})<br>HSL: ({h:.1f}, {s:.2f}, {l:.2f})"
-        for (r, g, b), (h, s, l) in zip(rgb, hsl)
-    ]
+    hover_text = [f"RGB: ({r}, {g}, {b})<br>HSL: ({h:.1f}, {s:.2f}, {l:.2f})" for (r, g, b), (h, s, l) in zip(rgb, hsl)]
 
     # Scale marker size based on the log of the color count
     # Add 1 to counts to avoid log(0) for counts of 1, and scale for visibility
@@ -205,9 +192,7 @@ def plot_colors_in_3d_interactive(image_path, color_counts, output_dir):
     print(f"Interactive HSL 3D plot saved to {output_path}")
 
 
-def visualize_color_distribution(
-    image_path, color_counts, output_dir, bounding_box=None
-):
+def visualize_color_distribution(image_path, color_counts, output_dir, bounding_box=None):
     """
     Analyzes color distribution. If DO_PLOTS is True, it visualizes the distribution.
     Always calculates and saves the proportion of the top two colors.
@@ -217,9 +202,7 @@ def visualize_color_distribution(
         print(f"No colors to analyze for {image_path}.")
         return
 
-    all_sorted_colors = sorted(
-        color_counts.items(), key=lambda item: item[1], reverse=True
-    )
+    all_sorted_colors = sorted(color_counts.items(), key=lambda item: item[1], reverse=True)
 
     if not all_sorted_colors:
         print(f"No colors to process for {image_path}.")
@@ -252,9 +235,7 @@ def visualize_color_distribution(
     # Prepare items for plotting
     display_items = [(main_color, main_color_count)]
     if sum_of_significant_colors > 0:
-        display_items.insert(
-            1, ((0, 0, 0, 255), sum_of_significant_colors)
-        )  # Black bar for the sum
+        display_items.insert(1, ((0, 0, 0, 255), sum_of_significant_colors))  # Black bar for the sum
     display_items.extend(all_sorted_colors[1:50])
 
     colors = [np.array(item[0]) / 255.0 for item in display_items]
@@ -318,16 +299,12 @@ def create_annotated_image(original_image_path, bounding_box, output_dir):
             draw.rectangle([min_x, min_y, max_x, max_y], outline="lime", width=2)
 
             base_name = os.path.splitext(os.path.basename(original_image_path))[0]
-            annotated_output_path = os.path.join(
-                output_dir, f"{base_name}_annotated.png"
-            )
+            annotated_output_path = os.path.join(output_dir, f"{base_name}_annotated.png")
             img.save(annotated_output_path)
             print(f"Annotated image saved to {annotated_output_path}")
 
     except Exception as e:
-        logging.error(
-            f"Could not create annotated image for {original_image_path}: {e}"
-        )
+        logging.error(f"Could not create annotated image for {original_image_path}: {e}")
 
 
 def colors_are_similar(c1, c2, tolerance=30):
@@ -357,33 +334,21 @@ def calculate_and_save_perforation(image_group_data, output_dir):
     perforation_results = []
     for data in image_group_data:
         if len(data["colors"]) < 2:
-            print(
-                f"Warning: Not enough color data for {data['filename']}. Skipping from perforation analysis."
-            )
+            print(f"Warning: Not enough color data for {data['filename']}. Skipping from perforation analysis.")
             continue
 
         # Find colors in the current image that are similar to the base colors
         current_color1_data = next(
-            (
-                item
-                for item in data["colors"]
-                if colors_are_similar(item[0], base_color1)
-            ),
+            (item for item in data["colors"] if colors_are_similar(item[0], base_color1)),
             None,
         )
         current_color2_data = next(
-            (
-                item
-                for item in data["colors"]
-                if colors_are_similar(item[0], base_color2)
-            ),
+            (item for item in data["colors"] if colors_are_similar(item[0], base_color2)),
             None,
         )
 
         if not current_color1_data or not current_color2_data:
-            print(
-                f"Warning: Could not find consistent colors for {data['filename']}. Skipping."
-            )
+            print(f"Warning: Could not find consistent colors for {data['filename']}. Skipping.")
             continue
 
         count1 = current_color1_data[1]
@@ -393,21 +358,13 @@ def calculate_and_save_perforation(image_group_data, output_dir):
         total_counts_color2 += count2
 
         perforation = (count2 / count1) * 100 if count1 > 0 else 0
-        perforation_results.append(
-            {"filename": data["filename"], "perforation": perforation}
-        )
+        perforation_results.append({"filename": data["filename"], "perforation": perforation})
 
     if not perforation_results:
-        print(
-            "\nNo images with consistent colors found. Cannot calculate total perforation."
-        )
+        print("\nNo images with consistent colors found. Cannot calculate total perforation.")
         return None
 
-    total_perforation = (
-        (total_counts_color2 / total_counts_color1) * 100
-        if total_counts_color1 > 0
-        else 0
-    )
+    total_perforation = (total_counts_color2 / total_counts_color1) * 100 if total_counts_color1 > 0 else 0
 
     # If the total perforation is less than 1%, consider it negligible and set to 0.
     if total_perforation < 1.0:
@@ -415,9 +372,7 @@ def calculate_and_save_perforation(image_group_data, output_dir):
 
     if DO_INDIVIDUAL_REPORTS:
         # --- Save results to a text file ---
-        group_name = os.path.commonprefix(
-            [d["filename"] for d in image_group_data]
-        ).strip("_")
+        group_name = os.path.commonprefix([d["filename"] for d in image_group_data]).strip("_")
         if not group_name:
             group_name = "perforation_analysis"
 
@@ -484,14 +439,10 @@ def analyze_screenshots_in_folder(target_dir):
         color_counts, bounding_box = get_color_frequencies(image_path)
 
         if color_counts:
-            sorted_colors = sorted(
-                color_counts.items(), key=lambda item: item[1], reverse=True
-            )
+            sorted_colors = sorted(color_counts.items(), key=lambda item: item[1], reverse=True)
             image_group_data.append({"filename": file, "colors": sorted_colors})
             # Pass the bounding box to the visualization function
-            visualize_color_distribution(
-                image_path, color_counts, target_dir, bounding_box=bounding_box
-            )
+            visualize_color_distribution(image_path, color_counts, target_dir, bounding_box=bounding_box)
         else:
             print(f"  No color data found for {image_path}.")
 
@@ -504,10 +455,7 @@ def natural_sort_key(s):
     """
     A key for sorting strings in a 'natural' order (e.g., '2MHz' before '10MHz').
     """
-    return [
-        int(text) if text.isdigit() else text.lower()
-        for text in re.split("([0-9]+)", s)
-    ]
+    return [int(text) if text.isdigit() else text.lower() for text in re.split("([0-9]+)", s)]
 
 
 def save_combined_summary(phantom_dir, all_freq_results):
@@ -517,9 +465,7 @@ def save_combined_summary(phantom_dir, all_freq_results):
     output_path = os.path.join(phantom_dir, "combined_perforation_summary.txt")
 
     with open(output_path, "w") as f:
-        f.write(
-            f"Combined Perforation Analysis Summary for: {os.path.basename(phantom_dir)}\n"
-        )
+        f.write(f"Combined Perforation Analysis Summary for: {os.path.basename(phantom_dir)}\n")
         f.write("=" * 60 + "\n")
 
         # Sort frequencies using the natural sort key
@@ -529,9 +475,7 @@ def save_combined_summary(phantom_dir, all_freq_results):
             result = all_freq_results[freq]
             if result:
                 f.write(f"\n--- Frequency: {freq} ---\n")
-                f.write(
-                    f"  - Total Aggregated Perforation: {result['total_perforation']:.2f}%\n"
-                )
+                f.write(f"  - Total Aggregated Perforation: {result['total_perforation']:.2f}%\n")
                 f.write(f"  - Surface Color: RGB{result['base_color1'][:3]}\n")
                 f.write(f"  - Holes Color: RGB{result['base_color2'][:3]}\n")
             else:

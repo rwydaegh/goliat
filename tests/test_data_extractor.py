@@ -17,9 +17,7 @@ def setup_json_file(tmp_path):
 @pytest.mark.skip_on_ci
 def test_get_parameter_from_json(setup_json_file):
     # Test existing parameter
-    assert (
-        get_parameter_from_json(str(setup_json_file), "level1.level2.param") == "value"
-    )
+    assert get_parameter_from_json(str(setup_json_file), "level1.level2.param") == "value"
     # Test non-existing parameter
     assert get_parameter_from_json(str(setup_json_file), "level1.non_existent") is None
     # Test non-existing file

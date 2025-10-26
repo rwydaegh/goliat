@@ -34,13 +34,9 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
                 orientations = scenario_def.get("orientations", {})
                 for pos_name in positions.keys():
                     for orient_name in orientations.keys():
-                        analyzer._process_single_result(
-                            frequency_mhz, scenario_name, pos_name, orient_name
-                        )
+                        analyzer._process_single_result(frequency_mhz, scenario_name, pos_name, orient_name)
 
-    def get_normalization_factor(
-        self, frequency_mhz: int, simulated_power_w: float
-    ) -> float:
+    def get_normalization_factor(self, frequency_mhz: int, simulated_power_w: float) -> float:
         """Calculates the normalization factor based on the target power.
 
         Args:
@@ -53,11 +49,7 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
         antenna_configs = self.config.get_antenna_config()
         freq_config = antenna_configs.get(str(frequency_mhz), {})
         target_power_mw = freq_config.get("target_power_mW")
-        if (
-            target_power_mw is not None
-            and pd.notna(simulated_power_w)
-            and simulated_power_w > 0
-        ):
+        if target_power_mw is not None and pd.notna(simulated_power_w) and simulated_power_w > 0:
             target_power_w = target_power_mw / 1000.0
             return target_power_w / simulated_power_w
         return 1.0
@@ -108,18 +100,10 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
                         "frequency_mhz": frequency_mhz,
                         "placement": placement_name,
                         "tissue": row["Tissue"],
-                        "mass_avg_sar_mw_kg": row["Mass-Averaged SAR"]
-                        * norm_factor
-                        * 1000,
-                        "peak_sar_10g_mw_kg": row.get(peak_sar_col, pd.NA)
-                        * norm_factor
-                        * 1000,
-                        "min_local_sar_mw_kg": row.get("Min. local SAR", pd.NA)
-                        * norm_factor
-                        * 1000,
-                        "max_local_sar_mw_kg": row.get("Max. local SAR", pd.NA)
-                        * norm_factor
-                        * 1000,
+                        "mass_avg_sar_mw_kg": row["Mass-Averaged SAR"] * norm_factor * 1000,
+                        "peak_sar_10g_mw_kg": row.get(peak_sar_col, pd.NA) * norm_factor * 1000,
+                        "min_local_sar_mw_kg": row.get("Min. local SAR", pd.NA) * norm_factor * 1000,
+                        "max_local_sar_mw_kg": row.get("Max. local SAR", pd.NA) * norm_factor * 1000,
                     }
                 )
         return result_entry, organ_entries
@@ -135,9 +119,7 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
         """
         placement = result_entry["placement"].lower()
         if placement.startswith("front_of_eyes") or placement.startswith("by_cheek"):
-            if pd.isna(result_entry.get("SAR_head")) and pd.notna(
-                result_entry.get("SAR_trunk")
-            ):
+            if pd.isna(result_entry.get("SAR_head")) and pd.notna(result_entry.get("SAR_trunk")):
                 result_entry["SAR_head"] = result_entry["SAR_trunk"]
                 result_entry["SAR_trunk"] = pd.NA
         return result_entry
@@ -158,16 +140,10 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
             extra={"log_type": "header"},
         )
         for name, definition in placement_scenarios.items():
-            total = len(definition.get("positions", {})) * len(
-                definition.get("orientations", {})
-            )
+            total = len(definition.get("positions", {})) * len(definition.get("orientations", {}))
             placements_per_scenario[name] = total
-            logging.getLogger("progress").info(
-                f"- Scenario '{name}': {total} placements", extra={"log_type": "info"}
-            )
-        summary_stats = results_df.groupby(["scenario", "frequency_mhz"]).mean(
-            numeric_only=True
-        )
+            logging.getLogger("progress").info(f"- Scenario '{name}': {total} placements", extra={"log_type": "info"})
+        summary_stats = results_df.groupby(["scenario", "frequency_mhz"]).mean(numeric_only=True)
         completion_counts = results_df.groupby(["scenario", "frequency_mhz"]).size()
         summary_stats["progress"] = summary_stats.index.map(
             lambda idx: f"{completion_counts.get(idx, 0)}/{placements_per_scenario.get(idx, 0)}"

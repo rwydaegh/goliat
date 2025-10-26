@@ -30,13 +30,9 @@ def main_process_logic(worker: "Worker"):
         solver_key = "simcore/services/comp/isolve-gpu"
         solver_version = "2.2.212"
 
-        main_logger.info(
-            f"{colorama.Fore.MAGENTA}--- Submitting Jobs to oSPARC in Parallel ---"
-        )
+        main_logger.info(f"{colorama.Fore.MAGENTA}--- Submitting Jobs to oSPARC in Parallel ---")
         worker.running_jobs = {}
-        with ProcessPoolExecutor(
-            max_workers=min(len(worker.input_files), 61) or 1
-        ) as executor:
+        with ProcessPoolExecutor(max_workers=min(len(worker.input_files), 61) or 1) as executor:
             future_to_file = {
                 executor.submit(
                     _submit_job_in_process,
@@ -56,14 +52,10 @@ def main_process_logic(worker: "Worker"):
                         worker.running_jobs[file_path] = (job, solver)
                         setup_job_logging(base_dir, job.id)
                         job_logger = logging.getLogger(f"job_{job.id}")
-                        job_logger.info(
-                            f"Job {job.id} submitted for input file {file_path.name} "
-                            f"at path {file_path}."
-                        )
+                        job_logger.info(f"Job {job.id} submitted for input file {file_path.name} " f"at path {file_path}.")
                 except Exception as exc:
                     main_logger.error(
-                        f"ERROR: Submitting job for {file_path.name} generated an exception: "
-                        f"{exc}\n{traceback.format_exc()}"
+                        f"ERROR: Submitting job for {file_path.name} generated an exception: " f"{exc}\n{traceback.format_exc()}"
                     )
 
         if not worker.running_jobs:
@@ -71,20 +63,13 @@ def main_process_logic(worker: "Worker"):
             worker.finished.emit()
             return
 
-        main_logger.info(
-            f"{colorama.Fore.MAGENTA}--- Polling for Job Completion and Downloading Results ---"
-        )
-        worker.job_statuses = {
-            job.id: ("PENDING", time.time())
-            for _, (job, _) in worker.running_jobs.items()
-        }
+        main_logger.info(f"{colorama.Fore.MAGENTA}--- Polling for Job Completion and Downloading Results ---")
+        worker.job_statuses = {job.id: ("PENDING", time.time()) for _, (job, _) in worker.running_jobs.items()}
         worker.file_to_job_id = {fp: j.id for fp, (j, s) in worker.running_jobs.items()}
         worker.downloaded_jobs = set()
 
         worker.timer.start(5000)
 
     except Exception as e:
-        main_logger.error(
-            f"\nCRITICAL ERROR in main process: {e}\n{traceback.format_exc()}"
-        )
+        main_logger.error(f"\nCRITICAL ERROR in main process: {e}\n{traceback.format_exc()}")
         worker.finished.emit()

@@ -36,9 +36,7 @@ class MaterialSetup(BaseSetup):
         self.database = s4l_v1.materials.database
         self.XCoreModeling = XCoreModeling
 
-    def assign_materials(
-        self, antenna_components: dict = None, phantom_only: bool = False
-    ):
+    def assign_materials(self, antenna_components: dict = None, phantom_only: bool = False):
         """Assigns materials to the simulation entities."""
         self._log("Assigning materials...", log_type="progress")
 
@@ -54,9 +52,7 @@ class MaterialSetup(BaseSetup):
         # Antenna materials
         if not phantom_only:
             if not antenna_components:
-                raise ValueError(
-                    "antenna_components must be provided when not in phantom_only mode."
-                )
+                raise ValueError("antenna_components must be provided when not in phantom_only mode.")
             self._assign_antenna_materials(antenna_components)
 
     def _assign_phantom_materials(self):
@@ -74,11 +70,7 @@ class MaterialSetup(BaseSetup):
 
         try:
             all_entities = self.model.AllEntities()
-            phantom_parts = [
-                e
-                for e in all_entities
-                if isinstance(e, self.XCoreModeling.TriangleMesh)
-            ]
+            phantom_parts = [e for e in all_entities if isinstance(e, self.XCoreModeling.TriangleMesh)]
 
             name_mapping = self.config.get_material_mapping(self.phantom_name)
 
@@ -116,11 +108,7 @@ class MaterialSetup(BaseSetup):
                 material_settings = self.emfdtd.MaterialSettings()
 
                 excitation_type = self.config.get_excitation_type()
-                if (
-                    "Copper" in mat_name
-                    and self.free_space
-                    and excitation_type.lower() == "gaussian"
-                ):
+                if "Copper" in mat_name and self.free_space and excitation_type.lower() == "gaussian":
                     material_settings.Type = "PEC"
                     self.simulation.Add(material_settings, [entity])
                     self._log("\n" + "=" * 80, log_type="warning")

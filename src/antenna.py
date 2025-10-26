@@ -30,9 +30,7 @@ class Antenna:
         """
         freq_str = str(self.frequency_mhz)
         if freq_str not in self.antenna_config:
-            raise ValueError(
-                f"Antenna configuration not defined for frequency: {self.frequency_mhz} MHz"
-            )
+            raise ValueError(f"Antenna configuration not defined for frequency: {self.frequency_mhz} MHz")
         return self.antenna_config[freq_str]
 
     def get_model_type(self) -> str:

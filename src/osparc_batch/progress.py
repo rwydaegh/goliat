@@ -9,9 +9,7 @@ import colorama
 from src.osparc_batch.logging_utils import STATUS_COLORS
 
 
-def get_progress_report(
-    input_files: list[Path], job_statuses: dict, file_to_job_id: dict
-) -> str:
+def get_progress_report(input_files: list[Path], job_statuses: dict, file_to_job_id: dict) -> str:
     """Generates a status summary and a colored file tree string."""
     report_lines = []
 
@@ -20,12 +18,8 @@ def get_progress_report(
         status_str = status_tuple if isinstance(status_tuple, tuple) else status_tuple
         state = status_str.split(" ")
         status_counts[state] += 1
-    summary = " | ".join(
-        f"{state}: {count}" for state, count in sorted(status_counts.items())
-    )
-    report_lines.append(
-        f"\n{colorama.Fore.BLUE}--- Progress Summary ---\n{summary}\n{colorama.Style.RESET_ALL}"
-    )
+    summary = " | ".join(f"{state}: {count}" for state, count in sorted(status_counts.items()))
+    report_lines.append(f"\n{colorama.Fore.BLUE}--- Progress Summary ---\n{summary}\n{colorama.Style.RESET_ALL}")
 
     tree = {}
     if not input_files:
@@ -56,9 +50,7 @@ def get_progress_report(
             current_level[filename] = file_to_job_id.get(file_path)
 
         except (IndexError, ValueError) as e:
-            report_lines.append(
-                f"{colorama.Fore.RED}Could not process path {file_path}: {e}{colorama.Style.RESET_ALL}"
-            )
+            report_lines.append(f"{colorama.Fore.RED}Could not process path {file_path}: {e}{colorama.Style.RESET_ALL}")
 
     def build_tree_recursive(node, prefix=""):
         def sort_key(item):
@@ -79,29 +71,18 @@ def get_progress_report(
             else:
                 job_id = node[item]
                 status_tuple = job_statuses.get(job_id, ("UNKNOWN", time.time()))
-                status_str, start_time = (
-                    status_tuple
-                    if isinstance(status_tuple, tuple)
-                    else (status_tuple, time.time())
-                )
+                status_str, start_time = status_tuple if isinstance(status_tuple, tuple) else (status_tuple, time.time())
 
                 elapsed_time = time.time() - start_time
                 timer_str = f" ({elapsed_time:.0f}s)"
 
                 status = status_str.split(" ")
                 color = STATUS_COLORS.get(status, colorama.Fore.WHITE)
-                colored_text = (
-                    f"{color}{item} (oSPARC Job: {job_id}, Status: {status_str}{timer_str})"
-                    f"{colorama.Style.RESET_ALL}"
-                )
+                colored_text = f"{color}{item} (oSPARC Job: {job_id}, Status: {status_str}{timer_str})" f"{colorama.Style.RESET_ALL}"
                 report_lines.append(f"{prefix}{connector}{colored_text}")
 
-    report_lines.append(
-        f"{colorama.Fore.BLUE}--- File Status Tree ---{colorama.Style.RESET_ALL}"
-    )
+    report_lines.append(f"{colorama.Fore.BLUE}--- File Status Tree ---{colorama.Style.RESET_ALL}")
     build_tree_recursive(tree)
-    report_lines.append(
-        f"{colorama.Fore.BLUE}------------------------{colorama.Style.RESET_ALL}\n"
-    )
+    report_lines.append(f"{colorama.Fore.BLUE}------------------------{colorama.Style.RESET_ALL}\n")
 
     return "\n".join(report_lines)

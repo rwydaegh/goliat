@@ -19,9 +19,7 @@ def check_consistency():
         print(f"--- Checking phantom: {phantom_name} ---")
 
         # Load the ground truth tissues
-        tissue_file_path = os.path.join(
-            phantom_tissues_dir, f"{phantom_name}_tissues.json"
-        )
+        tissue_file_path = os.path.join(phantom_tissues_dir, f"{phantom_name}_tissues.json")
         if not os.path.exists(tissue_file_path):
             print(f"  - WARNING: Tissue file not found for '{phantom_name}'. Skipping.")
             continue
@@ -46,9 +44,7 @@ def check_consistency():
                 for tissue in sorted(list(missing_tissues)):
                     print(f"    - {tissue}")
             if extra_tissues:
-                print(
-                    "  - Extra tissues in material_name_mapping.json (not in phantom file):"
-                )
+                print("  - Extra tissues in material_name_mapping.json (not in phantom file):")
                 for tissue in sorted(list(extra_tissues)):
                     print(f"    - {tissue}")
         print("-" * (len(phantom_name) + 20))

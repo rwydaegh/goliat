@@ -40,9 +40,7 @@ class Plotter:
             extra={"log_type": "info"},
         )
 
-    def plot_average_sar_bar(
-        self, scenario_name: str, avg_results: pd.DataFrame, progress_info: pd.Series
-    ):
+    def plot_average_sar_bar(self, scenario_name: str, avg_results: pd.DataFrame, progress_info: pd.Series):
         """Plots a bar chart of average Head and Trunk SAR per frequency.
 
         Args:
@@ -51,22 +49,15 @@ class Plotter:
             progress_info: Series with completion progress for each frequency.
         """
         fig, ax = plt.subplots(figsize=(12, 7))
-        avg_results[["SAR_head", "SAR_trunk"]].plot(
-            kind="bar", ax=ax, colormap="viridis"
-        )
-        progress_labels = [
-            f"{freq} MHz\n({progress_info.get(freq, '0/0')})"
-            for freq in avg_results.index
-        ]
+        avg_results[["SAR_head", "SAR_trunk"]].plot(kind="bar", ax=ax, colormap="viridis")
+        progress_labels = [f"{freq} MHz\n({progress_info.get(freq, '0/0')})" for freq in avg_results.index]
         ax.set_xticklabels(progress_labels, rotation=0)
         ax.set_title(f"Average Normalized SAR for Scenario: {scenario_name}")
         ax.set_xlabel("Frequency (MHz) and Completion Progress")
         ax.set_ylabel("Normalized SAR (mW/kg)")
         ax.legend(["Head SAR", "Trunk SAR"])
         plt.tight_layout()
-        fig.savefig(
-            os.path.join(self.plots_dir, f"average_sar_bar_{scenario_name}.png")
-        )
+        fig.savefig(os.path.join(self.plots_dir, f"average_sar_bar_{scenario_name}.png"))
         plt.close(fig)
 
     def plot_whole_body_sar_bar(self, avg_results: pd.DataFrame):
@@ -77,9 +68,7 @@ class Plotter:
         """
         fig, ax = plt.subplots(figsize=(12, 7))
         avg_results["SAR_whole_body"].plot(kind="bar", ax=ax, color="skyblue")
-        ax.set_xticklabels(
-            avg_results.index.get_level_values("frequency_mhz"), rotation=0
-        )
+        ax.set_xticklabels(avg_results.index.get_level_values("frequency_mhz"), rotation=0)
         ax.set_title("Average Whole-Body SAR")
         ax.set_xlabel("Frequency (MHz)")
         ax.set_ylabel("Normalized Whole-Body SAR (mW/kg)")
@@ -91,9 +80,7 @@ class Plotter:
         """Plots the peak SAR across frequencies for far-field."""
         fig, ax = plt.subplots(figsize=(12, 7))
         if "peak_sar" in summary_stats.columns:
-            summary_stats["peak_sar"].plot(
-                kind="line", marker="o", ax=ax, color="purple"
-            )
+            summary_stats["peak_sar"].plot(kind="line", marker="o", ax=ax, color="purple")
             ax.set_title("Average Peak SAR (10g) Across All Tissues")
             ax.set_xlabel("Frequency (MHz)")
             ax.set_ylabel("Normalized Peak SAR (mW/kg)")
@@ -114,13 +101,9 @@ class Plotter:
             avg_results: DataFrame with average psSAR10g values for various tissues.
         """
         fig, ax = plt.subplots(figsize=(12, 7))
-        pssar_columns = [
-            col for col in avg_results.columns if col.startswith("psSAR10g")
-        ]
+        pssar_columns = [col for col in avg_results.columns if col.startswith("psSAR10g")]
         if pssar_columns:
-            avg_results[pssar_columns].plot(
-                kind="line", marker="o", ax=ax, colormap="viridis"
-            )
+            avg_results[pssar_columns].plot(kind="line", marker="o", ax=ax, colormap="viridis")
             ax.set_title(f"Average Normalized psSAR10g for Scenario: {scenario_name}")
             ax.set_xlabel("Frequency (MHz)")
             ax.set_ylabel("Normalized psSAR10g (mW/kg)")
@@ -133,18 +116,14 @@ class Plotter:
         fig.savefig(os.path.join(self.plots_dir, f"pssar10g_line_{scenario_name}.png"))
         plt.close(fig)
 
-    def plot_sar_distribution_boxplots(
-        self, scenario_name: str, scenario_results_df: pd.DataFrame
-    ):
+    def plot_sar_distribution_boxplots(self, scenario_name: str, scenario_results_df: pd.DataFrame):
         """Creates boxplots to show the distribution of SAR values for each metric.
 
         Args:
             scenario_name: The name of the placement scenario.
             scenario_results_df: DataFrame with detailed results for the scenario.
         """
-        pssar_columns = [
-            col for col in scenario_results_df.columns if col.startswith("psSAR10g")
-        ]
+        pssar_columns = [col for col in scenario_results_df.columns if col.startswith("psSAR10g")]
         sar_metrics_for_boxplot = ["SAR_head", "SAR_trunk"] + pssar_columns
         for metric in sar_metrics_for_boxplot:
             if not scenario_results_df[metric].dropna().empty:
@@ -158,22 +137,14 @@ class Plotter:
                     palette="viridis",
                     legend=False,
                 )
-                ax.set_title(
-                    f"Distribution of Normalized {METRIC_LABELS.get(metric, metric)} for Scenario: {scenario_name}"
-                )
+                ax.set_title(f"Distribution of Normalized {METRIC_LABELS.get(metric, metric)} for Scenario: {scenario_name}")
                 ax.set_xlabel("Frequency (MHz)")
                 ax.set_ylabel("Normalized SAR (mW/kg)")
                 plt.tight_layout()
-                fig.savefig(
-                    os.path.join(
-                        self.plots_dir, f"boxplot_{metric}_{scenario_name}.png"
-                    )
-                )
+                fig.savefig(os.path.join(self.plots_dir, f"boxplot_{metric}_{scenario_name}.png"))
                 plt.close(fig)
 
-    def plot_far_field_distribution_boxplot(
-        self, results_df: pd.DataFrame, metric: str = "SAR_whole_body"
-    ):
+    def plot_far_field_distribution_boxplot(self, results_df: pd.DataFrame, metric: str = "SAR_whole_body"):
         """Generates a boxplot for the distribution of a given metric in far-field results."""
         if metric not in results_df.columns or results_df[metric].dropna().empty:
             logging.getLogger("progress").warning(
@@ -199,9 +170,7 @@ class Plotter:
         fig.savefig(os.path.join(self.plots_dir, f"boxplot_{metric}_distribution.png"))
         plt.close(fig)
 
-    def _plot_heatmap(
-        self, fig, ax, data: pd.DataFrame, title: str, cbar: bool = True, cbar_ax=None
-    ):
+    def _plot_heatmap(self, fig, ax, data: pd.DataFrame, title: str, cbar: bool = True, cbar_ax=None):
         """Helper function to plot a single heatmap."""
         sns.heatmap(
             data,
@@ -217,9 +186,7 @@ class Plotter:
         ax.set_title(title, pad=20)
         return ax
 
-    def plot_sar_heatmap(
-        self, organ_df: pd.DataFrame, group_df: pd.DataFrame, tissue_groups: dict
-    ):
+    def plot_sar_heatmap(self, organ_df: pd.DataFrame, group_df: pd.DataFrame, tissue_groups: dict):
         """Generates the combined heatmap for Min, Avg, and Max SAR."""
         organ_pivot = organ_df.pivot_table(
             index="tissue",
@@ -231,14 +198,10 @@ class Plotter:
         organ_pivot = organ_pivot.reindex(mean_organ_sar.index)
         organ_pivot = organ_pivot.reorder_levels([1, 0], axis=1)
         metric_order = ["min_sar", "avg_sar", "max_sar"]
-        sorted_columns = sorted(
-            organ_pivot.columns, key=lambda x: (x[0], metric_order.index(x[1]))
-        )
+        sorted_columns = sorted(organ_pivot.columns, key=lambda x: (x[0], metric_order.index(x[1])))
         organ_pivot = organ_pivot[sorted_columns]
 
-        group_pivot = group_df.pivot_table(
-            index="group", columns="frequency_mhz", values="avg_sar"
-        )
+        group_pivot = group_df.pivot_table(index="group", columns="frequency_mhz", values="avg_sar")
         mean_group_sar = group_pivot.mean(axis=1).sort_values(ascending=False)
         group_pivot = group_pivot.reindex(mean_group_sar.index)
 
@@ -272,26 +235,18 @@ class Plotter:
         ax_organ.set_ylabel("Tissue")
 
         group_colors = {"eyes_group": "r", "skin_group": "g", "brain_group": "b"}
-        tissue_to_group = {
-            tissue: group
-            for group, tissues in tissue_groups.items()
-            for tissue in tissues
-        }
+        tissue_to_group = {tissue: group for group, tissues in tissue_groups.items() for tissue in tissues}
         for tick_label in ax_organ.get_yticklabels():
             group = tissue_to_group.get(tick_label.get_text())
             if group in group_colors:
                 tick_label.set_color(group_colors[group])
 
-        ax_group = self._plot_heatmap(
-            fig, ax_group, group_pivot, "Organ Group Summary (Avg SAR)", cbar=False
-        )
+        ax_group = self._plot_heatmap(fig, ax_group, group_pivot, "Organ Group Summary (Avg SAR)", cbar=False)
         ax_group.set_xlabel("Frequency (MHz)")
         ax_group.set_ylabel("")
         for tick_label in ax_group.get_yticklabels():
             tick_label.set_rotation(0)
-            tick_label.set_color(
-                group_colors.get(f"{tick_label.get_text().lower()}_group", "black")
-            )
+            tick_label.set_color(group_colors.get(f"{tick_label.get_text().lower()}_group", "black"))
 
         plt.tight_layout(rect=[0, 0, 0.95, 0.98])
         fig.savefig(os.path.join(self.plots_dir, "heatmap_sar_summary.png"))
@@ -306,16 +261,12 @@ class Plotter:
         title: str = "Peak SAR",
     ):
         """Generates a combined heatmap for a given peak SAR metric."""
-        organ_pivot = organ_df.pivot_table(
-            index="tissue", columns="frequency_mhz", values=value_col
-        )
+        organ_pivot = organ_df.pivot_table(index="tissue", columns="frequency_mhz", values=value_col)
         organ_pivot = organ_pivot.loc[(organ_pivot > 0.01).any(axis=1)]
         mean_organ_sar = organ_pivot.mean(axis=1).sort_values(ascending=False)
         organ_pivot = organ_pivot.reindex(mean_organ_sar.index)
 
-        group_pivot = group_df.pivot_table(
-            index="group", columns="frequency_mhz", values=value_col
-        )
+        group_pivot = group_df.pivot_table(index="group", columns="frequency_mhz", values=value_col)
         mean_group_sar = group_pivot.mean(axis=1).sort_values(ascending=False)
         group_pivot = group_pivot.reindex(mean_group_sar.index)
 
@@ -347,26 +298,18 @@ class Plotter:
         ax_organ.set_ylabel("Tissue")
 
         group_colors = {"eyes_group": "r", "skin_group": "g", "brain_group": "b"}
-        tissue_to_group = {
-            tissue: group
-            for group, tissues in tissue_groups.items()
-            for tissue in tissues
-        }
+        tissue_to_group = {tissue: group for group, tissues in tissue_groups.items() for tissue in tissues}
         for tick_label in ax_organ.get_yticklabels():
             group = tissue_to_group.get(tick_label.get_text())
             if group in group_colors:
                 tick_label.set_color(group_colors[group])
 
-        ax_group = self._plot_heatmap(
-            fig, ax_group, group_pivot, f"Organ Group Summary ({title})", cbar=False
-        )
+        ax_group = self._plot_heatmap(fig, ax_group, group_pivot, f"Organ Group Summary ({title})", cbar=False)
         ax_group.set_xlabel("Frequency (MHz)")
         ax_group.set_ylabel("")
         for tick_label in ax_group.get_yticklabels():
             tick_label.set_rotation(0)
-            tick_label.set_color(
-                group_colors.get(f"{tick_label.get_text().lower()}_group", "black")
-            )
+            tick_label.set_color(group_colors.get(f"{tick_label.get_text().lower()}_group", "black"))
 
         plt.tight_layout(rect=[0, 0, 0.95, 0.98])
         fig.savefig(os.path.join(self.plots_dir, f"heatmap_{value_col}_summary.png"))
