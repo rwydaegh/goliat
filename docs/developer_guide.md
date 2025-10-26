@@ -20,41 +20,6 @@ GOLIAT's architecture separates concerns:
 
 Key flow: Config → BaseStudy.run() → Setups → Runner → Extractor → Analyzer.
 
-### Logging and colors
-
-GOLIAT uses two loggers:
-- **progress**: High-level updates (console, .progress.log).
-- **verbose**: Detailed info (console, .log).
-
-Colors via colorama in `src/colors.py` (e.g., warnings yellow, errors red). Defined in COLOR_MAP:
-
-| log_type | Color | Use Case |
-|----------|-------|----------|
-| default | White | Standard messages. |
-| header | Bright Magenta | Phase starts (e.g., "Starting Setup"). |
-| progress | Green | Progress updates (e.g., "Processing Frequency 1/5"). |
-| success | Bright Green | Completion (e.g., "Study Finished"). |
-| info | Cyan | Context (e.g., "Project path set to..."). |
-| highlight | Bright Yellow | Key values (e.g., "Balance: 99.87%"). |
-| warning | Yellow | Non-critical issues. |
-| error | Red | Recoverable errors. |
-| fatal | Magenta | Critical failures (stops study). |
-| verbose | Blue | Debug info. |
-
-Use `_log(message, level='progress', log_type='info')` in classes (via LoggingMixin).
-
-**How to Use Logging**:
-
-To apply a color, use the `_log` method from the `LoggingMixin` and specify the `log_type`.
-
-```python
-# Example usage:
-self._log("This is a warning message.", log_type='warning')
-self._log("File saved successfully.", level='progress', log_type='success')
-```
-
-**Important**: When adding a `log_type`, do not change the existing `level` parameter (e.g., `level='progress'`). The `level` controls which log file the message goes to, while `log_type` only controls the terminal color.
-
 ### Profiling
 
 Two profilers:
@@ -248,36 +213,6 @@ A key feature for user experience is the smooth animation of the stage progress 
     ```
 
 4.  **Termination**: Once the actual task is complete in the study process, it sends an `end_animation` message. This stops the animation timer and sets the progress bar to its final, accurate value, correcting for any deviation between the estimate and the actual time taken.
-
-**Log Rotation**:
-
-The `setup_loggers` function checks the number of log files in the `logs` directory. If it exceeds a limit (10 pairs), it deletes the oldest pair (`.log` and `.progress.log`) to prevent the directory from growing indefinitely.
-
-**Handler Configuration**: The function creates file handlers and stream (console) handlers for each logger, ensuring messages go to the right places. `propagate = False` is used to prevent messages from being handled by parent loggers, avoiding duplicate output.
-
-```python
-# from src/logging_manager.py
-def setup_loggers(session_timestamp=None):
-    # ... log rotation logic ...
-
-    progress_logger = logging.getLogger('progress')
-    progress_logger.setLevel(logging.INFO)
-    # Remove existing handlers to prevent duplicates
-    for handler in progress_logger.handlers[:]:
-        progress_logger.removeHandler(handler)
-    
-    # File handler for progress file
-    progress_file_handler = logging.FileHandler(progress_log_filename, mode='a')
-    progress_logger.addHandler(progress_file_handler)
-    
-    # Stream handler for progress (console output)
-    progress_stream_handler = logging.StreamHandler()
-    progress_logger.addHandler(progress_stream_handler)
-    progress_logger.propagate = False
-
-    # ... similar setup for verbose_logger ...
-    return progress_logger, verbose_logger, session_timestamp
-```
 
 **Configuration (`config.py`)**:
 

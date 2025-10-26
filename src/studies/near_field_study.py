@@ -188,59 +188,78 @@ class NearFieldStudy(BaseStudy):
             simulation = None
 
             # 1. Setup Simulation
-            needs_setup = self.project_manager.create_or_open_project(
-                phantom_name, freq, scenario_name, position_name, orientation_name
-            )
+            if do_setup:
+                needs_setup = self.project_manager.create_or_open_project(
+                    phantom_name, freq, scenario_name, position_name, orientation_name
+                )
 
-            if do_setup and needs_setup:
-                with profile(self, "setup"):
-                    if self.gui:
-                        self.gui.update_stage_progress("Setup", 0, 1)
+                if needs_setup:
+                    with profile(self, "setup"):
+                        if self.gui:
+                            self.gui.update_stage_progress("Setup", 0, 1)
 
-                    antenna = Antenna(self.config, freq)
-                    setup = NearFieldSetup(
-                        self.config,
-                        phantom_name,
-                        freq,
-                        scenario_name,
-                        position_name,
-                        orientation_name,
-                        antenna,
-                        self.verbose_logger,
-                        self.progress_logger,
-                    )
+                        # Explicitly create a new project before setup
+                        self.project_manager.create_new()
 
-                    with self.subtask(
-                        "setup_simulation", instance_to_profile=setup
-                    ) as wrapper:
-                        simulation = wrapper(setup.run_full_setup)(self.project_manager)
-
-                    if not simulation:
-                        self._log(
-                            f"ERROR: Setup failed for {placement_name}. Cannot proceed.",
-                            level="progress",
-                            log_type="error",
+                        antenna = Antenna(self.config, freq)
+                        setup = NearFieldSetup(
+                            self.config,
+                            phantom_name,
+                            freq,
+                            scenario_name,
+                            position_name,
+                            orientation_name,
+                            antenna,
+                            self.verbose_logger,
+                            self.progress_logger,
                         )
-                        return
 
-                    # The first save is now critical after setup is complete.
-                    self.project_manager.save()
-                    if self.gui:
-                        progress = self.profiler.get_weighted_progress("setup", 1.0)
-                        self.gui.update_overall_progress(int(progress), 100)
-                        self.gui.update_stage_progress("Setup", 1, 1)
+                        with self.subtask(
+                            "setup_simulation", instance_to_profile=setup
+                        ) as wrapper:
+                            simulation = wrapper(setup.run_full_setup)(
+                                self.project_manager
+                            )
+
+                        if not simulation:
+                            self._log(
+                                f"ERROR: Setup failed for {placement_name}. Cannot proceed.",
+                                level="progress",
+                                log_type="error",
+                            )
+                            return
+
+                        # Save the project and THEN write the metadata
+                        self.project_manager.save()
+                        surgical_config = self.config.build_simulation_config(
+                            phantom_name=phantom_name,
+                            frequency_mhz=freq,
+                            scenario_name=scenario_name,
+                            position_name=position_name,
+                            orientation_name=orientation_name,
+                        )
+                        self.project_manager.write_simulation_metadata(
+                            self.project_manager.project_path + ".meta.json",
+                            surgical_config,
+                        )
+
+                        if self.gui:
+                            progress = self.profiler.get_weighted_progress("setup", 1.0)
+                            self.gui.update_overall_progress(int(progress), 100)
+                            self.gui.update_stage_progress("Setup", 1, 1)
+            else:
+                # If not doing setup, just open the project, which will also perform verification
+                self.project_manager.create_or_open_project(
+                    phantom_name, freq, scenario_name, position_name, orientation_name
+                )
 
             # ALWAYS get a fresh simulation handle from the document before run/extract
             import s4l_v1.document
 
             if s4l_v1.document.AllSimulations:
-                sim_name= f"EM_FDTD_{phantom_name}_{freq}MHz_{placement_name}"
+                sim_name = f"EM_FDTD_{phantom_name}_{freq}MHz_{placement_name}"
                 simulation = next(
-                    (
-                        s
-                        for s in s4l_v1.document.AllSimulations
-                        if s.Name == sim_name
-                    ),
+                    (s for s in s4l_v1.document.AllSimulations if s.Name == sim_name),
                     None,
                 )
 

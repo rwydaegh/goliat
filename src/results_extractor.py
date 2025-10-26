@@ -150,14 +150,8 @@ class ResultsExtractor(LoggingMixin):
 
     def _save_json_results(self, results_data: dict):
         """Saves the final results to a JSON file."""
-        results_dir = os.path.join(
-            self.config.base_dir,
-            "results",
-            self.study_type,
-            self.phantom_name,
-            f"{self.frequency_mhz}MHz",
-            self.placement_name,
-        )
+        reporter = Reporter(self)
+        results_dir = reporter._get_results_dir()
         os.makedirs(results_dir, exist_ok=True)
         results_filepath = os.path.join(results_dir, "sar_results.json")
 

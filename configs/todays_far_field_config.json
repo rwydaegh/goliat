@@ -2,9 +2,9 @@
     "extends": "base_config.json",
     "study_type": "far_field",
     "execution_control": {
-        "do_setup": false,
+        "do_setup": true,
         "do_run": false,
-        "do_extract": true,
+        "do_extract": false,
         "only_write_input_file": false,
         "batch_run": false
     },
@@ -12,16 +12,24 @@
         "thelonious"
     ],
     "frequencies_mhz": [
+        450,
+        700,
         835
     ],
     "far_field_setup": {
         "type": "environmental",
         "environmental": {
             "incident_directions": [
-                "x_pos"
+                "x_pos",
+                "x_neg",
+                "y_pos",
+                "y_neg",
+                "z_pos",
+                "z_neg"
             ],
             "polarizations": [
-                "theta"
+                "theta",
+                "phi"
             ]
         },
         "auto_induced": {
@@ -39,7 +47,9 @@
             "manual_fallback_max_step_mm": 5.0
         },
         "global_gridding_per_frequency": {
-            "450": 4.0
+            "450": 4.0,
+            "700": 4.0,
+            "835": 4.0
         },
         "padding": {
             "padding_mode": "manual",

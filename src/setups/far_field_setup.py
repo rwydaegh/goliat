@@ -103,20 +103,8 @@ class FarFieldSetup(BaseSetup):
         return simulation
 
     def _create_or_get_simulation_bbox(self) -> "model.Entity":
-        """Creates or gets the simulation bounding box."""
+        """Creates the simulation bounding box."""
         bbox_name = "far_field_simulation_bbox"
-        existing_bbox = next(
-            (
-                e
-                for e in self.model.AllEntities()
-                if hasattr(e, "Name") and e.Name == bbox_name
-            ),
-            None,
-        )
-        if existing_bbox:
-            self._log("Found existing simulation bounding box.", log_type="verbose")
-            return existing_bbox
-
         self._log(
             "Creating simulation bounding box for far-field...", log_type="progress"
         )

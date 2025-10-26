@@ -1,5 +1,5 @@
 {
-  "use_gui": true,
+    "use_gui": true,
     "execution_control": {
         "do_setup": true,
         "do_run": true,
@@ -48,5 +48,5 @@
     "data_setup": {
         "gdrive_url": "https://drive.google.com/drive/folders/1Ps0ilW6yx4Z5VoWRZKrkhP225m8lBQOV?usp=sharing",
         "data_dir": "data"
-      }
+    }
 }

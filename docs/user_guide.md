@@ -36,7 +36,7 @@ The core logic of your simulation is managed by specialized **Study** classes (`
 
 -   **Near-Field Example**: If you're running a near-field study, the `NearFieldStudy` class will systematically loop through all defined phantoms, frequencies, and antenna placements. For instance, it might process "thelonious" phantom at 700 MHz with an antenna placed "by_cheek" (e.g., 8mm from the cheek).
 -   **Far-Field Example**: For far-field studies, the `FarFieldStudy` class iterates through phantoms, frequencies, incident directions (e.g., x_pos, y_neg), and polarizations (e.g., theta, phi).
--   **Project Management**: For each unique simulation scenario, GOLIAT creates a dedicated Sim4Life project file (`.smash`) within a structured `results/` directory (e.g., `results/near_field/thelonious/700MHz/by_cheek/`). Note that for the far-field studies, there is only one `.smash` file which contains all the simulations with different directions and polarizations.
+-   **Project Management**: For each unique simulation scenario, GOLIAT creates a dedicated Sim4Life project file (`.smash`) within a structured `results/` directory. For a near-field study, this would be `results/near_field/thelonious/700MHz/by_cheek/`. For a far-field study, each simulation gets its own directory, like `results/far_field/thelonious/700MHz/environmental_x_pos_theta/`.
 -   **Progress Tracking**: The GUI provides real-time progress updates and a guess for the Time Remaining, which becomes more accurate over time as GOLIAT learns from previous runs (these are stored in `configs/profiling_config.json`).
 
 ### 3. Setup scene in Sim4Life
@@ -77,6 +77,7 @@ After the simulation, GOLIAT's `ResultsExtractor` and `Analyzer` components take
     -   `sar_stats_all_tissues.pkl`: A Python pickle file with detailed, tissue-specific SAR data.
     -   **Plots**: GOLIAT automatically generates a suite of visualizations, including SAR heatmaps (showing SAR distribution by tissue and frequency), bar charts (comparing SAR in different regions), and boxplots (illustrating SAR distributions).
 -   **Aggregated Analysis**: You can run the dedicated analysis script (`python run_analysis.py --config your_config.json`) to aggregate results across multiple simulations and generate comprehensive CSV reports and additional plots.
+-   **Log Files**: For debugging and detailed tracking, GOLIAT generates two types of log files in the `logs/` directory for each run: a `.progress.log` for high-level updates and a `.log` for verbose, detailed information. The system automatically manages these files, keeping a maximum of 15 pairs to prevent excessive disk usage.
 
 **Example Output Interpretation**: For a near-field 700MHz simulation with an antenna by the cheek, you might observe:
 -   Head SAR: 0.5 mW/kg (per 1W input).

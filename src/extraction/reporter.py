@@ -52,14 +52,22 @@ class Reporter:
 
     def _get_results_dir(self) -> str:
         """Gets the results directory path."""
-        return os.path.join(
+        base_path = os.path.join(
             self.parent.config.base_dir,
             "results",
             self.parent.study_type,
             self.parent.phantom_name,
             f"{self.parent.frequency_mhz}MHz",
-            self.parent.placement_name,
         )
+
+        if self.parent.study_type == "far_field":
+            # For far-field, placement_name is constructed from scenario, polarization, and direction
+            # e.g., environmental_theta_x_pos
+            placement_name = f"{self.parent.scenario_name}_{self.parent.position_name}_{self.parent.orientation_name}"
+            return os.path.join(base_path, placement_name)
+
+        # For near-field, placement_name is already the final directory component
+        return os.path.join(base_path, self.parent.placement_name)
 
     def _save_pickle_report(
         self,
