@@ -119,7 +119,9 @@ def check_python_interpreter():
 
         update_bashrc(selected_python)
 
-        print("\n .bashrc file updated. Please restart your terminal, run source .bashrc, and run the script again this time with the correct python.")
+        print(
+            "\n .bashrc file updated. Please restart your terminal, run source .bashrc, and run the script again this time with the correct python."
+        )
         sys.exit(0)
 
     except (ValueError, IndexError):
@@ -149,5 +151,3 @@ def prepare_data(base_dir):
         subprocess.run([python_exe, prepare_antennas_script], check=True)
     else:
         logging.info("Centered antennas already exist. Skipping preparation.")
-
-
