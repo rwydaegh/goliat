@@ -1,7 +1,8 @@
 from typing import TYPE_CHECKING
-
+ 
 import numpy as np
-
+import s4l_v1.simulation.emfdtd as emfdtd
+ 
 from .base_setup import BaseSetup
 from .boundary_setup import BoundarySetup
 from .gridding_setup import GriddingSetup
@@ -9,15 +10,14 @@ from .material_setup import MaterialSetup
 from .phantom_setup import PhantomSetup
 from .placement_setup import PlacementSetup
 from .source_setup import SourceSetup
-
+ 
 if TYPE_CHECKING:
     from logging import Logger
-
-    import s4l_v1.simulation.emfdtd as emfdtd
-
     from ..antenna import Antenna
     from ..config import Config
     from ..project_manager import ProjectManager
+    from XCoreMath import Transform
+    from QTech import Vec3
 
 
 class NearFieldSetup(BaseSetup):
@@ -56,8 +56,6 @@ class NearFieldSetup(BaseSetup):
         """Executes the full sequence of setup steps."""
         self._log("Running full simulation setup...", log_type="progress")
 
-        # The project is now created/opened by the study, not the setup.
-        # This method assumes a valid project is already open.
 
         if not self.free_space:
             phantom_setup = PhantomSetup(
@@ -83,11 +81,16 @@ class NearFieldSetup(BaseSetup):
         )
         placement_setup.place_antenna()
 
-        self._create_simulation_bbox()
+        antenna_components = self._get_antenna_components()
 
+        self._create_simulation_bbox()
+        
         simulation = self._setup_simulation_entity()
 
-        antenna_components = self._get_antenna_components()
+        sim_bbox_name = f"{self.placement_name.lower()}_simulation_bbox"
+        self._add_point_sensors(simulation, sim_bbox_name)
+
+        self._align_simulation_with_phone()
 
         material_setup = MaterialSetup(
             self.config,
@@ -125,9 +128,6 @@ class NearFieldSetup(BaseSetup):
         )
         source_setup.setup_source_and_sensors(antenna_components)
 
-        sim_bbox_name = f"{self.placement_name.lower()}_simulation_bbox"
-        self._add_point_sensors(simulation, sim_bbox_name)
-
         all_antenna_parts = list(antenna_components.values())
         point_sensor_entities = [e for e in self.model.AllEntities() if "Point Sensor Entity" in e.Name]
 
@@ -150,6 +150,102 @@ class NearFieldSetup(BaseSetup):
 
         self._log("Full simulation setup complete.", log_type="success")
         return simulation
+    
+    def _align_simulation_with_phone(self):
+        """
+        Aligns the entire simulation scene with the phone's orientation for 'by_cheek' scenarios.
+        This ensures the phone is upright, and all other entities (phantom, bounding boxes) are
+        rotated accordingly to preserve the geometric setup.
+        """
+        if self.base_placement_name != "by_cheek":
+            return
+
+        self._log("Aligning simulation scene with phone...", log_type="progress")
+
+        from XCoreMath import Transform
+        from QTech import Vec3
+
+        model_type = self.antenna.get_model_type()
+        if model_type == "PIFA":
+            reference_entity_name = "component1:Substrate"
+            target_entity_name = "component1:Battery"
+        elif model_type == "IFA":
+            reference_entity_name = "Ground"
+            target_entity_name = "Battery"
+        else:
+            self._log(f"Antenna model type '{model_type}' not supported for alignment. Skipping.", log_type="warning")
+            return
+
+        all_entities = self.model.AllEntities()
+        # DEBUG: List all available entity names before searching
+        all_entity_names = [e.Name for e in all_entities if hasattr(e, "Name")]
+        self._log(f"--- DEBUG: Entities available for alignment: {all_entity_names}", log_type="verbose")
+
+        reference_entity = next((e for e in all_entities if hasattr(e, "Name") and e.Name == reference_entity_name), None)
+        target_entity = next((e for e in all_entities if hasattr(e, "Name") and e.Name == target_entity_name), None)
+
+        if not reference_entity or not target_entity:
+            self._log(
+                f"Could not find reference ('{reference_entity_name}') or target ('{target_entity_name}') entities. Skipping alignment.",
+                log_type="warning",
+            )
+            return
+
+        # Calculate the transformation matrix to make the phone upright, mimicking the script
+        reference_transform = reference_entity.Transform
+        original_target_transform = target_entity.Transform
+        
+        # Decompose the original transform
+        target_rotation = original_target_transform.DecomposeRotation
+        target_translation = original_target_transform.Translation
+
+        if model_type == "PIFA":
+            target_rotation[1] = 0
+            target_rotation[2] = np.deg2rad(-90)
+            target_translation[1] = 0
+        else:  # IFA
+            target_rotation[0] = 0
+            target_rotation[1] = 0
+            target_rotation[2] = 0
+            target_translation[2] = 150
+
+        # Create the new transform for the target entity
+        upright_target_transform = Transform(Vec3(1, 1, 1), target_rotation, target_translation)
+        
+        # The Diff transform is calculated based on the new target transform and the original reference
+        diff_transform = upright_target_transform * reference_transform.Inverse()
+
+        # Apply the transformation to the specific parent groups and bounding boxes.
+        # This prevents the double-transformation of children (e.g., individual tissues).
+        
+        # Find the main phantom group (e.g., 'Thelonious_6y_V6')
+        phantom_group_name_lower = self.phantom_name.lower()
+        phantom_group = next((e for e in all_entities if phantom_group_name_lower in e.Name.lower() and hasattr(e, "Entities")), None)
+
+        # Find the main antenna group
+        antenna_group = next((e for e in all_entities if e.Name.startswith("Antenna ") and hasattr(e, "Entities")), None)
+
+        # Find all relevant bounding boxes
+        sim_bbox = next((e for e in all_entities if e.Name.endswith("_simulation_bbox")), None)
+        ant_bbox = next((e for e in all_entities if "Antenna bounding box" in e.Name), None)
+        head_bbox = next((e for e in all_entities if e.Name.endswith("_Head_BBox")), None)
+        trunk_bbox = next((e for e in all_entities if e.Name.endswith("_Trunk_BBox")), None)
+
+        # Find all point sensor entities
+        point_sensors = [e for e in all_entities if "Point Sensor Entity" in e.Name]
+
+        entities_to_transform = [e for e in [phantom_group, antenna_group, sim_bbox, ant_bbox, head_bbox, trunk_bbox] if e]
+        entities_to_transform.extend(point_sensors)
+
+        if not phantom_group:
+            self._log(f"Could not find phantom group containing '{phantom_group_name_lower}'. Phantom will not be rotated.", log_type="warning")
+
+        self._log(f"--- DEBUG: Applying transform to {len(entities_to_transform)} specific entities.", log_type="verbose")
+        for entity in entities_to_transform:
+            self._log(f"  - Transforming '{entity.Name}'", log_type="verbose")
+            entity.ApplyTransform(diff_transform)
+
+        self._log("Successfully aligned simulation scene.", log_type="success")
 
     def _get_antenna_components(self) -> dict:
         """Gets a dictionary of all antenna component entities."""
@@ -274,7 +370,7 @@ class NearFieldSetup(BaseSetup):
 
             entities_to_bound = [antenna_bbox_entity]
 
-            if bounding_box_setting == "full_body":
+            if bounding_box_setting == "whole_body":
                 phantom_entities = [e for e in self.model.AllEntities() if isinstance(e, self.XCoreModeling.TriangleMesh)]
                 entities_to_bound.extend(phantom_entities)
             else:

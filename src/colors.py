@@ -13,6 +13,7 @@ COLOR_MAP = {
     "success": Fore.GREEN + Style.BRIGHT,
     "header": Fore.MAGENTA + Style.BRIGHT,
     "highlight": Fore.YELLOW + Style.BRIGHT,
+    "caller": Fore.BLACK + Style.DIM,
 }
 
 
