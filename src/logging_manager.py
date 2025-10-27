@@ -1,3 +1,4 @@
+import inspect
 import logging
 import os
 import time
@@ -25,9 +26,25 @@ class ColorFormatter(logging.Formatter):
             The formatted and colorized log message.
         """
         log_type = getattr(record, "log_type", "default")
-        color = get_color(log_type)
+        message_color = get_color(log_type)
+        caller_color = get_color("caller")
         message = record.getMessage()
-        return f"{color}{message}{Style.RESET_ALL}"
+        caller_info = getattr(record, "caller_info", "")
+        return f"{message_color}{message}{Style.RESET_ALL} {caller_color}{caller_info}{Style.RESET_ALL}"
+
+
+class CustomFormatter(logging.Formatter):
+    """A custom formatter to handle missing record attributes."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        """Formats the record, safely handling the 'caller_info' attribute."""
+        # First, format the base message
+        base_message = super().format(record)
+        # If caller_info is present, append it
+        caller_info = getattr(record, "caller_info", "")
+        if caller_info:
+            return f"{base_message} {caller_info}"
+        return base_message
 
 
 def setup_loggers(process_id: Optional[str] = None) -> tuple[logging.Logger, logging.Logger, str]:
@@ -87,7 +104,7 @@ def setup_loggers(process_id: Optional[str] = None) -> tuple[logging.Logger, log
     progress_log_filename = os.path.join(log_dir, f"{session_timestamp}.progress.log")
     main_log_filename = os.path.join(log_dir, f"{session_timestamp}.log")
 
-    file_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+    file_formatter = CustomFormatter("%(asctime)s - %(levelname)s - %(message)s")
     console_formatter = ColorFormatter()
 
     main_file_handler = logging.FileHandler(main_log_filename, mode="a")
@@ -157,6 +174,21 @@ class LoggingMixin:
             log_type: A string key that maps to a color for terminal output.
         """
         extra = {"log_type": log_type}
+        log_origin = ""
+
+        if level == "verbose":
+            # Inspect the call stack to find the caller's class and method/function name
+            current_frame = inspect.currentframe()
+            if current_frame:
+                caller_frame = current_frame.f_back
+                if caller_frame:
+                    caller_method_name = caller_frame.f_code.co_name
+                    if "self" in caller_frame.f_locals:
+                        caller_class_name = caller_frame.f_locals["self"].__class__.__name__
+                        log_origin = f"{caller_class_name}.{caller_method_name}"
+                    else:
+                        log_origin = caller_method_name
+            extra["caller_info"] = f"[{log_origin}]"
 
         if level == "progress":
             self.progress_logger.info(message, extra=extra)
@@ -165,4 +197,5 @@ class LoggingMixin:
         else:
             self.verbose_logger.info(message, extra=extra)
             if hasattr(self, "gui") and self.gui and level != "progress":
-                self.gui.log(message, level="verbose")
+                gui_message = f"{message} [{log_origin}]" if log_origin else message
+                self.gui.log(gui_message, level="verbose")
