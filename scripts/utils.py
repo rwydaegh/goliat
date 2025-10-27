@@ -64,9 +64,13 @@ def update_bashrc(selected_python_path):
     """
     bashrc_path = os.path.join(os.getcwd(), ".bashrc")
 
+    # Strip any existing quotes from the input path
+    selected_python_path = selected_python_path.strip().strip('"').strip("'")
+    
     # Prepare the new path line
     drive, path_rest = os.path.splitdrive(selected_python_path)
     bash_path = f"/{drive.strip(':')}{path_rest.replace(os.sep, '/')}"
+    # Ensure no extra quotes are added - use double quotes only around the path
     new_path_line = f'export PATH="{bash_path}:$PATH"\n'
 
     # Overwrite the file with just the new path

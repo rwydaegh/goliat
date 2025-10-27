@@ -3,15 +3,14 @@
   "study_type": "near_field",
   "execution_control": {
       "do_setup": true,
-      "do_run": true,
+      "do_run": false,
       "only_write_input_file": false,
-      "do_extract": true,
+      "do_extract": false,
       "batch_run": false,
       "auto_cleanup_previous_results": []
   },
   "phantoms": [
-    "thelonious",
-    "eartha"
+    "thelonious"
   ],
   "simulation_parameters": {
     "freespace_antenna_bbox_expansion_mm": [
@@ -71,64 +70,46 @@
           "group2": [0.5, 0.5, 0.5]
         }
       }
+    },
+    "5800": {
+      "center_frequency": 5800,
+      "target_power_mW": 54,
+      "model_type": "IFA",
+      "source_name": "Feed",
+      "materials": {
+        "Antenna": "Copper",
+        "Battery": "Copper",
+        "Ground": "Copper"
+      },
+      "gridding": {
+        "automatic": ["Feed"],
+        "manual": {
+          "group1": ["Antenna"],
+          "group2": ["Battery", "Ground"]
+        },
+        "manual_grid_step": {
+          "group1": [0.1, 0.1, 0.1],
+          "group2": [0.3, 1, 1]
+        }
+      }
     }
   },
   "placement_scenarios": {
-    "front_of_eyes": {
-      "bounding_box": "default",
-      "positions": {
-        "center": [0, 0, -100],
-        "left": [-25, 0, -100],
-        "right": [25, 0, -100],
-        "up": [0, 0, -40]
-      },
-      "orientations": {
-        "vertical": [],
-        "horizontal": [
-          {"axis": "Y", "angle_deg": 90}
-        ]
-      },
-      "antenna_reference": {
-        "distance_from_top": 10
-      },
-      "phantom_reference": "nasion"
-    },
     "by_cheek": {
-      "bounding_box": "default",
+      "bounding_box": "whole_body",
       "positions": {
         "base": [0, 0, 0]
       },
       "orientations": {
-        "cheek_base": [{"axis": "Z", "angle_deg": 15}],
-        "cheek_up": [{"axis": "Z", "angle_deg": 15}, {"axis": "X", "angle_deg": 10}],
-        "cheek_down": [{"axis": "Z", "angle_deg": 15}, {"axis": "X", "angle_deg": -10}],
-        "tilt_base": [],
-        "tilt_up": [{"axis": "X", "angle_deg": 10}],
-        "tilt_down": [{"axis": "X", "angle_deg": -10}]
+        "cheek_base": [{"axis": "Z", "angle_deg": 15}]
       },
       "antenna_reference": {
         "distance_from_top": 10
       },
-      "phantom_reference": "tragus"
-    },
-    "by_belly": {
-      "bounding_box": "default",
-      "positions": {
-        "center": [0, 0, 0],
-        "left": [-150, 0, 0],
-        "right": [150, 0, 0],
-        "up": [0, 0, 100]
-      },
-      "orientations": {
-        "vertical": [],
-        "horizontal": [
-          {"axis": "Y", "angle_deg": 90}
-        ]
-      },
-      "antenna_reference": {
-        "distance_from_top": 10
-      },
-      "phantom_reference": "belly_button"
+      "phantom_reference": "tragus",
+      "target_rotation": {
+        "enabled": true
+      }
     }
   },
   "phantom_definitions": {

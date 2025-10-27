@@ -196,7 +196,7 @@ def main():
         "config",
         type=str,
         nargs="?",
-        default="near_field_config",
+        default="todays_near_field_config",
         help="Path or name of the configuration file (e.g., todays_far_field or configs/near_field_config.json).",
     )
     parser.add_argument(
