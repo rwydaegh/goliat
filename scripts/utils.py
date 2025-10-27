@@ -66,7 +66,7 @@ def update_bashrc(selected_python_path):
 
     # Strip any existing quotes from the input path
     selected_python_path = selected_python_path.strip().strip('"').strip("'")
-    
+
     # Prepare the new path line
     drive, path_rest = os.path.splitdrive(selected_python_path)
     bash_path = f"/{drive.strip(':')}{path_rest.replace(os.sep, '/')}"
