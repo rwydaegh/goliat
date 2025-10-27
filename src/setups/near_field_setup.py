@@ -1,8 +1,8 @@
 from typing import TYPE_CHECKING
- 
+
 import numpy as np
 import s4l_v1.simulation.emfdtd as emfdtd
- 
+
 from .base_setup import BaseSetup
 from .boundary_setup import BoundarySetup
 from .gridding_setup import GriddingSetup
@@ -10,14 +10,12 @@ from .material_setup import MaterialSetup
 from .phantom_setup import PhantomSetup
 from .placement_setup import PlacementSetup
 from .source_setup import SourceSetup
- 
+
 if TYPE_CHECKING:
     from logging import Logger
     from ..antenna import Antenna
     from ..config import Config
     from ..project_manager import ProjectManager
-    from XCoreMath import Transform
-    from QTech import Vec3
 
 
 class NearFieldSetup(BaseSetup):
@@ -56,7 +54,6 @@ class NearFieldSetup(BaseSetup):
         """Executes the full sequence of setup steps."""
         self._log("Running full simulation setup...", log_type="progress")
 
-
         if not self.free_space:
             phantom_setup = PhantomSetup(
                 self.config,
@@ -84,7 +81,7 @@ class NearFieldSetup(BaseSetup):
         antenna_components = self._get_antenna_components()
 
         self._create_simulation_bbox()
-        
+
         simulation = self._setup_simulation_entity()
 
         sim_bbox_name = f"{self.placement_name.lower()}_simulation_bbox"
@@ -150,7 +147,7 @@ class NearFieldSetup(BaseSetup):
 
         self._log("Full simulation setup complete.", log_type="success")
         return simulation
-    
+
     def _align_simulation_with_phone(self):
         """
         Aligns the entire simulation scene with the phone's orientation for 'by_cheek' scenarios.
@@ -177,9 +174,6 @@ class NearFieldSetup(BaseSetup):
             return
 
         all_entities = self.model.AllEntities()
-        # DEBUG: List all available entity names before searching
-        all_entity_names = [e.Name for e in all_entities if hasattr(e, "Name")]
-        self._log(f"--- DEBUG: Entities available for alignment: {all_entity_names}", log_type="verbose")
 
         reference_entity = next((e for e in all_entities if hasattr(e, "Name") and e.Name == reference_entity_name), None)
         target_entity = next((e for e in all_entities if hasattr(e, "Name") and e.Name == target_entity_name), None)
@@ -194,7 +188,7 @@ class NearFieldSetup(BaseSetup):
         # Calculate the transformation matrix to make the phone upright, mimicking the script
         reference_transform = reference_entity.Transform
         original_target_transform = target_entity.Transform
-        
+
         # Decompose the original transform
         target_rotation = original_target_transform.DecomposeRotation
         target_translation = original_target_transform.Translation
@@ -211,13 +205,13 @@ class NearFieldSetup(BaseSetup):
 
         # Create the new transform for the target entity
         upright_target_transform = Transform(Vec3(1, 1, 1), target_rotation, target_translation)
-        
+
         # The Diff transform is calculated based on the new target transform and the original reference
         diff_transform = upright_target_transform * reference_transform.Inverse()
 
         # Apply the transformation to the specific parent groups and bounding boxes.
         # This prevents the double-transformation of children (e.g., individual tissues).
-        
+
         # Find the main phantom group (e.g., 'Thelonious_6y_V6')
         phantom_group_name_lower = self.phantom_name.lower()
         phantom_group = next((e for e in all_entities if phantom_group_name_lower in e.Name.lower() and hasattr(e, "Entities")), None)
@@ -238,11 +232,13 @@ class NearFieldSetup(BaseSetup):
         entities_to_transform.extend(point_sensors)
 
         if not phantom_group:
-            self._log(f"Could not find phantom group containing '{phantom_group_name_lower}'. Phantom will not be rotated.", log_type="warning")
+            self._log(
+                f"Could not find phantom group containing '{phantom_group_name_lower}'. Phantom will not be rotated.", log_type="warning"
+            )
 
-        self._log(f"--- DEBUG: Applying transform to {len(entities_to_transform)} specific entities.", log_type="verbose")
+        self._log(f"--- Applying transform to {len(entities_to_transform)} specific entities.", log_type="verbose")
         for entity in entities_to_transform:
-            self._log(f"  - Transforming '{entity.Name}'", log_type="verbose")
+            self._log(f"  - Re-aligning '{entity.Name}'", log_type="verbose")
             entity.ApplyTransform(diff_transform)
 
         self._log("Successfully aligned simulation scene.", log_type="success")
