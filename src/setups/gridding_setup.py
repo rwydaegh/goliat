@@ -178,12 +178,18 @@ class GriddingSetup(BaseSetup):
             if automatic_components:
                 self.simulation.AddAutomaticGridSettings(automatic_components)
 
+            # Subgridding settings
+            subgridding_config = gridding_config.get("subgridding", {})
+            subgridded_components = subgridding_config.get("components", [])
+
             # Manual settings
             manual_grid_step = gridding_config.get("manual_grid_step", {})
             resolution = gridding_config.get("resolution", {})
 
             for grid_type, comp_names in gridding_config.get("manual", {}).items():
-                components_to_grid = [antenna_components[name] for name in comp_names if name in antenna_components]
+                # Exclude components that are already set for subgridding
+                components_for_manual_grid = [name for name in comp_names if name not in subgridded_components]
+                components_to_grid = [antenna_components[name] for name in components_for_manual_grid if name in antenna_components]
 
                 if components_to_grid:
                     if grid_type in manual_grid_step:
@@ -206,6 +212,35 @@ class GriddingSetup(BaseSetup):
                         np.array(oriented_geom_res),
                         self.units.MilliMeters,
                     )
+
+            # Apply Subgridding settings
+            if subgridding_config:
+                components_to_subgrid = [antenna_components[name] for name in subgridded_components if name in antenna_components]
+
+                if components_to_subgrid:
+                    import s4l_v1.simulation.emfdtd as emfdtd
+
+                    self._log("  - Applying subgridding settings...", log_type="info")
+                    automatic_grid_settings = next(
+                        (x for x in self.simulation.AllSettings if isinstance(x, emfdtd.AutomaticGridSettings) and x.Name == "Automatic"),
+                        None,
+                    )
+
+                    if automatic_grid_settings:
+                        self.simulation.Add(automatic_grid_settings, components_to_subgrid)
+
+                        subgrid_mode = subgridding_config.get("SubGridMode", "Box")
+                        subgrid_level = subgridding_config.get("SubGridLevel", "x9")
+                        auto_refinement = subgridding_config.get("AutoRefinement", "AutoRefinementVeryFine")
+
+                        automatic_grid_settings.SubGridMode = getattr(automatic_grid_settings.SubGridMode.enum, subgrid_mode)
+                        automatic_grid_settings.SubGridLevel = getattr(automatic_grid_settings.SubGridLevel.enum, subgrid_level)
+                        automatic_grid_settings.AutoRefinement = getattr(automatic_grid_settings.AutoRefinement.enum, auto_refinement)
+
+                        self._log(f"    - Mode: {subgrid_mode}, Level: {subgrid_level}, Refinement: {auto_refinement}", log_type="verbose")
+                    else:
+                        self._log("  - Could not find 'Automatic' grid settings to apply subgridding.", log_type="warning")
+
         else:
             source_entity = antenna_components[self.antenna.get_source_entity_name()]
             self.simulation.AddAutomaticGridSettings([source_entity])

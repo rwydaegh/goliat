@@ -49,6 +49,7 @@ This phase involves GOLIAT automatically constructing the 3D simulation environm
     -   **Far-Field**: Instead of an antenna, a plane wave source is configured, specifying its electric field strength (e.g., 1 V/m), incident direction, and polarization.
 -   **Material Assignment**: Appropriate electromagnetic properties (e.g., conductivity, permittivity) are assigned to all entities in the scene (tissues, antenna components) based on the specified frequency.
 -   **Gridding**: The simulation domain is discretized into a computational grid. GOLIAT intelligently applies gridding rules, using finer cells around critical areas like the antenna or phantom surface, and coarser cells elsewhere. This can be automatic or manually controlled via millimeter steps.
+-   **Scene Optimization**: For certain placements like `by_cheek`, GOLIAT automatically rotates the entire simulation scene to align the phone with the grid, which can significantly speed up simulation time.
 -   **Boundaries and Sensors**: Perfectly Matched Layer (PML) boundaries are configured to absorb outgoing electromagnetic waves, preventing reflections. Point sensors are strategically placed at the corners of the simulation bounding box to monitor field values for convergence.
 -   **Solver Configuration**: The Finite-Difference Time-Domain (FDTD) solver from `iSolve.exe` is set up, typically leveraging GPU acceleration (e.g., Acceleware or CUDA kernel) for faster computation.
 

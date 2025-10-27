@@ -3,8 +3,8 @@
   "study_type": "near_field",
   "execution_control": {
       "do_setup": true,
-      "do_run": false,
       "only_write_input_file": false,
+      "do_run": false,
       "do_extract": false,
       "batch_run": false,
       "auto_cleanup_previous_results": []
@@ -57,59 +57,78 @@
       },
       "gridding": {
         "automatic": ["component1:Substrate", "Lines 1"],
-        "manual": {
-          "group1": ["component1:Battery", "component1:Patch", "Extrude 1"],
-          "group2": ["component1:ShortingPin"]
-        },
-        "manual_grid_step": {
-          "group1": [1, 0.03, 1],
-          "group2": [0.1, 0.1, 0.1]
-        },
-        "resolution": {
-          "group1": [1.0, 1.0, 1.0],
-          "group2": [0.5, 0.5, 0.5]
+        "subgridding": {
+          "components": ["component1:Battery", "component1:Patch", "Extrude 1", "component1:ShortingPin"],
+          "SubGridMode": "Box",
+          "SubGridLevel": "x9",
+          "AutoRefinement": "AutoRefinementVeryFine"
         }
       }
     },
-    "5800": {
-      "center_frequency": 5800,
-      "target_power_mW": 54,
-      "model_type": "IFA",
-      "source_name": "Feed",
+    "835": {
+      "center_frequency": 835,
+      "target_power_mW": 228,
+      "model_type": "PIFA",
+      "source_name": "Lines 1",
       "materials": {
-        "Antenna": "Copper",
-        "Battery": "Copper",
-        "Ground": "Copper"
+        "Extrude 1": "Copper",
+        "component1:Battery": "Copper",
+        "component1:Patch": "Copper",
+        "component1:ShortingPin": "Copper",
+        "component1:Substrate": "Rogers RT/duroid 5880"
       },
       "gridding": {
-        "automatic": ["Feed"],
-        "manual": {
-          "group1": ["Antenna"],
-          "group2": ["Battery", "Ground"]
-        },
-        "manual_grid_step": {
-          "group1": [0.1, 0.1, 0.1],
-          "group2": [0.3, 1, 1]
+        "automatic": ["component1:Substrate", "Lines 1"],
+        "subgridding": {
+          "components": ["component1:Battery", "component1:Patch", "Extrude 1", "component1:ShortingPin"],
+          "SubGridMode": "Box",
+          "SubGridLevel": "x9",
+          "AutoRefinement": "AutoRefinementVeryFine"
         }
       }
     }
   },
   "placement_scenarios": {
-    "by_cheek": {
-      "bounding_box": "whole_body",
+    "front_of_eyes": {
+      "bounding_box": "default",
       "positions": {
-        "base": [0, 0, 0]
+        "center": [0, 0, -100]
       },
       "orientations": {
-        "cheek_base": [{"axis": "Z", "angle_deg": 15}]
+        "vertical": []
       },
       "antenna_reference": {
         "distance_from_top": 10
       },
-      "phantom_reference": "tragus",
-      "target_rotation": {
-        "enabled": true
-      }
+      "phantom_reference": "nasion"
+    },
+    "by_cheek": {
+      "bounding_box": "default",
+      "positions": {
+        "base": [0, 0, 0]
+      },
+      "orientations": {
+        "cheek_base": [{"axis": "Z", "angle_deg": 15}],
+        "tilt_base": [],
+        "tilt_up": [{"axis": "X", "angle_deg": 10}]
+      },
+      "antenna_reference": {
+        "distance_from_top": 10
+      },
+      "phantom_reference": "tragus"
+    },
+    "by_belly": {
+      "bounding_box": "default",
+      "positions": {
+        "center": [0, 0, 0]
+      },
+      "orientations": {
+        "vertical": []
+      },
+      "antenna_reference": {
+        "distance_from_top": 10
+      },
+      "phantom_reference": "belly_button"
     }
   },
   "phantom_definitions": {
