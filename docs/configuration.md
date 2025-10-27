@@ -174,6 +174,7 @@ This object defines all antenna-specific information, with a separate entry for 
 | `antenna_config.{freq}.source_name` | string | `"Lines 1"` | The name of the source entity within the antenna's CAD model. |
 | `antenna_config.{freq}.materials` | object | `{ "Extrude 1": "Copper", ...}` | Maps component names in the antenna's CAD model to Sim4Life material names. |
 | `antenna_config.{freq}.gridding` | object | `{ "automatic": [...], "manual": {...} }` | Defines gridding strategies (automatic or manual with specific step sizes) for different parts of the antenna model. |
+| `antenna_config.{freq}.gridding.subgridding` | object | `{ "components": [...], ...}` | **(Optional)** Enables subgridding for a list of components, which overrides any manual gridding settings for those components. This is useful for finely detailed parts that require a much higher resolution than the rest of the model. |
 
 ### Placement Scenarios (`placement_scenarios`)
 This object defines the different device placements to be simulated.
