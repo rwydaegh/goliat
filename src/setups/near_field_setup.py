@@ -89,7 +89,7 @@ class NearFieldSetup(BaseSetup):
 
         self._handle_phantom_rotation(placement_setup)
 
-        # self._align_simulation_with_phone()
+        self._align_simulation_with_phone()
 
         material_setup = MaterialSetup(
             self.config,
@@ -466,14 +466,12 @@ class NearFieldSetup(BaseSetup):
         all_entities = self.model.AllEntities()
         phantom_group_name_lower = self.phantom_name.lower()
         phantom_group = next((e for e in all_entities if phantom_group_name_lower in e.Name.lower() and hasattr(e, "Entities")), None)
-        antenna_group = next((e for e in all_entities if e.Name.startswith("Antenna ") and hasattr(e, "Entities")), None)
         sim_bbox = next((e for e in all_entities if e.Name.endswith("_simulation_bbox")), None)
-        ant_bbox = next((e for e in all_entities if "Antenna bounding box" in e.Name), None)
         head_bbox = next((e for e in all_entities if e.Name.endswith("_Head_BBox")), None)
         trunk_bbox = next((e for e in all_entities if e.Name.endswith("_Trunk_BBox")), None)
         point_sensors = [e for e in all_entities if "Point Sensor Entity" in e.Name]
 
-        entities_to_transform = [e for e in [phantom_group, antenna_group, sim_bbox, ant_bbox, head_bbox, trunk_bbox] if e]
+        entities_to_transform = [e for e in [phantom_group, sim_bbox, head_bbox, trunk_bbox] if e]
         entities_to_transform.extend(point_sensors)
 
         if not phantom_group:

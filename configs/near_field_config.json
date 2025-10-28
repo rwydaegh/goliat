@@ -244,7 +244,7 @@
     "by_cheek": {
       "bounding_box": "default",
       "positions": {
-        "base": [0, 0, 0]
+        "tragus": [0, 0, 0]
       },
       "orientations": {
         "cheek_base": [{"axis": "Z", "angle_deg": 15}],
