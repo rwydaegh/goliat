@@ -199,7 +199,7 @@ def split_config(config_path, num_splits, logger):
 
 def run_study_process(args):
     """Runs the study for a given config file."""
-    config_file, process_id = args
+    config_file, process_id, no_cache = args
     title = f"Process {process_id} - Study Runner ({os.path.basename(config_file)})"
 
     # Construct the command to run the main study script
@@ -213,6 +213,8 @@ def run_study_process(args):
         "--pid",
         str(process_id),
     ]
+    if no_cache:
+        command.append("--no-cache")
 
     print(f"Running command: {' '.join(command)}")
 
@@ -259,6 +261,11 @@ def main():
         "--skip-split",
         action="store_true",
         help="Skip the splitting step and run studies from an existing parallel directory.",
+    )
+    parser.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="If set, redo simulations even if the configuration matches a completed run.",
     )
 
     args = parser.parse_args()
@@ -319,7 +326,7 @@ def main():
             logger.error(f"Error removing stale lock file {lock_file_path}: {e}")
 
     # Assign a unique ID to each process
-    process_args = [(config, i + 1) for i, config in enumerate(config_files_to_run)]
+    process_args = [(config, i + 1, args.no_cache) for i, config in enumerate(config_files_to_run)]
 
     # Use a multiprocessing Pool to run the studies in parallel
     with multiprocessing.Pool(processes=len(process_args)) as pool:

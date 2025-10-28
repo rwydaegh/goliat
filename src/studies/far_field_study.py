@@ -15,8 +15,13 @@ if TYPE_CHECKING:
 class FarFieldStudy(BaseStudy):
     """Manages a far-field simulation study."""
 
-    def __init__(self, config_filename: str = "far_field_config.json", gui: Optional["QueueGUI"] = None):
-        super().__init__("far_field", config_filename, gui)
+    def __init__(
+        self,
+        config_filename: str = "far_field_config.json",
+        gui: Optional["QueueGUI"] = None,
+        no_cache: bool = False,
+    ):
+        super().__init__("far_field", config_filename, gui, no_cache=no_cache)
 
     def _run_study(self):
         """Executes the far-field study by iterating through each simulation case."""
