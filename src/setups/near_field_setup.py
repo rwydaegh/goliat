@@ -78,6 +78,8 @@ class NearFieldSetup(BaseSetup):
         )
         placement_setup.place_antenna()
 
+        self._handle_phantom_rotation(placement_setup)
+
         antenna_components = self._get_antenna_components()
 
         self._create_simulation_bbox()
@@ -87,7 +89,7 @@ class NearFieldSetup(BaseSetup):
         sim_bbox_name = f"{self.placement_name.lower()}_simulation_bbox"
         self._add_point_sensors(simulation, sim_bbox_name)
 
-        self._align_simulation_with_phone()
+        # self._align_simulation_with_phone()
 
         material_setup = MaterialSetup(
             self.config,
@@ -427,3 +429,102 @@ class NearFieldSetup(BaseSetup):
         self._apply_simulation_time_and_termination(simulation, sim_bbox_entity, self.frequency_mhz)
 
         return simulation
+
+    def _handle_phantom_rotation(self, placement_setup: "PlacementSetup"):
+        """Rotates the phantom to the phone if configured for 'by_cheek' placement."""
+        if self.base_placement_name != "by_cheek":
+            return
+
+        scenario = self.config.get_placement_scenario(self.base_placement_name)
+        orientation_config = scenario["orientations"].get(self.orientation_name)
+
+        # Find the phantom rotation dictionary in the list
+        phantom_rot_config = next(
+            (item for item in orientation_config if isinstance(item, dict) and "rotate_phantom_to_cheek" in item), None
+        )
+
+        if not phantom_rot_config:
+            self._log("Phantom rotation not enabled for this orientation.", log_type="info")
+            return
+
+        self._log("--- Handling Phantom Rotation ---", log_type="header")
+
+        # Find the main phantom group to apply rotation
+        all_entities = self.model.AllEntities()
+        phantom_group_name_lower = self.phantom_name.lower()
+        phantom_group = next((e for e in all_entities if phantom_group_name_lower in e.Name.lower() and hasattr(e, "Entities")), None)
+
+        if not phantom_group:
+            self._log(f"Could not find phantom group '{phantom_group_name_lower}' to rotate. Skipping.", log_type="warning")
+            return
+
+        # Find touching angle and add offset
+        touching_angle_deg = self._find_touching_angle()
+        angle_offset_deg = phantom_rot_config.get("angle_offset_deg", 0)
+        final_rotation_deg = touching_angle_deg + angle_offset_deg
+
+        self._log(f"Determined touching angle: {touching_angle_deg:.2f} deg.", log_type="info")
+        self._log(f"Applying offset of {angle_offset_deg:.2f} deg. Final rotation: {final_rotation_deg:.2f} deg.", log_type="info")
+
+        # Create and apply the rotation transform around the Z-axis
+        import XCoreMath
+
+        rotation = XCoreMath.Rotation(XCoreMath.Vec3(0, 0, 1), np.deg2rad(final_rotation_deg))
+        phantom_group.ApplyTransform(rotation)
+
+        self._log("Phantom rotated successfully.", log_type="success")
+
+        # Since the phantom is rotated, we remove the phantom rotation instruction
+        # from the list to prevent the phone from being rotated by it.
+        if phantom_rot_config in placement_setup.orientation_rotations:
+            placement_setup.orientation_rotations.remove(phantom_rot_config)
+
+    def _find_touching_angle(self) -> float:
+        """
+        Finds the angle at which the phantom touches the phone using a binary search.
+        Returns the last angle before touching.
+        """
+        self._log("Finding touching angle using binary search...", log_type="progress")
+        import XCoreMath
+
+        all_entities = self.model.AllEntities()
+        skin_entity = next((e for e in all_entities if hasattr(e, "Name") and "Skin" in e.Name), None)
+
+        antenna_group = next((e for e in all_entities if e.Name.startswith("Antenna ") and hasattr(e, "Entities")), None)
+
+        if not antenna_group:
+            self._log("Could not find antenna group for distance check. Returning 0.", log_type="warning")
+            return 0.0
+
+        ground_entities = [e for e in antenna_group.Entities if "Ground" in e.Name or "Substrate" in e.Name]
+
+        if not skin_entity or not ground_entities:
+            self._log("Could not find all necessary entities for distance check. Returning 0.", log_type="warning")
+            return 0.0
+
+        low_angle, high_angle = 0, 30  # Search space in degrees
+        precision = 0.5
+        last_safe_angle = 0
+
+        while high_angle - low_angle > precision:
+            mid_angle = (low_angle + high_angle) / 2
+
+            # Apply rotation
+            rotation = XCoreMath.Rotation(XCoreMath.Vec3(0, 0, 1), np.deg2rad(mid_angle))
+            skin_entity.ApplyTransform(rotation.Inverse())  # This .Inverse() makes up for the minus sign in the return value
+
+            # Check distance
+            distance, _ = self.XCoreModeling.GetEntityEntityDistance(skin_entity, ground_entities[0])
+
+            # Rotate back
+            skin_entity.ApplyTransform(rotation)
+
+            self._log(f"  - Angle: {mid_angle:.2f} deg, Distance: {distance.Distance:.4f} mm", log_type="verbose")
+
+            if distance.Distance > 0:  # Not touching
+                last_safe_angle = mid_angle
+                low_angle = mid_angle
+            else:  # Touching or intersecting
+                high_angle = mid_angle
+
+        return -last_safe_angle

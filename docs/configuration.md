@@ -182,8 +182,26 @@ This object defines the different device placements to be simulated.
 | Parameter | Type | Example Value | Description |
 | :--- | :--- | :--- | :--- |
 | `placement_scenarios.{name}.positions` | object | `{ "center": [0,0,0], ...}` | A set of named relative positions (as [x, y, z] offsets) for the placement scenario. |
-| `placement_scenarios.{name}.orientations` | object | `{ "vertical": [], ...}` | A set of named orientations to be applied at each position. Each orientation is a list of rotation steps. |
+| `placement_scenarios.{name}.orientations` | object | `{ "vertical": [], ...}` | A set of named orientations to be applied at each position. Each orientation is a list of rotation steps. See below for an alternative dictionary format for `by_cheek` phantom rotation. |
 | `placement_scenarios.{name}.bounding_box` | string | `"default"` | Determines which part of the phantom to include in the simulation bounding box. Options: `"default"`, `"head"`, `"trunk"`, `"whole_body"`. The `"default"` option intelligently chooses "head" for eye/cheek placements and "trunk" for belly placements. |
+
+<br>
+
+**Alternative Orientation Format for `by_cheek` Phantom Rotation**
+
+For the `by_cheek` scenario, an alternative dictionary format can be used to enable automatic phantom rotation towards the phone. This is useful for precise placement based on contact.
+
+```json
+"orientations": {
+  "cheek_base": {
+    "rotate_phantom_to_cheek": true,
+    "angle_offset_deg": 0
+  }
+}
+```
+
+- **`rotate_phantom_to_cheek`**: (boolean) If `true`, the phantom rotates on its Z-axis to touch the phone.
+- **`angle_offset_deg`**: (number) An additional angle in degrees to rotate the phantom away from the phone after contact is detected.
 
 ### Phantom Definitions (`phantom_definitions`)
 This object contains phantom-specific settings, such as which placements to run and the separation distances.

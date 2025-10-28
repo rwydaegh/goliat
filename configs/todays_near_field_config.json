@@ -10,7 +10,8 @@
       "auto_cleanup_previous_results": []
   },
   "phantoms": [
-    "thelonious"
+    "thelonious",
+    "eartha"
   ],
   "simulation_parameters": {
     "freespace_antenna_bbox_expansion_mm": [
@@ -64,71 +65,44 @@
           "AutoRefinement": "AutoRefinementVeryFine"
         }
       }
-    },
-    "835": {
-      "center_frequency": 835,
-      "target_power_mW": 228,
-      "model_type": "PIFA",
-      "source_name": "Lines 1",
-      "materials": {
-        "Extrude 1": "Copper",
-        "component1:Battery": "Copper",
-        "component1:Patch": "Copper",
-        "component1:ShortingPin": "Copper",
-        "component1:Substrate": "Rogers RT/duroid 5880"
-      },
-      "gridding": {
-        "automatic": ["component1:Substrate", "Lines 1"],
-        "subgridding": {
-          "components": ["component1:Battery", "component1:Patch", "Extrude 1", "component1:ShortingPin"],
-          "SubGridMode": "Box",
-          "SubGridLevel": "x9",
-          "AutoRefinement": "AutoRefinementVeryFine"
-        }
-      }
     }
   },
   "placement_scenarios": {
-    "front_of_eyes": {
-      "bounding_box": "default",
-      "positions": {
-        "center": [0, 0, -100]
-      },
-      "orientations": {
-        "vertical": []
-      },
-      "antenna_reference": {
-        "distance_from_top": 10
-      },
-      "phantom_reference": "nasion"
-    },
     "by_cheek": {
       "bounding_box": "default",
       "positions": {
         "base": [0, 0, 0]
       },
       "orientations": {
-        "cheek_base": [{"axis": "Z", "angle_deg": 15}],
-        "tilt_base": [],
-        "tilt_up": [{"axis": "X", "angle_deg": 10}]
+        "cheek_base": [{
+          "rotate_phantom_to_cheek": true,
+          "angle_offset_deg": 0
+        }],
+        "cheek_up": [{
+          "rotate_phantom_to_cheek": true,
+          "angle_offset_deg": 0
+        }, {"axis": "X", "angle_deg": 10}],
+        "cheek_down": [{
+          "rotate_phantom_to_cheek": true,
+          "angle_offset_deg": 0
+        }, {"axis": "X", "angle_deg": -10}],
+        "tilt_base": [{
+          "rotate_phantom_to_cheek": true,
+          "angle_offset_deg": 15
+        }],
+        "tilt_up": [{
+          "rotate_phantom_to_cheek": true,
+          "angle_offset_deg": 15
+        }, {"axis": "X", "angle_deg": 10}],
+        "tilt_down": [{
+          "rotate_phantom_to_cheek": true,
+          "angle_offset_deg": 15
+        }, {"axis": "X", "angle_deg": -10}]
       },
       "antenna_reference": {
         "distance_from_top": 10
       },
       "phantom_reference": "tragus"
-    },
-    "by_belly": {
-      "bounding_box": "default",
-      "positions": {
-        "center": [0, 0, 0]
-      },
-      "orientations": {
-        "vertical": []
-      },
-      "antenna_reference": {
-        "distance_from_top": 10
-      },
-      "phantom_reference": "belly_button"
     }
   },
   "phantom_definitions": {
