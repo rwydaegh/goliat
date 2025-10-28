@@ -15,8 +15,13 @@ if TYPE_CHECKING:
 class NearFieldStudy(BaseStudy):
     """Manages and runs a full near-field simulation campaign."""
 
-    def __init__(self, config_filename: str = "near_field_config.json", gui: Optional["QueueGUI"] = None):
-        super().__init__("near_field", config_filename, gui)
+    def __init__(
+        self,
+        config_filename: str = "near_field_config.json",
+        gui: Optional["QueueGUI"] = None,
+        no_cache: bool = False,
+    ):
+        super().__init__("near_field", config_filename, gui, no_cache=no_cache)
 
     def _run_study(self):
         """Runs the entire simulation campaign based on the configuration."""

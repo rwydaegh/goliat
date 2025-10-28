@@ -25,11 +25,13 @@ class BaseStudy(LoggingMixin):
         config_filename: Optional[str] = None,
         gui: Optional["QueueGUI"] = None,
         profiler=None,
+        no_cache: bool = False,
     ):
         self.study_type = study_type
         self.gui = gui
         self.verbose_logger = logging.getLogger("verbose")
         self.progress_logger = logging.getLogger("progress")
+        self.no_cache = no_cache
 
         self.base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -50,7 +52,13 @@ class BaseStudy(LoggingMixin):
         )
         self.line_profiler = None
 
-        self.project_manager = ProjectManager(self.config, self.verbose_logger, self.progress_logger, self.gui)
+        self.project_manager = ProjectManager(
+            self.config,
+            self.verbose_logger,
+            self.progress_logger,
+            self.gui,
+            no_cache=self.no_cache,
+        )
 
     def _check_for_stop_signal(self):
         """Checks if the GUI has requested a stop."""

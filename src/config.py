@@ -29,12 +29,14 @@ def deep_merge(source: dict, destination: dict) -> dict:
 class Config:
     """Manages loading and access of hierarchical JSON configurations."""
 
-    def __init__(self, base_dir: str, config_filename: str = "near_field_config.json"):
+    def __init__(self, base_dir: str, config_filename: str = "near_field_config.json", no_cache: bool = False):
         """Initializes the Config object by loading all relevant configuration files.
 
         Args:
             base_dir: The base directory of the project.
             config_filename: The name of the main configuration file to load.
+            no_cache: This parameter is accepted but not used directly by the Config class.
+                      It's used by other managers to control caching behavior.
         """
         self.base_dir = base_dir
         self.config_path = self._resolve_config_path(config_filename, self.base_dir)

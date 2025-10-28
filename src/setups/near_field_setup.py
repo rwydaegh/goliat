@@ -78,8 +78,6 @@ class NearFieldSetup(BaseSetup):
         )
         placement_setup.place_antenna()
 
-        self._handle_phantom_rotation(placement_setup)
-
         antenna_components = self._get_antenna_components()
 
         self._create_simulation_bbox()
@@ -88,6 +86,8 @@ class NearFieldSetup(BaseSetup):
 
         sim_bbox_name = f"{self.placement_name.lower()}_simulation_bbox"
         self._add_point_sensors(simulation, sim_bbox_name)
+
+        self._handle_phantom_rotation(placement_setup)
 
         # self._align_simulation_with_phone()
 
@@ -449,15 +449,6 @@ class NearFieldSetup(BaseSetup):
 
         self._log("--- Handling Phantom Rotation ---", log_type="header")
 
-        # Find the main phantom group to apply rotation
-        all_entities = self.model.AllEntities()
-        phantom_group_name_lower = self.phantom_name.lower()
-        phantom_group = next((e for e in all_entities if phantom_group_name_lower in e.Name.lower() and hasattr(e, "Entities")), None)
-
-        if not phantom_group:
-            self._log(f"Could not find phantom group '{phantom_group_name_lower}' to rotate. Skipping.", log_type="warning")
-            return
-
         # Find touching angle and add offset
         touching_angle_deg = self._find_touching_angle()
         angle_offset_deg = phantom_rot_config.get("angle_offset_deg", 0)
@@ -466,13 +457,36 @@ class NearFieldSetup(BaseSetup):
         self._log(f"Determined touching angle: {touching_angle_deg:.2f} deg.", log_type="info")
         self._log(f"Applying offset of {angle_offset_deg:.2f} deg. Final rotation: {final_rotation_deg:.2f} deg.", log_type="info")
 
-        # Create and apply the rotation transform around the Z-axis
+        # Create the rotation transform around the Z-axis
         import XCoreMath
 
         rotation = XCoreMath.Rotation(XCoreMath.Vec3(0, 0, 1), np.deg2rad(final_rotation_deg))
-        phantom_group.ApplyTransform(rotation)
 
-        self._log("Phantom rotated successfully.", log_type="success")
+        # Get all entities that need to be rotated
+        all_entities = self.model.AllEntities()
+        phantom_group_name_lower = self.phantom_name.lower()
+        phantom_group = next((e for e in all_entities if phantom_group_name_lower in e.Name.lower() and hasattr(e, "Entities")), None)
+        antenna_group = next((e for e in all_entities if e.Name.startswith("Antenna ") and hasattr(e, "Entities")), None)
+        sim_bbox = next((e for e in all_entities if e.Name.endswith("_simulation_bbox")), None)
+        ant_bbox = next((e for e in all_entities if "Antenna bounding box" in e.Name), None)
+        head_bbox = next((e for e in all_entities if e.Name.endswith("_Head_BBox")), None)
+        trunk_bbox = next((e for e in all_entities if e.Name.endswith("_Trunk_BBox")), None)
+        point_sensors = [e for e in all_entities if "Point Sensor Entity" in e.Name]
+
+        entities_to_transform = [e for e in [phantom_group, antenna_group, sim_bbox, ant_bbox, head_bbox, trunk_bbox] if e]
+        entities_to_transform.extend(point_sensors)
+
+        if not phantom_group:
+            self._log(
+                f"Could not find phantom group containing '{phantom_group_name_lower}'. Phantom will not be rotated.", log_type="warning"
+            )
+
+        self._log(f"--- Applying rotation to {len(entities_to_transform)} specific entities.", log_type="verbose")
+        for entity in entities_to_transform:
+            self._log(f"  - Rotating '{entity.Name}'", log_type="verbose")
+            entity.ApplyTransform(rotation)
+
+        self._log("Entities rotated successfully.", log_type="success")
 
         # Since the phantom is rotated, we remove the phantom rotation instruction
         # from the list to prevent the phone from being rotated by it.
