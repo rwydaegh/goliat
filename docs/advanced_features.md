@@ -244,3 +244,31 @@ The `Config` class uses a powerful inheritance mechanism to avoid duplicating se
 ## 6. Project management
 
 *   **`project_manager.py`**: This class is critical for reliability. The underlying `.smash` project files can become corrupted or locked. The `_is_valid_smash_file` method is a key defensive measure. It first attempts to rename the file to itself (a trick to check for file locks on Windows) and then uses `h5py` to ensure the file is a valid HDF5 container before attempting to open it in the simulation software. This prevents the application from crashing on a corrupted file.
+
+## 7. Phantom Rotation for `by_cheek` Placement
+
+A specialized feature for the `by_cheek` placement scenario is the ability to rotate the phantom to meet the phone, rather than the other way around. This is controlled by a specific dictionary format in the configuration and uses an automatic angle detection algorithm to ensure precise placement.
+
+### Configuration
+
+To enable this feature, the orientation in `placement_scenarios` is defined as a dictionary:
+
+```json
+"orientations": {
+  "cheek_base": {
+    "rotate_phantom_to_cheek": true,
+    "angle_offset_deg": 0
+  }
+}
+```
+
+-   `rotate_phantom_to_cheek`: A boolean that enables or disables the phantom rotation.
+-   `angle_offset_deg`: An integer that specifies an additional rotation away from the cheek (0 being the default).
+
+### Automatic Angle Detection
+
+The system uses a binary search algorithm to find the exact angle at which the phantom's "Skin" entity touches the phone's ground plane. This is handled by the `_find_touching_angle` method in `src/setups/near_field_setup.py`. The search is performed between 0 and 30 degrees with a precision of 0.5 degrees.
+
+### Workflow Integration
+
+The phantom rotation is handled in the `NearFieldSetup.run_full_setup` method, occurring after the antenna is placed but before the final scene alignment. This ensures that the phone is positioned correctly relative to the un-rotated phantom, after which the phantom is rotated into the final position.
