@@ -91,7 +91,7 @@ def test_config_load_and_inheritance(dummy_configs):
     osparc_creds = config_instance.get_osparc_credentials()
     assert osparc_creds["api_key"] == "dummy_key"
     assert osparc_creds["api_secret"] == "dummy_secret"
-    assert osparc_creds["api_server"] == "https://api.example.com"
+    assert osparc_creds["api_server"] == "https://api.sim4life.science"
     assert osparc_creds["api_version"] == "v0"
 
     # Clean up environment variables
