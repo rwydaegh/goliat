@@ -1,4 +1,7 @@
+from ..analysis import Extractor
+
 # This file contains stubs for the emfdtd module.
 
 class Simulation:
-    pass
+    def Results(self) -> "Extractor":
+        ...

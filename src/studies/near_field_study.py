@@ -247,7 +247,7 @@ class NearFieldStudy(BaseStudy):
             if s4l_v1.document.AllSimulations:
                 sim_name = f"EM_FDTD_{phantom_name}_{freq}MHz_{placement_name}"
                 simulation = next(
-                    (s for s in s4l_v1.document.AllSimulations if s.Name == sim_name),
+                    (s for s in s4l_v1.document.AllSimulations if s.Name == sim_name),  # type: ignore
                     None,
                 )
 
@@ -291,7 +291,7 @@ class NearFieldStudy(BaseStudy):
 
                     sim_name = simulation.Name
                     reloaded_simulation = next(
-                        (s for s in s4l_v1.document.AllSimulations if s.Name == sim_name),
+                        (s for s in s4l_v1.document.AllSimulations if s.Name == sim_name),  # type: ignore
                         None,
                     )
 
