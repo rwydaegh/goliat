@@ -128,7 +128,7 @@ class ConsoleLogger:
         return False  # No GUI to stop it
 
 
-def study_process_wrapper(queue, stop_event, config_filename, process_id):
+def study_process_wrapper(queue, stop_event, config_filename, process_id, no_cache=False):
     """
     This function runs in a separate process to execute the study.
     It sets up its own loggers and communicates with the main GUI process via a queue
@@ -143,7 +143,7 @@ def study_process_wrapper(queue, stop_event, config_filename, process_id):
         from src.studies.far_field_study import FarFieldStudy
         from src.studies.near_field_study import NearFieldStudy
 
-        config = Config(base_dir, config_filename)
+        config = Config(base_dir, config_filename, no_cache=no_cache)
         study_type = config.get_setting("study_type")
 
         profiling_config_data = config.get_profiling_config(study_type)
@@ -158,9 +158,9 @@ def study_process_wrapper(queue, stop_event, config_filename, process_id):
         gui_proxy = QueueGUI(queue, stop_event, profiler, progress_logger, verbose_logger)
 
         if study_type == "near_field":
-            study = NearFieldStudy(config_filename=config_filename, gui=gui_proxy)
+            study = NearFieldStudy(config_filename=config_filename, gui=gui_proxy, no_cache=no_cache)
         elif study_type == "far_field":
-            study = FarFieldStudy(config_filename=config_filename, gui=gui_proxy)
+            study = FarFieldStudy(config_filename=config_filename, gui=gui_proxy, no_cache=no_cache)
         else:
             raise ValueError(f"Unknown or missing study type '{study_type}' in {config_filename}")
 
@@ -206,6 +206,11 @@ def main():
         help="Set the title of the GUI window.",
     )
     parser.add_argument("--pid", type=str, default=None, help="The process ID for logging.")
+    parser.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="If set, redo simulations even if the configuration matches a completed run.",
+    )
     args = parser.parse_args()
     config_filename = args.config
     process_id = args.pid
@@ -238,7 +243,7 @@ def main():
         # Create and start the study process
         study_process = ctx.Process(
             target=study_process_wrapper,
-            args=(queue, stop_event, config_filename, process_id),
+            args=(queue, stop_event, config_filename, process_id, args.no_cache),
         )
         study_process.start()
 
@@ -272,9 +277,9 @@ def main():
             console_logger = ConsoleLogger(progress_logger, verbose_logger)
 
             if study_type == "near_field":
-                study = NearFieldStudy(config_filename=config_filename, gui=console_logger)
+                study = NearFieldStudy(config_filename=config_filename, gui=console_logger, no_cache=args.no_cache)
             elif study_type == "far_field":
-                study = FarFieldStudy(config_filename=config_filename, gui=console_logger)
+                study = FarFieldStudy(config_filename=config_filename, gui=console_logger, no_cache=args.no_cache)
             else:
                 raise ValueError(f"Unknown or missing study type '{study_type}' in {config_filename}")
 

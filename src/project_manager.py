@@ -35,6 +35,7 @@ class ProjectManager(LoggingMixin):
         verbose_logger: "Logger",
         progress_logger: "Logger",
         gui: Optional["QueueGUI"] = None,
+        no_cache: bool = False,
     ):
         """Initializes the ProjectManager.
 
@@ -43,11 +44,13 @@ class ProjectManager(LoggingMixin):
             verbose_logger: Logger for detailed output.
             progress_logger: Logger for high-level progress updates.
             gui: The GUI proxy for inter-process communication.
+            no_cache: If True, bypasses metadata verification.
         """
         self.config = config
         self.verbose_logger = verbose_logger
         self.progress_logger = progress_logger
         self.gui = gui
+        self.no_cache = no_cache
         import s4l_v1.document
 
         self.document = s4l_v1.document
@@ -307,8 +310,11 @@ class ProjectManager(LoggingMixin):
             self.open()
             return False  # Indicate setup is not needed
 
-        # If do_setup is true, we verify the project.
-        # The study is responsible for creating the project if this method returns True.
+        # If do_setup is true, we verify the project unless --no-cache is used.
+        if self.no_cache:
+            self._log("`--no-cache` flag is active. Forcing a new setup by skipping verification.", log_type="warning")
+            return True
+
         project_is_valid = self.verify_simulation_metadata(self.project_path + ".meta.json", surgical_config)
         if project_is_valid:
             self._log("Verified existing project. Skipping setup.", log_type="info")
