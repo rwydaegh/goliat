@@ -34,4 +34,4 @@ jobs:
     - name: Run Pytest tests
       run: |
         export PYTHONPATH=$PYTHONPATH:./src
-        pytest -m "not skip_on_ci" tests/
+        pytest tests/
