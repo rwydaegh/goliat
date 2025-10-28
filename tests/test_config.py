@@ -64,7 +64,6 @@ def dummy_configs(tmp_path_factory):
     }
 
 
-@pytest.mark.skip_on_ci
 def test_config_load_and_inheritance(dummy_configs):
     # Temporarily set environment variables for oSPARC credentials
     os.environ["OSPARC_API_KEY"] = "dummy_key"
@@ -101,14 +100,12 @@ def test_config_load_and_inheritance(dummy_configs):
     del os.environ["DOWNLOAD_EMAIL"]
 
 
-@pytest.mark.skip_on_ci
 def test_get_setting_non_existent(dummy_configs):
     config_instance = Config(dummy_configs["base_dir"], "configs/near_field_config.json")
     assert config_instance.get_setting("non_existent.path", "default_value") == "default_value"
     assert config_instance.get_setting("simulation_parameters.non_existent_param") is None
 
 
-@pytest.mark.skip_on_ci
 def test_config_path_resolution(dummy_configs):
     # Test with full path
     full_path_config = Config(dummy_configs["base_dir"], str(dummy_configs["near_field_config_path"]))
@@ -119,7 +116,6 @@ def test_config_path_resolution(dummy_configs):
     assert filename_only_config.get_setting("study_type") == "near_field"
 
 
-@pytest.mark.skip_on_ci
 def test_osparc_credentials_missing(dummy_configs):
     # Ensure environment variables are not set
     if "OSPARC_API_KEY" in os.environ:
