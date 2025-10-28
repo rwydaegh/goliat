@@ -159,6 +159,7 @@ class ProgressGUI(QWidget):
     def init_ui(self):
         """Initializes and arranges all UI widgets."""
         self.setWindowTitle(self.window_title)
+        self.resize(500, 600)
         layout = QVBoxLayout()
         self.grid_layout = QGridLayout()
 

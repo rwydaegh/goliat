@@ -1,3 +1,4 @@
+import os
 import traceback
 from typing import TYPE_CHECKING, Optional
 
@@ -184,18 +185,14 @@ class NearFieldStudy(BaseStudy):
 
             # 1. Setup Simulation
             if do_setup:
-                needs_setup = self.project_manager.create_or_open_project(
+                verification_status = self.project_manager.create_or_open_project(
                     phantom_name, freq, scenario_name, position_name, orientation_name
                 )
+                needs_setup = not verification_status["setup_done"]
 
                 if needs_setup:
                     with profile(self, "setup"):
-                        if self.gui:
-                            self.gui.update_stage_progress("Setup", 0, 1)
-
-                        # Explicitly create a new project before setup
                         self.project_manager.create_new()
-
                         antenna = Antenna(self.config, freq)
                         setup = NearFieldSetup(
                             self.config,
@@ -208,19 +205,13 @@ class NearFieldStudy(BaseStudy):
                             self.verbose_logger,
                             self.progress_logger,
                         )
-
                         with self.subtask("setup_simulation", instance_to_profile=setup) as wrapper:
                             simulation = wrapper(setup.run_full_setup)(self.project_manager)
 
                         if not simulation:
-                            self._log(
-                                f"ERROR: Setup failed for {placement_name}. Cannot proceed.",
-                                level="progress",
-                                log_type="error",
-                            )
+                            self._log(f"ERROR: Setup failed for {placement_name}.", level="progress", log_type="error")
                             return
 
-                        # Save the project and THEN write the metadata
                         self.project_manager.save()
                         surgical_config = self.config.build_simulation_config(
                             phantom_name=phantom_name,
@@ -229,17 +220,25 @@ class NearFieldStudy(BaseStudy):
                             position_name=position_name,
                             orientation_name=orientation_name,
                         )
-                        self.project_manager.write_simulation_metadata(
-                            self.project_manager.project_path + ".meta.json",  # type: ignore
-                            surgical_config,
-                        )
+                        if self.project_manager.project_path:
+                            self.project_manager.write_simulation_metadata(
+                                os.path.join(os.path.dirname(self.project_manager.project_path), "config.json"), surgical_config
+                            )
 
                         if self.gui:
                             progress = self.profiler.get_weighted_progress("setup", 1.0)
                             self.gui.update_overall_progress(int(progress), 100)
                             self.gui.update_stage_progress("Setup", 1, 1)
+
+                # Update do_run and do_extract based on verification
+                if verification_status["run_done"]:
+                    do_run = False
+                    self._log("Skipping run phase, deliverables found.", log_type="info")
+                if verification_status["extract_done"]:
+                    do_extract = False
+                    self._log("Skipping extract phase, deliverables found.", log_type="info")
+
             else:
-                # If not doing setup, just open the project, which will also perform verification
                 self.project_manager.create_or_open_project(phantom_name, freq, scenario_name, position_name, orientation_name)
 
             # ALWAYS get a fresh simulation handle from the document before run/extract
@@ -275,6 +274,11 @@ class NearFieldStudy(BaseStudy):
                     )
                     runner.run_all()
                     self.profiler.complete_run_phase()
+                    self._verify_and_update_metadata("run")
+                    if self.gui:
+                        progress = self.profiler.get_weighted_progress("run", 1.0)
+                        self.gui.update_overall_progress(int(progress), 100)
+                        self.gui.update_stage_progress("Run", 1, 1)
 
             # 3. Extract Results
             if do_extract:
@@ -309,7 +313,8 @@ class NearFieldStudy(BaseStudy):
                         study=self,
                     )
                     extractor.extract()
-                    self.project_manager.save()
+                    self._verify_and_update_metadata("extract")
+                    self.project_manager.save()  # TODO: can be skipped?
                     if self.gui:
                         progress = self.profiler.get_weighted_progress("extract", 1.0)
                         self.gui.update_overall_progress(int(progress), 100)

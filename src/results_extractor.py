@@ -81,6 +81,15 @@ class ResultsExtractor(LoggingMixin):
         self.analysis = s4l_v1.analysis
         self.units = units
 
+    @staticmethod
+    def get_deliverable_filenames() -> dict:
+        """Returns a dictionary of deliverable filenames."""
+        return {
+            "json": "sar_results.json",
+            "pkl": "sar_stats_all_tissues.pkl",
+            "html": "sar_stats_all_tissues.html",
+        }
+
     def extract(self):
         """Orchestrates the extraction of all relevant data from the simulation.
 
@@ -150,7 +159,8 @@ class ResultsExtractor(LoggingMixin):
         reporter = Reporter(self)
         results_dir = reporter._get_results_dir()
         os.makedirs(results_dir, exist_ok=True)
-        results_filepath = os.path.join(results_dir, "sar_results.json")
+        deliverables = self.get_deliverable_filenames()
+        results_filepath = os.path.join(results_dir, deliverables["json"])
 
         final_results_data = {k: v for k, v in results_data.items() if not k.startswith("_temp")}
 
