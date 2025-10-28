@@ -52,28 +52,20 @@ def cancel_all_jobs(config_path: str, max_jobs: int):
     with osparc_module.ApiClient(client_cfg) as api_client:
         solvers_api = osparc_module.SolversApi(api_client)
 
-        main_logger.info(
-            f"{colorama.Fore.MAGENTA}--- Fetching recent jobs (up to {max_jobs}) ---"
-        )
+        main_logger.info(f"{colorama.Fore.MAGENTA}--- Fetching recent jobs (up to {max_jobs}) ---")
         all_jobs = []
         try:
             limit = 50
             offset = 0
             page_num = 0
             while True:
-                main_logger.info(
-                    f"Fetching page {page_num} (offset: {offset}, limit: {limit})..."
-                )
-                page = solvers_api.get_jobs_page(
-                    solver_key, solver_version, limit=limit, offset=offset
-                )
+                main_logger.info(f"Fetching page {page_num} (offset: {offset}, limit: {limit})...")
+                page = solvers_api.get_jobs_page(solver_key, solver_version, limit=limit, offset=offset)
                 if page.items:
                     main_logger.info(f"Found {len(page.items)} jobs on this page.")
                     all_jobs.extend(page.items)
                     if len(all_jobs) >= max_jobs:
-                        main_logger.warning(
-                            f"Reached job limit of {max_jobs}. Not fetching any more jobs."
-                        )
+                        main_logger.warning(f"Reached job limit of {max_jobs}. Not fetching any more jobs.")
                         break
                     offset += limit
                     page_num += 1
@@ -82,17 +74,13 @@ def cancel_all_jobs(config_path: str, max_jobs: int):
                     main_logger.info("No more jobs found on subsequent pages.")
                     break
         except Exception as e:
-            main_logger.error(
-                f"{colorama.Fore.RED}An error occurred while fetching jobs: {e}{colorama.Style.RESET_ALL}"
-            )
+            main_logger.error(f"{colorama.Fore.RED}An error occurred while fetching jobs: {e}{colorama.Style.RESET_ALL}")
 
         if not all_jobs:
             main_logger.info("No jobs found to cancel.")
             return
 
-        main_logger.info(
-            f"\n--- Found a total of {len(all_jobs)} jobs. Now checking status and cancelling active ones ---"
-        )
+        main_logger.info(f"\n--- Found a total of {len(all_jobs)} jobs. Now checking status and cancelling active ones ---")
 
         cancelled_jobs_count = 0
         for job in all_jobs:
@@ -106,26 +94,17 @@ def cancel_all_jobs(config_path: str, max_jobs: int):
                     "STARTED",
                     "RETRYING",
                 ]:
-                    main_logger.info(
-                        f"Cancelling job {job.id} with status {status.state}..."
-                    )
+                    main_logger.info(f"Cancelling job {job.id} with status {status.state}...")
                     solvers_api.stop_job(solver_key, solver_version, job.id)
-                    main_logger.info(
-                        f"{colorama.Fore.GREEN}Successfully sent cancel signal to job "
-                        f"{job.id}.{colorama.Style.RESET_ALL}"
-                    )
+                    main_logger.info(f"{colorama.Fore.GREEN}Successfully sent cancel signal to job {job.id}.{colorama.Style.RESET_ALL}")
                     cancelled_jobs_count += 1
                 else:
                     pass
             except Exception as e:
-                main_logger.error(
-                    f"{colorama.Fore.RED}Failed to inspect or cancel job {job.id}: {e}{colorama.Style.RESET_ALL}"
-                )
+                main_logger.error(f"{colorama.Fore.RED}Failed to inspect or cancel job {job.id}: {e}{colorama.Style.RESET_ALL}")
 
         main_logger.info("\n--- Summary ---")
-        main_logger.info(
-            f"Successfully sent cancellation signals to {cancelled_jobs_count} jobs."
-        )
+        main_logger.info(f"Successfully sent cancellation signals to {cancelled_jobs_count} jobs.")
 
 
 if __name__ == "__main__":

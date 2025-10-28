@@ -5,7 +5,7 @@ import threading
 import time
 import traceback
 from queue import Empty, Queue
-from typing import TYPE_CHECKING, List, Union
+from typing import TYPE_CHECKING, List, Optional, Union
 
 from .logging_manager import LoggingMixin
 from .utils import non_blocking_sleep, open_project
@@ -33,8 +33,8 @@ class SimulationRunner(LoggingMixin):
         ],
         verbose_logger: "Logger",
         progress_logger: "Logger",
-        gui: "QueueGUI" = None,
-        study: "BaseStudy" = None,
+        gui: Optional["QueueGUI"] = None,
+        study: Optional["BaseStudy"] = None,
     ):
         """Initializes the SimulationRunner.
 
@@ -49,9 +49,7 @@ class SimulationRunner(LoggingMixin):
         """
         self.config = config
         self.project_path = project_path
-        self.simulations = (
-            simulations if isinstance(simulations, list) else [simulations]
-        )
+        self.simulations = simulations if isinstance(simulations, list) else [simulations]
         self.verbose_logger = verbose_logger
         self.progress_logger = progress_logger
         self.gui = gui
@@ -68,7 +66,7 @@ class SimulationRunner(LoggingMixin):
 
         for i, sim in enumerate(self.simulations):
             self._log(
-                f"\n--- Running simulation {i+1}/{total_sims}: {sim.Name} ---",
+                f"\n--- Running simulation {i + 1}/{total_sims}: {sim.Name} ---",
                 level="progress",
                 log_type="header",
             )
@@ -82,15 +80,11 @@ class SimulationRunner(LoggingMixin):
             # End animation and update progress after the run
             if self.gui and self.study:
                 self.gui.end_stage_animation()
-                progress = self.study.profiler.get_weighted_progress(
-                    "run", (i + 1) / total_sims
-                )
+                progress = self.study.profiler.get_weighted_progress("run", (i + 1) / total_sims)
                 self.gui.update_overall_progress(int(progress), 100)
                 self.gui.update_stage_progress("Running Simulation", i + 1, total_sims)
 
-        self._log(
-            "\n--- All simulations finished ---", level="progress", log_type="success"
-        )
+        self._log("\n--- All simulations finished ---", level="progress", log_type="success")
 
     def run(self, simulation: "s4l_v1.simulation.emfdtd.Simulation"):
         """Runs a single simulation, wrapped in a subtask for timing."""
@@ -103,21 +97,19 @@ class SimulationRunner(LoggingMixin):
             return
         self._log(f"Running simulation: {simulation.Name}", log_type="verbose")
 
-        with self.study.subtask("run_simulation_total"):
+        with self.study.subtask("run_simulation_total"):  # type: ignore
             server_name = self.config.get_solver_settings().get("server")
 
             try:
                 if hasattr(simulation, "WriteInputFile"):
-                    with self.study.subtask("run_write_input_file"):
+                    with self.study.subtask("run_write_input_file"):  # type: ignore
                         self._log(
                             "Writing solver input file...",
                             level="progress",
                             log_type="progress",
                         )
                         simulation.WriteInputFile()
-                        self.document.SaveAs(
-                            self.project_path
-                        )  # Force a save to flush files
+                        self.document.SaveAs(self.project_path)  # Force a save to flush files
 
                 # Stop here if we only want to write the input file
                 if self.config.get_only_write_input_file():
@@ -133,7 +125,7 @@ class SimulationRunner(LoggingMixin):
                 elif server_name and "osparc" in server_name.lower():
                     self._run_osparc_direct(simulation, server_name)
                 else:
-                    server_id = self._get_server_id(server_name)
+                    server_id = self._get_server_id(server_name) if server_name else None
                     simulation.RunSimulation(wait=True, server_id=server_id)
                     log_msg = f"Simulation finished on '{server_name or 'localhost'}'."
                     self._log(log_msg, level="progress", log_type="success")
@@ -157,7 +149,7 @@ class SimulationRunner(LoggingMixin):
 
         return simulation
 
-    def _get_server_id(self, server_name: str) -> str:
+    def _get_server_id(self, server_name: str) -> Optional[str]:
         """Finds the full server identifier from a partial server name."""
         if not server_name or server_name.lower() == "localhost":
             return None
@@ -202,9 +194,7 @@ class SimulationRunner(LoggingMixin):
         s4l_root = os.path.dirname(os.path.dirname(python_path))
         isolve_path = os.path.join(s4l_root, "Solvers", "iSolve.exe")
         if not os.path.exists(isolve_path):
-            raise FileNotFoundError(
-                f"iSolve.exe not found at the expected path: {isolve_path}"
-            )
+            raise FileNotFoundError(f"iSolve.exe not found at the expected path: {isolve_path}")
 
         if not hasattr(simulation, "GetInputFileName"):
             raise RuntimeError("Could not get input file name from simulation object.")
@@ -213,9 +203,7 @@ class SimulationRunner(LoggingMixin):
         project_dir = os.path.dirname(self.project_path)
         input_file_path = os.path.join(project_dir, relative_path)
         if not os.path.exists(input_file_path):
-            raise FileNotFoundError(
-                f"Solver input file not found at: {input_file_path}"
-            )
+            raise FileNotFoundError(f"Solver input file not found at: {input_file_path}")
 
         solver_kernel = self.config.get_solver_settings().get("kernel", "Software")
         log_msg = f"Running iSolve with {solver_kernel} on {os.path.basename(input_file_path)}"
@@ -238,7 +226,7 @@ class SimulationRunner(LoggingMixin):
                 pipe.close()
 
         try:
-            with self.study.subtask("run_isolve_execution"):
+            with self.study.subtask("run_isolve_execution"):  # type: ignore
                 process = subprocess.Popen(
                     command,
                     stdout=subprocess.PIPE,
@@ -248,9 +236,7 @@ class SimulationRunner(LoggingMixin):
                 )
 
                 output_queue = Queue()
-                thread = threading.Thread(
-                    target=reader_thread, args=(process.stdout, output_queue)
-                )
+                thread = threading.Thread(target=reader_thread, args=(process.stdout, output_queue))
                 thread.daemon = True
                 thread.start()
 
@@ -279,7 +265,7 @@ class SimulationRunner(LoggingMixin):
                     raise RuntimeError(error_message)
 
             # --- 4. Post-simulation steps ---
-            with self.study.subtask("run_wait_for_results"):
+            with self.study.subtask("run_wait_for_results"):  # type: ignore
                 self._log(
                     "Waiting for 5 seconds to ensure results are written to disk...",
                     level="progress",
@@ -287,7 +273,7 @@ class SimulationRunner(LoggingMixin):
                 )
                 non_blocking_sleep(5)
 
-            with self.study.subtask("run_reload_project"):
+            with self.study.subtask("run_reload_project"):  # type: ignore
                 self._log(
                     "Re-opening project to load results...",
                     level="progress",
@@ -297,13 +283,9 @@ class SimulationRunner(LoggingMixin):
                 open_project(self.project_path)
 
             sim_name = simulation.Name
-            simulation = next(
-                (s for s in self.document.AllSimulations if s.Name == sim_name), None
-            )
+            simulation = next((s for s in self.document.AllSimulations if s.Name == sim_name), None)  # type: ignore
             if not simulation:
-                raise RuntimeError(
-                    f"Could not find simulation '{sim_name}' after re-opening project."
-                )
+                raise RuntimeError(f"Could not find simulation '{sim_name}' after re-opening project.")
             self._log(
                 "Project reloaded and results are available.",
                 level="progress",
@@ -319,12 +301,10 @@ class SimulationRunner(LoggingMixin):
             self.verbose_logger.error(traceback.format_exc())
             raise
 
-    def _run_osparc_direct(
-        self, simulation: "s4l_v1.simulation.emfdtd.Simulation", server_name: str
-    ):
+    def _run_osparc_direct(self, simulation: "s4l_v1.simulation.emfdtd.Simulation", server_name: str):
         """Submits a job directly to the oSPARC platform."""
         try:
-            import XOsparcApiClient  # Only available in Sim4Life v8.2.0 and later.
+            import XOsparcApiClient  # type: ignore # Only available in Sim4Life v8.2.0 and later.
         except ImportError as e:
             self._log(
                 "Failed to import XOsparcApiClient. This module is required for direct oSPARC integration.",
@@ -338,9 +318,7 @@ class SimulationRunner(LoggingMixin):
             )
             self._log(f"Original error: {e}", log_type="verbose")
             self.verbose_logger.error(traceback.format_exc())
-            raise RuntimeError(
-                "Could not import XOsparcApiClient module, which is necessary for oSPARC runs."
-            )
+            raise RuntimeError("Could not import XOsparcApiClient module, which is necessary for oSPARC runs.")
 
         self._log(
             f"--- Running simulation on oSPARC server: {server_name} ---",
@@ -362,13 +340,9 @@ class SimulationRunner(LoggingMixin):
         self._log("oSPARC client initialized.", log_type="verbose")
 
         # 2. Prepare Job Submission Data
-        input_file_path = os.path.join(
-            os.path.dirname(self.project_path), simulation.GetInputFileName()
-        )
+        input_file_path = os.path.join(os.path.dirname(self.project_path), simulation.GetInputFileName())
         if not os.path.exists(input_file_path):
-            raise FileNotFoundError(
-                f"Solver input file not found at: {input_file_path}"
-            )
+            raise FileNotFoundError(f"Solver input file not found at: {input_file_path}")
 
         job_data = XOsparcApiClient.JobSubmissionData()
         job_data.InputFilePath = input_file_path
@@ -384,9 +358,7 @@ class SimulationRunner(LoggingMixin):
         )
         create_response = client.CreateJob(job_data)
         if not create_response.Success:
-            raise RuntimeError(
-                f"Failed to create oSPARC job: {create_response.Content}"
-            )
+            raise RuntimeError(f"Failed to create oSPARC job: {create_response.Content}")
 
         job_id = create_response.Content.get("id")
         if not job_id:
@@ -399,18 +371,12 @@ class SimulationRunner(LoggingMixin):
         )
         start_response = client.StartJob(job_data, job_id)
         if not start_response.Success:
-            raise RuntimeError(
-                f"Failed to start oSPARC job {job_id}: {start_response.Content}"
-            )
+            raise RuntimeError(f"Failed to start oSPARC job {job_id}: {start_response.Content}")
 
         # 4. Poll for Job Completion
-        self._log(
-            "Job started. Polling for status...", level="progress", log_type="progress"
-        )
+        self._log("Job started. Polling for status...", level="progress", log_type="progress")
         while True:
-            status_response = client.GetJobStatus(
-                job_data.SolverKey, job_data.SolverVersion, job_id
-            )
+            status_response = client.GetJobStatus(job_data.SolverKey, job_data.SolverVersion, job_id)
             if not status_response.Success:
                 self._log(
                     f"Warning: Could not get job status for {job_id}.",
@@ -431,15 +397,13 @@ class SimulationRunner(LoggingMixin):
                     log_type=log_type,
                 )
                 if status != "SUCCESS":
-                    raise RuntimeError(
-                        f"oSPARC job {job_id} failed with status: {status}"
-                    )
+                    raise RuntimeError(f"oSPARC job {job_id} failed with status: {status}")
                 break
 
             time.sleep(30)
 
         # 5. Post-simulation steps (similar to _run_isolve_manual)
-        with self.study.subtask("run_wait_for_results"):
+        with self.study.subtask("run_wait_for_results"):  # type: ignore
             self._log(
                 "Waiting for 5 seconds to ensure results are written to disk...",
                 level="progress",
@@ -447,7 +411,7 @@ class SimulationRunner(LoggingMixin):
             )
             non_blocking_sleep(5)
 
-        with self.study.subtask("run_reload_project"):
+        with self.study.subtask("run_reload_project"):  # type: ignore
             self._log(
                 "Re-opening project to load results...",
                 level="progress",
@@ -457,13 +421,9 @@ class SimulationRunner(LoggingMixin):
             open_project(self.project_path)
 
         sim_name = simulation.Name
-        simulation = next(
-            (s for s in self.document.AllSimulations if s.Name == sim_name), None
-        )
+        simulation = next((s for s in self.document.AllSimulations if s.Name == sim_name), None)  # type: ignore
         if not simulation:
-            raise RuntimeError(
-                f"Could not find simulation '{sim_name}' after re-opening project."
-            )
+            raise RuntimeError(f"Could not find simulation '{sim_name}' after re-opening project.")
         self._log(
             "Project reloaded and results are available.",
             level="progress",

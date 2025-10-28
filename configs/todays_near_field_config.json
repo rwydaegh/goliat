@@ -10,7 +10,6 @@
       "auto_cleanup_previous_results": []
   },
   "phantoms": [
-    "eartha",
     "thelonious"
   ],
   "simulation_parameters": {
@@ -58,30 +57,78 @@
       },
       "gridding": {
         "automatic": ["component1:Substrate", "Lines 1"],
-        "manual": {
-          "group1": ["component1:Battery", "component1:Patch", "Extrude 1"],
-          "group2": ["component1:ShortingPin"]
-        },
-        "manual_grid_step": {
-          "group1": [1, 0.03, 1],
-          "group2": [0.1, 0.1, 0.1]
-        },
-        "resolution": {
-          "group1": [1.0, 1.0, 1.0],
-          "group2": [0.5, 0.5, 0.5]
+        "subgridding": {
+          "components": ["component1:Battery", "component1:Patch", "Extrude 1", "component1:ShortingPin"],
+          "SubGridMode": "Box",
+          "SubGridLevel": "x9",
+          "AutoRefinement": "AutoRefinementVeryFine"
+        }
+      }
+    },
+    "835": {
+      "center_frequency": 835,
+      "target_power_mW": 228,
+      "model_type": "PIFA",
+      "source_name": "Lines 1",
+      "materials": {
+        "Extrude 1": "Copper",
+        "component1:Battery": "Copper",
+        "component1:Patch": "Copper",
+        "component1:ShortingPin": "Copper",
+        "component1:Substrate": "Rogers RT/duroid 5880"
+      },
+      "gridding": {
+        "automatic": ["component1:Substrate", "Lines 1"],
+        "subgridding": {
+          "components": ["component1:Battery", "component1:Patch", "Extrude 1", "component1:ShortingPin"],
+          "SubGridMode": "Box",
+          "SubGridLevel": "x9",
+          "AutoRefinement": "AutoRefinementVeryFine"
         }
       }
     }
   },
   "placement_scenarios": {
+    "front_of_eyes": {
+      "bounding_box": "default",
+      "positions": {
+        "center": [0, 0, -100]
+      },
+      "orientations": {
+        "vertical": []
+      },
+      "antenna_reference": {
+        "distance_from_top": 10
+      },
+      "phantom_reference": "nasion"
+    },
     "by_cheek": {
       "bounding_box": "default",
       "positions": {
-        "tragus": [0, 0, 0]
+        "base": [0, 0, 0]
       },
       "orientations": {
-        "base": []
-      }
+        "cheek_base": [{"axis": "Z", "angle_deg": 15}],
+        "tilt_base": [],
+        "tilt_up": [{"axis": "X", "angle_deg": 10}]
+      },
+      "antenna_reference": {
+        "distance_from_top": 10
+      },
+      "phantom_reference": "tragus"
+    },
+    "by_belly": {
+      "bounding_box": "default",
+      "positions": {
+        "center": [0, 0, 0]
+      },
+      "orientations": {
+        "vertical": []
+      },
+      "antenna_reference": {
+        "distance_from_top": 10
+      },
+      "phantom_reference": "belly_button"
     }
   },
   "phantom_definitions": {
@@ -91,12 +138,15 @@
       "chest_extension": 100,
       "back_of_head": -28,
       "lips": [0, 122, 31],
+      "tragus": [0, 7, -5],
+      "belly_button": [-5, 0, -140],
+      "nasion": [-1, 0, 0],
       "placements": {
-        "do_front_of_eyes": false,
-        "do_by_belly": false,
+        "do_front_of_eyes": true,
+        "do_by_belly": true,
         "do_by_cheek": true,
         "distance_from_eye": 200,
-        "distance_from_belly": 100,
+        "distance_from_belly": 200,
         "distance_from_cheek": 8
       }
     },
@@ -106,36 +156,23 @@
       "chest_extension": 79,
       "back_of_head": -55,
       "lips": [24, 122, 418],
+      "tragus": [0, 14, -1],
+      "belly_button": [-6, 0, -171],
+      "nasion": [-2, 0, 0],
       "placements": {
-        "do_front_of_eyes": false,
-        "do_by_belly": false,
+        "do_front_of_eyes": true,
+        "do_by_belly": true,
         "do_by_cheek": true,
         "distance_from_eye": 200,
-        "distance_from_belly": 100,
+        "distance_from_belly": 200,
         "distance_from_cheek": 8
       }
     },
     "duke": {
-        "head_y_separation": 0,
-        "trunk_z_separation": 0,
-        "chest_extension": 0,
-        "back_of_head": 0,
-        "lips": [4, 106, 736],
-        "placements": {
-            "do_by_cheek": true,
-            "distance_from_cheek": 8
-        }
+        "lips": [4, 106, 736]
     },
     "ella": {
-        "head_y_separation": 0,
-        "trunk_z_separation": 0,
-        "chest_extension": 0,
-        "back_of_head": 0,
-        "lips": [53, 121, 550],
-        "placements": {
-            "do_by_cheek": true,
-            "distance_from_cheek": 8
-        }
+        "lips": [53, 121, 550]
     }
   }
 }

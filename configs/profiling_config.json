@@ -1,26 +1,28 @@
 {
     "near_field": {
-        "avg_setup_time": 75.06199999997625,
-        "avg_setup_simulation": 73.71849999998813,
-        "avg_extract_time": 15.405999999959022,
-        "avg_run_write_input_file": 21.25800000000163,
-        "avg_run_isolve_execution": 6.648499999981141,
-        "avg_run_wait_for_results": 5.00800000000072,
-        "avg_run_reload_project": 9.99200000000019,
-        "avg_run_simulation_total": 28.0,
-        "avg_extract_input_power": 1.4060000000172295,
-        "avg_extract_sar_statistics": 0.5470000000204891,
-        "avg_extract_point_sensor_data": 0.06300000002374873
+        "avg_setup_time": 76.98400000000038,
+        "avg_setup_simulation": 45.04474999999957,
+        "avg_extract_time": 8.593999999997322,
+        "avg_run_write_input_file": 7.577999999997701,
+        "avg_run_isolve_execution": 7.422000000002299,
+        "avg_run_wait_for_results": 5.04700000025332,
+        "avg_run_reload_project": 7.32799999974668,
+        "avg_run_simulation_total": 15.125,
+        "avg_extract_input_power": 1.4839999999967404,
+        "avg_extract_sar_statistics": 0.13999999999941792,
+        "avg_extract_point_sensor_data": 0.4690000000009604
     },
     "far_field": {
-        "avg_setup_simulation": 42.40600000001723,
-        "avg_setup_time": 52.875,
-        "avg_extract_input_power": 0.125,
-        "avg_extract_sar_statistics": 11.547000000020489,
-        "avg_extract_point_sensor_data": 0.1720000000204891,
-        "avg_extract_time": 35.14100000000326,
-        "avg_run_write_input_file": 12.14000000001397,
-        "avg_run_simulation_total": 139.625,
-        "avg_run_isolve_execution": 10.953000000037719
+        "avg_setup_simulation": 19.57799999974668,
+        "avg_setup_time": 31.140999998897314,
+        "avg_extract_input_power": 0.01066666655242443,
+        "avg_extract_sar_statistics": 7.322666666780909,
+        "avg_extract_point_sensor_data": 0.46333333291113377,
+        "avg_extract_time": 24.21900000050664,
+        "avg_run_write_input_file": 4.707000000402331,
+        "avg_run_simulation_total": 58.32333333293597,
+        "avg_run_isolve_execution": 40.786333334321775,
+        "avg_run_wait_for_results": 5.046999999632438,
+        "avg_run_reload_project": 7.755000000198682
     }
 }

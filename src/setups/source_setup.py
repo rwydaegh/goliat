@@ -38,9 +38,7 @@ class SourceSetup(BaseSetup):
 
         source_name = self.antenna.get_source_entity_name()
         if source_name not in antenna_components:
-            raise RuntimeError(
-                f"Could not find source entity '{source_name}' in antenna group."
-            )
+            raise RuntimeError(f"Could not find source entity '{source_name}' in antenna group.")
         source_entity = antenna_components[source_name]
 
         # Source setup
@@ -50,17 +48,13 @@ class SourceSetup(BaseSetup):
         excitation_enum = edge_source_settings.ExcitationType.enum
 
         if self.free_space:
-            self._log(
-                "  - Using Gaussian source for free-space simulation.", log_type="info"
-            )
+            self._log("  - Using Gaussian source for free-space simulation.", log_type="info")
             excitation_type = "gaussian"
             edge_source_settings.ExcitationType = excitation_enum.Gaussian
             edge_source_settings.CenterFrequency = self.frequency_mhz, self.units.MHz
             edge_source_settings.Bandwidth = 50.0, self.units.MHz
         else:
-            self._log(
-                "  - Using Harmonic source for phantom simulation.", log_type="info"
-            )
+            self._log("  - Using Harmonic source for phantom simulation.", log_type="info")
             excitation_type = "harmonic"
             edge_source_settings.ExcitationType = excitation_enum.Harmonic
             edge_source_settings.Frequency = self.frequency_mhz, self.units.MHz
@@ -84,17 +78,14 @@ class SourceSetup(BaseSetup):
 
                 # Create a list of 21 frequencies, including the center frequency
                 num_samples = 21
-                extracted_frequencies_hz = [
-                    start_freq_hz + i * (bandwidth_hz / (num_samples - 1))
-                    for i in range(num_samples)
-                ]
+                extracted_frequencies_hz = [start_freq_hz + i * (bandwidth_hz / (num_samples - 1)) for i in range(num_samples)]
 
                 far_field_sensor_settings.ExtractedFrequencies = (
                     extracted_frequencies_hz,
                     self.units.Hz,
                 )
                 self._log(
-                    f"  - Set extracted frequencies from {start_freq_hz/1e6} MHz to {end_freq_hz/1e6} MHz.",
+                    f"  - Set extracted frequencies from {start_freq_hz / 1e6} MHz to {end_freq_hz / 1e6} MHz.",
                     log_type="info",
                 )
 

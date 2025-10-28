@@ -4,7 +4,7 @@ import shutil
 import traceback
 import zipfile
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from src.osparc_batch.logging_utils import setup_console_logging
 
@@ -67,19 +67,15 @@ def _submit_job_in_process(
     client_cfg: "osparc.Configuration",
     solver_key: str,
     solver_version: str,
-) -> tuple["osparc.Job", "osparc.Solver"]:
+) -> Optional[tuple["osparc.Job", "osparc.Solver"]]:
     """Helper function to run the oSPARC submission in a separate process."""
     import osparc as osparc_module
 
     try:
-        return submit_job(
-            input_file_path, client_cfg, solver_key, solver_version, osparc_module
-        )
+        return submit_job(input_file_path, client_cfg, solver_key, solver_version, osparc_module)
     except ValueError as e:
         if "Invalid value for `items`, must not be `None`" in str(e):
-            main_logger.error(
-                f"Error submitting job for {input_file_path.name}: oSPARC API returned invalid data. Skipping."
-            )
+            main_logger.error(f"Error submitting job for {input_file_path.name}: oSPARC API returned invalid data. Skipping.")
             return None
         raise e
 
@@ -112,9 +108,7 @@ def download_and_process_results(
                 download_path = files_api.download_file(file_id=result_file.id)
 
                 if result_file.filename.endswith(".zip"):
-                    job_logger.info(
-                        f"Extracting {result_file.filename} to {output_dir}"
-                    )
+                    job_logger.info(f"Extracting {result_file.filename} to {output_dir}")
                     with zipfile.ZipFile(download_path, "r") as zip_ref:
                         zip_ref.extractall(output_dir)
 
@@ -132,16 +126,12 @@ def download_and_process_results(
 
                                 final_log_path = output_dir / new_name
                                 shutil.move(extracted_path, final_log_path)
-                                job_logger.info(
-                                    f"Renamed and moved log file to {final_log_path}"
-                                )
+                                job_logger.info(f"Renamed and moved log file to {final_log_path}")
 
                     os.remove(download_path)
                 else:
                     if "output.h5" in result_file.filename:
-                        output_filename = (
-                            input_file_path.stem.replace("_Input", "_Output") + ".h5"
-                        )
+                        output_filename = input_file_path.stem.replace("_Input", "_Output") + ".h5"
                     else:
                         output_filename = result_file.filename
 
@@ -153,8 +143,6 @@ def download_and_process_results(
                     status_callback.emit(job.id, "COMPLETED")
 
     except Exception as e:
-        job_logger.error(
-            f"Could not retrieve results for job {job.id}: {e}\n{traceback.format_exc()}"
-        )
+        job_logger.error(f"Could not retrieve results for job {job.id}: {e}\n{traceback.format_exc()}")
         if status_callback:
             status_callback.emit(job.id, "FAILED")

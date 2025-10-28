@@ -10,17 +10,10 @@ from copy import deepcopy
 
 import colorama
 
-from scripts.utils import initial_setup
-
 # Ensure the src directory is in the Python path
 base_dir = os.path.abspath(os.path.dirname(__file__))
 if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
-
-
-# --- Centralized Startup ---
-initial_setup()
-# --- End Centralized Startup ---
 
 
 def setup_console_logging():
@@ -91,18 +84,14 @@ def calculate_split_factors(num_phantoms, num_items, target_splits):
 def split_config(config_path, num_splits, logger):
     """Splits the configuration file into a number of parallel configs using smart algorithm."""
     if not os.path.exists(config_path):
-        logger.error(
-            f"{colorama.Fore.RED}Error: Config file not found at '{config_path}'"
-        )
+        logger.error(f"{colorama.Fore.RED}Error: Config file not found at '{config_path}'")
         sys.exit(1)
 
     with open(config_path, "r") as f:
         config = json.load(f)
 
     config_filename = os.path.basename(config_path).replace(".json", "")
-    output_dir = os.path.join(
-        os.path.dirname(config_path), f"{config_filename}_parallel"
-    )
+    output_dir = os.path.join(os.path.dirname(config_path), f"{config_filename}_parallel")
 
     if os.path.exists(output_dir):
         shutil.rmtree(output_dir)
@@ -148,9 +137,7 @@ def split_config(config_path, num_splits, logger):
         sys.exit(1)
 
     # Calculate split factors
-    phantom_splits, item_splits = calculate_split_factors(
-        num_phantoms, num_items, num_splits
-    )
+    phantom_splits, item_splits = calculate_split_factors(num_phantoms, num_items, num_splits)
 
     # Validate that we can achieve the target splits
     total_splits = phantom_splits * item_splits
@@ -166,8 +153,7 @@ def split_config(config_path, num_splits, logger):
         sys.exit(1)
 
     logger.info(
-        f"Smart split strategy: {phantom_splits} phantom group(s) × "
-        f"{item_splits} {items_name} group(s) = {total_splits} total configs"
+        f"Smart split strategy: {phantom_splits} phantom group(s) × {item_splits} {items_name} group(s) = {total_splits} total configs"
     )
 
     # Split phantoms and items into groups
@@ -199,19 +185,14 @@ def split_config(config_path, num_splits, logger):
         # Update frequencies or antennas
         if study_type == "near_field":
             original_antenna_config = config.get("antenna_config", {})
-            new_config["antenna_config"] = {
-                key: original_antenna_config[key] for key in items_subset
-            }
+            new_config["antenna_config"] = {key: original_antenna_config[key] for key in items_subset}
         else:
             new_config["frequencies_mhz"] = items_subset
 
         new_config_path = os.path.join(output_dir, f"{config_filename}_{i}.json")
         with open(new_config_path, "w") as f:
             json.dump(new_config, f, indent=2)
-        logger.info(
-            f"  - Created: {os.path.basename(new_config_path)} "
-            f"(phantoms: {phantoms}, {items_name}: {len(items_subset)})"
-        )
+        logger.info(f"  - Created: {os.path.basename(new_config_path)} (phantoms: {phantoms}, {items_name}: {len(items_subset)})")
 
     return output_dir
 
@@ -245,9 +226,7 @@ def run_study_process(args):
         )
     else:
         # For other platforms, just run the process. The output will be interleaved in the main console.
-        process = subprocess.Popen(
-            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     stdout, stderr = process.communicate()
     if process.returncode != 0:
@@ -261,9 +240,7 @@ def run_study_process(args):
 def main():
     """Main function to split configs and run studies in parallel."""
     logger = setup_console_logging()
-    parser = argparse.ArgumentParser(
-        description="Split a config file and run studies in parallel."
-    )
+    parser = argparse.ArgumentParser(description="Split a config file and run studies in parallel.")
     parser.add_argument(
         "config",
         type=str,
@@ -294,9 +271,7 @@ def main():
         logger.info(f"{colorama.Fore.GREEN}Config splitting complete.")
     else:
         config_filename = os.path.basename(args.config).replace(".json", "")
-        config_dir = os.path.join(
-            os.path.dirname(args.config), f"{config_filename}_parallel"
-        )
+        config_dir = os.path.join(os.path.dirname(args.config), f"{config_filename}_parallel")
         logger.info(f"Skipping split, using existing directory: {config_dir}")
 
     if not os.path.isdir(config_dir):
@@ -309,9 +284,7 @@ def main():
     # Find the base config name by inspecting the split files
     base_config_name = None
     # Find a file that is NOT a base config to inspect it for the 'extends' key
-    sample_split_file = next(
-        (f for f in all_json_files if "base" not in f.lower()), None
-    )
+    sample_split_file = next((f for f in all_json_files if "base" not in f.lower()), None)
 
     if sample_split_file:
         with open(os.path.join(config_dir, sample_split_file), "r") as f:
@@ -319,28 +292,18 @@ def main():
                 config_data = json.load(f)
                 base_config_name = config_data.get("extends")
             except json.JSONDecodeError:
-                logger.warning(
-                    f"Could not parse {sample_split_file} to find base config."
-                )
+                logger.warning(f"Could not parse {sample_split_file} to find base config.")
 
     # Exclude the base config file from the list of files to run
     if base_config_name:
-        config_files_to_run = [
-            os.path.join(config_dir, f) for f in all_json_files if f != base_config_name
-        ]
-        logger.info(
-            f"Identified '{base_config_name}' as the base config. It will be excluded from the run."
-        )
+        config_files_to_run = [os.path.join(config_dir, f) for f in all_json_files if f != base_config_name]
+        logger.info(f"Identified '{base_config_name}' as the base config. It will be excluded from the run.")
     else:
         config_files_to_run = [os.path.join(config_dir, f) for f in all_json_files]
-        logger.warning(
-            "Could not identify a base config file. All .json files will be treated as studies."
-        )
+        logger.warning("Could not identify a base config file. All .json files will be treated as studies.")
 
     if not config_files_to_run:
-        logger.warning(
-            f"No .json config files found to run in '{config_dir}' (excluding base config)."
-        )
+        logger.warning(f"No .json config files found to run in '{config_dir}' (excluding base config).")
         return
 
     logger.info(f"Found {len(config_files_to_run)} configs to run in parallel.")

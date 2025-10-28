@@ -58,17 +58,11 @@
       },
       "gridding": {
         "automatic": ["component1:Substrate", "Lines 1"],
-        "manual": {
-          "group1": ["component1:Battery", "component1:Patch", "Extrude 1"],
-          "group2": ["component1:ShortingPin"]
-        },
-        "manual_grid_step": {
-          "group1": [1, 0.03, 1],
-          "group2": [0.1, 0.1, 0.1]
-        },
-        "resolution": {
-          "group1": [1.0, 1.0, 1.0],
-          "group2": [0.5, 0.5, 0.5]
+        "subgridding": {
+          "components": ["component1:Battery", "component1:Patch", "Extrude 1", "component1:ShortingPin"],
+          "SubGridMode": "Box",
+          "SubGridLevel": "x9",
+          "AutoRefinement": "AutoRefinementVeryFine"
         }
       }
     },
@@ -86,17 +80,11 @@
       },
       "gridding": {
         "automatic": ["component1:Substrate", "Lines 1"],
-        "manual": {
-          "group1": ["component1:Battery", "component1:Patch", "Extrude 1"],
-          "group2": ["component1:ShortingPin"]
-        },
-        "manual_grid_step": {
-          "group1": [1, 0.03, 1],
-          "group2": [0.1, 0.1, 0.1]
-        },
-        "resolution": {
-          "group1": [1.0, 1.0, 1.0],
-          "group2": [0.5, 0.5, 0.5]
+        "subgridding": {
+          "components": ["component1:Battery", "component1:Patch", "Extrude 1", "component1:ShortingPin"],
+          "SubGridMode": "Box",
+          "SubGridLevel": "x9",
+          "AutoRefinement": "AutoRefinementVeryFine"
         }
       }
     },
@@ -237,10 +225,10 @@
     "front_of_eyes": {
       "bounding_box": "default",
       "positions": {
-        "center": [0, 0, 0],
-        "left": [-25, 0, 0],
-        "right": [25, 0, 0],
-        "down": [0, 0, -60]
+        "center": [0, 0, -100],
+        "left": [-25, 0, -100],
+        "right": [25, 0, -100],
+        "up": [0, 0, -40]
       },
       "orientations": {
         "vertical": [],
@@ -250,12 +238,13 @@
       },
       "antenna_reference": {
         "distance_from_top": 10
-      }
+      },
+      "phantom_reference": "nasion"
     },
     "by_cheek": {
       "bounding_box": "default",
       "positions": {
-        "tragus": [0, 0, 0]
+        "base": [0, 0, 0]
       },
       "orientations": {
         "cheek_base": [{"axis": "Z", "angle_deg": 15}],
@@ -267,7 +256,8 @@
       },
       "antenna_reference": {
         "distance_from_top": 10
-      }
+      },
+      "phantom_reference": "tragus"
     },
     "by_belly": {
       "bounding_box": "default",
@@ -285,7 +275,8 @@
       },
       "antenna_reference": {
         "distance_from_top": 10
-      }
+      },
+      "phantom_reference": "belly_button"
     }
   },
   "phantom_definitions": {
@@ -295,12 +286,15 @@
       "chest_extension": 100,
       "back_of_head": -28,
       "lips": [0, 122, 31],
+      "tragus": [0, 7, -5],
+      "belly_button": [-5, 0, -140],
+      "nasion": [-1, 0, 0],
       "placements": {
         "do_front_of_eyes": true,
         "do_by_belly": true,
         "do_by_cheek": true,
         "distance_from_eye": 200,
-        "distance_from_belly": 100,
+        "distance_from_belly": 200,
         "distance_from_cheek": 8
       }
     },
@@ -310,12 +304,15 @@
       "chest_extension": 79,
       "back_of_head": -55,
       "lips": [24, 122, 418],
+      "tragus": [0, 14, -1],
+      "belly_button": [-6, 0, -171],
+      "nasion": [-2, 0, 0],
       "placements": {
         "do_front_of_eyes": true,
         "do_by_belly": true,
         "do_by_cheek": true,
         "distance_from_eye": 200,
-        "distance_from_belly": 100,
+        "distance_from_belly": 200,
         "distance_from_cheek": 8
       }
     },

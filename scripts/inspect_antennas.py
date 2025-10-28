@@ -54,19 +54,13 @@ def main():
     freq_band = str(args.frequency)
     antenna_config = config.get_antenna_config().get(freq_band)
     if not antenna_config:
-        raise ValueError(
-            f"No antenna configuration found for frequency: {freq_band} MHz"
-        )
+        raise ValueError(f"No antenna configuration found for frequency: {freq_band} MHz")
 
     center_frequency = antenna_config.get("center_frequency")
     if not center_frequency:
-        raise ValueError(
-            f"'center_frequency' not defined for frequency: {freq_band} MHz"
-        )
+        raise ValueError(f"'center_frequency' not defined for frequency: {freq_band} MHz")
 
-    logger.info(
-        f"{colorama.Fore.MAGENTA}--- Setting up project to inspect antenna for {freq_band} MHz ---"
-    )
+    logger.info(f"{colorama.Fore.MAGENTA}--- Setting up project to inspect antenna for {freq_band} MHz ---")
 
     from src.antenna import Antenna
     from src.project_manager import ProjectManager
@@ -80,9 +74,7 @@ def main():
     progress_logger_dummy = logging.getLogger("progress_dummy")
     verbose_logger_dummy = logging.getLogger("verbose_dummy")
 
-    project_manager = ProjectManager(
-        config, verbose_logger_dummy, progress_logger_dummy
-    )
+    project_manager = ProjectManager(config, verbose_logger_dummy, progress_logger_dummy)
     antenna = Antenna(config, center_frequency)
 
     # Use the NearFieldSetup for freespace inspection
@@ -98,9 +90,7 @@ def main():
     )
     setup.run_full_setup(project_manager)
 
-    logger.info(
-        f"\n{colorama.Fore.MAGENTA}--- Antenna Components for {freq_band} MHz (Live Inspection) ---"
-    )
+    logger.info(f"\n{colorama.Fore.MAGENTA}--- Antenna Components for {freq_band} MHz (Live Inspection) ---")
 
     import s4l_v1.model
 
@@ -111,9 +101,7 @@ def main():
 
     def print_entities_recursive(entity, indent=0):
         if hasattr(entity, "Name"):
-            logger.info(
-                f"{colorama.Fore.CYAN}{'  ' * indent}- Name: '{entity.Name}', Type: {type(entity).__name__}"
-            )
+            logger.info(f"{colorama.Fore.CYAN}{'  ' * indent}- Name: '{entity.Name}', Type: {type(entity).__name__}")
 
         if hasattr(entity, "Entities") and entity.Entities is not None:
             for child in entity.Entities:

@@ -1,35 +1,48 @@
 repos:
-  - repo: https://github.com/psf/black
-    rev: 24.1.1
-    hooks:
-      - id: black
-        language_version: python3.11
-        exclude: ^(archive/|analysis/|osparc_api_example/|post_process_results/)
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v6.0.0
+  hooks:
+  - id: trailing-whitespace
+    exclude: ^(docs/|archive/|analysis/)
+  - id: end-of-file-fixer
+    exclude: ^(docs/|archive/|analysis/)
+  - id: check-yaml
+    exclude: ^mkdocs\.yml$
+  - id: check-added-large-files
+    args: [--maxkb=10000]
+  - id: check-json
+    exclude: ^(\.vscode/)
 
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        args: ["--profile", "black"]
-        exclude: ^(archive/|analysis/|osparc_api_example/|post_process_results/)
+- repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
+  rev: v2.15.0
+  hooks:
+  - id: pretty-format-yaml
+    args: [--autofix]
+  - id: pretty-format-toml
+    args: [--autofix, --trailing-commas]
 
-  - repo: https://github.com/pycqa/flake8
-    rev: 7.0.0
-    hooks:
-      - id: flake8
-        args: ["--max-line-length=120", "--extend-ignore=E203,W503"]
-        exclude: ^(archive/|analysis/|osparc_api_example/|post_process_results/|docs/)
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.14.2
+  hooks:
+  - id: ruff-format
+    exclude: ^(archive/|analysis/|osparc_api_example/|post_process_results/)
+  - id: ruff
+    args: [--fix]
+    exclude: ^(archive/|analysis/|osparc_api_example/|post_process_results/|docs/)
 
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
-    hooks:
-      - id: trailing-whitespace
-        exclude: ^(docs/|archive/|analysis/)
-      - id: end-of-file-fixer
-        exclude: ^(docs/|archive/|analysis/)
-      - id: check-yaml
-        exclude: ^mkdocs\.yml$
-      - id: check-added-large-files
-        args: ['--maxkb=10000']
-      - id: check-json
-        exclude: ^(\.vscode/)
+- repo: https://github.com/RobertCraigie/pyright-python
+  rev: v1.1.407
+  hooks:
+  - id: pyright
+
+- repo: https://github.com/codespell-project/codespell
+  rev: v2.4.1
+  hooks:
+  - id: codespell
+    additional_dependencies:
+    - tomli
+
+- repo: https://github.com/astral-sh/uv-pre-commit
+  rev: 0.9.5
+  hooks:
+  - id: uv-lock

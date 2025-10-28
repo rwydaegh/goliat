@@ -23,15 +23,13 @@ class BaseAnalysisStrategy(ABC):
         self.phantom_name = phantom_name
         self.base_dir = config.base_dir
 
-    @abstractmethod
     def get_results_base_dir(self) -> str:
         """Gets the base directory for results."""
-        pass
+        raise NotImplementedError
 
-    @abstractmethod
     def get_plots_dir(self) -> str:
         """Gets the directory for saving plots."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def load_and_process_results(self, analyzer: "Analyzer"):
@@ -43,9 +41,7 @@ class BaseAnalysisStrategy(ABC):
         pass
 
     @abstractmethod
-    def get_normalization_factor(
-        self, frequency_mhz: int, simulated_power_w: float
-    ) -> float:
+    def get_normalization_factor(self, frequency_mhz: int, simulated_power_w: float) -> float:
         """Calculates the normalization factor for SAR values.
 
         Args:
@@ -62,7 +58,7 @@ class BaseAnalysisStrategy(ABC):
         self,
         pickle_data: dict,
         frequency_mhz: int,
-        detailed_name: str,
+        placement_name: str,
         scenario_name: str,
         sim_power: float,
         norm_factor: float,
@@ -72,7 +68,7 @@ class BaseAnalysisStrategy(ABC):
         Args:
             pickle_data: Data loaded from the .pkl result file.
             frequency_mhz: The simulation frequency.
-            detailed_name: The detailed name of the placement or scenario.
+            placement_name: The detailed name of the placement or scenario.
             scenario_name: The general scenario name.
             sim_power: The simulated input power in Watts.
             norm_factor: The normalization factor to apply.

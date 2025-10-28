@@ -6,44 +6,20 @@ import sys
 
 def install_requirements(requirements_path):
     """
-    Checks if the packages listed in requirements.txt are installed and installs them if not.
+    Installs packages from a requirements file using 'python -m pip install'.
     """
-    import pkg_resources
-
     if not os.path.exists(requirements_path):
-        logging.warning(
-            f"requirements.txt not found at '{requirements_path}'. Skipping installation."
-        )
+        logging.warning(f"'{requirements_path}' not found. Skipping installation.")
         return
 
-    with open(requirements_path, "r") as f:
-        requirements = [
-            line.strip() for line in f if line.strip() and not line.startswith("#")
-        ]
-
-    missing_packages = []
-    for package in requirements:
-        try:
-            # Attempt to parse the requirement to get the package name
-            req = pkg_resources.Requirement.parse(package)
-            pkg_resources.get_distribution(req.project_name)
-        except pkg_resources.DistributionNotFound:
-            missing_packages.append(package)
-        except ValueError:
-            logging.warning(f"Could not parse package requirement: {package}")
-
-    if missing_packages:
-        logging.info(f"Missing packages: {', '.join(missing_packages)}. Installing...")
-        try:
-            subprocess.check_call(
-                [sys.executable, "-m", "pip", "install", *missing_packages]
-            )
-            logging.info("All missing packages installed.")
-        except subprocess.CalledProcessError as e:
-            logging.error(f"Failed to install packages: {e}")
-            sys.exit(1)
-    else:
-        logging.info("All required packages are already installed.")
+    logging.info(f"Installing packages from '{requirements_path}'...")
+    try:
+        # Using '-m pip' ensures we use the pip associated with the current python interpreter
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", requirements_path])
+        logging.info("All required packages are installed.")
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Failed to install packages: {e}")
+        sys.exit(1)
 
 
 def check_repo_root():
@@ -53,9 +29,7 @@ def check_repo_root():
     """
     is_root = os.path.isdir("configs") and os.path.isdir("src")
     if not is_root:
-        logging.error(
-            "This script must be run from the root directory of the GOLIAT repository."
-        )
+        logging.error("This script must be run from the root directory of the GOLIAT repository.")
         sys.exit(1)
 
 
@@ -71,9 +45,7 @@ def find_sim4life_python_executables():
     for drive in drives:
         for version in ["8.2", "9.0"]:
             # Construct a glob pattern to find the Python directory
-            search_pattern = os.path.join(
-                drive, "Program Files", f"Sim4Life_{version}*", "Python"
-            )
+            search_pattern = os.path.join(drive, "Program Files", f"Sim4Life_{version}*", "Python")
 
             # Use glob to find matching directories
             import glob
@@ -92,18 +64,20 @@ def update_bashrc(selected_python_path):
     """
     bashrc_path = os.path.join(os.getcwd(), ".bashrc")
 
+    # Strip any existing quotes from the input path
+    selected_python_path = selected_python_path.strip().strip('"').strip("'")
+
     # Prepare the new path line
     drive, path_rest = os.path.splitdrive(selected_python_path)
-    bash_path = f'/{drive.strip(":")}{path_rest.replace(os.sep, "/")}'
+    bash_path = f"/{drive.strip(':')}{path_rest.replace(os.sep, '/')}"
+    # Ensure no extra quotes are added - use double quotes only around the path
     new_path_line = f'export PATH="{bash_path}:$PATH"\n'
 
     # Overwrite the file with just the new path
     with open(bashrc_path, "w") as f:
         f.write(new_path_line)
 
-    logging.info(
-        "'.bashrc' has been updated. Please restart your shell or run 'source .bashrc'."
-    )
+    logging.info("'.bashrc' has been updated. Please restart your shell or run 'source .bashrc'.")
 
 
 def check_python_interpreter():
@@ -122,27 +96,21 @@ def check_python_interpreter():
             logging.info("Correct Sim4Life Python interpreter detected.")
             return
         else:
-            logging.warning(
-                f"You are using an unsupported Sim4Life Python interpreter: {sys.executable}"
-            )
+            logging.warning(f"You are using an unsupported Sim4Life Python interpreter: {sys.executable}")
             logging.warning("This project requires Sim4Life version 8.2 or 9.0.")
     else:
         logging.warning("You are not using a Sim4Life Python interpreter.")
 
     if not viable_pythons:
-        logging.error(
-            "No viable Sim4Life Python executables (v8.2, v9.0) found on this system."
-        )
+        logging.error("No viable Sim4Life Python executables (v8.2, v9.0) found on this system.")
         sys.exit(1)
 
     print("Found the following supported Sim4Life Python executables (8.2 or 9.0):")
     for i, p in enumerate(viable_pythons):
-        print(f"  [{i+1}] {p}")
+        print(f"  [{i + 1}] {p}")
 
     try:
-        choice = input(
-            "Select the version to use (e.g., '1') or press Enter to cancel: "
-        )
+        choice = input("Select the version to use (e.g., '1') or press Enter to cancel: ")
         if not choice:
             print("Operation cancelled by user.")
             sys.exit(0)
@@ -156,7 +124,7 @@ def check_python_interpreter():
         update_bashrc(selected_python)
 
         print(
-            "\nConfiguration updated. Please restart your terminal and run the script again."
+            "\n .bashrc file updated. Please restart your terminal, run source .bashrc, and run the script again this time with the correct python."
         )
         sys.exit(0)
 
@@ -174,49 +142,16 @@ def prepare_data(base_dir):
     data_dir = os.path.join(base_dir, "data")
     phantoms_dir = os.path.join(data_dir, "phantoms")
     if not os.path.exists(phantoms_dir) or len(os.listdir(phantoms_dir)) < 4:
-        logging.getLogger("verbose").info(
-            "Phantoms directory is missing or incomplete. Downloading phantoms...",
-            extra={"log_type": "info"},
-        )
-        download_and_extract_data(base_dir, logging.getLogger("verbose"))
+        logging.info("Phantoms directory is missing or incomplete. Downloading phantoms...")
+        download_and_extract_data(base_dir, logging.getLogger())
     else:
-        logging.getLogger("verbose").info(
-            "Phantoms already exist. Skipping download.", extra={"log_type": "info"}
-        )
+        logging.info("Phantoms already exist. Skipping download.")
 
     centered_dir = os.path.join(data_dir, "antennas", "centered")
     if not os.path.exists(centered_dir) or not os.listdir(centered_dir):
-        logging.getLogger("verbose").info(
-            "Centered antenna directory is empty. Preparing antennas...",
-            extra={"log_type": "info"},
-        )
-        prepare_antennas_script = os.path.join(
-            base_dir, "scripts", "prepare_antennas.py"
-        )
+        logging.info("Centered antenna directory is empty. Preparing antennas...")
+        prepare_antennas_script = os.path.join(base_dir, "scripts", "prepare_antennas.py")
         python_exe = sys.executable
         subprocess.run([python_exe, prepare_antennas_script], check=True)
     else:
-        logging.getLogger("verbose").info(
-            "Centered antennas already exist. Skipping preparation.",
-            extra={"log_type": "info"},
-        )
-
-
-def initial_setup():
-    """
-    Runs all initial checks and setup procedures, but only if a lock file is not present.
-    """
-    lock_file = os.path.join(os.getcwd(), ".setup_done")
-    if os.path.exists(lock_file):
-        logging.info("Setup has already been performed. Skipping.")
-        return
-
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    check_repo_root()
-    check_python_interpreter()
-    install_requirements(os.path.join(os.getcwd(), "requirements.txt"))
-    prepare_data(os.getcwd())
-
-    # Create the lock file to indicate setup is complete
-    with open(lock_file, "w") as f:
-        f.write("Setup complete.")
+        logging.info("Centered antennas already exist. Skipping preparation.")

@@ -43,23 +43,27 @@ class Reporter:
         results_dir = self._get_results_dir()
         os.makedirs(results_dir, exist_ok=True)
 
-        self._save_pickle_report(
-            results_dir, df, tissue_groups, group_sar_stats, results_data
-        )
-        self._save_html_report(
-            results_dir, df, tissue_groups, group_sar_stats, results_data
-        )
+        self._save_pickle_report(results_dir, df, tissue_groups, group_sar_stats, results_data)
+        self._save_html_report(results_dir, df, tissue_groups, group_sar_stats, results_data)
 
     def _get_results_dir(self) -> str:
         """Gets the results directory path."""
-        return os.path.join(
+        base_path = os.path.join(
             self.parent.config.base_dir,
             "results",
             self.parent.study_type,
             self.parent.phantom_name,
             f"{self.parent.frequency_mhz}MHz",
-            self.parent.placement_name,
         )
+
+        if self.parent.study_type == "far_field":
+            # For far-field, placement_name is constructed from scenario, polarization, and direction
+            # e.g., environmental_theta_x_pos
+            placement_name = f"{self.parent.placement_name}"
+            return os.path.join(base_path, placement_name)
+
+        # For near-field, placement_name is already the final directory component
+        return os.path.join(base_path, self.parent.placement_name)
 
     def _save_pickle_report(
         self,
@@ -83,9 +87,7 @@ class Reporter:
         with open(pickle_filepath, "wb") as f:
             pickle.dump(pickle_data, f)
 
-        self.parent._log(
-            f"  - Pickle report saved to: {pickle_filepath}", log_type="info"
-        )
+        self.parent._log(f"  - Pickle report saved to: {pickle_filepath}", log_type="info")
 
     def _save_html_report(
         self,
@@ -96,9 +98,7 @@ class Reporter:
         results_data: dict,
     ):
         """Saves a human-readable HTML report."""
-        html_content = self._build_html_content(
-            df, tissue_groups, group_sar_stats, results_data
-        )
+        html_content = self._build_html_content(df, tissue_groups, group_sar_stats, results_data)
         html_filepath = os.path.join(results_dir, "sar_stats_all_tissues.html")
 
         with open(html_filepath, "w", encoding="utf-8") as f:
@@ -120,14 +120,11 @@ class Reporter:
         html_content += pd.DataFrame.from_dict(tissue_groups, orient="index").to_html()
 
         html_content += "<h2>Grouped SAR Statistics</h2>"
-        html_content += pd.DataFrame.from_dict(
-            group_sar_stats, orient="index"
-        ).to_html()
+        html_content += pd.DataFrame.from_dict(group_sar_stats, orient="index").to_html()
 
         html_content += "<h2>Peak SAR Details</h2>"
-        peak_sar_df = pd.DataFrame.from_dict(
-            results_data.get("peak_sar_details", {}), orient="index", columns=["Value"]
-        )
+        peak_sar_df = pd.DataFrame.from_dict(results_data.get("peak_sar_details", {}), orient="index")
+        peak_sar_df.columns = ["Value"]
         peak_sar_df.index.name = "Parameter"
         html_content += peak_sar_df.to_html()
 

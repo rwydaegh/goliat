@@ -60,9 +60,7 @@ def create_temp_config(base_config, frequency_mhz):
     # Override for a single free-space simulation
     config_data["study_name"] = f"Free-Space Validation {frequency_mhz}MHz"
     config_data["phantoms"] = {"freespace": {"do_front_of_eyes_center_vertical": True}}
-    config_data["antenna_config"] = {
-        str(frequency_mhz): base_config.get_antenna_config().get(str(frequency_mhz))
-    }
+    config_data["antenna_config"] = {str(frequency_mhz): base_config.get_antenna_config().get(str(frequency_mhz))}
     config_data["placement_scenarios"] = {
         "front_of_eyes_center_vertical": {
             "positions": {"center": [0, 0, 0]},
@@ -77,9 +75,7 @@ def create_temp_config(base_config, frequency_mhz):
     }
 
     # Write to a temporary file
-    temp_file = tempfile.NamedTemporaryFile(
-        mode="w+", delete=False, suffix=".json", dir=os.path.join(base_dir, "configs")
-    )
+    temp_file = tempfile.NamedTemporaryFile(mode="w+", delete=False, suffix=".json", dir=os.path.join(base_dir, "configs"))
     json.dump(config_data, temp_file, indent=4)
     temp_file.close()
     return temp_file.name
@@ -115,15 +111,11 @@ def main():
                 temp_config_path = create_temp_config(base_config, freq)
 
                 # Instantiate and run the study with the temporary config
-                study = NearFieldStudy(
-                    config_filename=temp_config_path, gui=console_logger
-                )
+                study = NearFieldStudy(config_filename=temp_config_path, gui=console_logger)
                 study.run()
 
             except Exception as e:
-                progress_logger.error(
-                    f"  - ERROR: An error occurred during the {freq} MHz simulation: {e}"
-                )
+                progress_logger.error(f"  - ERROR: An error occurred during the {freq} MHz simulation: {e}")
                 verbose_logger.error(traceback.format_exc())
                 continue  # Continue to the next simulation
             finally:

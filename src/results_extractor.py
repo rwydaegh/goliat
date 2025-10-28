@@ -1,6 +1,6 @@
 import json
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from .extraction.cleaner import Cleaner
 from .extraction.json_encoder import NumpyArrayEncoder
@@ -40,8 +40,8 @@ class ResultsExtractor(LoggingMixin):
         verbose_logger: "Logger",
         progress_logger: "Logger",
         free_space: bool = False,
-        gui: "QueueGUI" = None,
-        study: "BaseStudy" = None,
+        gui: "Optional[QueueGUI]" = None,
+        study: "Optional[BaseStudy]" = None,
     ):
         """Initializes the ResultsExtractor.
 
@@ -120,10 +120,7 @@ class ResultsExtractor(LoggingMixin):
             )
 
         # Extract point sensor data
-        if (
-            self.config.get_setting("simulation_parameters.number_of_point_sensors", 0)
-            > 0
-        ):
+        if self.config.get_setting("simulation_parameters.number_of_point_sensors", 0) > 0:  # type: ignore
             if self.gui:
                 self.gui.update_stage_progress("Extracting Point Sensors", 75, 100)
 
@@ -150,20 +147,12 @@ class ResultsExtractor(LoggingMixin):
 
     def _save_json_results(self, results_data: dict):
         """Saves the final results to a JSON file."""
-        results_dir = os.path.join(
-            self.config.base_dir,
-            "results",
-            self.study_type,
-            self.phantom_name,
-            f"{self.frequency_mhz}MHz",
-            self.placement_name,
-        )
+        reporter = Reporter(self)
+        results_dir = reporter._get_results_dir()
         os.makedirs(results_dir, exist_ok=True)
         results_filepath = os.path.join(results_dir, "sar_results.json")
 
-        final_results_data = {
-            k: v for k, v in results_data.items() if not k.startswith("_temp")
-        }
+        final_results_data = {k: v for k, v in results_data.items() if not k.startswith("_temp")}
 
         with open(results_filepath, "w") as f:
             json.dump(final_results_data, f, indent=4, cls=NumpyArrayEncoder)

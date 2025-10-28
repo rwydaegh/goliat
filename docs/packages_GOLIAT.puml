@@ -6,6 +6,12 @@ package "src.analysis" as src.analysis {
 }
 package "src.analysis.analyzer" as src.analysis.analyzer {
 }
+package "src.analysis.base_strategy" as src.analysis.base_strategy {
+}
+package "src.analysis.far_field_strategy" as src.analysis.far_field_strategy {
+}
+package "src.analysis.near_field_strategy" as src.analysis.near_field_strategy {
+}
 package "src.analysis.plotter" as src.analysis.plotter {
 }
 package "src.analysis.strategies" as src.analysis.strategies {
@@ -18,13 +24,39 @@ package "src.config" as src.config {
 }
 package "src.data_extractor" as src.data_extractor {
 }
+package "src.extraction" as src.extraction {
+}
+package "src.extraction.cleaner" as src.extraction.cleaner {
+}
+package "src.extraction.json_encoder" as src.extraction.json_encoder {
+}
+package "src.extraction.power_extractor" as src.extraction.power_extractor {
+}
+package "src.extraction.reporter" as src.extraction.reporter {
+}
+package "src.extraction.sar_extractor" as src.extraction.sar_extractor {
+}
+package "src.extraction.sensor_extractor" as src.extraction.sensor_extractor {
+}
 package "src.gui_manager" as src.gui_manager {
 }
 package "src.logging_manager" as src.logging_manager {
 }
 package "src.osparc_batch" as src.osparc_batch {
 }
+package "src.osparc_batch.cleanup" as src.osparc_batch.cleanup {
+}
+package "src.osparc_batch.file_finder" as src.osparc_batch.file_finder {
+}
 package "src.osparc_batch.gui" as src.osparc_batch.gui {
+}
+package "src.osparc_batch.logging_utils" as src.osparc_batch.logging_utils {
+}
+package "src.osparc_batch.main_logic" as src.osparc_batch.main_logic {
+}
+package "src.osparc_batch.osparc_client" as src.osparc_batch.osparc_client {
+}
+package "src.osparc_batch.progress" as src.osparc_batch.progress {
 }
 package "src.osparc_batch.runner" as src.osparc_batch.runner {
 }
@@ -69,16 +101,41 @@ package "src.studies.near_field_study" as src.studies.near_field_study {
 package "src.utils" as src.utils {
 }
 src.analysis.analyzer --> src.analysis.plotter
-src.analysis.analyzer --> src.analysis.strategies
+src.analysis.far_field_strategy --> src.analysis.base_strategy
+src.analysis.near_field_strategy --> src.analysis.base_strategy
+src.extraction --> src.extraction.cleaner
+src.extraction --> src.extraction.power_extractor
+src.extraction --> src.extraction.reporter
+src.extraction --> src.extraction.sar_extractor
+src.extraction --> src.extraction.sensor_extractor
 src.gui_manager --> src.logging_manager
+src.gui_manager --> src.profiler
 src.gui_manager --> src.utils
 src.logging_manager --> src.colors
+src.osparc_batch.cleanup --> src.osparc_batch.logging_utils
+src.osparc_batch.file_finder --> src.osparc_batch.logging_utils
+src.osparc_batch.main_logic --> src.osparc_batch.logging_utils
+src.osparc_batch.main_logic --> src.osparc_batch.osparc_client
+src.osparc_batch.osparc_client --> src.osparc_batch.logging_utils
+src.osparc_batch.progress --> src.osparc_batch.logging_utils
 src.osparc_batch.runner --> src.config
+src.osparc_batch.runner --> src.osparc_batch.cleanup
+src.osparc_batch.runner --> src.osparc_batch.file_finder
 src.osparc_batch.runner --> src.osparc_batch.gui
+src.osparc_batch.runner --> src.osparc_batch.logging_utils
+src.osparc_batch.runner --> src.osparc_batch.main_logic
+src.osparc_batch.runner --> src.osparc_batch.osparc_client
+src.osparc_batch.runner --> src.osparc_batch.progress
 src.osparc_batch.runner --> src.osparc_batch.worker
 src.osparc_batch.worker --> src.osparc_batch.runner
 src.project_manager --> src.logging_manager
 src.project_manager --> src.utils
+src.results_extractor --> src.extraction.cleaner
+src.results_extractor --> src.extraction.json_encoder
+src.results_extractor --> src.extraction.power_extractor
+src.results_extractor --> src.extraction.reporter
+src.results_extractor --> src.extraction.sar_extractor
+src.results_extractor --> src.extraction.sensor_extractor
 src.results_extractor --> src.logging_manager
 src.setups.base_setup --> src.logging_manager
 src.setups.boundary_setup --> src.setups.base_setup
@@ -86,7 +143,6 @@ src.setups.far_field_setup --> src.setups.base_setup
 src.setups.far_field_setup --> src.setups.boundary_setup
 src.setups.far_field_setup --> src.setups.gridding_setup
 src.setups.far_field_setup --> src.setups.material_setup
-src.setups.far_field_setup --> src.setups.phantom_setup
 src.setups.gridding_setup --> src.setups.base_setup
 src.setups.material_setup --> src.setups.base_setup
 src.setups.near_field_setup --> src.setups.base_setup
@@ -108,4 +164,25 @@ src.studies.base_study --> src.project_manager
 src.studies.base_study --> src.utils
 src.studies.far_field_study --> src.studies.base_study
 src.studies.near_field_study --> src.studies.base_study
+src.analysis.analyzer ..> src.analysis.base_strategy
+src.analysis.base_strategy ..> src.analysis.analyzer
+src.analysis.base_strategy ..> src.analysis.plotter
+src.analysis.far_field_strategy ..> src.analysis.analyzer
+src.analysis.far_field_strategy ..> src.analysis.plotter
+src.analysis.near_field_strategy ..> src.analysis.analyzer
+src.analysis.near_field_strategy ..> src.analysis.plotter
+src.antenna ..> src.config
+src.osparc_batch.file_finder ..> src.config
+src.osparc_batch.main_logic ..> src.osparc_batch.worker
+src.osparc_batch.osparc_client ..> src.config
+src.project_manager ..> src.config
+src.project_manager ..> src.gui_manager
+src.results_extractor ..> src.config
+src.results_extractor ..> src.gui_manager
+src.results_extractor ..> src.studies.base_study
+src.setups.far_field_setup ..> src.setups.phantom_setup
+src.simulation_runner ..> src.config
+src.simulation_runner ..> src.gui_manager
+src.simulation_runner ..> src.studies.base_study
+src.utils ..> src.studies.base_study
 @enduml

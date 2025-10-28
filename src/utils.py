@@ -119,9 +119,7 @@ class Profiler:
         finally:
             elapsed = time.monotonic() - start_time
             # We can just log the subtask time for now.
-            logging.getLogger("verbose").info(
-                f"Subtask '{name}' took {elapsed:.2f}s", extra={"log_type": "verbose"}
-            )
+            logging.getLogger("verbose").info(f"Subtask '{name}' took {elapsed:.2f}s", extra={"log_type": "verbose"})
 
 
 def format_time(seconds: float) -> str:
@@ -141,8 +139,8 @@ def non_blocking_sleep(seconds: int):
     from PySide6.QtCore import QCoreApplication, QEventLoop, QTime
 
     end_time = QTime.currentTime().addSecs(int(seconds))
-    while QTime.currentTime() < end_time:
-        QCoreApplication.processEvents(QEventLoop.AllEvents, 50)
+    while QTime.currentTime() < end_time:  # type: ignore
+        QCoreApplication.processEvents(QEventLoop.AllEvents, 50)  # type: ignore
         time.sleep(0.05)
 
 
@@ -162,9 +160,7 @@ def profile(study: "BaseStudy", phase_name: str):
         yield
     finally:
         elapsed = time.monotonic() - start_time
-        study._log(
-            f"--- Finished: {phase_name} (took {elapsed:.2f}s) ---", log_type="header"
-        )
+        study._log(f"--- Finished: {phase_name} (took {elapsed:.2f}s) ---", log_type="header")
 
         # For 'setup' and 'extract', ending the stage means ending the phase.
         # For 'run', the phase is completed manually after the simulation loop.
@@ -188,21 +184,14 @@ def profile_subtask(study: "BaseStudy", task_name: str, instance_to_profile=None
     - Optional, detailed line-by-line profiling if configured.
     """
     study.start_stage_animation(task_name, 1)
-    study.profiler.subtask_stack.append(
-        {"name": task_name, "start_time": time.monotonic()}
-    )
+    study.profiler.subtask_stack.append({"name": task_name, "start_time": time.monotonic()})
 
     lp = None
     wrapper = None
 
     # Check if line profiling is enabled for this specific subtask
     line_profiling_config = study.config.get_line_profiling_config()
-    if (
-        instance_to_profile
-        and line_profiling_config.get("enabled", False)
-        and task_name in line_profiling_config.get("subtasks", {})
-    ):
-
+    if instance_to_profile and line_profiling_config.get("enabled", False) and task_name in line_profiling_config.get("subtasks", {}):
         study._log(
             f"  - Activating line profiler for subtask: {task_name}",
             level="verbose",
@@ -249,13 +238,9 @@ def ensure_s4l_running():
     from s4l_v1._api import application
 
     if application.get_app_safe() is None:
-        logging.getLogger("verbose").info(
-            "Starting Sim4Life application...", extra={"log_type": "info"}
-        )
+        logging.getLogger("verbose").info("Starting Sim4Life application...", extra={"log_type": "info"})
         application.run_application(disable_ui_plugins=True)
-        logging.getLogger("verbose").info(
-            "Sim4Life application started.", extra={"log_type": "success"}
-        )
+        logging.getLogger("verbose").info("Sim4Life application started.", extra={"log_type": "success"})
 
 
 def open_project(project_path: str):
@@ -269,9 +254,7 @@ def open_project(project_path: str):
         )
         s4l_v1.document.New()
     else:
-        logging.getLogger("verbose").info(
-            f"Opening project: {project_path}", extra={"log_type": "info"}
-        )
+        logging.getLogger("verbose").info(f"Opening project: {project_path}", extra={"log_type": "info"})
         s4l_v1.document.Open(project_path)
 
 

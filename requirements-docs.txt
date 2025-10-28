@@ -1,0 +1,2 @@
+# Install the project in editable mode with documentation dependencies.
+-e .[docs]

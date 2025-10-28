@@ -31,7 +31,7 @@ class SensorExtractor:
         self.verbose_logger = parent.verbose_logger
         self.progress_logger = parent.progress_logger
 
-    def extract_point_sensor_data(self, simulation_extractor: "analysis.Extractor"):
+    def extract_point_sensor_data(self, simulation_extractor: "analysis.Extractor"):  # type: ignore
         """Extracts E-field data from point sensors, plots magnitude, and saves raw data.
 
         Args:
@@ -39,11 +39,9 @@ class SensorExtractor:
         """
         self.parent._log("  - Extracting point sensor data...", log_type="progress")
 
-        with self.parent.study.subtask("extract_point_sensor_data"):
+        with self.parent.study.subtask("extract_point_sensor_data"):  # type: ignore
             try:
-                num_sensors = self.parent.config.get_setting(
-                    "simulation_parameters.number_of_point_sensors", 0
-                )
+                num_sensors = self.parent.config.get_setting("simulation_parameters.number_of_point_sensors", 0)
                 if num_sensors == 0:
                     return
 
@@ -52,21 +50,19 @@ class SensorExtractor:
                 fig, ax = plt.subplots()
                 ax.grid(True, which="major", axis="y", linestyle="--")
 
-                point_source_order = self.parent.config.get_setting(
-                    "simulation_parameters.point_source_order", []
-                )
+                point_source_order = self.parent.config.get_setting("simulation_parameters.point_source_order", [])
                 point_sensor_results = {}
 
-                for i in range(num_sensors):
-                    if i >= len(point_source_order):
+                for i in range(num_sensors):  # type: ignore
+                    if i >= len(point_source_order):  # type: ignore
                         self.parent._log(
-                            f"    - WARNING: Not enough entries in 'point_source_order' for sensor {i+1}. Skipping.",
+                            f"    - WARNING: Not enough entries in 'point_source_order' for sensor {i + 1}. Skipping.",
                             log_type="warning",
                         )
                         continue
 
-                    corner_name = point_source_order[i]
-                    full_sensor_name = f"Point Sensor Entity {i+1} ({corner_name})"
+                    corner_name = point_source_order[i]  # type: ignore
+                    full_sensor_name = f"Point Sensor Entity {i + 1} ({corner_name})"
 
                     try:
                         em_sensor_extractor = simulation_extractor[full_sensor_name]
@@ -153,6 +149,4 @@ class SensorExtractor:
         plot_filepath = os.path.join(results_dir, "point_sensor_data.png")
         plt.savefig(plot_filepath, dpi=300)
         plt.close(fig)
-        self.parent._log(
-            f"  - Point sensor plot saved to: {plot_filepath}", log_type="info"
-        )
+        self.parent._log(f"  - Point sensor plot saved to: {plot_filepath}", log_type="info")

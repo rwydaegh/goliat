@@ -30,9 +30,7 @@ def setup_job_logging(base_dir: str, job_id: str) -> logging.Logger:
         job_logger.handlers.clear()
 
     file_handler = logging.FileHandler(log_file_path, mode="w")
-    file_handler.setFormatter(
-        logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-    )
+    file_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
     job_logger.addHandler(file_handler)
 
     return job_logger

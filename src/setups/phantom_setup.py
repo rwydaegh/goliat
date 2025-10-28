@@ -28,16 +28,14 @@ class PhantomSetup(BaseSetup):
         self.data = s4l_v1.data
         self.XCoreModeling = XCoreModeling
 
-    def _log(self, message: str, log_type: str = "default"):
-        self.verbose_logger.info(message, extra={"log_type": log_type})
+    def _log(self, message: str, level: str = "verbose", log_type: str = "default"):
+        super()._log(message, level, log_type)
 
     def ensure_phantom_is_loaded(self) -> bool:
         """Ensures the phantom model is loaded, downloading it if necessary."""
         self._log("--- Running Phantom Check ---", log_type="header")
         all_entities = self.model.AllEntities()
-        self._log(
-            f"Found {len(all_entities)} total entities in the project.", log_type="info"
-        )
+        self._log(f"Found {len(all_entities)} total entities in the project.", log_type="info")
 
         is_loaded = False
         for i, entity in enumerate(all_entities):
@@ -64,9 +62,7 @@ class PhantomSetup(BaseSetup):
 
         study_type = self.config.get_setting("study_type")
         if study_type == "near_field" or study_type == "far_field":
-            sab_path = os.path.join(
-                self.config.base_dir, "data", "phantoms", f"{self.phantom_name}.sab"
-            )
+            sab_path = os.path.join(self.config.base_dir, "data", "phantoms", f"{self.phantom_name}.sab")
             if os.path.exists(sab_path):
                 self._log(
                     f"Phantom not found in document. Importing from '{sab_path}'...",
@@ -82,25 +78,15 @@ class PhantomSetup(BaseSetup):
             )
             available_downloads = self.data.GetAvailableDownloads()
             phantom_to_download = next(
-                (
-                    item
-                    for item in available_downloads
-                    if self.phantom_name.lower() in item.Name.lower()
-                ),
+                (item for item in available_downloads if self.phantom_name.lower() in item.Name.lower()),
                 None,
             )
 
             if not phantom_to_download:
-                raise FileNotFoundError(
-                    f"Phantom '{self.phantom_name}' not found for download or in local files."
-                )
+                raise FileNotFoundError(f"Phantom '{self.phantom_name}' not found for download or in local files.")
 
-            self._log(
-                f"Found '{phantom_to_download.Name}'. Downloading...", log_type="info"
-            )
-            download_email = self.config.get_setting(
-                "download_email", "example@example.com"
-            )
+            self._log(f"Found '{phantom_to_download.Name}'. Downloading...", log_type="info")
+            download_email = self.config.get_setting("download_email", "example@example.com")
             self.data.DownloadModel(
                 phantom_to_download,
                 email=download_email,

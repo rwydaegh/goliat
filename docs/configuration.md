@@ -61,6 +61,15 @@ This object controls which phases of the workflow are executed. This is useful f
 | `batch_run` | boolean | `false` | If `true`, enables the oSPARC batch submission workflow. This is an advanced feature for running many simulations in parallel on the cloud. |
 | `auto_cleanup_previous_results` | array | `[]` | A list of file types to automatically delete **after** a simulation's results have been successfully extracted. This helps to preserve disk space in serial workflows. Valid values are: `"output"` (`*_Output.h5`), `"input"` (`*_Input.h5`), and `"smash"` (`*.smash`). **Warning**: This feature is incompatible with parallel or batch runs and should only be used when `do_setup`, `do_run`, and `do_extract` are all `true`. |
 
+The `do_setup` flag directly controls the project file (`.smash`) handling. Its behavior is summarized below:
+
+| `do_setup` Value | File Exists? | Action |
+| :--- | :--- | :--- |
+| `true` | Yes | **Delete and Override** with a new project. |
+| `true` | No | Create a new project. |
+| `false` | Yes | **Open and Use** the existing project. |
+| `false` | No | **Error** and terminate the program. |
+
 **Example: Extraction-Only Workflow**
 ```json
 "execution_control": {
@@ -165,6 +174,7 @@ This object defines all antenna-specific information, with a separate entry for 
 | `antenna_config.{freq}.source_name` | string | `"Lines 1"` | The name of the source entity within the antenna's CAD model. |
 | `antenna_config.{freq}.materials` | object | `{ "Extrude 1": "Copper", ...}` | Maps component names in the antenna's CAD model to Sim4Life material names. |
 | `antenna_config.{freq}.gridding` | object | `{ "automatic": [...], "manual": {...} }` | Defines gridding strategies (automatic or manual with specific step sizes) for different parts of the antenna model. |
+| `antenna_config.{freq}.gridding.subgridding` | object | `{ "components": [...], ...}` | **(Optional)** Enables subgridding for a list of components, which overrides any manual gridding settings for those components. This is useful for finely detailed parts that require a much higher resolution than the rest of the model. |
 
 ### Placement Scenarios (`placement_scenarios`)
 This object defines the different device placements to be simulated.
@@ -173,7 +183,7 @@ This object defines the different device placements to be simulated.
 | :--- | :--- | :--- | :--- |
 | `placement_scenarios.{name}.positions` | object | `{ "center": [0,0,0], ...}` | A set of named relative positions (as [x, y, z] offsets) for the placement scenario. |
 | `placement_scenarios.{name}.orientations` | object | `{ "vertical": [], ...}` | A set of named orientations to be applied at each position. Each orientation is a list of rotation steps. |
-| `placement_scenarios.{name}.bounding_box` | string | `"default"` | Determines which part of the phantom to include in the simulation bounding box. Options: `"default"`, `"head"`, `"trunk"`, `"full_body"`. The `"default"` option intelligently chooses "head" for eye/cheek placements and "trunk" for belly placements. |
+| `placement_scenarios.{name}.bounding_box` | string | `"default"` | Determines which part of the phantom to include in the simulation bounding box. Options: `"default"`, `"head"`, `"trunk"`, `"whole_body"`. The `"default"` option intelligently chooses "head" for eye/cheek placements and "trunk" for belly placements. |
 
 ### Phantom Definitions (`phantom_definitions`)
 This object contains phantom-specific settings, such as which placements to run and the separation distances.

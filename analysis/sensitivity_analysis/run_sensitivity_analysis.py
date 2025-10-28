@@ -32,9 +32,7 @@ from src.config import Config
 from src.data_extractor import get_parameter
 
 # --- Configuration ---
-SENSITIVITY_CONFIG_PATH = os.path.join(
-    os.path.dirname(__file__), "sensitivity_analysis_config.json"
-)
+SENSITIVITY_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "sensitivity_analysis_config.json")
 
 
 def load_sensitivity_config():
@@ -66,9 +64,7 @@ def analysis_process_wrapper(queue, frequency_mhz, sensitivity_config):
         import s4l_v1.document  # Import after the application is confirmed to be running
 
         results = []
-        base_config_path = os.path.join(
-            PROJECT_ROOT, sensitivity_config["base_config_path"]
-        )
+        base_config_path = os.path.join(PROJECT_ROOT, sensitivity_config["base_config_path"])
         sensitivity_params = sensitivity_config["sensitivity_parameters"]
         output_variables = sensitivity_config["output_variables"]
 
@@ -107,21 +103,15 @@ def analysis_process_wrapper(queue, frequency_mhz, sensitivity_config):
         else:
             raise ValueError(f"Unknown study type '{study_type}' in config.")
 
-        profiling_config_path = os.path.join(
-            PROJECT_ROOT, sensitivity_config["profiling_config_path"]
-        )
-        profiler = SimpleProfiler(
-            config_path=profiling_config_path, study_type="sensitivity_analysis"
-        )
+        profiling_config_path = os.path.join(PROJECT_ROOT, sensitivity_config["profiling_config_path"])
+        profiler = SimpleProfiler(config_path=profiling_config_path, study_type="sensitivity_analysis")
         total_runs = len(param_values)
         profiler.start_study(total_runs)
 
         for i, value in enumerate(param_values):
             profiler.start_run()
 
-            run_message = (
-                f"Run {i+1}/{total_runs}: {param_name} = {value} at {frequency_mhz} MHz"
-            )
+            run_message = f"Run {i+1}/{total_runs}: {param_name} = {value} at {frequency_mhz} MHz"
             queue.put({"type": "status", "message": run_message})
             queue.put({"type": "progress", "current": i, "total": total_runs})
 
@@ -169,36 +159,16 @@ def analysis_process_wrapper(queue, frequency_mhz, sensitivity_config):
                 phantom_name = config_data.get("phantoms", ["default_phantom"])[0]
 
                 if study_type == "near_field":
-                    placement_scenario = list(
-                        config_data.get("placement_scenarios", {}).keys()
-                    )[0]
-                    position = list(
-                        config_data.get("placement_scenarios", {})
-                        .get(placement_scenario, {})
-                        .get("positions", {})
-                        .keys()
-                    )[0]
+                    placement_scenario = list(config_data.get("placement_scenarios", {}).keys())[0]
+                    position = list(config_data.get("placement_scenarios", {}).get(placement_scenario, {}).get("positions", {}).keys())[0]
                     orientation = list(
-                        config_data.get("placement_scenarios", {})
-                        .get(placement_scenario, {})
-                        .get("orientations", {})
-                        .keys()
+                        config_data.get("placement_scenarios", {}).get(placement_scenario, {}).get("orientations", {}).keys()
                     )[0]
                     placement_name = f"{placement_scenario}_{position}_{orientation}"
                 else:  # far_field
-                    setup_type = config_data.get("far_field_setup", {}).get(
-                        "type", "environmental"
-                    )
-                    incident_direction = (
-                        config_data.get("far_field_setup", {})
-                        .get(setup_type, {})
-                        .get("incident_directions", [""])[0]
-                    )
-                    polarization = (
-                        config_data.get("far_field_setup", {})
-                        .get(setup_type, {})
-                        .get("polarizations", [""])[0]
-                    )
+                    setup_type = config_data.get("far_field_setup", {}).get("type", "environmental")
+                    incident_direction = config_data.get("far_field_setup", {}).get(setup_type, {}).get("incident_directions", [""])[0]
+                    polarization = config_data.get("far_field_setup", {}).get(setup_type, {}).get("polarizations", [""])[0]
                     placement_name = f"{setup_type}_{incident_direction}_{polarization}"
 
                 context = {
@@ -268,9 +238,7 @@ def analysis_process_wrapper(queue, frequency_mhz, sensitivity_config):
         logging.getLogger("verbose").error(error_message)
 
         # Then, send the error to the GUI
-        queue.put(
-            {"type": "status", "message": f"FATAL ERROR: Check logs for details."}
-        )
+        queue.put({"type": "status", "message": f"FATAL ERROR: Check logs for details."})
         queue.put({"type": "finished"})
     finally:
         # The application is managed by the process lifecycle.
@@ -302,18 +270,14 @@ def plot_results(df, frequency_mhz, config):
     ax.legend()
 
     analysis_fig_dir = os.path.join(PROJECT_ROOT, config["analysis_fig_dir"])
-    fig_path_png = os.path.join(
-        analysis_fig_dir, f"sensitivity_plot_{frequency_mhz}MHz.png"
-    )
+    fig_path_png = os.path.join(analysis_fig_dir, f"sensitivity_plot_{frequency_mhz}MHz.png")
     plt.savefig(fig_path_png, dpi=300)
     plt.close(fig)  # Close the figure to free memory without showing it
 
 
 def main():
     """Main function to run from the command line."""
-    parser = argparse.ArgumentParser(
-        description="Run sensitivity analysis for a given frequency."
-    )
+    parser = argparse.ArgumentParser(description="Run sensitivity analysis for a given frequency.")
     parser.add_argument(
         "--frequency",
         type=int,

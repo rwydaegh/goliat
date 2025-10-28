@@ -15,7 +15,6 @@ if TYPE_CHECKING:
 
     from ..config import Config
     from ..project_manager import ProjectManager
-    from .phantom_setup import PhantomSetup
 
 
 class FarFieldSetup(BaseSetup):
@@ -38,12 +37,10 @@ class FarFieldSetup(BaseSetup):
         self.direction_name = direction_name
         self.polarization_name = polarization_name
         self.project_manager = project_manager
-        self.simulation_type = self.config.get_setting(
-            "far_field_setup/type", "environmental"
-        )
+        self.simulation_type = self.config.get_setting("far_field_setup/type", "environmental")
         self.document = self.s4l_v1.document
 
-    def run_full_setup(self, phantom_setup: "PhantomSetup") -> "emfdtd.Simulation":
+    def run_full_setup(self, project_manager: "ProjectManager") -> "emfdtd.Simulation":
         """Executes the full setup sequence for a single far-field simulation."""
         self._log("--- Setting up single Far-Field sim ---", log_type="header")
 
@@ -57,9 +54,7 @@ class FarFieldSetup(BaseSetup):
 
         return simulation
 
-    def _create_simulation_entity(
-        self, bbox_entity: "model.Entity"
-    ) -> "emfdtd.Simulation":
+    def _create_simulation_entity(self, bbox_entity: "model.Entity") -> "emfdtd.Simulation":
         """Creates the EM FDTD simulation entity and its plane wave source."""
         sim_name = f"EM_FDTD_{self.phantom_name}_{self.frequency_mhz}MHz_{self.direction_name}_{self.polarization_name}"
         self._log(f"  - Creating simulation: {sim_name}", log_type="info")
@@ -94,54 +89,30 @@ class FarFieldSetup(BaseSetup):
             plane_wave_source.Psi = 90
 
         simulation.Add(plane_wave_source, [bbox_entity])
-        self.document.AllSimulations.Add(simulation)
+        self.document.AllSimulations.Add(simulation)  # type: ignore
 
-        self._apply_simulation_time_and_termination(
-            simulation, bbox_entity, self.frequency_mhz
-        )
+        self._apply_simulation_time_and_termination(simulation, bbox_entity, self.frequency_mhz)
 
         return simulation
 
     def _create_or_get_simulation_bbox(self) -> "model.Entity":
-        """Creates or gets the simulation bounding box."""
+        """Creates the simulation bounding box."""
         bbox_name = "far_field_simulation_bbox"
-        existing_bbox = next(
-            (
-                e
-                for e in self.model.AllEntities()
-                if hasattr(e, "Name") and e.Name == bbox_name
-            ),
-            None,
-        )
-        if existing_bbox:
-            self._log("Found existing simulation bounding box.", log_type="verbose")
-            return existing_bbox
-
-        self._log(
-            "Creating simulation bounding box for far-field...", log_type="progress"
-        )
+        self._log("Creating simulation bounding box for far-field...", log_type="progress")
         import XCoreModeling
 
-        phantom_entities = [
-            e
-            for e in self.model.AllEntities()
-            if isinstance(e, XCoreModeling.TriangleMesh)
-        ]
+        phantom_entities = [e for e in self.model.AllEntities() if isinstance(e, XCoreModeling.TriangleMesh)]
         if not phantom_entities:
             raise RuntimeError("No phantom found to create bounding box.")
 
         bbox_min, bbox_max = self.model.GetBoundingBox(phantom_entities)
 
-        padding_mm = self.config.get_setting(
-            "simulation_parameters.bbox_padding_mm", 50
-        )
+        padding_mm = self.config.get_setting("simulation_parameters.bbox_padding_mm", 50)
 
         sim_bbox_min = np.array(bbox_min) - padding_mm
         sim_bbox_max = np.array(bbox_max) + padding_mm
 
-        sim_bbox = XCoreModeling.CreateWireBlock(
-            self.model.Vec3(sim_bbox_min), self.model.Vec3(sim_bbox_max)
-        )
+        sim_bbox = XCoreModeling.CreateWireBlock(self.model.Vec3(sim_bbox_min), self.model.Vec3(sim_bbox_max))
         sim_bbox.Name = bbox_name
         self._log(
             f"  - Created far-field simulation BBox with {padding_mm}mm padding.",
@@ -151,14 +122,12 @@ class FarFieldSetup(BaseSetup):
 
     def _apply_common_settings(self, simulation: "emfdtd.Simulation"):
         """Applies common material, gridding, and solver settings."""
-        self._log(
-            f"Applying common settings to {simulation.Name}...", log_type="progress"
-        )
+        self._log(f"Applying common settings to {simulation.Name}...", log_type="progress")
 
         material_setup = MaterialSetup(
             self.config,
             simulation,
-            None,
+            None,  # type: ignore
             self.phantom_name,
             self.verbose_logger,
             self.progress_logger,
@@ -169,59 +138,34 @@ class FarFieldSetup(BaseSetup):
         gridding_setup = GriddingSetup(
             self.config,
             simulation,
-            None,
-            None,
+            None,  # type: ignore
+            None,  # type: ignore
             self.verbose_logger,
             self.progress_logger,
             frequency_mhz=self.frequency_mhz,
         )
         gridding_setup.setup_gridding()
 
-        boundary_setup = BoundarySetup(
-            self.config, simulation, self.verbose_logger, self.progress_logger
-        )
+        boundary_setup = BoundarySetup(self.config, simulation, self.verbose_logger, self.progress_logger)
         boundary_setup.setup_boundary_conditions()
 
         self._add_point_sensors(simulation, "far_field_simulation_bbox")
 
         self._setup_solver_settings(simulation)
 
-        self._finalize_setup(self.project_manager, simulation, self.frequency_mhz)
-        self._log("Common settings applied.", log_type="success")
-
-    def _finalize_setup(
-        self,
-        project_manager: "ProjectManager",
-        simulation: "emfdtd.Simulation",
-        frequency_mhz: int,
-    ):
-        """Gathers entities and calls the finalization method from the base class."""
         bbox_entity = next(
-            (
-                e
-                for e in self.model.AllEntities()
-                if hasattr(e, "Name") and e.Name == "far_field_simulation_bbox"
-            ),
+            (e for e in self.model.AllEntities() if hasattr(e, "Name") and e.Name == "far_field_simulation_bbox"),
             None,
         )
         if not bbox_entity:
-            raise RuntimeError(
-                "Could not find 'far_field_simulation_bbox' for voxelization."
-            )
+            raise RuntimeError("Could not find 'far_field_simulation_bbox' for voxelization.")
 
         import XCoreModeling
 
-        phantom_entities = [
-            e
-            for e in self.model.AllEntities()
-            if isinstance(e, XCoreModeling.TriangleMesh)
-        ]
-        point_sensor_entities = [
-            e for e in self.model.AllEntities() if "Point Sensor Entity" in e.Name
-        ]
+        phantom_entities = [e for e in self.model.AllEntities() if isinstance(e, XCoreModeling.TriangleMesh)]
+        point_sensor_entities = [e for e in self.model.AllEntities() if "Point Sensor Entity" in e.Name]
 
         all_simulation_parts = phantom_entities + [bbox_entity] + point_sensor_entities
 
-        super()._finalize_setup(
-            project_manager, simulation, all_simulation_parts, frequency_mhz
-        )
+        super()._finalize_setup(self.project_manager, simulation, all_simulation_parts, self.frequency_mhz)
+        self._log("Common settings applied.", log_type="success")

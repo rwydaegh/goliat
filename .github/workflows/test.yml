@@ -3,10 +3,10 @@ name: CI/CD
 on:
   push:
     branches:
-      - master
+    - master
   pull_request:
     branches:
-      - master
+    - master
 
 jobs:
   build-and-test:
@@ -16,26 +16,20 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Set up Python 3.11
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.11'
 
+    - name: Setup uv
+      uses: astral-sh/setup-uv@v1
+      with:
+        enable-cache: true
+
     - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install black flake8
-
-    - name: Run Black formatter check
-      run: |
-        black --check .
-
-    - name: Run Flake8 linter
-      run: |
-        flake8 . --max-line-length=120 --exclude=.git,__pycache__,docs,build,dist,venv,archive,analysis,osparc_api_example,post_process_results,scripts,tests --ignore=E203,W503,E731,F401,F841
+      run: uv pip install --system -r requirements.txt
 
     - name: Run Pytest tests
       run: |

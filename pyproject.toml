@@ -1,27 +1,85 @@
+[project]
+authors = [
+  {name = "rwydaegh", email = "robin.wydaeghe@ugent.be"},
+]
+dependencies = [
+  "numpy",
+  "pandas",
+  "gdown",
+  "seaborn",
+  "line-profiler",
+  "pytest",
+  "scienceplots",
+  "PySide6",
+  "osparc",
+  "colorama",
+  "python-dotenv",
+]
+description = "A Python framework for dosimetric assessments using Sim4Life."
+license = {file = "LICENSE"}
+name = "goliat"
+readme = "README.md"
+requires-python = ">=3.8"
+version = "0.2.0"
+
+[project.optional-dependencies]
+docs = [
+  "mkdocs",
+  "mkdocs-material==9.5.3",
+  "pymdown-extensions==10.7",
+  "mkdocstrings[python]",
+  "mkdocs-mermaid2-plugin",
+  "mkdocs-git-revision-date-localized-plugin",
+  "mkdocs-minify-plugin",
+  "mkdocs-kroki-plugin",
+]
+
+[tool.codespell]
+ignore-words-list = "Studi"
+skip = "docs/img/waves.svg"
+
+[tool.pyright]
+exclude = [
+  "analysis",
+  "tests",
+  "scripts",
+  "run_analysis.py",
+  "run_free_space_study.py",
+  "run_parallel_studies.py",
+  "run_study.py",
+  "post_process_results",
+]
+pythonVersion = "3.11"
+reportMissingImports = false
+reportMissingModuleSource = false
+stubPath = "stubs"
+
+[tool.ruff]
+line-length = 140
+target-version = "py38"
+
+[tool.ruff.format]
+exclude = [
+  ".eggs",
+  ".git",
+  ".hg",
+  ".mypy_cache",
+  ".tox",
+  ".venv",
+  "_build",
+  "buck-out",
+  "build",
+  "dist",
+]
+
 [tool.semantic_release]
-version_variable = "src/__init__.py:__version__"
 branch = "main"
 changelog_file = "CHANGELOG.md"
-commit_author = "rwydaegh <rwydaegh@users.noreply.github.com>"
+commit_author = "rwydaegh <robin.wydaeghe@ugent.be>"
 commit_message = "chore(release): {version}"
 upload_to_pypi = false
 upload_to_release = true
-
-[tool.black]
-line-length = 88
-target-version = ['py38']
-include = '\.pyi?$'
-exclude = '''
-/(
-    \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | _build
-  | buck-out
-  | build
-  | dist
-)/
-'''
+version_variables = [
+  "README.md:version = \\{{version}\\}",
+  "CITATION.cff:version: {version}",
+]

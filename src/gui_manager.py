@@ -2,8 +2,8 @@ import logging
 import time
 import traceback
 from logging import Logger
-from multiprocessing import Event
-from queue import Queue
+from multiprocessing import Process, Queue
+from multiprocessing.synchronize import Event
 
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QAction
@@ -35,8 +35,8 @@ class QueueGUI(LoggingMixin):
 
     def __init__(
         self,
-        queue: "Queue",
-        stop_event: "Event",
+        queue: Queue,
+        stop_event: Event,
         profiler: "Profiler",
         progress_logger: "Logger",
         verbose_logger: "Logger",
@@ -63,13 +63,9 @@ class QueueGUI(LoggingMixin):
 
     def update_overall_progress(self, current_step: int, total_steps: int):
         """Sends an overall progress update to the queue."""
-        self.queue.put(
-            {"type": "overall_progress", "current": current_step, "total": total_steps}
-        )
+        self.queue.put({"type": "overall_progress", "current": current_step, "total": total_steps})
 
-    def update_stage_progress(
-        self, stage_name: str, current_step: int, total_steps: int
-    ):
+    def update_stage_progress(self, stage_name: str, current_step: int, total_steps: int):
         """Sends a stage-specific progress update to the queue."""
         self.queue.put(
             {
@@ -83,9 +79,7 @@ class QueueGUI(LoggingMixin):
     def start_stage_animation(self, task_name: str, end_value: int):
         """Sends a command to start a progress bar animation."""
         estimate = self.profiler.get_subtask_estimate(task_name)
-        self.queue.put(
-            {"type": "start_animation", "estimate": estimate, "end_value": end_value}
-        )
+        self.queue.put({"type": "start_animation", "estimate": estimate, "end_value": end_value})
 
     def end_stage_animation(self):
         """Sends a command to stop the progress bar animation."""
@@ -114,9 +108,9 @@ class ProgressGUI(QWidget):
 
     def __init__(
         self,
-        queue: "Queue",
-        stop_event: "Event",
-        process,
+        queue: Queue,
+        stop_event: Event,
+        process: Process,
         window_title: str = "Simulation Progress",
     ):
         """Initializes the ProgressGUI window.
@@ -165,32 +159,32 @@ class ProgressGUI(QWidget):
     def init_ui(self):
         """Initializes and arranges all UI widgets."""
         self.setWindowTitle(self.window_title)
-        self.layout = QVBoxLayout()
+        layout = QVBoxLayout()
         self.grid_layout = QGridLayout()
 
         self.overall_progress_label = QLabel("Overall Progress:")
-        self.layout.addWidget(self.overall_progress_label)
+        layout.addWidget(self.overall_progress_label)
         self.overall_progress_bar = QProgressBar(self)
         self.overall_progress_bar.setRange(0, 1000)
-        self.layout.addWidget(self.overall_progress_bar)
+        layout.addWidget(self.overall_progress_bar)
 
         self.stage_label = QLabel("Current Stage:")
-        self.layout.addWidget(self.stage_label)
+        layout.addWidget(self.stage_label)
         self.stage_progress_bar = QProgressBar(self)
         self.stage_progress_bar.setRange(0, 1000)
-        self.layout.addWidget(self.stage_progress_bar)
+        layout.addWidget(self.stage_progress_bar)
 
         self.elapsed_label = QLabel("Elapsed: N/A")
         self.eta_label = QLabel("Time Remaining: N/A")
         self.grid_layout.addWidget(self.elapsed_label, 0, 0)
         self.grid_layout.addWidget(self.eta_label, 0, 1)
-        self.layout.addLayout(self.grid_layout)
+        layout.addLayout(self.grid_layout)
 
         self.status_log_label = QLabel("Status Log:")
-        self.layout.addWidget(self.status_log_label)
+        layout.addWidget(self.status_log_label)
         self.status_text = QTextEdit(self)
         self.status_text.setReadOnly(True)
-        self.layout.addWidget(self.status_text)
+        layout.addWidget(self.status_text)
 
         self.button_layout = QHBoxLayout()
         self.stop_button = QPushButton("Stop")
@@ -199,9 +193,9 @@ class ProgressGUI(QWidget):
         self.tray_button.clicked.connect(self.hide_to_tray)
         self.button_layout.addWidget(self.stop_button)
         self.button_layout.addWidget(self.tray_button)
-        self.layout.addLayout(self.button_layout)
+        layout.addLayout(self.button_layout)
 
-        self.setLayout(self.layout)
+        self.setLayout(layout)
 
         self.tray_icon = QSystemTrayIcon(self)
         style = self.style()
@@ -235,9 +229,7 @@ class ProgressGUI(QWidget):
                 elif msg_type == "overall_progress":
                     self.update_overall_progress(msg["current"], msg["total"])
                 elif msg_type == "stage_progress":
-                    self.update_stage_progress(
-                        msg["name"], msg["current"], msg["total"]
-                    )
+                    self.update_stage_progress(msg["name"], msg["current"], msg["total"])
                 elif msg_type == "start_animation":
                     self.start_stage_animation(msg["estimate"], msg["end_value"])
                 elif msg_type == "end_animation":
@@ -249,17 +241,13 @@ class ProgressGUI(QWidget):
                 elif msg_type == "finished":
                     self.study_finished()
                 elif msg_type == "fatal_error":
-                    self.update_status(
-                        f"FATAL ERROR: {msg['message']}", log_type="fatal"
-                    )
+                    self.update_status(f"FATAL ERROR: {msg['message']}", log_type="fatal")
                     self.study_finished(error=True)
 
             except Empty:
                 break
             except Exception as e:
-                self.verbose_logger.error(
-                    f"Error processing GUI queue: {e}\n{traceback.format_exc()}"
-                )
+                self.verbose_logger.error(f"Error processing GUI queue: {e}\n{traceback.format_exc()}")
 
     def tray_icon_activated(self, reason):
         """Handles activation of the system tray icon."""
@@ -294,9 +282,7 @@ class ProgressGUI(QWidget):
             self.overall_progress_bar.setValue(int(progress_percent * 10))
             self.overall_progress_bar.setFormat(f"{progress_percent:.1f}%")
 
-    def update_stage_progress(
-        self, stage_name: str, current_step: int, total_steps: int
-    ):
+    def update_stage_progress(self, stage_name: str, current_step: int, total_steps: int):
         """Updates the stage-specific progress bar."""
         self.stage_label.setText(f"Current Stage: {stage_name}")
         self.total_steps_for_stage = total_steps
@@ -321,9 +307,7 @@ class ProgressGUI(QWidget):
         self.animation_start_value = self.stage_progress_bar.value()
 
         if self.total_steps_for_stage > 0:
-            self.animation_end_value = int(
-                (end_step / self.total_steps_for_stage) * 1000
-            )
+            self.animation_end_value = int((end_step / self.total_steps_for_stage) * 1000)
         else:
             self.animation_end_value = 0
 
@@ -372,9 +356,7 @@ class ProgressGUI(QWidget):
 
         if hasattr(self, "profiler") and self.profiler and self.profiler.current_phase:
             current_stage_progress_ratio = self.stage_progress_bar.value() / 1000.0
-            eta_sec = self.profiler.get_time_remaining(
-                current_stage_progress=current_stage_progress_ratio
-            )
+            eta_sec = self.profiler.get_time_remaining(current_stage_progress=current_stage_progress_ratio)
 
             if eta_sec is not None:
                 self.eta_label.setText(f"Time Remaining: {format_time(eta_sec)}")
@@ -406,9 +388,7 @@ class ProgressGUI(QWidget):
             self.tray_icon.hide()
 
         if self.process.is_alive():
-            self.progress_logger.info(
-                "Terminating study process...", extra={"log_type": "warning"}
-            )
+            self.progress_logger.info("Terminating study process...", extra={"log_type": "warning"})
             self.process.terminate()
             self.process.join(timeout=5)
 

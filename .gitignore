@@ -7,6 +7,8 @@
 __pycache__/
 *.pyc
 *.lprof
+.pytest_cache/
+.ruff_cache/
 
 # Build and results
 results/
@@ -20,6 +22,7 @@ analysis/sensitivity_analysis/plots/
 # Data
 data/
 !data/material_name_mapping.json
+data/.setup_done
 
 # Logs
 logs/
@@ -51,3 +54,9 @@ analysis/sensitivity_analysis/configs/
 .bashrc
 .setup_done
 .env
+
+resume_logic_brainstorm.md
+resume_logic_plan.md
+
+# Python build artifacts
+src/*.egg-info/

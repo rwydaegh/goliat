@@ -1,6 +1,6 @@
 # Project Information
 
-## About GOLIAT
+## About #ProjectGOLIAT
 
 **GOLIAT (5G expOsure, causaL effects, and rIsk perception through citizen engAgemenT)** is a research project that aims to characterize and monitor RF-EMF exposure, in particular 5G, provide novel insights into potential causal neuropsychological and biological effects, and understand risk perception and communication through citizen engagement using an integrative and transdisciplinary pan-European approach.
 
@@ -11,9 +11,13 @@ The primary objectives of the project include:
 -   **Comprehensive SAR Analysis**: Calculating Specific Absorption Rate (SAR) metrics, including whole-body, head, trunk, and peak spatial-average SAR (psSAR10g) in sensitive tissues like the skin, eyes, and brain.
 -   **Varied Exposure Scenarios**: Investigating numerous exposure conditions, including different frequencies, antenna types, and device positions (e.g., by the cheek, in front of the eyes, near the belly).
 
+Check out the [GOLIAT website](https://projectgoliat.eu/)!
+
 ## Funding and acknowledgements
 
-This work is part of the GOLIAT project, which has received funding from the **European Union's Horizon Health program** under the call HORIZON-HEALTH-2021-ENVHLTH-02-01 – Exposure to electromagnetic fields (EMF) and health.
+This work is part of the GOLIAT project, which has received funding from the **European Union's Horizon Health program** under the call HORIZON-HEALTH-2021-ENVHLTH-02-01 – Exposure to electromagnetic fields (EMF) and health. GOLIAT is part of the CLUE-H consortium with ETAIN, NextGEM and SEAWave.
+
+Check out the [CLUE-H website](https://www.emf-health-cluster.eu/)!
 
 ## Project partners
 
@@ -41,3 +45,13 @@ The GOLIAT consortium consists of 22 partners from across Europe and the United 
 -   Massachusetts General Hospital (MGH), US
 -   Harvard School of Public Health (HSPH), US
 -   University of Michigan (UMich), US
+
+## Developer lab
+
+The main developer, Robin Wydaeghe, is from the WAVES Research group at Ghent University and IMEC.
+
+<div style="display: flex; justify-content: center; align-items: center; gap: 20px; flex-wrap: wrap;">
+    <img src="img/imec.png" alt="imec" style="height: 80px; object-fit: contain;">
+    <img src="img/ugent.png" alt="ugent" style="height: 80px; object-fit: contain;">
+    <img src="img/waves.svg" alt="waves" style="height: 80px; object-fit: contain;">
+</div>

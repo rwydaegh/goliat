@@ -18,17 +18,13 @@ def setup_console_logging():
     return logger
 
 
-def find_results_to_delete(
-    base_dir, include_near_field, include_far_field, frequencies, logger
-):
+def find_results_to_delete(base_dir, include_near_field, include_far_field, frequencies, logger):
     """
     Scans the results directory and identifies .h5 output files to be deleted based on the criteria.
     """
     results_dir = os.path.join(base_dir, "results")
     if not os.path.isdir(results_dir):
-        logger.error(
-            f"{colorama.Fore.RED}Error: Results directory not found at '{results_dir}'"
-        )
+        logger.error(f"{colorama.Fore.RED}Error: Results directory not found at '{results_dir}'")
         return []
 
     to_delete = []
@@ -73,12 +69,8 @@ def main():
     """
     logger = setup_console_logging()
     parser = argparse.ArgumentParser(description="Scan and delete simulation results.")
-    parser.add_argument(
-        "--near-field", action="store_true", help="Include near-field results."
-    )
-    parser.add_argument(
-        "--far-field", action="store_true", help="Include far-field results."
-    )
+    parser.add_argument("--near-field", action="store_true", help="Include near-field results.")
+    parser.add_argument("--far-field", action="store_true", help="Include far-field results.")
     parser.add_argument(
         "--frequencies",
         nargs="+",
@@ -88,26 +80,19 @@ def main():
     args = parser.parse_args()
 
     if not args.near_field and not args.far_field:
-        logger.error(
-            f"{colorama.Fore.RED}Error: Please specify at least one field type to clean up "
-            f"(--near-field and/or --far-field)."
-        )
+        logger.error(f"{colorama.Fore.RED}Error: Please specify at least one field type to clean up (--near-field and/or --far-field).")
         parser.print_help()
         sys.exit(1)
 
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
-    paths_to_delete = find_results_to_delete(
-        project_root, args.near_field, args.far_field, args.frequencies, logger
-    )
+    paths_to_delete = find_results_to_delete(project_root, args.near_field, args.far_field, args.frequencies, logger)
 
     if not paths_to_delete:
         logger.info(f"{colorama.Fore.GREEN}No matching result files found to delete.")
         return
 
-    logger.warning(
-        f"{colorama.Fore.YELLOW}The following files will be PERMANENTLY DELETED:"
-    )
+    logger.warning(f"{colorama.Fore.YELLOW}The following files will be PERMANENTLY DELETED:")
     pprint(paths_to_delete)
     logger.warning(f"{colorama.Fore.YELLOW}{'-' * 70}")
 
@@ -125,9 +110,7 @@ def main():
                     os.remove(path)
                     logger.info(f"  - Deleted: {path}")
                 else:
-                    logger.warning(
-                        f"{colorama.Fore.YELLOW}  - Warning: Expected a file, but path is not. Skipping: {path}"
-                    )
+                    logger.warning(f"{colorama.Fore.YELLOW}  - Warning: Expected a file, but path is not. Skipping: {path}")
             except OSError as e:
                 logger.error(f"{colorama.Fore.RED}  - Error deleting {path}: {e}")
         logger.info(f"{colorama.Fore.GREEN}\nCleanup complete.")

@@ -9,47 +9,47 @@ edit_uri: edit/master/docs/
 
 theme:
   name: material
-  logo: img/logo.svg
+  logo: img/goliat.svg
   language: en
   features:
-    - announce.dismiss
-    - content.action.edit
-    - content.action.view
-    - content.code.annotate
-    - content.code.copy
-    - content.tabs.link
-    - content.tooltips
-    - header.autohide
-    - navigation.expand
-    - navigation.footer
-    - navigation.indexes
-    - navigation.instant
-    - navigation.instant.prefetch
-    - navigation.instant.progress
-    - navigation.prune
-    - navigation.sections
-    - navigation.tabs
-    - navigation.tabs.sticky
-    - navigation.top
-    - navigation.tracking
-    - search.highlight
-    - search.share
-    - search.suggest
-    - toc.follow
-    - toc.integrate
+  - announce.dismiss
+  - content.action.edit
+  - content.action.view
+  - content.code.annotate
+  - content.code.copy
+  - content.tabs.link
+  - content.tooltips
+  - header.autohide
+  - navigation.expand
+  - navigation.footer
+  - navigation.indexes
+  - navigation.instant
+  - navigation.instant.prefetch
+  - navigation.instant.progress
+  - navigation.prune
+  - navigation.sections
+  - navigation.tabs
+  - navigation.tabs.sticky
+  - navigation.top
+  - navigation.tracking
+  - search.highlight
+  - search.share
+  - search.suggest
+  - toc.follow
+  - toc.integrate
   palette:
-    - scheme: default
-      primary: indigo
-      accent: indigo
-      toggle:
-        icon: material/brightness-7
-        name: Switch to dark mode
-    - scheme: slate
-      primary: indigo
-      accent: indigo
-      toggle:
-        icon: material/brightness-4
-        name: Switch to light mode
+  - scheme: default
+    primary: indigo
+    accent: indigo
+    toggle:
+      icon: material/brightness-7
+      name: Switch to dark mode
+  - scheme: slate
+    primary: indigo
+    accent: indigo
+    toggle:
+      icon: material/brightness-4
+      name: Switch to light mode
   font:
     text: Roboto
     code: Roboto Mono
@@ -62,109 +62,111 @@ theme:
 extra:
   generator: false
   social:
-    - icon: fontawesome/brands/github
-      link: https://github.com/rwydaegh/goliat
+  - icon: fontawesome/brands/github
+    link: https://github.com/rwydaegh/goliat
   version:
     provider: mike
 
 extra_css:
-  - stylesheets/extra.css
+- stylesheets/extra.css
 
 nav:
-  - Home: index.md
-  - Quick Start: quick_start.md
-  - User Guide: user_guide.md
-  - Tutorials:
-    - Basic: tutorials/basic.md
-    - Intermediate: tutorials/intermediate.md
-    - Advanced: tutorials/advanced.md
-  - Developer Guide: developer_guide.md
-  - Reference:
-    - Technical Guide: technical_guide.md
-    - Advanced Features: advanced_features.md
-    - Configuration: configuration.md
-    - API Reference: api_reference.md
-  - Troubleshooting: troubleshooting.md
-  - Internals:
-    - Project Info: project_info.md
-    - Coloring Rules: COLORING_RULES.md
-    - UML: uml.md
+- Home: index.md
+- Quick Start: quick_start.md
+- User Guide: user_guide.md
+- Tutorials:
+  - Basic: tutorials/basic.md
+  - Intermediate: tutorials/intermediate.md
+  - Advanced: tutorials/advanced.md
+- Developer Guide:
+  - Overview: developer_guide.md
+  - Coloring Rules: coloring_rules.md
+  - UML: uml.md
+- Reference:
+  - Technical Guide: technical_guide.md
+  - Advanced Features: advanced_features.md
+  - Configuration: configuration.md
+  - API Reference: api_reference.md
+- Troubleshooting: troubleshooting.md
+- Project Info: project_info.md
 
 plugins:
-  - search:
-      separator: '[\s\-,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
-  - minify:
-      minify_html: true
-      minify_js: true
-      minify_css: true
-      htmlmin_opts:
-        remove_comments: true
-  - git-revision-date-localized:
-      enable_creation_date: true
-      type: timeago
-  - mkdocstrings:
-      handlers:
-        python:
-          paths: [src]
-          options:
-            docstring_style: google
-            docstring_options:
-              ignore_init_summary: true
-            merge_init_into_class: true
-            show_root_heading: true
-            show_source: true
-            show_category_heading: true
-            show_signature_annotations: true
-            separate_signature: true
-            line_length: 80
-            members_order: source
-            group_by_category: true
-            show_symbol_type_heading: true
-            show_symbol_type_toc: true
-            filters:
-              - "!^_"
-              - "^__init__$"
+- search:
+    separator: '[\s\-,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+- minify:
+    minify_html: true
+    minify_js: true
+    minify_css: true
+    htmlmin_opts:
+      remove_comments: true
+- git-revision-date-localized:
+    enable_creation_date: true
+    type: timeago
+- kroki:
+    HttpMethod: POST
+- mkdocstrings:
+    handlers:
+      python:
+        paths: [src]
+        options:
+          docstring_style: google
+          docstring_options:
+            ignore_init_summary: true
+          merge_init_into_class: true
+          show_root_heading: true
+          show_source: true
+          show_category_heading: true
+          show_signature_annotations: true
+          separate_signature: true
+          line_length: 80
+          members_order: source
+          group_by_category: true
+          show_symbol_type_heading: true
+          show_symbol_type_toc: true
+          filters:
+          - '!^_'
+          - ^__init__$
 
 markdown_extensions:
   # Python Markdown
-  - abbr
-  - admonition
-  - attr_list
-  - def_list
-  - footnotes
-  - md_in_html
-  - toc:
-      permalink: true
-      toc_depth: 4
+- abbr
+- admonition
+- attr_list
+- def_list
+- footnotes
+- md_in_html
+- toc:
+    permalink: true
+    toc_depth: 4
 
   # Python Markdown Extensions
-  - pymdownx.arithmatex:
-      generic: true
-  - pymdownx.betterem:
-      smart_enable: all
-  - pymdownx.caret
-  - pymdownx.details
-  - pymdownx.highlight:
-      anchor_linenums: true
-      line_spans: __span
-      pygments_lang_class: true
-  - pymdownx.inlinehilite
-  - pymdownx.keys
-  - pymdownx.mark
-  - pymdownx.smartsymbols
-  - pymdownx.snippets:
-      check_paths: true
-  - pymdownx.tabbed:
-      alternate_style: true
-      combine_header_slug: true
-  - pymdownx.tasklist:
-      custom_checkbox: true
-  - pymdownx.tilde
-  - pymdownx.superfences:
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_code_format
-  - pymdownx.emoji:
-      emoji_index: !!python/name:material.extensions.emoji.twemoji
-      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+- pymdownx.arithmatex:
+    generic: true
+- pymdownx.betterem:
+    smart_enable: all
+- pymdownx.caret
+- pymdownx.details
+- pymdownx.highlight:
+    anchor_linenums: true
+    line_spans: __span
+    pygments_lang_class: true
+- pymdownx.inlinehilite
+- pymdownx.keys
+- pymdownx.mark
+- pymdownx.smartsymbols
+- pymdownx.snippets:
+    check_paths: true
+- pymdownx.tabbed:
+    alternate_style: true
+    combine_header_slug: true
+- pymdownx.tasklist:
+    custom_checkbox: true
+- pymdownx.tilde
+- pymdownx.superfences:
+    custom_fences:
+    - name: mermaid
+      class: mermaid
+      format: !!python/name:pymdownx.superfences.fence_code_format
+- pymdownx.emoji:
+    emoji_index: !!python/name:material.extensions.emoji.twemoji
+    emoji_generator: !!python/name:material.extensions.emoji.to_svg

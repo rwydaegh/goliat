@@ -101,7 +101,7 @@ This section details GOLIAT's core classes and their roles within the framework.
 
 #### `Config`
 - **Function**: Loads and manages hierarchical JSON configurations. A study-specific config (e.g., `near_field_config.json`) extends a `base_config.json`, allowing for a clean override system. This design minimizes duplication and makes it easy to manage different simulation scenarios. The `Config` class is responsible for loading the `base_config.json` and then recursively merging the study-specific configuration over it.
-- **Noteworthy Methods**:
+- **Some interesting methods**:
     - `get_setting(path, default)`: Retrieves nested settings using a dot-separated path.
     - `get_antenna_config()`: Returns antenna-specific settings.
     - `get_phantom_config(phantom_name)`: Returns settings for a specific phantom.
@@ -110,7 +110,7 @@ This section details GOLIAT's core classes and their roles within the framework.
 
 #### `BaseStudy`, `NearFieldStudy`, `FarFieldStudy`
 - **Function**: Orchestrates the entire simulation workflow. `BaseStudy` provides the core structure, including the main `run()` method, logging, and profiling. `NearFieldStudy` and `FarFieldStudy` inherit from `BaseStudy` and implement the `_run_study()` method, which contains the specific logic for each study type. This inheritance-based design allows for code reuse and a clear separation of concerns.
-- **Noteworthy Methods**:
+- **Some interesting methods**:
     - `run()`: The main entry point to execute the study. It handles top-level error handling and ensures that the necessary Sim4Life environment is running. It then calls the `_run_study` method.
     - `_run_study()`: This is the core of each study. It loops through phantoms, frequencies, and placements, coordinating the setup, run, and extraction phases for each simulation.
 - **API Reference**:
@@ -122,13 +122,13 @@ This section details GOLIAT's core classes and their roles within the framework.
 
 #### `ProjectManager`
 - **Function**: Manages Sim4Life project files (`.smash`). It handles file creation, opening, saving, and validation to prevent issues with file locks or corruption. This is a critical component for ensuring the stability of the simulation process. It includes a `_is_valid_smash_file()` method that checks for file locks and verifies the HDF5 structure of the project file before attempting to open it.
-- **Noteworthy Methods**:
+- **Some interesting methods**:
     - `create_or_open_project(...)`: Creates a new project or opens an existing one based on the configuration.
 - **API Reference**: [src.project_manager.ProjectManager](api_reference.md#src.project_manager.ProjectManager)
 
 #### Setup Modules (`src/setups/`)
 - **Function**: A collection of specialized classes, each responsible for a specific part of the scene setup in Sim4Life. All setup classes inherit from `BaseSetup`, which provides common functionalities like logging and access to the Sim4Life API. The `NearFieldSetup` and `FarFieldSetup` classes coordinate the execution of the other setup modules. This modular design makes it easy to add new setup steps or modify existing ones.
-- **Primary Components**:
+- **Some components**:
     - `PhantomSetup`: Loads and validates phantom models.
     - `PlacementSetup`: Positions the antenna relative to the phantom.
     - `MaterialSetup`: Assigns material properties to all entities.
@@ -139,7 +139,7 @@ This section details GOLIAT's core classes and their roles within the framework.
 
 #### `SimulationRunner`
 - **Function**: Executes the simulation, either locally using `iSolve.exe` or by submitting it to the oSPARC cloud platform. It also handles real-time logging of the solver output. A key feature is the `_run_isolve_manual` method, which runs the solver in a separate process and uses a non-blocking reader thread to capture and log its output in real-time.
-- **Noteworthy Methods**:
+- **Some interesting methods**:
     - `run_all()`: Iterates through and runs all simulations defined in the study.
 - **API Reference**: [src.simulation_runner.SimulationRunner](api_reference.md#src.simulation_runner.SimulationRunner)
 
@@ -151,7 +151,7 @@ This section details GOLIAT's core classes and their roles within the framework.
     - `SensorExtractor`: Extracts data from point sensors.
     - `Reporter`: Generates detailed reports in Pickle and HTML formats.
     - `Cleaner`: Handles cleanup of simulation files to save disk space.
-- **Noteworthy Methods**:
+- **Some interesting methods**:
     - `extract()`: Orchestrates the entire extraction process.
 - **API Reference**: [src.results_extractor.ResultsExtractor](api_reference.md#src.results_extractor.ResultsExtractor)
 
@@ -159,7 +159,7 @@ This section details GOLIAT's core classes and their roles within the framework.
 
 #### `Analyzer` & Strategies
 - **Function**: The `Analyzer` class orchestrates the analysis of extracted results. It uses a strategy pattern, delegating the specifics of the analysis to a `BaseAnalysisStrategy` subclass (`NearFieldAnalysisStrategy` or `FarFieldAnalysisStrategy`). This design allows for different analysis workflows to be implemented without changing the core `Analyzer` logic. The strategy is responsible for loading the correct data, calculating summary statistics, and generating the appropriate plots.
-- **Noteworthy Methods**:
+- **Some interesting methods**:
     - `run_analysis()`: Loads results, applies the strategy, and generates reports and plots.
 - **API Reference**:
     - [src.analysis.analyzer.Analyzer](api_reference.md#src.analysis.analyzer.Analyzer)
@@ -167,7 +167,7 @@ This section details GOLIAT's core classes and their roles within the framework.
 
 #### `Plotter`
 - **Function**: Generates a variety of plots from the analyzed data. It is designed to be a flexible component that can be easily extended to create new types of visualizations.
-- **Noteworthy Methods**:
+- **Some interesting methods**:
     - `plot_sar_heatmap(...)`: Creates a heatmap of SAR distribution by tissue.
     - `plot_average_sar_bar(...)`: Generates a bar chart of average SAR values.
     - `plot_pssar_line(...)`: Creates a line plot of peak spatial-average SAR.
@@ -178,7 +178,7 @@ This section details GOLIAT's core classes and their roles within the framework.
 
 *For a deep dive about the advanced features, refer to the [Advanced Features Guide](advanced_features.md)*
 
-### Gui and multiprocessing
+### GUI and multiprocessing
 The application employs a multi-process architecture to ensure a responsive user experience, even during long-running simulations.
 
 - **Main Process**: A lightweight PySide6 GUI (`ProgressGUI`) is launched. This GUI is responsible for displaying progress, logs, and timing information.

@@ -23,24 +23,27 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
         return os.path.join(self.base_dir, "plots", "far_field", self.phantom_name)
 
     def load_and_process_results(self, analyzer: "Analyzer"):
-        frequencies = self.config.get_setting("frequencies_mhz", [])
-        far_field_params = self.config.get_setting("far_field_setup/environmental", {})
+        frequencies = self.config.get_setting("frequencies_mhz")
+        far_field_params = self.config.get_setting("far_field_setup/environmental")
+        if not far_field_params:
+            return
         incident_directions = far_field_params.get("incident_directions", [])
         polarizations = far_field_params.get("polarizations", [])
 
-        for freq in frequencies:
-            for direction_name in incident_directions:
-                for polarization_name in polarizations:
-                    placement_name = (
-                        f"environmental_{direction_name}_{polarization_name}"
-                    )
-                    analyzer._process_single_result(
-                        freq, "environmental", placement_name, ""
-                    )
+        if not frequencies:
+            return
 
-    def get_normalization_factor(
-        self, frequency_mhz: int, simulated_power_w: float
-    ) -> float:
+        for freq in frequencies:
+            if not incident_directions:
+                continue
+            for direction_name in incident_directions:
+                if not polarizations:
+                    continue
+                for polarization_name in polarizations:
+                    placement_name = f"environmental_{direction_name}_{polarization_name}"
+                    analyzer._process_single_result(freq, "environmental", placement_name, "")
+
+    def get_normalization_factor(self, frequency_mhz: int, simulated_power_w: float) -> float:
         """Returns the normalization factor for far-field analysis (always 1.0)."""
         # Far-field is normalized to 1 W/m^2 in the simulation itself.
         return 1.0
@@ -75,10 +78,8 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
                         "frequency_mhz": frequency_mhz,
                         "placement": placement_name,
                         "tissue": row["Tissue"],
-                        "mass_avg_sar_mw_kg": row["Mass-Averaged SAR"]
-                        * 1000,  # Already normalized in extractor
-                        "peak_sar_10g_mw_kg": row.get(peak_sar_col, pd.NA)
-                        * 1000,  # Already normalized
+                        "mass_avg_sar_mw_kg": row["Mass-Averaged SAR"] * 1000,  # Already normalized in extractor
+                        "peak_sar_10g_mw_kg": row.get(peak_sar_col, pd.NA) * 1000,  # Already normalized
                     }
                 )
         return result_entry, organ_entries
@@ -89,7 +90,8 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
 
     def calculate_summary_stats(self, results_df: pd.DataFrame) -> pd.DataFrame:
         """Calculates summary statistics for far-field results."""
-        return results_df.groupby("frequency_mhz").mean(numeric_only=True)
+        summary = results_df.groupby("frequency_mhz").mean(numeric_only=True)
+        return pd.DataFrame(summary)
 
     def generate_plots(
         self,
@@ -109,19 +111,9 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
         plotter.plot_far_field_distribution_boxplot(results_df, metric="peak_sar")
 
         # Prepare data for heatmaps
-        organ_sar_df = (
-            all_organ_results_df.groupby(["tissue", "frequency_mhz"])
-            .agg(avg_sar=("mass_avg_sar_mw_kg", "mean"))
-            .reset_index()
-        )
+        organ_sar_df = all_organ_results_df.groupby(["tissue", "frequency_mhz"]).agg(avg_sar=("mass_avg_sar_mw_kg", "mean")).reset_index()
 
-        organ_pssar_df = (
-            all_organ_results_df.groupby(["tissue", "frequency_mhz"])[
-                "peak_sar_10g_mw_kg"
-            ]
-            .mean()
-            .reset_index()
-        )
+        organ_pssar_df = all_organ_results_df.groupby(["tissue", "frequency_mhz"])["peak_sar_10g_mw_kg"].mean().reset_index()
 
         group_summary_data = []
         # tissue_groups defined in analyzer
@@ -130,11 +122,7 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
                 continue
             # Create a case-insensitive regex pattern to match any of the tissue keywords
             pattern = "|".join(tissues)
-            group_df = all_organ_results_df[
-                all_organ_results_df["tissue"].str.contains(
-                    pattern, case=False, na=False
-                )
-            ]
+            group_df = all_organ_results_df[all_organ_results_df["tissue"].str.contains(pattern, case=False, na=False)]
 
             if not group_df.empty:
                 summary = (
@@ -148,28 +136,22 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
                 summary["group"] = group_name.replace("_group", "").capitalize()
                 group_summary_data.append(summary)
 
-        group_summary_df = (
-            pd.concat(group_summary_data, ignore_index=True)
-            if group_summary_data
-            else pd.DataFrame()
-        )
+        group_summary_df = pd.concat(group_summary_data, ignore_index=True) if group_summary_data else pd.DataFrame()
 
         if not group_summary_df.empty:
             group_sar_summary = group_summary_df[["group", "frequency_mhz", "avg_sar"]]
-            group_pssar_summary = group_summary_df[
-                ["group", "frequency_mhz", "peak_sar_10g_mw_kg"]
-            ]
+            group_pssar_summary = group_summary_df[["group", "frequency_mhz", "peak_sar_10g_mw_kg"]]
 
             plotter.plot_peak_sar_heatmap(
-                organ_sar_df,
-                group_sar_summary,
+                pd.DataFrame(organ_sar_df),
+                pd.DataFrame(group_sar_summary),
                 analyzer.tissue_group_definitions,
                 value_col="avg_sar",
                 title="Average SAR",
             )
             plotter.plot_peak_sar_heatmap(
-                organ_pssar_df,
-                group_pssar_summary,
+                pd.DataFrame(organ_pssar_df),
+                pd.DataFrame(group_pssar_summary),
                 analyzer.tissue_group_definitions,
                 value_col="peak_sar_10g_mw_kg",
                 title="Peak SAR 10g",
