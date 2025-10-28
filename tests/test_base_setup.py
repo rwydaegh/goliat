@@ -28,7 +28,6 @@ def test_base_setup_initialization(mock_config):
 
 
 @pytest.mark.skip_on_ci
-@pytest.mark.skip_on_ci
 def test_run_full_setup_not_implemented(mock_config):
     setup = BaseSetup(mock_config, MagicMock(), MagicMock())
     with pytest.raises(NotImplementedError):
