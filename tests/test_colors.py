@@ -4,7 +4,6 @@ from colorama import Fore, Style
 from src.colors import get_color
 
 
-@pytest.mark.skip_on_ci
 def test_get_color():
     assert get_color("progress") == Fore.GREEN
     assert get_color("info") == Fore.CYAN

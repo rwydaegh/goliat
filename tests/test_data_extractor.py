@@ -14,7 +14,6 @@ def setup_json_file(tmp_path):
     return file_path
 
 
-@pytest.mark.skip_on_ci
 def test_get_parameter_from_json(setup_json_file):
     # Test existing parameter
     assert get_parameter_from_json(str(setup_json_file), "level1.level2.param") == "value"
@@ -24,7 +23,6 @@ def test_get_parameter_from_json(setup_json_file):
     assert get_parameter_from_json("non_existent.json", "level1.level2.param") is None
 
 
-@pytest.mark.skip_on_ci
 def test_get_parameter(setup_json_file):
     context = {"project_root": str(setup_json_file.parent)}
     source_config = {

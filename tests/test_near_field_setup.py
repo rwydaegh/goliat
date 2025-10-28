@@ -27,7 +27,6 @@ def mock_antenna():
     return antenna
 
 
-@pytest.mark.skip_on_ci
 def test_near_field_setup_initialization(mock_config, mock_antenna):
     setup = NearFieldSetup(
         config=mock_config,
