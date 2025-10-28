@@ -108,6 +108,31 @@ class BaseStudy(LoggingMixin):
         """Executes the specific study. Must be implemented by subclasses."""
         raise NotImplementedError("The '_run_study' method must be implemented by a subclass.")
 
+    def _verify_and_update_metadata(self, stage: str):
+        """Verifies deliverables for a stage and updates metadata if they exist."""
+        if not self.project_manager.project_path:
+            return
+
+        project_dir = os.path.dirname(self.project_manager.project_path)
+        project_filename = os.path.basename(self.project_manager.project_path)
+
+        # We need a timestamp for the check, but it's only used to check if files are newer.
+        # For this purpose, we can use a very old timestamp to just check for existence.
+        # A more robust solution might involve getting the setup timestamp from the metadata.
+        # However, for the purpose of updating after a run/extract, checking for existence is sufficient.
+        creation_timestamp = 0
+
+        deliverables_status = self.project_manager._get_deliverables_status(project_dir, project_filename, creation_timestamp)
+
+        if stage == "run" and deliverables_status["run_done"]:
+            self._log("Run deliverables verified. Updating metadata.", log_type="warning")
+            self.project_manager.update_simulation_metadata(os.path.join(project_dir, "config.json"), run_done=True)
+        elif stage == "extract" and deliverables_status["extract_done"]:
+            self._log("Extract deliverables verified. Updating metadata.", log_type="warning")
+            self.project_manager.update_simulation_metadata(os.path.join(project_dir, "config.json"), extract_done=True)
+        else:
+            self._log(f"Deliverables for '{stage}' phase not found. Metadata not updated.", log_type="warning")
+
     def _setup_line_profiler(self, subtask_name: str, instance) -> tuple:
         """Sets up the line profiler for a specific subtask if configured."""
         line_profiling_config = self.config.get_line_profiling_config()
