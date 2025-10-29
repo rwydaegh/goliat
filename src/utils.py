@@ -149,6 +149,10 @@ def profile(study: "BaseStudy", phase_name: str):
     study.profiler.start_stage(phase_name)
     if study.gui:
         study.gui.update_profiler()
+        # Reset the stage progress bar to 0 before starting a new animation
+        study.gui.update_stage_progress(phase_name.capitalize(), 0, 1)
+        # Start the animation for the entire phase
+        study.start_stage_animation(phase_name, 100)
 
     study._log(f"--- Starting: {phase_name} ---", log_type="header")
     start_time = time.monotonic()
@@ -159,8 +163,8 @@ def profile(study: "BaseStudy", phase_name: str):
         study._log(f"--- Finished: {phase_name} (took {elapsed:.2f}s) ---", log_type="header")
 
         study.profiler.end_stage()
-
         if study.gui:
+            study.end_stage_animation()
             study.gui.update_profiler()
 
 
