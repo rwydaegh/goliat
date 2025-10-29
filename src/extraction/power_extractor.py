@@ -44,7 +44,7 @@ class PowerExtractor(LoggingMixin):
         Args:
             simulation_extractor: The results extractor from the simulation object.
         """
-        self._log("  - Extracting input power...", log_type="progress")
+        self._log("    - Extract input power...", level="progress", log_type="progress")
         with self.parent.study.subtask("extract_input_power"):  # type: ignore
             try:
                 if self.study_type == "far_field":
@@ -190,7 +190,7 @@ class PowerExtractor(LoggingMixin):
         Args:
             simulation_extractor: The results extractor from the simulation object.
         """
-        self._log("  - Extracting power balance...", log_type="progress")
+        self._log("    - Extract power balance...", level="progress", log_type="progress")
         try:
             em_sensor_extractor = simulation_extractor["Overall Field"]
             power_balance_extractor = em_sensor_extractor.Outputs["Power Balance"]

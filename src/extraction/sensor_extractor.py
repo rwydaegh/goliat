@@ -37,7 +37,7 @@ class SensorExtractor:
         Args:
             simulation_extractor: The results extractor from the simulation object.
         """
-        self.parent._log("  - Extracting point sensor data...", log_type="progress")
+        self.parent._log("    - Extract point sensors...", level="progress", log_type="progress")
 
         with self.parent.study.subtask("extract_point_sensor_data"):  # type: ignore
             try:

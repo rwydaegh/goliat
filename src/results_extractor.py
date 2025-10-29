@@ -107,99 +107,29 @@ class ResultsExtractor(LoggingMixin):
         results_data = {}
         simulation_extractor = self.simulation.Results()
 
-        # --- Extraction Steps with detailed logging ---
-        self._log("    - Extract input power...", level="progress", log_type="progress")
-        if self.study:
-            with self.study.profiler.subtask("extract_input_power"):
-                power_extractor = PowerExtractor(self, results_data)
-                power_extractor.extract_input_power(simulation_extractor)
-            self._log(
-                f"      - Subtask 'extract_input_power' done in {self.study.profiler.subtask_times['extract_input_power'][-1]:.2f}s",
-                level="progress",
-                log_type="success",
-            )
-        else:
-            power_extractor = PowerExtractor(self, results_data)
-            power_extractor.extract_input_power(simulation_extractor)
+        # --- Extraction Steps (orchestrated by extraction modules) ---
+        power_extractor = PowerExtractor(self, results_data)
+        power_extractor.extract_input_power(simulation_extractor)
 
         if not self.free_space:
-            self._log("    - Extract SAR statistics...", level="progress", log_type="progress")
-            if self.study:
-                with self.study.profiler.subtask("extract_sar_statistics"):
-                    sar_extractor = SarExtractor(self, results_data)
-                    sar_extractor.extract_sar_statistics(simulation_extractor)
-                self._log(
-                    f"      - Subtask 'extract_sar_statistics' done in {self.study.profiler.subtask_times['extract_sar_statistics'][-1]:.2f}s",
-                    level="progress",
-                    log_type="success",
-                )
-            else:
-                sar_extractor = SarExtractor(self, results_data)
-                sar_extractor.extract_sar_statistics(simulation_extractor)
-
-            self._log("    - Extract power balance...", level="progress", log_type="progress")
-            if self.study:
-                with self.study.profiler.subtask("extract_power_balance"):
-                    power_extractor.extract_power_balance(simulation_extractor)
-                self._log(
-                    f"      - Subtask 'extract_power_balance' done in {self.study.profiler.subtask_times['extract_power_balance'][-1]:.2f}s",
-                    level="progress",
-                    log_type="success",
-                )
-            else:
-                power_extractor.extract_power_balance(simulation_extractor)
+            sar_extractor = SarExtractor(self, results_data)
+            sar_extractor.extract_sar_statistics(simulation_extractor)
+            power_extractor.extract_power_balance(simulation_extractor)
 
         if self.config.get_setting("simulation_parameters.number_of_point_sensors", 0) > 0:
-            self._log("    - Extract point sensors...", level="progress", log_type="progress")
-            if self.study:
-                with self.study.profiler.subtask("extract_point_sensor_data"):
-                    sensor_extractor = SensorExtractor(self, results_data)
-                    sensor_extractor.extract_point_sensor_data(simulation_extractor)
-                self._log(
-                    f"      - Subtask 'extract_point_sensor_data' done in {self.study.profiler.subtask_times['extract_point_sensor_data'][-1]:.2f}s",
-                    level="progress",
-                    log_type="success",
-                )
-            else:
-                sensor_extractor = SensorExtractor(self, results_data)
-                sensor_extractor.extract_point_sensor_data(simulation_extractor)
+            sensor_extractor = SensorExtractor(self, results_data)
+            sensor_extractor.extract_point_sensor_data(simulation_extractor)
 
         if not self.free_space and "_temp_sar_df" in results_data:
-            self._log("    - Generate reports...", level="progress", log_type="progress")
-            if self.study:
-                with self.study.profiler.subtask("generate_reports"):
-                    reporter = Reporter(self)
-                    reporter.save_reports(
-                        results_data.pop("_temp_sar_df"),
-                        results_data.pop("_temp_tissue_groups"),
-                        results_data.pop("_temp_group_sar_stats"),
-                        results_data,
-                    )
-                self._log(
-                    f"      - Subtask 'generate_reports' done in {self.study.profiler.subtask_times['generate_reports'][-1]:.2f}s",
-                    level="progress",
-                    log_type="success",
-                )
-            else:
-                reporter = Reporter(self)
-                reporter.save_reports(
-                    results_data.pop("_temp_sar_df"),
-                    results_data.pop("_temp_tissue_groups"),
-                    results_data.pop("_temp_group_sar_stats"),
-                    results_data,
-                )
-
-        self._log("    - Save JSON results...", level="progress", log_type="progress")
-        if self.study:
-            with self.study.profiler.subtask("save_json_results"):
-                self._save_json_results(results_data)
-            self._log(
-                f"      - Subtask 'save_json_results' done in {self.study.profiler.subtask_times['save_json_results'][-1]:.2f}s",
-                level="progress",
-                log_type="success",
+            reporter = Reporter(self)
+            reporter.save_reports(
+                results_data.pop("_temp_sar_df"),
+                results_data.pop("_temp_tissue_groups"),
+                results_data.pop("_temp_group_sar_stats"),
+                results_data,
             )
-        else:
-            self._save_json_results(results_data)
+
+        self._save_json_results(results_data)
 
         # Cleanup if configured
         if self.config.get_auto_cleanup_previous_results():

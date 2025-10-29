@@ -48,7 +48,7 @@ class SarExtractor(LoggingMixin):
         Args:
             simulation_extractor: The results extractor from the simulation object.
         """
-        self._log("  - Extracting SAR statistics for all tissues...", log_type="progress")
+        self._log("    - Extract SAR statistics...", level="progress", log_type="progress")
         with self.parent.study.subtask("extract_sar_statistics"):  # type: ignore
             try:
                 em_sensor_extractor = simulation_extractor["Overall Field"]
