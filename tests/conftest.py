@@ -1,6 +1,7 @@
 import sys
 from unittest.mock import MagicMock
 
+
 def pytest_configure(config):
     """
     Dynamically mock Sim4Life-specific modules to prevent ImportError during test collection
@@ -16,7 +17,7 @@ def pytest_configure(config):
     s4l_v1.document = MagicMock()
     s4l_v1.analysis = MagicMock()
     s4l_v1.units = MagicMock()
-    
+
     # Insert the mock into sys.modules
     sys.modules["s4l_v1"] = s4l_v1
     sys.modules["s4l_v1.simulation"] = s4l_v1.simulation

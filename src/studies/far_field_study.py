@@ -194,7 +194,7 @@ class FarFieldStudy(BaseStudy):
             if s4l_v1.document.AllSimulations:
                 sim_name = f"EM_FDTD_{phantom_name}_{freq}MHz_{direction_name}_{polarization_name}"
                 simulation = next(
-                    (s for s in s4l_v1.document.AllSimulations if s.Name == sim_name),  # type: ignore
+                    (s for s in s4l_v1.document.AllSimulations if s.Name == sim_name),
                     None,
                 )
 
@@ -211,7 +211,7 @@ class FarFieldStudy(BaseStudy):
                     runner = SimulationRunner(
                         self.config,
                         self.project_manager.project_path,  # type: ignore
-                        [simulation],  # type: ignore
+                        simulation,  # type: ignore
                         self.verbose_logger,
                         self.progress_logger,
                         self.gui,
@@ -231,7 +231,7 @@ class FarFieldStudy(BaseStudy):
                     self.project_manager.reload_project()
                     sim_name = simulation.Name
                     reloaded_simulation = next(
-                        (s for s in s4l_v1.document.AllSimulations if s.Name == sim_name),  # type: ignore
+                        (s for s in s4l_v1.document.AllSimulations if s.Name == sim_name),
                         None,
                     )
                     if not reloaded_simulation:

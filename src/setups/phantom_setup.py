@@ -89,7 +89,7 @@ class PhantomSetup(BaseSetup):
             download_email = self.config.get_setting("download_email", "example@example.com")
             self.data.DownloadModel(
                 phantom_to_download,
-                email=download_email,
+                email=download_email,  # type: ignore
                 directory=os.path.join(self.config.base_dir, "data", "phantoms"),
             )
             self._log(

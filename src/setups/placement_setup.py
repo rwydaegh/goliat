@@ -72,7 +72,7 @@ class PlacementSetup(BaseSetup):
             raise RuntimeError("Could not find imported antenna group.")
 
         # Find the "Ground" entity/entities ("PCB" of the phone excl. IFA antenna)
-        ground_entities = [e for e in antenna_group.Entities if "Ground" in e.Name or "Substrate" in e.Name]
+        ground_entities = [e for e in antenna_group.Entities if "Ground" in e.Name or "Substrate" in e.Name]  # type: ignore
 
         # Rename the entities to include the placement name for uniqueness
         antenna_group.Name = f"{antenna_group.Name} ({self.placement_name})"
