@@ -33,6 +33,7 @@ class FarFieldSetup(BaseSetup):
         verbose_logger: "Logger",
         progress_logger: "Logger",
         profiler: "Profiler",
+        gui=None,
     ):
         super().__init__(config, verbose_logger, progress_logger)
         self.phantom_name = phantom_name
@@ -41,6 +42,7 @@ class FarFieldSetup(BaseSetup):
         self.polarization_name = polarization_name
         self.project_manager = project_manager
         self.profiler = profiler
+        self.gui = gui
         self.simulation_type = self.config.get_setting("far_field_setup/type", "environmental")
         self.document = self.s4l_v1.document
 

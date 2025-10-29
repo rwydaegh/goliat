@@ -34,6 +34,7 @@ class NearFieldSetup(BaseSetup):
         verbose_logger: "Logger",
         progress_logger: "Logger",
         profiler: "Profiler",
+        gui=None,
         free_space: bool = False,
     ):
         super().__init__(config, verbose_logger, progress_logger)
@@ -45,6 +46,7 @@ class NearFieldSetup(BaseSetup):
         self.placement_name = f"{scenario_name}_{position_name}_{orientation_name}"
         self.antenna = antenna
         self.profiler = profiler
+        self.gui = gui
         self.free_space = free_space
 
         # S4L modules

@@ -222,6 +222,7 @@ class NearFieldStudy(BaseStudy):
                             self.verbose_logger,
                             self.progress_logger,
                             self.profiler,
+                            self.gui,
                         )
                         
                         with self.subtask("setup_simulation", instance_to_profile=setup) as wrapper:
