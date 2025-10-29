@@ -179,7 +179,7 @@ class SimulationRunner(LoggingMixin):
 
         solver_kernel = self.config.get_solver_settings().get("kernel", "Software")
         log_msg = f"Running iSolve with {solver_kernel} on {os.path.basename(input_file_path)}"
-        self._log(log_msg, level="progress", log_type="info")
+        self._log(log_msg, log_type="info")  # verbose only
 
         command = [isolve_path, "-i", input_file_path]
 
@@ -281,8 +281,7 @@ class SimulationRunner(LoggingMixin):
                 raise RuntimeError(f"Could not find simulation '{sim_name}' after re-opening project.")
             self._log(
                 "Project reloaded and results are available.",
-                level="progress",
-                log_type="success",
+                log_type="success",  # verbose only
             )
 
         except Exception as e:
@@ -429,6 +428,5 @@ class SimulationRunner(LoggingMixin):
             raise RuntimeError(f"Could not find simulation '{sim_name}' after re-opening project.")
         self._log(
             "Project reloaded and results are available.",
-            level="progress",
-            log_type="success",
+            log_type="success",  # verbose only
         )

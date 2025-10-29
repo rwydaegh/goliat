@@ -221,6 +221,7 @@ class NearFieldStudy(BaseStudy):
                             antenna,
                             self.verbose_logger,
                             self.progress_logger,
+                            self.profiler,
                         )
                         
                         with self.subtask("setup_simulation", instance_to_profile=setup) as wrapper:
@@ -230,19 +231,27 @@ class NearFieldStudy(BaseStudy):
                             self._log(f"ERROR: Setup failed for {placement_name}.", level="progress", log_type="error")
                             return
 
-                        self.project_manager.save()
-                        surgical_config = self.config.build_simulation_config(
-                            phantom_name=phantom_name,
-                            frequency_mhz=freq,
-                            scenario_name=scenario_name,
-                            position_name=position_name,
-                            orientation_name=orientation_name,
-                        )
-                        if self.project_manager.project_path:
-                            self.project_manager.write_simulation_metadata(
-                                os.path.join(os.path.dirname(self.project_manager.project_path), "config.json"),
-                                surgical_config,
+                        # Subtask 6: Save project
+                        self._log("    - Save project...", level="progress", log_type="progress")
+                        with self.profiler.subtask("setup_save_project"):
+                            self.project_manager.save()
+                            surgical_config = self.config.build_simulation_config(
+                                phantom_name=phantom_name,
+                                frequency_mhz=freq,
+                                scenario_name=scenario_name,
+                                position_name=position_name,
+                                orientation_name=orientation_name,
                             )
+                            if self.project_manager.project_path:
+                                self.project_manager.write_simulation_metadata(
+                                    os.path.join(os.path.dirname(self.project_manager.project_path), "config.json"),
+                                    surgical_config,
+                                )
+                        self._log(
+                            f"      - Subtask 'setup_save_project' done in {self.profiler.subtask_times['setup_save_project'][-1]:.2f}s",
+                            level="progress",
+                            log_type="success",
+                        )
 
                     # Update do_run and do_extract based on verification
                     if verification_status["run_done"]:

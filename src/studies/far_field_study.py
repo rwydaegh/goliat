@@ -147,6 +147,7 @@ class FarFieldStudy(BaseStudy):
                             self.project_manager,
                             self.verbose_logger,
                             self.progress_logger,
+                            self.profiler,
                         )
                         
                         with self.subtask("setup_simulation", instance_to_profile=setup) as wrapper:
@@ -160,18 +161,26 @@ class FarFieldStudy(BaseStudy):
                             )
                             return
 
-                        self.project_manager.save()
-                        surgical_config = self.config.build_simulation_config(
-                            phantom_name=phantom_name,
-                            frequency_mhz=freq,
-                            direction_name=direction_name,
-                            polarization_name=polarization_name,
-                        )
-                        if self.project_manager.project_path:
-                            self.project_manager.write_simulation_metadata(
-                                os.path.join(os.path.dirname(self.project_manager.project_path), "config.json"),
-                                surgical_config,
+                        # Subtask 6: Save project
+                        self._log("    - Save project...", level="progress", log_type="progress")
+                        with self.profiler.subtask("setup_save_project"):
+                            self.project_manager.save()
+                            surgical_config = self.config.build_simulation_config(
+                                phantom_name=phantom_name,
+                                frequency_mhz=freq,
+                                direction_name=direction_name,
+                                polarization_name=polarization_name,
                             )
+                            if self.project_manager.project_path:
+                                self.project_manager.write_simulation_metadata(
+                                    os.path.join(os.path.dirname(self.project_manager.project_path), "config.json"),
+                                    surgical_config,
+                                )
+                        self._log(
+                            f"      - Subtask 'setup_save_project' done in {self.profiler.subtask_times['setup_save_project'][-1]:.2f}s",
+                            level="progress",
+                            log_type="success",
+                        )
 
                     # Update do_run and do_extract based on verification
                     if verification_status["run_done"]:
