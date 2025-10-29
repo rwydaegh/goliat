@@ -197,6 +197,7 @@ class ProgressGUI(QWidget):
         self.elapsed_label = QLabel("Elapsed: N/A")
         self.eta_label = QLabel("Time Remaining: N/A")
         from PySide6.QtCore import Qt
+
         self.grid_layout.addWidget(self.elapsed_label, 0, 0)
         self.grid_layout.addWidget(self.eta_label, 0, 1, Qt.AlignmentFlag.AlignRight)
         layout.addLayout(self.grid_layout)
@@ -310,9 +311,7 @@ class ProgressGUI(QWidget):
     def update_stage_progress(self, stage_name: str, current_step: int, total_steps: int):
         """Updates the stage-specific progress bar."""
         if self.DEBUG:
-            self.update_status(
-                f"DEBUG: update_stage_progress received: name='{stage_name}', current={current_step}, total={total_steps}"
-            )
+            self.update_status(f"DEBUG: update_stage_progress received: name='{stage_name}', current={current_step}, total={total_steps}")
         self.stage_label.setText(f"Current Stage: {stage_name}")
         self.total_steps_for_stage = total_steps
 
@@ -334,9 +333,7 @@ class ProgressGUI(QWidget):
             end_step: The target step value for the animation.
         """
         if self.DEBUG:
-            self.update_status(
-                f"DEBUG: start_stage_animation received: duration={estimated_duration:.2f}s, end_step={end_step}"
-            )
+            self.update_status(f"DEBUG: start_stage_animation received: duration={estimated_duration:.2f}s, end_step={end_step}")
         self.animation_start_time = time.monotonic()
         self.animation_duration = estimated_duration
         self.animation_start_value = self.stage_progress_bar.value()
@@ -408,9 +405,7 @@ class ProgressGUI(QWidget):
                     overall_progress = self.overall_progress_bar.value() / 100.0
                     stage_progress = self.stage_progress_bar.value() / 10.0
                     self.update_status(
-                        f"DEBUG: Time Remaining: {time_remaining_str} | "
-                        f"Overall: {overall_progress:.2f}% | "
-                        f"Stage: {stage_progress:.1f}%"
+                        f"DEBUG: Time Remaining: {time_remaining_str} | Overall: {overall_progress:.2f}% | Stage: {stage_progress:.1f}%"
                     )
             else:
                 self.eta_label.setText("Time Remaining: N/A")

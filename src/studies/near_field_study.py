@@ -231,7 +231,7 @@ class NearFieldStudy(BaseStudy):
                         if not simulation:
                             self._log(f"ERROR: Setup failed for {placement_name}.", level="progress", log_type="error")
                             return
-                    
+
                     # Always ensure metadata is written, even if setup is skipped
                     surgical_config = self.config.build_simulation_config(
                         phantom_name=phantom_name,

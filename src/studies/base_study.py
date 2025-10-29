@@ -72,7 +72,7 @@ class BaseStudy(LoggingMixin):
     def subtask(self, task_name: str, instance_to_profile=None):
         """A context manager for a 'subtask' within a phase."""
         self._log(f"  - {task_name.replace('_', ' ').capitalize()}...", level="progress", log_type="progress")
-        
+
         lp = None
         wrapper = None
         line_profiling_config = self.config.get_line_profiling_config()

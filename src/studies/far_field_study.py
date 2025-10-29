@@ -81,7 +81,6 @@ class FarFieldStudy(BaseStudy):
         elif do_extract:
             self.profiler.current_phase = "extract"
 
-
         simulation_count = 0
         for phantom_name in phantoms:  # type: ignore
             for freq in frequencies:  # type: ignore
@@ -160,7 +159,7 @@ class FarFieldStudy(BaseStudy):
                                 log_type="error",
                             )
                             return
-                    
+
                     # Always ensure metadata is written, even if setup is skipped
                     surgical_config = self.config.build_simulation_config(
                         phantom_name=phantom_name,
