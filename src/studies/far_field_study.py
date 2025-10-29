@@ -81,9 +81,6 @@ class FarFieldStudy(BaseStudy):
         elif do_extract:
             self.profiler.current_phase = "extract"
 
-        if self.gui:
-            self.gui.update_overall_progress(0, 100)  # Initialize GUI progress
-
         simulation_count = 0
         for phantom_name in phantoms:  # type: ignore
             for freq in frequencies:  # type: ignore
@@ -106,6 +103,9 @@ class FarFieldStudy(BaseStudy):
                             do_run,  # type: ignore
                             do_extract,  # type: ignore
                         )
+                        self.profiler.simulation_completed()
+                        if self.gui:
+                            self.gui.update_overall_progress(simulation_count, total_simulations)
 
     def _run_single_simulation(
         self,
@@ -160,24 +160,18 @@ class FarFieldStudy(BaseStudy):
                             )
                             return
 
-                        # Subtask 6: Save project
-                        self._log("    - Save project...", level="progress", log_type="progress")
-                        with self.profiler.subtask("setup_save_project"):
-                            self.project_manager.save()
-                            surgical_config = self.config.build_simulation_config(
-                                phantom_name=phantom_name,
-                                frequency_mhz=freq,
-                                direction_name=direction_name,
-                                polarization_name=polarization_name,
-                            )
-                            if self.project_manager.project_path:
-                                self.project_manager.write_simulation_metadata(
-                                    os.path.join(os.path.dirname(self.project_manager.project_path), "config.json"),
-                                    surgical_config,
-                                )
-                        elapsed = self.profiler.subtask_times["setup_save_project"][-1]
-                        self._log(f"      - Subtask 'setup_save_project' done in {elapsed:.2f}s", log_type="verbose")
-                        self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
+                    # Always ensure metadata is written, even if setup is skipped
+                    surgical_config = self.config.build_simulation_config(
+                        phantom_name=phantom_name,
+                        frequency_mhz=freq,
+                        direction_name=direction_name,
+                        polarization_name=polarization_name,
+                    )
+                    if self.project_manager.project_path:
+                        self.project_manager.write_simulation_metadata(
+                            os.path.join(os.path.dirname(self.project_manager.project_path), "config.json"),
+                            surgical_config,
+                        )
 
                     # Update do_run and do_extract based on verification
                     if verification_status["run_done"]:
@@ -188,8 +182,6 @@ class FarFieldStudy(BaseStudy):
                         self._log("Skipping extract phase, deliverables found.", log_type="info")
 
                     if self.gui:
-                        progress = self.profiler.get_weighted_progress("setup", 1.0)
-                        self.gui.update_overall_progress(int(progress), 100)
                         self.gui.update_stage_progress("Setup", 1, 1)
             else:
                 self.project_manager.create_or_open_project(
@@ -252,8 +244,6 @@ class FarFieldStudy(BaseStudy):
                     self._verify_and_update_metadata("extract")
                     self.project_manager.save()
                     if self.gui:
-                        progress = self.profiler.get_weighted_progress("extract", 1.0)
-                        self.gui.update_overall_progress(int(progress), 100)
                         self.gui.update_stage_progress("Extracting Results", 1, 1)
 
         except Exception as e:

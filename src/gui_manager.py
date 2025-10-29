@@ -78,7 +78,10 @@ class QueueGUI(LoggingMixin):
 
     def start_stage_animation(self, task_name: str, end_value: int):
         """Sends a command to start a progress bar animation."""
-        estimate = self.profiler.get_subtask_estimate(task_name)
+        if task_name in ["setup", "run", "extract"]:
+            estimate = self.profiler.profiling_config.get(f"avg_{task_name}_time", 60)
+        else:
+            estimate = self.profiler.get_subtask_estimate(task_name)
         self.queue.put({"type": "start_animation", "estimate": estimate, "end_value": end_value})
 
     def end_stage_animation(self):
@@ -129,6 +132,7 @@ class ProgressGUI(QWidget):
         self.progress_logger = logging.getLogger("progress")
         self.verbose_logger = logging.getLogger("verbose")
         self.window_title = window_title
+        self.DEBUG = False
         self.init_ui()
 
         self.phase_name_map = {
@@ -160,13 +164,28 @@ class ProgressGUI(QWidget):
         """Initializes and arranges all UI widgets."""
         self.setWindowTitle(self.window_title)
         self.resize(650, 650)
+
+        # Set a stylesheet to increase font size for key widgets
+        self.setStyleSheet("""
+            QLabel {
+                font-size: 14px;
+            }
+            QPushButton {
+                font-size: 14px;
+                padding: 5px;
+            }
+            QProgressBar {
+                font-size: 14px;
+            }
+        """)
+
         layout = QVBoxLayout()
         self.grid_layout = QGridLayout()
 
         self.overall_progress_label = QLabel("Overall Progress:")
         layout.addWidget(self.overall_progress_label)
         self.overall_progress_bar = QProgressBar(self)
-        self.overall_progress_bar.setRange(0, 1000)
+        self.overall_progress_bar.setRange(0, 10000)
         layout.addWidget(self.overall_progress_bar)
 
         self.stage_label = QLabel("Current Stage:")
@@ -177,8 +196,10 @@ class ProgressGUI(QWidget):
 
         self.elapsed_label = QLabel("Elapsed: N/A")
         self.eta_label = QLabel("Time Remaining: N/A")
+        from PySide6.QtCore import Qt
+
         self.grid_layout.addWidget(self.elapsed_label, 0, 0)
-        self.grid_layout.addWidget(self.eta_label, 0, 1)
+        self.grid_layout.addWidget(self.eta_label, 0, 1, Qt.AlignmentFlag.AlignRight)
         layout.addLayout(self.grid_layout)
 
         self.status_log_label = QLabel("Status Log:")
@@ -278,13 +299,19 @@ class ProgressGUI(QWidget):
 
     def update_overall_progress(self, current_step: int, total_steps: int):
         """Updates the overall progress bar."""
+        if self.DEBUG and isinstance(current_step, int):
+            self.update_status(f"DEBUG: update_overall_progress received: current={current_step}, total={total_steps}")
         if total_steps > 0:
             progress_percent = (current_step / total_steps) * 100
-            self.overall_progress_bar.setValue(int(progress_percent * 10))
-            self.overall_progress_bar.setFormat(f"{progress_percent:.1f}%")
+            self.overall_progress_bar.setValue(int(progress_percent * 100))
+            self.overall_progress_bar.setFormat(f"{progress_percent:.2f}%")
+            if self.DEBUG and isinstance(current_step, int):
+                self.update_status(f"DEBUG: Overall progress set to: {progress_percent:.2f}%")
 
     def update_stage_progress(self, stage_name: str, current_step: int, total_steps: int):
         """Updates the stage-specific progress bar."""
+        if self.DEBUG:
+            self.update_status(f"DEBUG: update_stage_progress received: name='{stage_name}', current={current_step}, total={total_steps}")
         self.stage_label.setText(f"Current Stage: {stage_name}")
         self.total_steps_for_stage = total_steps
 
@@ -295,6 +322,8 @@ class ProgressGUI(QWidget):
 
         self.stage_progress_bar.setValue(final_value)
         self.stage_progress_bar.setFormat(f"{progress_percent * 100:.0f}%")
+        if self.DEBUG:
+            self.update_status(f"DEBUG: Stage '{stage_name}' progress set to: {progress_percent * 100:.0f}%")
 
     def start_stage_animation(self, estimated_duration: float, end_step: int):
         """Starts a smooth animation for the stage progress bar.
@@ -303,24 +332,29 @@ class ProgressGUI(QWidget):
             estimated_duration: The estimated time in seconds for the task.
             end_step: The target step value for the animation.
         """
+        if self.DEBUG:
+            self.update_status(f"DEBUG: start_stage_animation received: duration={estimated_duration:.2f}s, end_step={end_step}")
         self.animation_start_time = time.monotonic()
         self.animation_duration = estimated_duration
         self.animation_start_value = self.stage_progress_bar.value()
 
-        if self.total_steps_for_stage > 0:
-            self.animation_end_value = int((end_step / self.total_steps_for_stage) * 1000)
-        else:
-            self.animation_end_value = 0
+        self.animation_end_value = 1000
 
         if self.animation_start_value >= self.animation_end_value:
+            if self.DEBUG:
+                self.update_status("DEBUG: Animation skipped, start_value >= end_value.")
             return
 
         self.animation_active = True
         if not self.animation_timer.isActive():
             self.animation_timer.start(50)
+        if self.DEBUG:
+            self.update_status("DEBUG: Animation started.")
 
     def end_stage_animation(self):
         """Stops the stage progress bar animation."""
+        if self.animation_active and self.DEBUG:
+            self.update_status("DEBUG: end_stage_animation called.")
         self.animation_active = False
         if self.animation_timer.isActive():
             self.animation_timer.stop()
@@ -346,6 +380,11 @@ class ProgressGUI(QWidget):
         percent = (current_value / 1000) * 100
         self.stage_progress_bar.setFormat(f"{percent:.0f}%")
 
+        # Also update the overall progress based on the stage animation
+        if hasattr(self, "profiler") and self.profiler and self.profiler.current_phase:
+            progress = self.profiler.get_weighted_progress(self.profiler.current_phase, percent / 100.0)
+            self.update_overall_progress(progress, 100)
+
     def update_status(self, message: str, log_type: str = "default"):
         """Appends a message to the status log text box."""
         self.status_text.append(message)
@@ -360,7 +399,14 @@ class ProgressGUI(QWidget):
             eta_sec = self.profiler.get_time_remaining(current_stage_progress=current_stage_progress_ratio)
 
             if eta_sec is not None:
-                self.eta_label.setText(f"Time Remaining: {format_time(eta_sec)}")
+                time_remaining_str = format_time(eta_sec)
+                self.eta_label.setText(f"Time Remaining: {time_remaining_str}")
+                if self.DEBUG and int(elapsed_sec) % 5 == 0:
+                    overall_progress = self.overall_progress_bar.value() / 100.0
+                    stage_progress = self.stage_progress_bar.value() / 10.0
+                    self.update_status(
+                        f"DEBUG: Time Remaining: {time_remaining_str} | Overall: {overall_progress:.2f}% | Stage: {stage_progress:.1f}%"
+                    )
             else:
                 self.eta_label.setText("Time Remaining: N/A")
         else:
