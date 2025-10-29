@@ -83,8 +83,6 @@ class NearFieldStudy(BaseStudy):
             self.profiler.current_phase = "run"
         elif do_extract:
             self.profiler.current_phase = "extract"
-        if self.gui:
-            self.gui.update_overall_progress(0, 100)
 
         simulation_count = 0
         for phantom_name in phantoms:
@@ -120,6 +118,9 @@ class NearFieldStudy(BaseStudy):
                                     do_run,  # type: ignore
                                     do_extract,  # type: ignore
                                 )
+                                self.profiler.simulation_completed()
+                                if self.gui:
+                                    self.gui.update_overall_progress(simulation_count, total_simulations)
 
     def _validate_auto_cleanup_config(self, do_setup: bool, do_run: bool, do_extract: bool, auto_cleanup: list):
         """Validates the auto_cleanup_previous_results configuration.
@@ -230,26 +231,20 @@ class NearFieldStudy(BaseStudy):
                         if not simulation:
                             self._log(f"ERROR: Setup failed for {placement_name}.", level="progress", log_type="error")
                             return
-
-                        # Subtask 6: Save project
-                        self._log("    - Save project...", level="progress", log_type="progress")
-                        with self.profiler.subtask("setup_save_project"):
-                            self.project_manager.save()
-                            surgical_config = self.config.build_simulation_config(
-                                phantom_name=phantom_name,
-                                frequency_mhz=freq,
-                                scenario_name=scenario_name,
-                                position_name=position_name,
-                                orientation_name=orientation_name,
-                            )
-                            if self.project_manager.project_path:
-                                self.project_manager.write_simulation_metadata(
-                                    os.path.join(os.path.dirname(self.project_manager.project_path), "config.json"),
-                                    surgical_config,
-                                )
-                        elapsed = self.profiler.subtask_times["setup_save_project"][-1]
-                        self._log(f"      - Subtask 'setup_save_project' done in {elapsed:.2f}s", log_type="verbose")
-                        self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
+                    
+                    # Always ensure metadata is written, even if setup is skipped
+                    surgical_config = self.config.build_simulation_config(
+                        phantom_name=phantom_name,
+                        frequency_mhz=freq,
+                        scenario_name=scenario_name,
+                        position_name=position_name,
+                        orientation_name=orientation_name,
+                    )
+                    if self.project_manager.project_path:
+                        self.project_manager.write_simulation_metadata(
+                            os.path.join(os.path.dirname(self.project_manager.project_path), "config.json"),
+                            surgical_config,
+                        )
 
                     # Update do_run and do_extract based on verification
                     if verification_status["run_done"]:
@@ -260,8 +255,6 @@ class NearFieldStudy(BaseStudy):
                         self._log("Skipping extract phase, deliverables found.", log_type="info")
 
                     if self.gui:
-                        progress = self.profiler.get_weighted_progress("setup", 1.0)
-                        self.gui.update_overall_progress(int(progress), 100)
                         self.gui.update_stage_progress("Setup", 1, 1)
 
             else:
@@ -327,8 +320,6 @@ class NearFieldStudy(BaseStudy):
                     self.project_manager.save()
 
                     if self.gui:
-                        progress = self.profiler.get_weighted_progress("extract", 1.0)
-                        self.gui.update_overall_progress(int(progress), 100)
                         self.gui.update_stage_progress("Extracting Results", 1, 1)
 
         except Exception as e:

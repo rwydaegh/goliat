@@ -185,6 +185,14 @@ class NearFieldSetup(BaseSetup):
         self._log(f"      - Subtask 'setup_voxelize' done in {elapsed:.2f}s", log_type="verbose")
         self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
+        # Subtask 6: Save project
+        self._log("    - Save project...", level="progress", log_type="progress")
+        with self.profiler.subtask("setup_save_project"):
+            project_manager.save()
+        elapsed = self.profiler.subtask_times["setup_save_project"][-1]
+        self._log(f"      - Subtask 'setup_save_project' done in {elapsed:.2f}s", log_type="verbose")
+        self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
+
         self._log("Full simulation setup complete.", log_type="success")
         return simulation
 

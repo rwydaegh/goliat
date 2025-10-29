@@ -72,8 +72,7 @@ class BaseStudy(LoggingMixin):
     def subtask(self, task_name: str, instance_to_profile=None):
         """A context manager for a 'subtask' within a phase."""
         self._log(f"  - {task_name.replace('_', ' ').capitalize()}...", level="progress", log_type="progress")
-        self.start_stage_animation(task_name, 1)
-
+        
         lp = None
         wrapper = None
         line_profiling_config = self.config.get_line_profiling_config()
@@ -97,16 +96,16 @@ class BaseStudy(LoggingMixin):
                 lp.print_stats(stream=s)
                 self.verbose_logger.info(s.getvalue())
 
-            self.end_stage_animation()
-
     def start_stage_animation(self, task_name: str, end_value: int):
         """Starts the GUI animation for a stage."""
         if self.gui:
+            self._log(f"DEBUG: BaseStudy.start_stage_animation: task={task_name}, end_value={end_value}", level="progress")
             self.gui.start_stage_animation(task_name, end_value)
 
     def end_stage_animation(self):
         """Ends the GUI animation for a stage."""
         if self.gui:
+            self._log("DEBUG: BaseStudy.end_stage_animation", level="progress")
             self.gui.end_stage_animation()
 
     def run(self):
@@ -158,9 +157,8 @@ class BaseStudy(LoggingMixin):
 
         self.profiler.complete_run_phase()
         self._verify_and_update_metadata("run")
+        self.end_stage_animation()
         if self.gui:
-            progress = self.profiler.get_weighted_progress("run", 1.0)
-            self.gui.update_overall_progress(int(progress), 100)
             self.gui.update_stage_progress("Running Simulation", 1, 1)
 
     def _verify_and_update_metadata(self, stage: str):
