@@ -1,3 +1,4 @@
+import contextlib
 import json
 import time
 from collections import defaultdict
@@ -161,6 +162,18 @@ class Profiler:
 
         eta = time_in_current_phase + time_for_future_phases
         return max(0, eta)
+
+    @contextlib.contextmanager
+    def subtask(self, task_name: str):
+        """A context manager to time a subtask."""
+        self.subtask_stack.append({"name": task_name, "start_time": time.monotonic()})
+        try:
+            yield
+        finally:
+            subtask = self.subtask_stack.pop()
+            elapsed = time.monotonic() - subtask["start_time"]
+            self.subtask_times[subtask["name"]].append(elapsed)
+            self.update_and_save_estimates()
 
     def update_and_save_estimates(self):
         """Updates the profiling configuration with the latest average times and saves it.

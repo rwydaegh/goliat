@@ -141,6 +141,3 @@ This will generate aggregated CSVs and plots that include data from all frequenc
 -   **Advanced Batching**: Learn how to run many simulations in parallel using oSPARC cloud batching in the [Advanced Tutorial](advanced.md).
 -   **Far-Field Studies**: Explore environmental exposure scenarios by configuring a far-field study.
 -   **Developer Guide**: If you're interested in extending GOLIAT, refer to the [Developer Guide](../developer_guide.md).
-
----
-*Last updated: {date}*

@@ -120,6 +120,3 @@ While the core GOLIAT workflow remains consistent, the specifics of scene setup 
 -   **Effective Debugging**: Always consult the `logs/` directory for detailed error messages. You can also rerun specific phases of a study (e.g., `"do_setup": false, "do_run": false, "do_extract": true`) to isolate and debug issues more efficiently.
 
 You are now equipped to navigate GOLIAT and perform sophisticated EMF dosimetry simulations! For hands-on examples, proceed to the [Tutorials](tutorials/basic.md). If you have any further questions or encounter issues, please open a [GitHub Issue](https://github.com/rwydaegh/goliat/issues).
-
----
-*Last updated: {date}*

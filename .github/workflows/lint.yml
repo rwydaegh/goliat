@@ -63,4 +63,4 @@ jobs:
     - name: Run pre-commit hooks
       run: pre-commit run --all-files
       env:
-        SKIP: pyright
+        SKIP: pyright # Because no s4l_v1 available on remote

@@ -96,10 +96,10 @@ class ResultsExtractor(LoggingMixin):
         This is the main entry point for the class. It coordinates extraction
         modules for power, SAR, and sensor data, then saves the results.
         """
-        self._log("Extracting results...", log_type="progress")
         if not self.simulation:
             self._log(
-                "  - ERROR: Simulation object not found. Skipping result extraction.",
+                "ERROR: Simulation object not found. Skipping result extraction.",
+                level="progress",
                 log_type="error",
             )
             return
@@ -107,36 +107,19 @@ class ResultsExtractor(LoggingMixin):
         results_data = {}
         simulation_extractor = self.simulation.Results()
 
-        # Extract power data
-        if self.gui:
-            self.gui.update_stage_progress("Extracting Power", 50, 100)
-
+        # --- Extraction Steps (orchestrated by extraction modules) ---
         power_extractor = PowerExtractor(self, results_data)
         power_extractor.extract_input_power(simulation_extractor)
 
-        # Extract SAR data (non-free-space only)
         if not self.free_space:
-            if self.gui:
-                self.gui.update_stage_progress("Extracting SAR", 100, 100)
-
             sar_extractor = SarExtractor(self, results_data)
             sar_extractor.extract_sar_statistics(simulation_extractor)
             power_extractor.extract_power_balance(simulation_extractor)
-        else:
-            self._log(
-                "  - Skipping SAR statistics for free-space simulation.",
-                log_type="info",
-            )
 
-        # Extract point sensor data
         if self.config.get_setting("simulation_parameters.number_of_point_sensors", 0) > 0:  # type: ignore
-            if self.gui:
-                self.gui.update_stage_progress("Extracting Point Sensors", 75, 100)
-
             sensor_extractor = SensorExtractor(self, results_data)
             sensor_extractor.extract_point_sensor_data(simulation_extractor)
 
-        # Save reports
         if not self.free_space and "_temp_sar_df" in results_data:
             reporter = Reporter(self)
             reporter.save_reports(
@@ -146,7 +129,6 @@ class ResultsExtractor(LoggingMixin):
                 results_data,
             )
 
-        # Save JSON results
         self._save_json_results(results_data)
 
         # Cleanup if configured

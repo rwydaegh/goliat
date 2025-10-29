@@ -5,7 +5,7 @@ import threading
 import time
 import traceback
 from queue import Empty, Queue
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Optional
 
 from .logging_manager import LoggingMixin
 from .utils import non_blocking_sleep, open_project
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
     from .config import Config
     from .gui_manager import QueueGUI
-    from .studies.base_study import BaseStudy
+    from .profiler import Profiler
 
 
 class SimulationRunner(LoggingMixin):
@@ -27,127 +27,97 @@ class SimulationRunner(LoggingMixin):
         self,
         config: "Config",
         project_path: str,
-        simulations: Union[
-            "s4l_v1.simulation.emfdtd.Simulation",
-            List["s4l_v1.simulation.emfdtd.Simulation"],
-        ],
+        simulation: "s4l_v1.simulation.emfdtd.Simulation",
+        profiler: "Profiler",
         verbose_logger: "Logger",
         progress_logger: "Logger",
-        gui: Optional["QueueGUI"] = None,
-        study: Optional["BaseStudy"] = None,
+        gui: "Optional[QueueGUI]" = None,
     ):
         """Initializes the SimulationRunner.
-
         Args:
             config: The configuration object for the study.
             project_path: The file path to the Sim4Life project.
-            simulations: A single simulation or a list of simulations to run.
+            simulation: The simulation to run.
+            profiler: The profiler instance for timing subtasks.
             verbose_logger: Logger for detailed, verbose output.
             progress_logger: Logger for high-level progress updates.
-            gui: The GUI proxy for sending updates to the main process.
-            study: The parent study object for profiling and context.
+            gui: Optional GUI proxy for sending log messages to the GUI window.
         """
         self.config = config
         self.project_path = project_path
-        self.simulations = simulations if isinstance(simulations, list) else [simulations]
+        self.simulation = simulation
+        self.profiler = profiler
         self.verbose_logger = verbose_logger
         self.progress_logger = progress_logger
         self.gui = gui
-        self.study = study
         import s4l_v1.document
 
         self.document = s4l_v1.document
 
-    def run_all(self):
-        """Runs all simulations in the list, managing GUI animations."""
-        total_sims = len(self.simulations)
-        if self.gui:
-            self.gui.update_stage_progress("Running Simulation", 0, total_sims)
-
-        for i, sim in enumerate(self.simulations):
-            self._log(
-                f"\n--- Running simulation {i + 1}/{total_sims}: {sim.Name} ---",
-                level="progress",
-                log_type="header",
-            )
-
-            # Start animation before the run
-            if self.gui:
-                self.gui.start_stage_animation("run_simulation_total", i + 1)
-
-            self.run(sim)
-
-            # End animation and update progress after the run
-            if self.gui and self.study:
-                self.gui.end_stage_animation()
-                progress = self.study.profiler.get_weighted_progress("run", (i + 1) / total_sims)
-                self.gui.update_overall_progress(int(progress), 100)
-                self.gui.update_stage_progress("Running Simulation", i + 1, total_sims)
-
-        self._log("\n--- All simulations finished ---", level="progress", log_type="success")
-
-    def run(self, simulation: "s4l_v1.simulation.emfdtd.Simulation"):
-        """Runs a single simulation, wrapped in a subtask for timing."""
-        if not simulation:
+    def run(self):
+        """Runs a single simulation."""
+        if not self.simulation:
             self._log(
                 "ERROR: Simulation object not found. Cannot run simulation.",
                 level="progress",
                 log_type="error",
             )
             return
-        self._log(f"Running simulation: {simulation.Name}", log_type="verbose")
+        self._log(f"Running simulation: {self.simulation.Name}", log_type="verbose")
 
-        with self.study.subtask("run_simulation_total"):  # type: ignore
-            server_name = self.config.get_solver_settings().get("server")
+        server_name = self.config.get_solver_settings().get("server")
 
-            try:
-                if hasattr(simulation, "WriteInputFile"):
-                    with self.study.subtask("run_write_input_file"):  # type: ignore
-                        self._log(
-                            "Writing solver input file...",
-                            level="progress",
-                            log_type="progress",
-                        )
-                        simulation.WriteInputFile()
-                        self.document.SaveAs(self.project_path)  # Force a save to flush files
-
-                # Stop here if we only want to write the input file
-                if self.config.get_only_write_input_file():
-                    self._log(
-                        "'only_write_input_file' is true, skipping simulation run.",
-                        level="progress",
-                        log_type="info",
-                    )
-                    return
-
-                if self.config.get_manual_isolve():
-                    self._run_isolve_manual(simulation)
-                elif server_name and "osparc" in server_name.lower():
-                    self._run_osparc_direct(simulation, server_name)
-                else:
-                    server_id = self._get_server_id(server_name) if server_name else None
-                    simulation.RunSimulation(wait=True, server_id=server_id)
-                    log_msg = f"Simulation finished on '{server_name or 'localhost'}'."
-                    self._log(log_msg, level="progress", log_type="success")
-
-            except Exception as e:
+        try:
+            if hasattr(self.simulation, "WriteInputFile"):
                 self._log(
-                    f"An error occurred during simulation run: {e}",
+                    "    - Write input file...",
                     level="progress",
-                    log_type="error",
+                    log_type="progress",
                 )
-                # Check if a cloud server was intended for the run
-                server_name = self.config.get_solver_settings().get("server")
-                if server_name and server_name != "localhost":
-                    self._log(
-                        "If you are running on the cloud, please ensure you are logged into Sim4Life "
-                        "via the GUI and your API credentials are correct.",
-                        level="progress",
-                        log_type="warning",
-                    )
-                self.verbose_logger.error(traceback.format_exc())
+                with self.profiler.subtask("run_write_input_file"):
+                    self.simulation.WriteInputFile()
+                    self.document.SaveAs(self.project_path)  # Force a save to flush files
+                elapsed = self.profiler.subtask_times["run_write_input_file"][-1]
+                self._log(f"      - Subtask 'run_write_input_file' done in {elapsed:.2f}s", log_type="verbose")
+                self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
-        return simulation
+            # Stop here if we only want to write the input file
+            if self.config.get_only_write_input_file():
+                self._log(
+                    "'only_write_input_file' is true, skipping simulation run.",
+                    level="progress",
+                    log_type="info",
+                )
+                return
+
+            if self.config.get_manual_isolve():
+                self._run_isolve_manual(self.simulation)
+            elif server_name and "osparc" in server_name.lower():
+                self._run_osparc_direct(self.simulation, server_name)
+            else:
+                server_id = self._get_server_id(server_name) if server_name else None
+                self.simulation.RunSimulation(wait=True, server_id=server_id)
+                log_msg = f"Simulation finished on '{server_name or 'localhost'}'."
+                self._log(log_msg, level="progress", log_type="success")
+
+        except Exception as e:
+            self._log(
+                f"An error occurred during simulation run: {e}",
+                level="progress",
+                log_type="error",
+            )
+            # Check if a cloud server was intended for the run
+            server_name = self.config.get_solver_settings().get("server")
+            if server_name and server_name != "localhost":
+                self._log(
+                    "If you are running on the cloud, please ensure you are logged into Sim4Life "
+                    "via the GUI and your API credentials are correct.",
+                    level="progress",
+                    log_type="warning",
+                )
+            self.verbose_logger.error(traceback.format_exc())
+
+        return self.simulation
 
     def _get_server_id(self, server_name: str) -> Optional[str]:
         """Finds the full server identifier from a partial server name."""
@@ -207,7 +177,7 @@ class SimulationRunner(LoggingMixin):
 
         solver_kernel = self.config.get_solver_settings().get("kernel", "Software")
         log_msg = f"Running iSolve with {solver_kernel} on {os.path.basename(input_file_path)}"
-        self._log(log_msg, level="progress", log_type="info")
+        self._log(log_msg, log_type="info")  # verbose only
 
         command = [isolve_path, "-i", input_file_path]
 
@@ -226,7 +196,8 @@ class SimulationRunner(LoggingMixin):
                 pipe.close()
 
         try:
-            with self.study.subtask("run_isolve_execution"):  # type: ignore
+            self._log("    - Execute iSolve...", level="progress", log_type="progress")
+            with self.profiler.subtask("run_isolve_execution"):
                 process = subprocess.Popen(
                     command,
                     stdout=subprocess.PIPE,
@@ -264,23 +235,33 @@ class SimulationRunner(LoggingMixin):
                     self._log(error_message, level="progress", log_type="error")
                     raise RuntimeError(error_message)
 
-            # --- 4. Post-simulation steps ---
-            with self.study.subtask("run_wait_for_results"):  # type: ignore
-                self._log(
-                    "Waiting for 5 seconds to ensure results are written to disk...",
-                    level="progress",
-                    log_type="info",
-                )
-                non_blocking_sleep(5)
+            elapsed = self.profiler.subtask_times["run_isolve_execution"][-1]
+            self._log(f"      - Subtask 'run_isolve_execution' done in {elapsed:.2f}s", log_type="verbose")
+            self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
-            with self.study.subtask("run_reload_project"):  # type: ignore
-                self._log(
-                    "Re-opening project to load results...",
-                    level="progress",
-                    log_type="progress",
-                )
+            # --- 4. Post-simulation steps ---
+            self._log(
+                "    - Wait for results...",
+                level="progress",
+                log_type="progress",
+            )
+            with self.profiler.subtask("run_wait_for_results"):
+                non_blocking_sleep(5)
+            elapsed = self.profiler.subtask_times["run_wait_for_results"][-1]
+            self._log(f"      - Subtask 'run_wait_for_results' done in {elapsed:.2f}s", log_type="verbose")
+            self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
+
+            self._log(
+                "    - Reload project...",
+                level="progress",
+                log_type="progress",
+            )
+            with self.profiler.subtask("run_reload_project"):
                 self.document.Close()
                 open_project(self.project_path)
+            elapsed = self.profiler.subtask_times["run_reload_project"][-1]
+            self._log(f"      - Subtask 'run_reload_project' done in {elapsed:.2f}s", log_type="verbose")
+            self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
             sim_name = simulation.Name
             simulation = next((s for s in self.document.AllSimulations if s.Name == sim_name), None)  # type: ignore
@@ -288,8 +269,7 @@ class SimulationRunner(LoggingMixin):
                 raise RuntimeError(f"Could not find simulation '{sim_name}' after re-opening project.")
             self._log(
                 "Project reloaded and results are available.",
-                level="progress",
-                log_type="success",
+                log_type="success",  # verbose only
             )
 
         except Exception as e:
@@ -403,22 +383,28 @@ class SimulationRunner(LoggingMixin):
             time.sleep(30)
 
         # 5. Post-simulation steps (similar to _run_isolve_manual)
-        with self.study.subtask("run_wait_for_results"):  # type: ignore
-            self._log(
-                "Waiting for 5 seconds to ensure results are written to disk...",
-                level="progress",
-                log_type="info",
-            )
+        self._log(
+            "    - Wait for results...",
+            level="progress",
+            log_type="progress",
+        )
+        with self.profiler.subtask("run_wait_for_results"):
             non_blocking_sleep(5)
+        elapsed = self.profiler.subtask_times["run_wait_for_results"][-1]
+        self._log(f"      - Subtask 'run_wait_for_results' done in {elapsed:.2f}s", log_type="verbose")
+        self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
-        with self.study.subtask("run_reload_project"):  # type: ignore
-            self._log(
-                "Re-opening project to load results...",
-                level="progress",
-                log_type="progress",
-            )
+        self._log(
+            "    - Reload project...",
+            level="progress",
+            log_type="progress",
+        )
+        with self.profiler.subtask("run_reload_project"):
             self.document.Close()
             open_project(self.project_path)
+        elapsed = self.profiler.subtask_times["run_reload_project"][-1]
+        self._log(f"      - Subtask 'run_reload_project' done in {elapsed:.2f}s", log_type="verbose")
+        self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
         sim_name = simulation.Name
         simulation = next((s for s in self.document.AllSimulations if s.Name == sim_name), None)  # type: ignore
@@ -426,6 +412,5 @@ class SimulationRunner(LoggingMixin):
             raise RuntimeError(f"Could not find simulation '{sim_name}' after re-opening project.")
         self._log(
             "Project reloaded and results are available.",
-            level="progress",
-            log_type="success",
+            log_type="success",  # verbose only
         )

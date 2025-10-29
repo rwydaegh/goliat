@@ -3,15 +3,12 @@
     "study_type": "far_field",
     "execution_control": {
         "do_setup": true,
-        "only_write_input_file": true,
-        "do_run": false,
+        "only_write_input_file": false,
+        "do_run": true,
         "do_extract": true,
         "batch_run": false
     },
     "phantoms": [
-        "duke",
-        "ella",
-        "eartha",
         "thelonious"
     ],
     "frequencies_mhz": [

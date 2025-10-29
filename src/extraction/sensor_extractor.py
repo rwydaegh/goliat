@@ -37,95 +37,101 @@ class SensorExtractor:
         Args:
             simulation_extractor: The results extractor from the simulation object.
         """
-        self.parent._log("  - Extracting point sensor data...", log_type="progress")
+        self.parent._log("    - Extract point sensors...", level="progress", log_type="progress")
 
-        with self.parent.study.subtask("extract_point_sensor_data"):  # type: ignore
-            try:
-                num_sensors = self.parent.config.get_setting("simulation_parameters.number_of_point_sensors", 0)
-                if num_sensors == 0:
-                    return
+        try:
+            elapsed = 0.0
+            if self.parent.study:
+                with self.parent.study.profiler.subtask("extract_point_sensor_data"):  # type: ignore
+                    num_sensors = self.parent.config.get_setting("simulation_parameters.number_of_point_sensors", 0)
+                    if num_sensors == 0:
+                        return
 
-                plt.ioff()
-                plt.rcParams.update({"text.usetex": False})
-                fig, ax = plt.subplots()
-                ax.grid(True, which="major", axis="y", linestyle="--")
+                    plt.ioff()
+                    plt.rcParams.update({"text.usetex": False})
+                    fig, ax = plt.subplots()
+                    ax.grid(True, which="major", axis="y", linestyle="--")
 
-                point_source_order = self.parent.config.get_setting("simulation_parameters.point_source_order", [])
-                point_sensor_results = {}
+                    point_source_order = self.parent.config.get_setting("simulation_parameters.point_source_order", [])
+                    point_sensor_results = {}
 
-                for i in range(num_sensors):  # type: ignore
-                    if i >= len(point_source_order):  # type: ignore
-                        self.parent._log(
-                            f"    - WARNING: Not enough entries in 'point_source_order' for sensor {i + 1}. Skipping.",
-                            log_type="warning",
-                        )
-                        continue
-
-                    corner_name = point_source_order[i]  # type: ignore
-                    full_sensor_name = f"Point Sensor Entity {i + 1} ({corner_name})"
-
-                    try:
-                        em_sensor_extractor = simulation_extractor[full_sensor_name]
-                        if not em_sensor_extractor:
+                    for i in range(num_sensors):  # type: ignore
+                        if i >= len(point_source_order):  # type: ignore
                             self.parent._log(
-                                f"    - WARNING: Could not find sensor extractor for '{full_sensor_name}'",
+                                f"    - WARNING: Not enough entries in 'point_source_order' for sensor {i + 1}. Skipping.",
                                 log_type="warning",
                             )
                             continue
-                    except Exception as e:
-                        self.parent._log(
-                            f"    - WARNING: Could not retrieve sensor '{full_sensor_name}'. Error: {e}",
-                            log_type="warning",
-                        )
-                        continue
 
-                    self.parent.document.AllAlgorithms.Add(em_sensor_extractor)
+                        corner_name = point_source_order[i]  # type: ignore
+                        full_sensor_name = f"Point Sensor Entity {i + 1} ({corner_name})"
 
-                    if "EM E(t)" not in em_sensor_extractor.Outputs:
-                        self.parent._log(
-                            f"    - WARNING: 'EM E(t)' output not found for sensor '{full_sensor_name}'",
-                            log_type="warning",
-                        )
+                        try:
+                            em_sensor_extractor = simulation_extractor[full_sensor_name]
+                            if not em_sensor_extractor:
+                                self.parent._log(
+                                    f"    - WARNING: Could not find sensor extractor for '{full_sensor_name}'",
+                                    log_type="warning",
+                                )
+                                continue
+                        except Exception as e:
+                            self.parent._log(
+                                f"    - WARNING: Could not retrieve sensor '{full_sensor_name}'. Error: {e}",
+                                log_type="warning",
+                            )
+                            continue
+
+                        self.parent.document.AllAlgorithms.Add(em_sensor_extractor)
+
+                        if "EM E(t)" not in em_sensor_extractor.Outputs:
+                            self.parent._log(
+                                f"    - WARNING: 'EM E(t)' output not found for sensor '{full_sensor_name}'",
+                                log_type="warning",
+                            )
+                            self.parent.document.AllAlgorithms.Remove(em_sensor_extractor)
+                            continue
+
+                        em_output = em_sensor_extractor.Outputs["EM E(t)"]
+                        em_output.Update()
+
+                        time_axis = em_output.Data.Axis
+                        ex, ey, ez = (em_output.Data.GetComponent(i) for i in range(3))
+                        label = corner_name.replace("_", " ").title()
+
+                        if time_axis is not None and time_axis.size > 0:
+                            e_mag = np.sqrt(ex**2 + ey**2 + ez**2)
+                            ax.plot(time_axis, e_mag, label=label)
+                            point_sensor_results[label] = {
+                                "time_s": time_axis.tolist(),
+                                "Ex_V_m": ex.tolist(),
+                                "Ey_V_m": ey.tolist(),
+                                "Ez_V_m": ez.tolist(),
+                                "E_mag_V_m": e_mag.tolist(),
+                            }
+                        else:
+                            self.parent._log(
+                                f"    - WARNING: No data found for sensor '{full_sensor_name}'",
+                                log_type="warning",
+                            )
+
                         self.parent.document.AllAlgorithms.Remove(em_sensor_extractor)
-                        continue
 
-                    em_output = em_sensor_extractor.Outputs["EM E(t)"]
-                    em_output.Update()
+                    if point_sensor_results:
+                        self.results_data["point_sensor_data"] = point_sensor_results
 
-                    time_axis = em_output.Data.Axis
-                    ex, ey, ez = (em_output.Data.GetComponent(i) for i in range(3))
-                    label = corner_name.replace("_", " ").title()
+                    self._save_plot(fig, ax)
 
-                    if time_axis is not None and time_axis.size > 0:
-                        e_mag = np.sqrt(ex**2 + ey**2 + ez**2)
-                        ax.plot(time_axis, e_mag, label=label)
-                        point_sensor_results[label] = {
-                            "time_s": time_axis.tolist(),
-                            "Ex_V_m": ex.tolist(),
-                            "Ey_V_m": ey.tolist(),
-                            "Ez_V_m": ez.tolist(),
-                            "E_mag_V_m": e_mag.tolist(),
-                        }
-                    else:
-                        self.parent._log(
-                            f"    - WARNING: No data found for sensor '{full_sensor_name}'",
-                            log_type="warning",
-                        )
+                elapsed = self.parent.study.profiler.subtask_times["extract_point_sensor_data"][-1]
+            self.parent._log(f"      - Subtask 'extract_point_sensor_data' done in {elapsed:.2f}s", log_type="verbose")
+            self.parent._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
-                    self.parent.document.AllAlgorithms.Remove(em_sensor_extractor)
-
-                if point_sensor_results:
-                    self.results_data["point_sensor_data"] = point_sensor_results
-
-                self._save_plot(fig, ax)
-
-            except Exception as e:
-                self.parent._log(
-                    f"  - ERROR: An exception occurred during point sensor data extraction: {e}",
-                    level="progress",
-                    log_type="error",
-                )
-                self.verbose_logger.error(traceback.format_exc())
+        except Exception as e:
+            self.parent._log(
+                f"  - ERROR: An exception occurred during point sensor data extraction: {e}",
+                level="progress",
+                log_type="error",
+            )
+            self.verbose_logger.error(traceback.format_exc())
 
     def _save_plot(self, fig, ax):
         """Saves the point sensor plot to disk."""

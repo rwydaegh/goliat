@@ -47,19 +47,13 @@ class Cleaner:
             "smash": (project_dir, "*.smash", "project"),
         }
 
-        self.parent._log(
-            "--- Starting Auto-Cleanup ---",
-            level="progress",
-            log_type="header",
-        )
-
         total_deleted = self._delete_files(cleanup_types, file_patterns)
 
         if total_deleted > 0:
             self.parent._log(
-                f"--- Auto-Cleanup Complete: {total_deleted} file(s) deleted. ---",
+                f"  - Cleaned up {total_deleted} file(s) to save disk space.",
                 level="progress",
-                log_type="success",
+                log_type="info",
             )
 
     def _delete_files(self, cleanup_types: list, file_patterns: dict) -> int:
@@ -75,12 +69,6 @@ class Cleaner:
             files_to_delete = glob.glob(file_pattern)
 
             if files_to_delete:
-                self.parent._log(
-                    f"  - Cleaning up {len(files_to_delete)} {description} file(s) ({pattern})...",
-                    level="progress",
-                    log_type="info",
-                )
-
                 for file_path in files_to_delete:
                     if self._delete_single_file(file_path):
                         total_deleted += 1
