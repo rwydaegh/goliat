@@ -212,36 +212,21 @@ class FarFieldStudy(BaseStudy):
             # 2. Run Phase
             if do_run:
                 with profile(self, "run"):
-                    with self.subtask("run_simulation_total"):
-                        runner = SimulationRunner(
-                            self.config,
-                            self.project_manager.project_path,  # type: ignore
-                            simulation,  # type: ignore
-                            self.profiler,
-                            self.verbose_logger,
-                            self.progress_logger,
-                        )
-                        runner.run()
-
-                    self._verify_and_update_metadata("run")
-                    if self.gui:
-                        progress = self.profiler.get_weighted_progress("run", 1.0)
-                        self.gui.update_overall_progress(int(progress), 100)
-                        self.gui.update_stage_progress("Running Simulation", 1, 1)
+                    self._execute_run_phase(simulation)  # type: ignore
 
             # 3. Extraction Phase
             if do_extract:
                 with profile(self, "extract"):
-                    with self.subtask("extract_results_total"):
-                        self.project_manager.reload_project()
-                        sim_name = simulation.Name
-                        reloaded_simulation = next(
-                            (s for s in s4l_v1.document.AllSimulations if s.Name == sim_name),
-                            None,
-                        )
-                        if not reloaded_simulation:
-                            raise RuntimeError(f"Could not find simulation '{sim_name}' after reloading.")
+                    self.project_manager.reload_project()
+                    sim_name = simulation.Name
+                    reloaded_simulation = next(
+                        (s for s in s4l_v1.document.AllSimulations if s.Name == sim_name),
+                        None,
+                    )
+                    if not reloaded_simulation:
+                        raise RuntimeError(f"Could not find simulation '{sim_name}' after reloading.")
 
+                    with self.subtask("extract_results_total"):
                         extractor = ResultsExtractor(
                             config=self.config,
                             simulation=reloaded_simulation,  # type: ignore
@@ -257,8 +242,8 @@ class FarFieldStudy(BaseStudy):
                             study=self,
                         )
                         extractor.extract()
-                        self._verify_and_update_metadata("extract")
-                        self.project_manager.save()
+                    self._verify_and_update_metadata("extract")
+                    self.project_manager.save()
                     if self.gui:
                         progress = self.profiler.get_weighted_progress("extract", 1.0)
                         self.gui.update_overall_progress(int(progress), 100)

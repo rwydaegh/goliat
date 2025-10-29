@@ -78,7 +78,7 @@ class BaseStudy(LoggingMixin):
         wrapper = None
         line_profiling_config = self.config.get_line_profiling_config()
         if instance_to_profile and line_profiling_config.get("enabled", False) and task_name in line_profiling_config.get("subtasks", {}):
-            self._log(f"  - Activating line profiler for subtask: {task_name}", "verbose", "verbose")
+            self._log(f"    - Activating line profiler for subtask: {task_name}", "verbose", "verbose")
             lp, wrapper = self._setup_line_profiler(task_name, instance_to_profile)
 
         try:
@@ -94,7 +94,7 @@ class BaseStudy(LoggingMixin):
                 log_type="success",
             )
             if lp:
-                self._log(f"    - Line profiler stats for '{task_name}':", "verbose", "verbose")
+                self._log(f"      - Line profiler stats for '{task_name}':", "verbose", "verbose")
                 s = io.StringIO()
                 lp.print_stats(stream=s)
                 self.verbose_logger.info(s.getvalue())
@@ -139,6 +139,30 @@ class BaseStudy(LoggingMixin):
     def _run_study(self):
         """Executes the specific study. Must be implemented by subclasses."""
         raise NotImplementedError("The '_run_study' method must be implemented by a subclass.")
+
+    def _execute_run_phase(self, simulation):
+        """Executes the run phase with consistent GUI management and profiling.
+
+        Args:
+            simulation: The simulation object to run.
+        """
+        with self.subtask("run_simulation_total"):
+            runner = SimulationRunner(
+                self.config,
+                self.project_manager.project_path,  # type: ignore
+                simulation,
+                self.profiler,
+                self.verbose_logger,
+                self.progress_logger,
+            )
+            runner.run()
+
+        self.profiler.complete_run_phase()
+        self._verify_and_update_metadata("run")
+        if self.gui:
+            progress = self.profiler.get_weighted_progress("run", 1.0)
+            self.gui.update_overall_progress(int(progress), 100)
+            self.gui.update_stage_progress("Running Simulation", 1, 1)
 
     def _verify_and_update_metadata(self, stage: str):
         """Verifies deliverables for a stage and updates metadata if they exist."""
