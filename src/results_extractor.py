@@ -107,37 +107,49 @@ class ResultsExtractor(LoggingMixin):
         results_data = {}
         simulation_extractor = self.simulation.Results()
 
-        # Extract power data
-        if self.gui:
-            self.gui.update_stage_progress("Extracting Power", 50, 100)
+        # Dynamically determine the number of extraction steps for progress reporting
+        extraction_steps = []
+        extraction_steps.append("Input Power")
+        if not self.free_space:
+            extraction_steps.append("SAR Statistics")
+            extraction_steps.append("Power Balance")
+        if self.config.get_setting("simulation_parameters.number_of_point_sensors", 0) > 0:
+            extraction_steps.append("Point Sensors")
+        if not self.free_space:
+            extraction_steps.append("Reports")
+        extraction_steps.append("JSON Results")
 
+        total_steps = len(extraction_steps)
+        current_step = 0
+
+        def update_progress(step_name):
+            nonlocal current_step
+            current_step += 1
+            if self.gui:
+                self.gui.update_stage_progress(f"Extracting: {step_name}", current_step, total_steps)
+
+        # --- Extraction Steps ---
+        update_progress("Input Power")
         power_extractor = PowerExtractor(self, results_data)
         power_extractor.extract_input_power(simulation_extractor)
 
-        # Extract SAR data (non-free-space only)
         if not self.free_space:
-            if self.gui:
-                self.gui.update_stage_progress("Extracting SAR", 100, 100)
-
+            update_progress("SAR Statistics")
             sar_extractor = SarExtractor(self, results_data)
             sar_extractor.extract_sar_statistics(simulation_extractor)
+
+            update_progress("Power Balance")
             power_extractor.extract_power_balance(simulation_extractor)
         else:
-            self._log(
-                "  - Skipping SAR statistics for free-space simulation.",
-                log_type="info",
-            )
+            self._log("  - Skipping SAR statistics for free-space simulation.", log_type="info")
 
-        # Extract point sensor data
-        if self.config.get_setting("simulation_parameters.number_of_point_sensors", 0) > 0:  # type: ignore
-            if self.gui:
-                self.gui.update_stage_progress("Extracting Point Sensors", 75, 100)
-
+        if self.config.get_setting("simulation_parameters.number_of_point_sensors", 0) > 0:
+            update_progress("Point Sensors")
             sensor_extractor = SensorExtractor(self, results_data)
             sensor_extractor.extract_point_sensor_data(simulation_extractor)
 
-        # Save reports
         if not self.free_space and "_temp_sar_df" in results_data:
+            update_progress("Reports")
             reporter = Reporter(self)
             reporter.save_reports(
                 results_data.pop("_temp_sar_df"),
@@ -146,7 +158,7 @@ class ResultsExtractor(LoggingMixin):
                 results_data,
             )
 
-        # Save JSON results
+        update_progress("JSON Results")
         self._save_json_results(results_data)
 
         # Cleanup if configured

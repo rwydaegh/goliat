@@ -6,6 +6,7 @@ from .base_setup import BaseSetup
 from .boundary_setup import BoundarySetup
 from .gridding_setup import GriddingSetup
 from .material_setup import MaterialSetup
+from .phantom_setup import PhantomSetup
 
 if TYPE_CHECKING:
     from logging import Logger
@@ -44,8 +45,14 @@ class FarFieldSetup(BaseSetup):
         """Executes the full setup sequence for a single far-field simulation."""
         self._log("--- Setting up single Far-Field sim ---", log_type="header")
 
-        # The phantom is now loaded once per project in the study.
-        # This setup will just add a simulation to the currently open project.
+        phantom_setup = PhantomSetup(
+            self.config,
+            self.phantom_name,
+            self.verbose_logger,
+            self.progress_logger,
+        )
+        phantom_setup.ensure_phantom_is_loaded()
+
         bbox_entity = self._create_or_get_simulation_bbox()
 
         simulation = self._create_simulation_entity(bbox_entity)

@@ -26,8 +26,9 @@ class NearFieldStudy(BaseStudy):
 
     def _run_study(self):
         """Runs the entire simulation campaign based on the configuration."""
+        config_filename = os.path.basename(self.config.config_path)
         self._log(
-            f"--- Starting Near-Field Study: {self.config.get_setting('study_name')} ---",
+            f"--- Starting Near-Field Study: {config_filename} ---",
             level="progress",
             log_type="header",
         )
@@ -36,6 +37,16 @@ class NearFieldStudy(BaseStudy):
         do_run = self.config.get_setting("execution_control.do_run", True)
         do_extract = self.config.get_setting("execution_control.do_extract", True)
         auto_cleanup = self.config.get_auto_cleanup_previous_results()
+
+        # Warn about common misconfiguration
+        if self.config.get_only_write_input_file() and not do_run:
+            self._log(
+                "WARNING: 'only_write_input_file' is set to true, but 'do_run' is false. "
+                "The input file will NOT be written because the run phase is disabled. "
+                "Set 'do_run: true' to write the input file.",
+                level="progress",
+                log_type="warning",
+            )
 
         if not do_setup and not do_run and not do_extract:
             self._log(
@@ -67,6 +78,12 @@ class NearFieldStudy(BaseStudy):
                     total_simulations += len(list(frequencies)) * len(positions) * len(orientations)  # type: ignore
 
         self.profiler.set_total_simulations(total_simulations)
+        if do_setup:
+            self.profiler.current_phase = "setup"
+        elif do_run:
+            self.profiler.current_phase = "run"
+        elif do_extract:
+            self.profiler.current_phase = "extract"
         if self.gui:
             self.gui.update_overall_progress(0, 100)
 
@@ -262,57 +279,43 @@ class NearFieldStudy(BaseStudy):
             # 2. Run Simulation
             if do_run:
                 with profile(self, "run"):
-                    self.profiler.start_stage("run", total_stages=1)
-                    runner = SimulationRunner(
-                        self.config,
-                        self.project_manager.project_path,  # type: ignore
-                        simulation,  # type: ignore
-                        self.verbose_logger,
-                        self.progress_logger,
-                        self.gui,
-                        self,
-                    )
-                    runner.run_all()
-                    self.profiler.complete_run_phase()
-                    self._verify_and_update_metadata("run")
-                    if self.gui:
-                        progress = self.profiler.get_weighted_progress("run", 1.0)
-                        self.gui.update_overall_progress(int(progress), 100)
-                        self.gui.update_stage_progress("Run", 1, 1)
+                    self._execute_run_phase(simulation)  # type: ignore
 
             # 3. Extract Results
             if do_extract:
                 with profile(self, "extract"):
-                    if self.gui:
-                        self.gui.update_stage_progress("Extracting Results", 0, 1)
-                    self.project_manager.reload_project()
+                    with self.subtask("extract_results_total"):
+                        if self.gui:
+                            self.gui.update_stage_progress("Extracting Results", 0, 1)
+                        self.project_manager.reload_project()
 
-                    import s4l_v1.document
+                        import s4l_v1.document
 
-                    sim_name = simulation.Name
-                    reloaded_simulation = next(
-                        (s for s in s4l_v1.document.AllSimulations if s.Name == sim_name),
-                        None,
-                    )
+                        sim_name = simulation.Name
+                        reloaded_simulation = next(
+                            (s for s in s4l_v1.document.AllSimulations if s.Name == sim_name),
+                            None,
+                        )
 
-                    if not reloaded_simulation:
-                        raise RuntimeError(f"Could not find simulation '{sim_name}' after reloading project.")
+                        if not reloaded_simulation:
+                            raise RuntimeError(f"Could not find simulation '{sim_name}' after reloading project.")
 
-                    extractor = ResultsExtractor(
-                        config=self.config,
-                        simulation=reloaded_simulation,  # type: ignore
-                        phantom_name=phantom_name,
-                        frequency_mhz=freq,
-                        scenario_name=scenario_name,
-                        position_name=position_name,
-                        orientation_name=orientation_name,
-                        study_type="near_field",
-                        verbose_logger=self.verbose_logger,
-                        progress_logger=self.progress_logger,
-                        gui=self.gui,  # type: ignore
-                        study=self,
-                    )
-                    extractor.extract()
+                        extractor = ResultsExtractor(
+                            config=self.config,
+                            simulation=reloaded_simulation,  # type: ignore
+                            phantom_name=phantom_name,
+                            frequency_mhz=freq,
+                            scenario_name=scenario_name,
+                            position_name=position_name,
+                            orientation_name=orientation_name,
+                            study_type="near_field",
+                            verbose_logger=self.verbose_logger,
+                            progress_logger=self.progress_logger,
+                            gui=self.gui,  # type: ignore
+                            study=self,
+                        )
+                        extractor.extract()
+                    
                     self._verify_and_update_metadata("extract")
                     self.project_manager.save()  # TODO: can be skipped?
                     if self.gui:

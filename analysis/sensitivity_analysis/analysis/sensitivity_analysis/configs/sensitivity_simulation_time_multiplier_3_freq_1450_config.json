@@ -1,7 +1,6 @@
 {
   "extends": "base_config.json",
   "study_type": "near_field",
-  "study_name": "sensitivity_simulation_time_multiplier_3_freq_1450",
   "execution_control": {
     "do_setup": true,
     "do_run": true,

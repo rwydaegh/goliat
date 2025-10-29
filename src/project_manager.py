@@ -202,7 +202,13 @@ class ProjectManager(LoggingMixin):
                 self._log("Extraction was done, but run not. Rerunning both.", log_type="warning")
                 status["extract_done"] = False
 
-            self._log(f"Verified existing project. Status from deliverables: {status}", log_type="success")
+            status_parts = []
+            for key, value in status.items():
+                name = key.replace('_done', '').replace('_', ' ').title()
+                status_text = "done" if value else "NOT done"
+                status_parts.append(f"{name} {status_text}")
+            status_msg = ", ".join(status_parts)
+            self._log(f"Verified existing project. Status: {status_msg}", log_type="success")
             if status["run_done"] and status["extract_done"]:
                 self._log("Project already done, skipping.", level="progress", log_type="success")
             return status

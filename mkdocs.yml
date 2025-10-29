@@ -100,7 +100,7 @@ plugins:
     htmlmin_opts:
       remove_comments: true
 - git-revision-date-localized:
-    enable_creation_date: true
+    enable_creation_date: false
     type: timeago
 - kroki:
     HttpMethod: POST

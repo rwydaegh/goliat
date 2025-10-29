@@ -1,4 +1,6 @@
+import contextlib
 import importlib
+import io
 import logging
 import os
 import traceback
@@ -10,7 +12,8 @@ from src.config import Config
 from src.logging_manager import LoggingMixin
 from src.profiler import Profiler
 from src.project_manager import ProjectManager
-from src.utils import StudyCancelledError, ensure_s4l_running, profile_subtask
+from src.simulation_runner import SimulationRunner
+from src.utils import StudyCancelledError, ensure_s4l_running
 
 if TYPE_CHECKING:
     from ..gui_manager import QueueGUI
@@ -65,9 +68,37 @@ class BaseStudy(LoggingMixin):
         if self.gui and self.gui.is_stopped():
             raise StudyCancelledError("Study cancelled by user.")
 
+    @contextlib.contextmanager
     def subtask(self, task_name: str, instance_to_profile=None):
-        """Returns a context manager that profiles a subtask."""
-        return profile_subtask(self, task_name, instance_to_profile)
+        """Returns a context manager that profiles a subtask, handling GUI and line profiling."""
+        self.start_stage_animation(task_name, 1)
+
+        lp = None
+        wrapper = None
+        line_profiling_config = self.config.get_line_profiling_config()
+        if instance_to_profile and line_profiling_config.get("enabled", False) and task_name in line_profiling_config.get("subtasks", {}):
+            self._log(f"  - Activating line profiler for subtask: {task_name}", "verbose", "verbose")
+            lp, wrapper = self._setup_line_profiler(task_name, instance_to_profile)
+
+        try:
+            with self.profiler.subtask(task_name):
+                if lp and wrapper:
+                    yield wrapper
+                else:
+                    yield lambda func: func
+        finally:
+            self._log(
+                f"    - Subtask '{task_name}' done in {self.profiler.subtask_times[task_name][-1]:.2f}s",
+                level="progress",
+                log_type="progress",
+            )
+            if lp:
+                self._log(f"    - Line profiler stats for '{task_name}':", "verbose", "verbose")
+                s = io.StringIO()
+                lp.print_stats(stream=s)
+                self.verbose_logger.info(s.getvalue())
+
+            self.end_stage_animation()
 
     def start_stage_animation(self, task_name: str, end_value: int):
         """Starts the GUI animation for a stage."""
@@ -107,6 +138,30 @@ class BaseStudy(LoggingMixin):
     def _run_study(self):
         """Executes the specific study. Must be implemented by subclasses."""
         raise NotImplementedError("The '_run_study' method must be implemented by a subclass.")
+
+    def _execute_run_phase(self, simulation):
+        """Executes the run phase with consistent GUI management and profiling.
+
+        Args:
+            simulation: The simulation object to run.
+        """
+        with self.subtask("run_simulation_total"):
+            runner = SimulationRunner(
+                self.config,
+                self.project_manager.project_path,  # type: ignore
+                simulation,
+                self.profiler,
+                self.verbose_logger,
+                self.progress_logger,
+            )
+            runner.run()
+
+        self.profiler.complete_run_phase()
+        self._verify_and_update_metadata("run")
+        if self.gui:
+            progress = self.profiler.get_weighted_progress("run", 1.0)
+            self.gui.update_overall_progress(int(progress), 100)
+            self.gui.update_stage_progress("Running Simulation", 1, 1)
 
     def _verify_and_update_metadata(self, stage: str):
         """Verifies deliverables for a stage and updates metadata if they exist."""

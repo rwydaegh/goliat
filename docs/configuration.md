@@ -57,7 +57,7 @@ This object controls which phases of the workflow are executed. This is useful f
 | `do_setup` | boolean | `true` | If `true`, the simulation scene will be built (phantoms loaded, materials assigned, etc.). |
 | `do_run` | boolean | `true` | If `true`, the simulation solver will be executed. |
 | `do_extract` | boolean | `true` | If `true`, the results will be extracted from the simulation output and processed. |
-| `only_write_input_file` | boolean | `false` | If `true`, the `run` phase will only generate the solver input file (`.h5`) and then stop, without actually running the simulation. This is useful for debugging the setup or for preparing files for a manual cloud submission. |
+| `only_write_input_file` | boolean | `false` | If `true`, the `run` phase will only generate the solver input file (`.h5`) and then stop, without actually running the simulation. This is useful for debugging the setup or for preparing files for a manual cloud submission. **Note**: This flag modifies the behavior of the run phase, so `do_run` must be `true` for this to have any effect. |
 | `batch_run` | boolean | `false` | If `true`, enables the oSPARC batch submission workflow. This is an advanced feature for running many simulations in parallel on the cloud. |
 | `auto_cleanup_previous_results` | array | `[]` | A list of file types to automatically delete **after** a simulation's results have been successfully extracted. This helps to preserve disk space in serial workflows. Valid values are: `"output"` (`*_Output.h5`), `"input"` (`*_Input.h5`), and `"smash"` (`*.smash`). **Warning**: This feature is incompatible with parallel or batch runs and should only be used when `do_setup`, `do_run`, and `do_extract` are all `true`. |
 
@@ -70,7 +70,20 @@ The `do_setup` flag directly controls the project file (`.smash`) handling. Its 
 | `false` | Yes | **Open and Use** the existing project. |
 | `false` | No | **Error** and terminate the program. |
 
-**Example: Extraction-Only Workflow**
+**Example: Write input file without running solver**
+```json
+"execution_control": {
+  "do_setup": true,
+  "do_run": true,
+  "do_extract": false,
+  "only_write_input_file": true
+}
+```
+
+!!! warning "Common mistake"
+    Setting `only_write_input_file: true` with `do_run: false` will skip the run phase entirely. The flag only affects the *behavior* of the run phase, not whether it executes. You must set `do_run: true` for the input file to be written.
+
+**Example: Extraction-only workflow**
 ```json
 "execution_control": {
   "do_setup": false,
