@@ -72,7 +72,7 @@ class NearFieldSetup(BaseSetup):
                 phantom_setup.ensure_phantom_is_loaded()
             elapsed = self.profiler.subtask_times['setup_load_phantom'][-1]
             self._log(f"      - Subtask 'setup_load_phantom' done in {elapsed:.2f}s", log_type="verbose")
-            self._log(f"      - Done in {elapsed:.2f}s!", level="progress", log_type="success")
+            self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
         # Subtask 2: Configure scene
         self._log("    - Configure scene (bboxes, placement, simulation, sensors)...", level="progress", log_type="progress")
@@ -106,7 +106,7 @@ class NearFieldSetup(BaseSetup):
         
         elapsed = self.profiler.subtask_times['setup_configure_scene'][-1]
         self._log(f"      - Subtask 'setup_configure_scene' done in {elapsed:.2f}s", log_type="verbose")
-        self._log(f"      - Done in {elapsed:.2f}s!", level="progress", log_type="success")
+        self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
         # Subtask 3: Assign materials
         self._log("    - Assign materials...", level="progress", log_type="progress")
@@ -124,7 +124,7 @@ class NearFieldSetup(BaseSetup):
         
         elapsed = self.profiler.subtask_times['setup_materials'][-1]
         self._log(f"      - Subtask 'setup_materials' done in {elapsed:.2f}s", log_type="verbose")
-        self._log(f"      - Done in {elapsed:.2f}s!", level="progress", log_type="success")
+        self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
         # Subtask 4: Configure solver
         self._log("    - Configure solver (gridding, boundaries, sources)...", level="progress", log_type="progress")
@@ -156,7 +156,7 @@ class NearFieldSetup(BaseSetup):
         
         elapsed = self.profiler.subtask_times['setup_solver'][-1]
         self._log(f"      - Subtask 'setup_solver' done in {elapsed:.2f}s", log_type="verbose")
-        self._log(f"      - Done in {elapsed:.2f}s!", level="progress", log_type="success")
+        self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
         # Subtask 5: Voxelize
         self._log("    - Voxelize simulation...", level="progress", log_type="progress")
@@ -183,7 +183,7 @@ class NearFieldSetup(BaseSetup):
         
         elapsed = self.profiler.subtask_times['setup_voxelize'][-1]
         self._log(f"      - Subtask 'setup_voxelize' done in {elapsed:.2f}s", log_type="verbose")
-        self._log(f"      - Done in {elapsed:.2f}s!", level="progress", log_type="success")
+        self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
         self._log("Full simulation setup complete.", log_type="success")
         return simulation

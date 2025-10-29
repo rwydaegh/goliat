@@ -55,7 +55,7 @@ class PowerExtractor(LoggingMixin):
             
             elapsed = self.parent.study.profiler.subtask_times['extract_input_power'][-1]
             self._log(f"      - Subtask 'extract_input_power' done in {elapsed:.2f}s", log_type="verbose")
-            self._log(f"      - Done in {elapsed:.2f}s!", level="progress", log_type="success")
+            self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
         except Exception as e:
             self._log(
                 f"  - ERROR: An exception occurred during input power extraction: {e}",
@@ -224,7 +224,7 @@ class PowerExtractor(LoggingMixin):
             
             elapsed = self.parent.study.profiler.subtask_times['extract_power_balance'][-1]
             self._log(f"      - Subtask 'extract_power_balance' done in {elapsed:.2f}s", log_type="verbose")
-            self._log(f"      - Done in {elapsed:.2f}s!", level="progress", log_type="success")
+            self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
         except Exception as e:
             self._log(f"  - WARNING: Could not extract power balance: {e}", log_type="warning")

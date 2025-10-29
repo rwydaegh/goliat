@@ -79,7 +79,7 @@ class SimulationRunner(LoggingMixin):
                     self.document.SaveAs(self.project_path)  # Force a save to flush files
                 elapsed = self.profiler.subtask_times['run_write_input_file'][-1]
                 self._log(f"      - Subtask 'run_write_input_file' done in {elapsed:.2f}s", log_type="verbose")
-                self._log(f"      - Done in {elapsed:.2f}s!", level="progress", log_type="success")
+                self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
             # Stop here if we only want to write the input file
             if self.config.get_only_write_input_file():
@@ -237,7 +237,7 @@ class SimulationRunner(LoggingMixin):
             
             elapsed = self.profiler.subtask_times['run_isolve_execution'][-1]
             self._log(f"      - Subtask 'run_isolve_execution' done in {elapsed:.2f}s", log_type="verbose")
-            self._log(f"      - Done in {elapsed:.2f}s!", level="progress", log_type="success")
+            self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
             # --- 4. Post-simulation steps ---
             self._log(
@@ -249,7 +249,7 @@ class SimulationRunner(LoggingMixin):
                 non_blocking_sleep(5)
             elapsed = self.profiler.subtask_times['run_wait_for_results'][-1]
             self._log(f"      - Subtask 'run_wait_for_results' done in {elapsed:.2f}s", log_type="verbose")
-            self._log(f"      - Done in {elapsed:.2f}s!", level="progress", log_type="success")
+            self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
             self._log(
                 "    - Reload project...",
@@ -261,7 +261,7 @@ class SimulationRunner(LoggingMixin):
                 open_project(self.project_path)
             elapsed = self.profiler.subtask_times['run_reload_project'][-1]
             self._log(f"      - Subtask 'run_reload_project' done in {elapsed:.2f}s", log_type="verbose")
-            self._log(f"      - Done in {elapsed:.2f}s!", level="progress", log_type="success")
+            self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
             sim_name = simulation.Name
             simulation = next((s for s in self.document.AllSimulations if s.Name == sim_name), None)  # type: ignore
@@ -392,7 +392,7 @@ class SimulationRunner(LoggingMixin):
             non_blocking_sleep(5)
         elapsed = self.profiler.subtask_times['run_wait_for_results'][-1]
         self._log(f"      - Subtask 'run_wait_for_results' done in {elapsed:.2f}s", log_type="verbose")
-        self._log(f"      - Done in {elapsed:.2f}s!", level="progress", log_type="success")
+        self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
         self._log(
             "    - Reload project...",
@@ -404,7 +404,7 @@ class SimulationRunner(LoggingMixin):
             open_project(self.project_path)
         elapsed = self.profiler.subtask_times['run_reload_project'][-1]
         self._log(f"      - Subtask 'run_reload_project' done in {elapsed:.2f}s", log_type="verbose")
-        self._log(f"      - Done in {elapsed:.2f}s!", level="progress", log_type="success")
+        self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
         sim_name = simulation.Name
         simulation = next((s for s in self.document.AllSimulations if s.Name == sim_name), None)  # type: ignore
