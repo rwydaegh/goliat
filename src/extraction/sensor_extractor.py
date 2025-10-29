@@ -38,9 +38,9 @@ class SensorExtractor:
             simulation_extractor: The results extractor from the simulation object.
         """
         self.parent._log("    - Extract point sensors...", level="progress", log_type="progress")
-
-        with self.parent.study.subtask("extract_point_sensor_data"):  # type: ignore
-            try:
+        
+        try:
+            with self.parent.study.profiler.subtask("extract_point_sensor_data"):  # type: ignore
                 num_sensors = self.parent.config.get_setting("simulation_parameters.number_of_point_sensors", 0)
                 if num_sensors == 0:
                     return
@@ -118,14 +118,20 @@ class SensorExtractor:
                     self.results_data["point_sensor_data"] = point_sensor_results
 
                 self._save_plot(fig, ax)
+            
+            self.parent._log(
+                f"      - Subtask 'extract_point_sensor_data' done in {self.parent.study.profiler.subtask_times['extract_point_sensor_data'][-1]:.2f}s",
+                level="progress",
+                log_type="success",
+            )
 
-            except Exception as e:
-                self.parent._log(
-                    f"  - ERROR: An exception occurred during point sensor data extraction: {e}",
-                    level="progress",
-                    log_type="error",
-                )
-                self.verbose_logger.error(traceback.format_exc())
+        except Exception as e:
+            self.parent._log(
+                f"  - ERROR: An exception occurred during point sensor data extraction: {e}",
+                level="progress",
+                log_type="error",
+            )
+            self.verbose_logger.error(traceback.format_exc())
 
     def _save_plot(self, fig, ax):
         """Saves the point sensor plot to disk."""

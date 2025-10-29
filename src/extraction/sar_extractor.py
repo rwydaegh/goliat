@@ -50,8 +50,8 @@ class SarExtractor(LoggingMixin):
             simulation_extractor: The results extractor from the simulation object.
         """
         self._log("    - Extract SAR statistics...", level="progress", log_type="progress")
-        with self.parent.study.subtask("extract_sar_statistics"):  # type: ignore
-            try:
+        try:
+            with self.parent.study.profiler.subtask("extract_sar_statistics"):  # type: ignore
                 em_sensor_extractor = simulation_extractor["Overall Field"]
                 em_sensor_extractor.FrequencySettings.ExtractedFrequency = "All"
                 self.document.AllAlgorithms.Add(em_sensor_extractor)
@@ -113,14 +113,20 @@ class SarExtractor(LoggingMixin):
                         "_temp_group_sar_stats": group_sar_stats,
                     }
                 )
+            
+            self._log(
+                f"      - Subtask 'extract_sar_statistics' done in {self.parent.study.profiler.subtask_times['extract_sar_statistics'][-1]:.2f}s",
+                level="progress",
+                log_type="success",
+            )
 
-            except Exception as e:
-                self._log(
-                    f"  - ERROR: An unexpected error during all-tissue SAR statistics extraction: {e}",
-                    level="progress",
-                    log_type="error",
-                )
-                self.verbose_logger.error(traceback.format_exc())
+        except Exception as e:
+            self._log(
+                f"  - ERROR: An unexpected error during all-tissue SAR statistics extraction: {e}",
+                level="progress",
+                log_type="error",
+            )
+            self.verbose_logger.error(traceback.format_exc())
 
     def _define_tissue_groups(self, available_tissues: list) -> dict:
         """Defines tissue groups from material mapping or keyword matching.
