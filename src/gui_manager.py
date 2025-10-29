@@ -368,7 +368,13 @@ class ProgressGUI(QWidget):
                 time_remaining_str = format_time(eta_sec)
                 self.eta_label.setText(f"Time Remaining: {time_remaining_str}")
                 if self.DEBUG and int(elapsed_sec) % 5 == 0:
-                    self.update_status(f"DEBUG: Time Remaining: {time_remaining_str}")
+                    overall_progress = self.overall_progress_bar.value() / 10.0
+                    stage_progress = self.stage_progress_bar.value() / 10.0
+                    self.update_status(
+                        f"DEBUG: Time Remaining: {time_remaining_str} | "
+                        f"Overall: {overall_progress:.1f}% | "
+                        f"Stage: {stage_progress:.1f}%"
+                    )
             else:
                 self.eta_label.setText("Time Remaining: N/A")
         else:
