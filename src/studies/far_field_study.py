@@ -136,41 +136,42 @@ class FarFieldStudy(BaseStudy):
                     needs_setup = not verification_status["setup_done"]
 
                     if needs_setup:
-                        with self.subtask("setup_simulation", instance_to_profile=self):
-                            self.project_manager.create_new()
+                        self.project_manager.create_new()
 
-                            setup = FarFieldSetup(
-                                self.config,
-                                phantom_name,
-                                freq,
-                                direction_name,
-                                polarization_name,
-                                self.project_manager,
-                                self.verbose_logger,
-                                self.progress_logger,
+                        setup = FarFieldSetup(
+                            self.config,
+                            phantom_name,
+                            freq,
+                            direction_name,
+                            polarization_name,
+                            self.project_manager,
+                            self.verbose_logger,
+                            self.progress_logger,
+                        )
+                        
+                        with self.subtask("setup_simulation", instance_to_profile=setup) as wrapper:
+                            simulation = wrapper(setup.run_full_setup)(self.project_manager)
+
+                        if not simulation:
+                            self._log(
+                                f"ERROR: Setup failed for {direction_name}_{polarization_name}. Cannot proceed.",
+                                level="progress",
+                                log_type="error",
                             )
-                            simulation = setup.run_full_setup(self.project_manager)
+                            return
 
-                            if not simulation:
-                                self._log(
-                                    f"ERROR: Setup failed for {direction_name}_{polarization_name}. Cannot proceed.",
-                                    level="progress",
-                                    log_type="error",
-                                )
-                                return
-
-                            self.project_manager.save()
-                            surgical_config = self.config.build_simulation_config(
-                                phantom_name=phantom_name,
-                                frequency_mhz=freq,
-                                direction_name=direction_name,
-                                polarization_name=polarization_name,
+                        self.project_manager.save()
+                        surgical_config = self.config.build_simulation_config(
+                            phantom_name=phantom_name,
+                            frequency_mhz=freq,
+                            direction_name=direction_name,
+                            polarization_name=polarization_name,
+                        )
+                        if self.project_manager.project_path:
+                            self.project_manager.write_simulation_metadata(
+                                os.path.join(os.path.dirname(self.project_manager.project_path), "config.json"),
+                                surgical_config,
                             )
-                            if self.project_manager.project_path:
-                                self.project_manager.write_simulation_metadata(
-                                    os.path.join(os.path.dirname(self.project_manager.project_path), "config.json"),
-                                    surgical_config,
-                                )
 
                     # Update do_run and do_extract based on verification
                     if verification_status["run_done"]:

@@ -65,14 +65,19 @@ class SimulationRunner(LoggingMixin):
 
         try:
             if hasattr(self.simulation, "WriteInputFile"):
+                self._log(
+                    "    - Write input file...",
+                    level="progress",
+                    log_type="progress",
+                )
                 with self.profiler.subtask("run_write_input_file"):
-                    self._log(
-                        "Writing solver input file...",
-                        level="progress",
-                        log_type="progress",
-                    )
                     self.simulation.WriteInputFile()
                     self.document.SaveAs(self.project_path)  # Force a save to flush files
+                self._log(
+                    f"      - Subtask 'run_write_input_file' done in {self.profiler.subtask_times['run_write_input_file'][-1]:.2f}s",
+                    level="progress",
+                    log_type="success",
+                )
 
             # Stop here if we only want to write the input file
             if self.config.get_only_write_input_file():
@@ -189,6 +194,11 @@ class SimulationRunner(LoggingMixin):
                 pipe.close()
 
         try:
+            self._log(
+                "    - Execute iSolve...",
+                level="progress",
+                log_type="progress",
+            )
             with self.profiler.subtask("run_isolve_execution"):
                 process = subprocess.Popen(
                     command,
@@ -226,24 +236,40 @@ class SimulationRunner(LoggingMixin):
                     error_message = f"iSolve.exe failed with return code {return_code}."
                     self._log(error_message, level="progress", log_type="error")
                     raise RuntimeError(error_message)
+            
+            self._log(
+                f"      - Subtask 'run_isolve_execution' done in {self.profiler.subtask_times['run_isolve_execution'][-1]:.2f}s",
+                level="progress",
+                log_type="success",
+            )
 
             # --- 4. Post-simulation steps ---
+            self._log(
+                "    - Wait for results...",
+                level="progress",
+                log_type="progress",
+            )
             with self.profiler.subtask("run_wait_for_results"):
-                self._log(
-                    "Waiting for 5 seconds to ensure results are written to disk...",
-                    level="progress",
-                    log_type="info",
-                )
                 non_blocking_sleep(5)
+            self._log(
+                f"      - Subtask 'run_wait_for_results' done in {self.profiler.subtask_times['run_wait_for_results'][-1]:.2f}s",
+                level="progress",
+                log_type="success",
+            )
 
+            self._log(
+                "    - Reload project...",
+                level="progress",
+                log_type="progress",
+            )
             with self.profiler.subtask("run_reload_project"):
-                self._log(
-                    "Re-opening project to load results...",
-                    level="progress",
-                    log_type="progress",
-                )
                 self.document.Close()
                 open_project(self.project_path)
+            self._log(
+                f"      - Subtask 'run_reload_project' done in {self.profiler.subtask_times['run_reload_project'][-1]:.2f}s",
+                level="progress",
+                log_type="success",
+            )
 
             sim_name = simulation.Name
             simulation = next((s for s in self.document.AllSimulations if s.Name == sim_name), None)  # type: ignore
@@ -366,22 +392,32 @@ class SimulationRunner(LoggingMixin):
             time.sleep(30)
 
         # 5. Post-simulation steps (similar to _run_isolve_manual)
+        self._log(
+            "    - Wait for results...",
+            level="progress",
+            log_type="progress",
+        )
         with self.profiler.subtask("run_wait_for_results"):
-            self._log(
-                "Waiting for 5 seconds to ensure results are written to disk...",
-                level="progress",
-                log_type="info",
-            )
             non_blocking_sleep(5)
+        self._log(
+            f"      - Subtask 'run_wait_for_results' done in {self.profiler.subtask_times['run_wait_for_results'][-1]:.2f}s",
+            level="progress",
+            log_type="success",
+        )
 
+        self._log(
+            "    - Reload project...",
+            level="progress",
+            log_type="progress",
+        )
         with self.profiler.subtask("run_reload_project"):
-            self._log(
-                "Re-opening project to load results...",
-                level="progress",
-                log_type="progress",
-            )
             self.document.Close()
             open_project(self.project_path)
+        self._log(
+            f"      - Subtask 'run_reload_project' done in {self.profiler.subtask_times['run_reload_project'][-1]:.2f}s",
+            level="progress",
+            log_type="success",
+        )
 
         sim_name = simulation.Name
         simulation = next((s for s in self.document.AllSimulations if s.Name == sim_name), None)  # type: ignore
