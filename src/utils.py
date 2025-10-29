@@ -146,13 +146,10 @@ def non_blocking_sleep(seconds: int):
 
 @contextlib.contextmanager
 def profile(study: "BaseStudy", phase_name: str):
-    """A context manager to profile a block of code (a 'phase')."""
-    # The 'run' phase is further divided into stages (simulations), so we don't start a master stage for it.
-    if phase_name != "run":
-        study.profiler.start_stage(phase_name)
-        # Send the updated profiler to the GUI immediately so it knows the phase has started.
-        if study.gui:
-            study.gui.update_profiler()
+    """A context manager to profile a high-level study phase."""
+    study.profiler.start_stage(phase_name)
+    if study.gui:
+        study.gui.update_profiler()
 
     study._log(f"--- Starting: {phase_name} ---", log_type="header")
     start_time = time.monotonic()
@@ -162,13 +159,7 @@ def profile(study: "BaseStudy", phase_name: str):
         elapsed = time.monotonic() - start_time
         study._log(f"--- Finished: {phase_name} (took {elapsed:.2f}s) ---", log_type="header")
 
-        # For 'setup' and 'extract', ending the stage means ending the phase.
-        # For 'run', the phase is completed manually after the simulation loop.
-        if phase_name != "run":
-            study.profiler.end_stage()
-        else:
-            # This ensures the 'run' phase duration is recorded correctly
-            study.profiler.complete_run_phase()
+        study.profiler.end_stage()
 
         if study.gui:
             study.gui.update_profiler()
