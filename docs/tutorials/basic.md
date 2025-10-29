@@ -91,6 +91,3 @@ print(df.describe())
 - Batch processing: [Advanced Tutorial](advanced.md).
 
 This tutorial verifies the basic workflow. For more, see [User Guide](../user_guide.md).
-
----
-*Last updated: {date}*

@@ -196,7 +196,7 @@ def main():
         "config",
         type=str,
         nargs="?",
-        default="todays_near_field_config_copy",
+        default="near_field_config",
         help="Path or name of the configuration file (e.g., todays_far_field or configs/near_field_config.json).",
     )
     parser.add_argument(
@@ -219,11 +219,12 @@ def main():
     lock_files = [f for f in os.listdir(base_dir) if f.endswith(".lock")]
     for lock_file in lock_files:
         lock_file_path = os.path.join(base_dir, lock_file)
-        try:
-            os.remove(lock_file_path)
-            print(f"Removed stale lock file: {lock_file_path}")
-        except OSError as e:
-            print(f"Error removing stale lock file {lock_file_path}: {e}")
+        if lock_file != "uv.lock":
+            try:
+                os.remove(lock_file_path)
+                print(f"Removed stale lock file: {lock_file_path}")
+            except OSError as e:
+                print(f"Error removing stale lock file {lock_file_path}: {e}")
 
     # The main process only needs a minimal logger setup for the GUI.
     progress_logger, verbose_logger, _ = setup_loggers(process_id=process_id)

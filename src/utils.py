@@ -1,5 +1,4 @@
 import contextlib
-import io
 import json
 import logging
 import os
@@ -146,13 +145,10 @@ def non_blocking_sleep(seconds: int):
 
 @contextlib.contextmanager
 def profile(study: "BaseStudy", phase_name: str):
-    """A context manager to profile a block of code (a 'phase')."""
-    # The 'run' phase is further divided into stages (simulations), so we don't start a master stage for it.
-    if phase_name != "run":
-        study.profiler.start_stage(phase_name)
-        # Send the updated profiler to the GUI immediately so it knows the phase has started.
-        if study.gui:
-            study.gui.update_profiler()
+    """A context manager to profile a high-level study phase."""
+    study.profiler.start_stage(phase_name)
+    if study.gui:
+        study.gui.update_profiler()
 
     study._log(f"--- Starting: {phase_name} ---", log_type="header")
     start_time = time.monotonic()
@@ -162,75 +158,10 @@ def profile(study: "BaseStudy", phase_name: str):
         elapsed = time.monotonic() - start_time
         study._log(f"--- Finished: {phase_name} (took {elapsed:.2f}s) ---", log_type="header")
 
-        # For 'setup' and 'extract', ending the stage means ending the phase.
-        # For 'run', the phase is completed manually after the simulation loop.
-        if phase_name != "run":
-            study.profiler.end_stage()
-        else:
-            # This ensures the 'run' phase duration is recorded correctly
-            study.profiler.complete_run_phase()
+        study.profiler.end_stage()
 
         if study.gui:
             study.gui.update_profiler()
-
-
-@contextlib.contextmanager
-def profile_subtask(study: "BaseStudy", task_name: str, instance_to_profile=None):
-    """A context manager for a 'subtask'.
-
-    Handles:
-    - High-level timing via study.profiler.
-    - GUI stage animation.
-    - Optional, detailed line-by-line profiling if configured.
-    """
-    study.start_stage_animation(task_name, 1)
-    study.profiler.subtask_stack.append({"name": task_name, "start_time": time.monotonic()})
-
-    lp = None
-    wrapper = None
-
-    # Check if line profiling is enabled for this specific subtask
-    line_profiling_config = study.config.get_line_profiling_config()
-    if instance_to_profile and line_profiling_config.get("enabled", False) and task_name in line_profiling_config.get("subtasks", {}):
-        study._log(
-            f"  - Activating line profiler for subtask: {task_name}",
-            level="verbose",
-            log_type="verbose",
-        )
-        lp, wrapper = study._setup_line_profiler(task_name, instance_to_profile)
-
-    try:
-        # If line profiler is active, yield its wrapper. Otherwise, yield a dummy function.
-        if lp and wrapper:
-            yield wrapper
-        else:
-            yield lambda func: func
-
-    finally:
-        subtask = study.profiler.subtask_stack.pop()
-        elapsed = time.monotonic() - subtask["start_time"]
-        study.profiler.subtask_times[subtask["name"]].append(elapsed)
-        study._log(
-            f"    - Subtask '{task_name}' done in {elapsed:.2f}s",
-            level="progress",
-            log_type="progress",
-        )
-
-        # Update and save estimates after each subtask
-        study.profiler.update_and_save_estimates()
-
-        # If the line profiler was active, print its stats
-        if lp:
-            study._log(
-                f"    - Line profiler stats for '{task_name}':",
-                level="verbose",
-                log_type="verbose",
-            )
-            s = io.StringIO()
-            lp.print_stats(stream=s)
-            study.verbose_logger.info(s.getvalue())
-
-        study.end_stage_animation()
 
 
 def ensure_s4l_running():
