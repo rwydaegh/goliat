@@ -116,7 +116,7 @@ class ResultsExtractor(LoggingMixin):
             sar_extractor.extract_sar_statistics(simulation_extractor)
             power_extractor.extract_power_balance(simulation_extractor)
 
-        if self.config.get_setting("simulation_parameters.number_of_point_sensors", 0) > 0:
+        if self.config.get_setting("simulation_parameters.number_of_point_sensors", 0) > 0:  # type: ignore
             sensor_extractor = SensorExtractor(self, results_data)
             sensor_extractor.extract_point_sensor_data(simulation_extractor)
 

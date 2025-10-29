@@ -4,8 +4,6 @@ from typing import TYPE_CHECKING, Optional
 
 from ..results_extractor import ResultsExtractor
 from ..setups.far_field_setup import FarFieldSetup
-from ..setups.phantom_setup import PhantomSetup
-from ..simulation_runner import SimulationRunner
 from ..utils import profile
 from .base_study import BaseStudy
 
@@ -150,7 +148,7 @@ class FarFieldStudy(BaseStudy):
                             self.profiler,
                             self.gui,
                         )
-                        
+
                         with self.subtask("setup_simulation", instance_to_profile=setup) as wrapper:
                             simulation = wrapper(setup.run_full_setup)(self.project_manager)
 
@@ -177,7 +175,7 @@ class FarFieldStudy(BaseStudy):
                                     os.path.join(os.path.dirname(self.project_manager.project_path), "config.json"),
                                     surgical_config,
                                 )
-                        elapsed = self.profiler.subtask_times['setup_save_project'][-1]
+                        elapsed = self.profiler.subtask_times["setup_save_project"][-1]
                         self._log(f"      - Subtask 'setup_save_project' done in {elapsed:.2f}s", log_type="verbose")
                         self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 

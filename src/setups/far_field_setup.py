@@ -60,7 +60,7 @@ class FarFieldSetup(BaseSetup):
                 self.progress_logger,
             )
             phantom_setup.ensure_phantom_is_loaded()
-        elapsed = self.profiler.subtask_times['setup_load_phantom'][-1]
+        elapsed = self.profiler.subtask_times["setup_load_phantom"][-1]
         self._log(f"      - Subtask 'setup_load_phantom' done in {elapsed:.2f}s", log_type="verbose")
         self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
@@ -69,7 +69,7 @@ class FarFieldSetup(BaseSetup):
         with self.profiler.subtask("setup_configure_scene"):
             bbox_entity = self._create_or_get_simulation_bbox()
             simulation = self._create_simulation_entity(bbox_entity)
-        elapsed = self.profiler.subtask_times['setup_configure_scene'][-1]
+        elapsed = self.profiler.subtask_times["setup_configure_scene"][-1]
         self._log(f"      - Subtask 'setup_configure_scene' done in {elapsed:.2f}s", log_type="verbose")
         self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
@@ -86,7 +86,7 @@ class FarFieldSetup(BaseSetup):
                 free_space=False,
             )
             material_setup.assign_materials(phantom_only=True)
-        elapsed = self.profiler.subtask_times['setup_materials'][-1]
+        elapsed = self.profiler.subtask_times["setup_materials"][-1]
         self._log(f"      - Subtask 'setup_materials' done in {elapsed:.2f}s", log_type="verbose")
         self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
@@ -109,7 +109,7 @@ class FarFieldSetup(BaseSetup):
 
             self._add_point_sensors(simulation, "far_field_simulation_bbox")
             self._setup_solver_settings(simulation)
-        elapsed = self.profiler.subtask_times['setup_solver'][-1]
+        elapsed = self.profiler.subtask_times["setup_solver"][-1]
         self._log(f"      - Subtask 'setup_solver' done in {elapsed:.2f}s", log_type="verbose")
         self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
@@ -131,7 +131,7 @@ class FarFieldSetup(BaseSetup):
             all_simulation_parts = phantom_entities + [bbox_entity] + point_sensor_entities
 
             super()._finalize_setup(self.project_manager, simulation, all_simulation_parts, self.frequency_mhz)
-        elapsed = self.profiler.subtask_times['setup_voxelize'][-1]
+        elapsed = self.profiler.subtask_times["setup_voxelize"][-1]
         self._log(f"      - Subtask 'setup_voxelize' done in {elapsed:.2f}s", log_type="verbose")
         self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
@@ -203,4 +203,3 @@ class FarFieldSetup(BaseSetup):
             log_type="info",
         )
         return sim_bbox
-

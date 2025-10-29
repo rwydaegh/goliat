@@ -77,7 +77,7 @@ class SimulationRunner(LoggingMixin):
                 with self.profiler.subtask("run_write_input_file"):
                     self.simulation.WriteInputFile()
                     self.document.SaveAs(self.project_path)  # Force a save to flush files
-                elapsed = self.profiler.subtask_times['run_write_input_file'][-1]
+                elapsed = self.profiler.subtask_times["run_write_input_file"][-1]
                 self._log(f"      - Subtask 'run_write_input_file' done in {elapsed:.2f}s", log_type="verbose")
                 self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
@@ -234,8 +234,8 @@ class SimulationRunner(LoggingMixin):
                     error_message = f"iSolve.exe failed with return code {return_code}."
                     self._log(error_message, level="progress", log_type="error")
                     raise RuntimeError(error_message)
-            
-            elapsed = self.profiler.subtask_times['run_isolve_execution'][-1]
+
+            elapsed = self.profiler.subtask_times["run_isolve_execution"][-1]
             self._log(f"      - Subtask 'run_isolve_execution' done in {elapsed:.2f}s", log_type="verbose")
             self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
@@ -247,7 +247,7 @@ class SimulationRunner(LoggingMixin):
             )
             with self.profiler.subtask("run_wait_for_results"):
                 non_blocking_sleep(5)
-            elapsed = self.profiler.subtask_times['run_wait_for_results'][-1]
+            elapsed = self.profiler.subtask_times["run_wait_for_results"][-1]
             self._log(f"      - Subtask 'run_wait_for_results' done in {elapsed:.2f}s", log_type="verbose")
             self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
@@ -259,7 +259,7 @@ class SimulationRunner(LoggingMixin):
             with self.profiler.subtask("run_reload_project"):
                 self.document.Close()
                 open_project(self.project_path)
-            elapsed = self.profiler.subtask_times['run_reload_project'][-1]
+            elapsed = self.profiler.subtask_times["run_reload_project"][-1]
             self._log(f"      - Subtask 'run_reload_project' done in {elapsed:.2f}s", log_type="verbose")
             self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
@@ -390,7 +390,7 @@ class SimulationRunner(LoggingMixin):
         )
         with self.profiler.subtask("run_wait_for_results"):
             non_blocking_sleep(5)
-        elapsed = self.profiler.subtask_times['run_wait_for_results'][-1]
+        elapsed = self.profiler.subtask_times["run_wait_for_results"][-1]
         self._log(f"      - Subtask 'run_wait_for_results' done in {elapsed:.2f}s", log_type="verbose")
         self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
@@ -402,7 +402,7 @@ class SimulationRunner(LoggingMixin):
         with self.profiler.subtask("run_reload_project"):
             self.document.Close()
             open_project(self.project_path)
-        elapsed = self.profiler.subtask_times['run_reload_project'][-1]
+        elapsed = self.profiler.subtask_times["run_reload_project"][-1]
         self._log(f"      - Subtask 'run_reload_project' done in {elapsed:.2f}s", log_type="verbose")
         self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 

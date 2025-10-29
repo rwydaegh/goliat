@@ -204,7 +204,7 @@ class ProjectManager(LoggingMixin):
 
             status_parts = []
             for key, value in status.items():
-                name = key.replace('_done', '').replace('_', ' ').title()
+                name = key.replace("_done", "").replace("_", " ").title()
                 status_text = "done" if value else "NOT done"
                 status_parts.append(f"{name} {status_text}")
             status_msg = ", ".join(status_parts)

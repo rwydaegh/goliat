@@ -219,7 +219,7 @@ def main():
     lock_files = [f for f in os.listdir(base_dir) if f.endswith(".lock")]
     for lock_file in lock_files:
         lock_file_path = os.path.join(base_dir, lock_file)
-        if lock_file != 'uv.lock':
+        if lock_file != "uv.lock":
             try:
                 os.remove(lock_file_path)
                 print(f"Removed stale lock file: {lock_file_path}")
