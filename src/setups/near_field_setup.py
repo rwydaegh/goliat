@@ -70,14 +70,12 @@ class NearFieldSetup(BaseSetup):
                     self.progress_logger,
                 )
                 phantom_setup.ensure_phantom_is_loaded()
-            self._log(
-                f"      - Subtask 'setup_load_phantom' done in {self.profiler.subtask_times['setup_load_phantom'][-1]:.2f}s",
-                level="progress",
-                log_type="success",
-            )
+            elapsed = self.profiler.subtask_times['setup_load_phantom'][-1]
+            self._log(f"      - Subtask 'setup_load_phantom' done in {elapsed:.2f}s", log_type="verbose")
+            self._log(f"      - Done in {elapsed:.2f}s!", level="progress", log_type="success")
 
         # Subtask 2: Configure scene
-        self._log("    - Configure scene (bounding boxes, antenna placement, simulation entity, point sensors)...", level="progress", log_type="progress")
+        self._log("    - Configure scene (bboxes, placement, simulation, sensors)...", level="progress", log_type="progress")
         with self.profiler.subtask("setup_configure_scene"):
             if not self.free_space:
                 self._setup_bounding_boxes()
@@ -106,11 +104,9 @@ class NearFieldSetup(BaseSetup):
             self._handle_phantom_rotation(placement_setup)
             self._align_simulation_with_phone()
         
-        self._log(
-            f"      - Subtask 'setup_configure_scene' done in {self.profiler.subtask_times['setup_configure_scene'][-1]:.2f}s",
-            level="progress",
-            log_type="success",
-        )
+        elapsed = self.profiler.subtask_times['setup_configure_scene'][-1]
+        self._log(f"      - Subtask 'setup_configure_scene' done in {elapsed:.2f}s", log_type="verbose")
+        self._log(f"      - Done in {elapsed:.2f}s!", level="progress", log_type="success")
 
         # Subtask 3: Assign materials
         self._log("    - Assign materials...", level="progress", log_type="progress")
@@ -126,14 +122,12 @@ class NearFieldSetup(BaseSetup):
             )
             material_setup.assign_materials(antenna_components)
         
-        self._log(
-            f"      - Subtask 'setup_materials' done in {self.profiler.subtask_times['setup_materials'][-1]:.2f}s",
-            level="progress",
-            log_type="success",
-        )
+        elapsed = self.profiler.subtask_times['setup_materials'][-1]
+        self._log(f"      - Subtask 'setup_materials' done in {elapsed:.2f}s", log_type="verbose")
+        self._log(f"      - Done in {elapsed:.2f}s!", level="progress", log_type="success")
 
         # Subtask 4: Configure solver
-        self._log("    - Configure solver (gridding, boundaries, source/sensors)...", level="progress", log_type="progress")
+        self._log("    - Configure solver (gridding, boundaries, sources)...", level="progress", log_type="progress")
         with self.profiler.subtask("setup_solver"):
             gridding_setup = GriddingSetup(
                 self.config,
@@ -160,11 +154,9 @@ class NearFieldSetup(BaseSetup):
             )
             source_setup.setup_source_and_sensors(antenna_components)
         
-        self._log(
-            f"      - Subtask 'setup_solver' done in {self.profiler.subtask_times['setup_solver'][-1]:.2f}s",
-            level="progress",
-            log_type="success",
-        )
+        elapsed = self.profiler.subtask_times['setup_solver'][-1]
+        self._log(f"      - Subtask 'setup_solver' done in {elapsed:.2f}s", log_type="verbose")
+        self._log(f"      - Done in {elapsed:.2f}s!", level="progress", log_type="success")
 
         # Subtask 5: Voxelize
         self._log("    - Voxelize simulation...", level="progress", log_type="progress")
@@ -189,11 +181,9 @@ class NearFieldSetup(BaseSetup):
 
             super()._finalize_setup(project_manager, simulation, all_simulation_parts, self.frequency_mhz)
         
-        self._log(
-            f"      - Subtask 'setup_voxelize' done in {self.profiler.subtask_times['setup_voxelize'][-1]:.2f}s",
-            level="progress",
-            log_type="success",
-        )
+        elapsed = self.profiler.subtask_times['setup_voxelize'][-1]
+        self._log(f"      - Subtask 'setup_voxelize' done in {elapsed:.2f}s", log_type="verbose")
+        self._log(f"      - Done in {elapsed:.2f}s!", level="progress", log_type="success")
 
         self._log("Full simulation setup complete.", log_type="success")
         return simulation

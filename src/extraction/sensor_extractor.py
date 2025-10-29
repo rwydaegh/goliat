@@ -119,11 +119,9 @@ class SensorExtractor:
 
                 self._save_plot(fig, ax)
             
-            self.parent._log(
-                f"      - Subtask 'extract_point_sensor_data' done in {self.parent.study.profiler.subtask_times['extract_point_sensor_data'][-1]:.2f}s",
-                level="progress",
-                log_type="success",
-            )
+            elapsed = self.parent.study.profiler.subtask_times['extract_point_sensor_data'][-1]
+            self.parent._log(f"      - Subtask 'extract_point_sensor_data' done in {elapsed:.2f}s", log_type="verbose")
+            self.parent._log(f"      - Done in {elapsed:.2f}s!", level="progress", log_type="success")
 
         except Exception as e:
             self.parent._log(

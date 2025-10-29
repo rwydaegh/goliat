@@ -114,11 +114,9 @@ class SarExtractor(LoggingMixin):
                     }
                 )
             
-            self._log(
-                f"      - Subtask 'extract_sar_statistics' done in {self.parent.study.profiler.subtask_times['extract_sar_statistics'][-1]:.2f}s",
-                level="progress",
-                log_type="success",
-            )
+            elapsed = self.parent.study.profiler.subtask_times['extract_sar_statistics'][-1]
+            self._log(f"      - Subtask 'extract_sar_statistics' done in {elapsed:.2f}s", log_type="verbose")
+            self._log(f"      - Done in {elapsed:.2f}s!", level="progress", log_type="success")
 
         except Exception as e:
             self._log(

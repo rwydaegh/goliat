@@ -88,11 +88,9 @@ class BaseStudy(LoggingMixin):
                 else:
                     yield lambda func: func
         finally:
-            self._log(
-                f"    - Subtask '{task_name}' done in {self.profiler.subtask_times[task_name][-1]:.2f}s",
-                level="progress",
-                log_type="success",
-            )
+            elapsed = self.profiler.subtask_times[task_name][-1]
+            self._log(f"    - Subtask '{task_name}' done in {elapsed:.2f}s", log_type="verbose")
+            self._log(f"    - Done in {elapsed:.2f}s!", level="progress", log_type="success")
             if lp:
                 self._log(f"      - Line profiler stats for '{task_name}':", "verbose", "verbose")
                 s = io.StringIO()

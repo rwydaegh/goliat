@@ -60,22 +60,18 @@ class FarFieldSetup(BaseSetup):
                 self.progress_logger,
             )
             phantom_setup.ensure_phantom_is_loaded()
-        self._log(
-            f"      - Subtask 'setup_load_phantom' done in {self.profiler.subtask_times['setup_load_phantom'][-1]:.2f}s",
-            level="progress",
-            log_type="success",
-        )
+        elapsed = self.profiler.subtask_times['setup_load_phantom'][-1]
+        self._log(f"      - Subtask 'setup_load_phantom' done in {elapsed:.2f}s", log_type="verbose")
+        self._log(f"      - Done in {elapsed:.2f}s!", level="progress", log_type="success")
 
         # Subtask 2: Configure scene
-        self._log("    - Configure scene (simulation bbox, plane wave source)...", level="progress", log_type="progress")
+        self._log("    - Configure scene (bbox, plane wave)...", level="progress", log_type="progress")
         with self.profiler.subtask("setup_configure_scene"):
             bbox_entity = self._create_or_get_simulation_bbox()
             simulation = self._create_simulation_entity(bbox_entity)
-        self._log(
-            f"      - Subtask 'setup_configure_scene' done in {self.profiler.subtask_times['setup_configure_scene'][-1]:.2f}s",
-            level="progress",
-            log_type="success",
-        )
+        elapsed = self.profiler.subtask_times['setup_configure_scene'][-1]
+        self._log(f"      - Subtask 'setup_configure_scene' done in {elapsed:.2f}s", log_type="verbose")
+        self._log(f"      - Done in {elapsed:.2f}s!", level="progress", log_type="success")
 
         # Subtask 3: Assign materials
         self._log("    - Assign materials...", level="progress", log_type="progress")
@@ -90,14 +86,12 @@ class FarFieldSetup(BaseSetup):
                 free_space=False,
             )
             material_setup.assign_materials(phantom_only=True)
-        self._log(
-            f"      - Subtask 'setup_materials' done in {self.profiler.subtask_times['setup_materials'][-1]:.2f}s",
-            level="progress",
-            log_type="success",
-        )
+        elapsed = self.profiler.subtask_times['setup_materials'][-1]
+        self._log(f"      - Subtask 'setup_materials' done in {elapsed:.2f}s", log_type="verbose")
+        self._log(f"      - Done in {elapsed:.2f}s!", level="progress", log_type="success")
 
         # Subtask 4: Configure solver
-        self._log("    - Configure solver (gridding, boundaries, point sensors)...", level="progress", log_type="progress")
+        self._log("    - Configure solver (gridding, boundaries, sensors)...", level="progress", log_type="progress")
         with self.profiler.subtask("setup_solver"):
             gridding_setup = GriddingSetup(
                 self.config,
@@ -115,11 +109,9 @@ class FarFieldSetup(BaseSetup):
 
             self._add_point_sensors(simulation, "far_field_simulation_bbox")
             self._setup_solver_settings(simulation)
-        self._log(
-            f"      - Subtask 'setup_solver' done in {self.profiler.subtask_times['setup_solver'][-1]:.2f}s",
-            level="progress",
-            log_type="success",
-        )
+        elapsed = self.profiler.subtask_times['setup_solver'][-1]
+        self._log(f"      - Subtask 'setup_solver' done in {elapsed:.2f}s", log_type="verbose")
+        self._log(f"      - Done in {elapsed:.2f}s!", level="progress", log_type="success")
 
         # Subtask 5: Voxelize
         self._log("    - Voxelize simulation...", level="progress", log_type="progress")
@@ -139,11 +131,9 @@ class FarFieldSetup(BaseSetup):
             all_simulation_parts = phantom_entities + [bbox_entity] + point_sensor_entities
 
             super()._finalize_setup(self.project_manager, simulation, all_simulation_parts, self.frequency_mhz)
-        self._log(
-            f"      - Subtask 'setup_voxelize' done in {self.profiler.subtask_times['setup_voxelize'][-1]:.2f}s",
-            level="progress",
-            log_type="success",
-        )
+        elapsed = self.profiler.subtask_times['setup_voxelize'][-1]
+        self._log(f"      - Subtask 'setup_voxelize' done in {elapsed:.2f}s", log_type="verbose")
+        self._log(f"      - Done in {elapsed:.2f}s!", level="progress", log_type="success")
 
         self._log("Common settings applied.", log_type="success")
         return simulation

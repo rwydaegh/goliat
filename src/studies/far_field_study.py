@@ -177,11 +177,9 @@ class FarFieldStudy(BaseStudy):
                                     os.path.join(os.path.dirname(self.project_manager.project_path), "config.json"),
                                     surgical_config,
                                 )
-                        self._log(
-                            f"      - Subtask 'setup_save_project' done in {self.profiler.subtask_times['setup_save_project'][-1]:.2f}s",
-                            level="progress",
-                            log_type="success",
-                        )
+                        elapsed = self.profiler.subtask_times['setup_save_project'][-1]
+                        self._log(f"      - Subtask 'setup_save_project' done in {elapsed:.2f}s", log_type="verbose")
+                        self._log(f"      - Done in {elapsed:.2f}s!", level="progress", log_type="success")
 
                     # Update do_run and do_extract based on verification
                     if verification_status["run_done"]:
