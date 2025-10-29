@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     import s4l_v1.simulation.emfdtd
 
     from .config import Config
+    from .gui_manager import QueueGUI
     from .profiler import Profiler
 
 
@@ -30,6 +31,7 @@ class SimulationRunner(LoggingMixin):
         profiler: "Profiler",
         verbose_logger: "Logger",
         progress_logger: "Logger",
+        gui: "Optional[QueueGUI]" = None,
     ):
         """Initializes the SimulationRunner.
         Args:
@@ -39,6 +41,7 @@ class SimulationRunner(LoggingMixin):
             profiler: The profiler instance for timing subtasks.
             verbose_logger: Logger for detailed, verbose output.
             progress_logger: Logger for high-level progress updates.
+            gui: Optional GUI proxy for sending log messages to the GUI window.
         """
         self.config = config
         self.project_path = project_path
@@ -46,6 +49,7 @@ class SimulationRunner(LoggingMixin):
         self.profiler = profiler
         self.verbose_logger = verbose_logger
         self.progress_logger = progress_logger
+        self.gui = gui
         import s4l_v1.document
 
         self.document = s4l_v1.document

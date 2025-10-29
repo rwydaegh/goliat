@@ -29,6 +29,7 @@ class PowerExtractor(LoggingMixin):
         self.frequency_mhz = parent.frequency_mhz
         self.verbose_logger = parent.verbose_logger
         self.progress_logger = parent.progress_logger
+        self.gui = parent.gui
         self.results_data = results_data
 
         import s4l_v1.document

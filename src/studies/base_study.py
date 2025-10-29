@@ -154,6 +154,7 @@ class BaseStudy(LoggingMixin):
                 self.profiler,
                 self.verbose_logger,
                 self.progress_logger,
+                self.gui,
             )
             runner.run()
 
