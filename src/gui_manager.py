@@ -129,6 +129,7 @@ class ProgressGUI(QWidget):
         self.progress_logger = logging.getLogger("progress")
         self.verbose_logger = logging.getLogger("verbose")
         self.window_title = window_title
+        self.DEBUG = True
         self.init_ui()
 
         self.phase_name_map = {
@@ -282,6 +283,8 @@ class ProgressGUI(QWidget):
             progress_percent = (current_step / total_steps) * 100
             self.overall_progress_bar.setValue(int(progress_percent * 10))
             self.overall_progress_bar.setFormat(f"{progress_percent:.1f}%")
+            if self.DEBUG:
+                self.update_status(f"DEBUG: Overall progress: {progress_percent:.1f}%")
 
     def update_stage_progress(self, stage_name: str, current_step: int, total_steps: int):
         """Updates the stage-specific progress bar."""
@@ -295,6 +298,8 @@ class ProgressGUI(QWidget):
 
         self.stage_progress_bar.setValue(final_value)
         self.stage_progress_bar.setFormat(f"{progress_percent * 100:.0f}%")
+        if self.DEBUG:
+            self.update_status(f"DEBUG: Stage '{stage_name}' progress: {progress_percent * 100:.0f}%")
 
     def start_stage_animation(self, estimated_duration: float, end_step: int):
         """Starts a smooth animation for the stage progress bar.
@@ -360,7 +365,10 @@ class ProgressGUI(QWidget):
             eta_sec = self.profiler.get_time_remaining(current_stage_progress=current_stage_progress_ratio)
 
             if eta_sec is not None:
-                self.eta_label.setText(f"Time Remaining: {format_time(eta_sec)}")
+                time_remaining_str = format_time(eta_sec)
+                self.eta_label.setText(f"Time Remaining: {time_remaining_str}")
+                if self.DEBUG and int(elapsed_sec) % 5 == 0:
+                    self.update_status(f"DEBUG: Time Remaining: {time_remaining_str}")
             else:
                 self.eta_label.setText("Time Remaining: N/A")
         else:
