@@ -89,7 +89,7 @@ class FarFieldSetup(BaseSetup):
             plane_wave_source.Psi = 90
 
         simulation.Add(plane_wave_source, [bbox_entity])
-        self.document.AllSimulations.Add(simulation)  # type: ignore
+        self.document.AllSimulations.Add(simulation)
 
         self._apply_simulation_time_and_termination(simulation, bbox_entity, self.frequency_mhz)
 

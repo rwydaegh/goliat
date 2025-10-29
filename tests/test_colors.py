@@ -1,4 +1,3 @@
-import pytest
 from colorama import Fore, Style
 
 from src.colors import get_color

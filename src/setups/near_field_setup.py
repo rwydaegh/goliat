@@ -267,7 +267,7 @@ class NearFieldSetup(BaseSetup):
             raise RuntimeError(f"Could not find antenna group. Looked for '{placed_name}' and '{initial_name}'.")
 
         flat_component_list = []
-        for entity in antenna_group.Entities:
+        for entity in antenna_group.Entities:  # type: ignore
             if hasattr(entity, "History") and "Union" in entity.History:
                 flat_component_list.extend(entity.GetChildren())
             else:
@@ -396,9 +396,9 @@ class NearFieldSetup(BaseSetup):
         """Creates and configures the base EM-FDTD simulation entity."""
         self._log("Setting up simulation entity...", log_type="progress")
 
-        if self.document.AllSimulations:  # type: ignore
-            for sim in list(self.document.AllSimulations):  # type: ignore
-                self.document.AllSimulations.Remove(sim)  # type: ignore
+        if self.document.AllSimulations:
+            for sim in list(self.document.AllSimulations):
+                self.document.AllSimulations.Remove(sim)
 
         sim_name = f"EM_FDTD_{self.phantom_name}_{self.frequency_mhz}MHz_{self.placement_name}"
         if self.free_space:
@@ -410,7 +410,7 @@ class NearFieldSetup(BaseSetup):
 
         simulation.Frequency = self.frequency_mhz, s4l_v1.units.MHz
 
-        self.document.AllSimulations.Add(simulation)  # type: ignore
+        self.document.AllSimulations.Add(simulation)
 
         self._setup_solver_settings(simulation)
 
@@ -508,7 +508,7 @@ class NearFieldSetup(BaseSetup):
             self._log("Could not find antenna group for distance check. Returning 0.", log_type="warning")
             return 0.0
 
-        ground_entities = [e for e in antenna_group.Entities if "Ground" in e.Name or "Substrate" in e.Name]
+        ground_entities = [e for e in antenna_group.Entities if "Ground" in e.Name or "Substrate" in e.Name]  # type: ignore
 
         if not skin_entity or not ground_entities:
             self._log("Could not find all necessary entities for distance check. Returning 0.", log_type="warning")

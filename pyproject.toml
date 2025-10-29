@@ -52,7 +52,6 @@ exclude = [
 pythonVersion = "3.11"
 reportMissingImports = false
 reportMissingModuleSource = false
-stubPath = "stubs"
 
 [tool.ruff]
 line-length = 140

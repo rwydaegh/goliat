@@ -72,7 +72,7 @@ class SarExtractor(LoggingMixin):
                     self._log("  - WARNING: No SAR statistics data found.", log_type="warning")
                     return
 
-                columns = ["Tissue"] + [cap for cap in results.ColumnMainCaptions]
+                columns = ["Tissue"] + [cap for cap in results.ColumnMainCaptions]  # type: ignore
                 data = [
                     [re.sub(r"\s*\(.*\)\s*$", "", results.RowCaptions[i]).strip().replace(")", "")]
                     + [results.Value(i, j) for j in range(results.NumberOfColumns())]
@@ -93,7 +93,7 @@ class SarExtractor(LoggingMixin):
 
                 all_regions_row = df[df["Tissue"] == "All Regions"]
                 if not all_regions_row.empty:
-                    mass_averaged_sar = all_regions_row["Mass-Averaged SAR"].iloc[0]
+                    mass_averaged_sar = all_regions_row["Mass-Averaged SAR"].iloc[0]  # type: ignore
                     if self.parent.study_type == "near_field":
                         sar_key = "head_SAR" if self.placement_name.lower() in ["front_of_eyes", "by_cheek"] else "trunk_SAR"
                         self.results_data[sar_key] = float(mass_averaged_sar)
@@ -102,7 +102,7 @@ class SarExtractor(LoggingMixin):
 
                     peak_sar_col_name = "Peak Spatial-Average SAR[IEEE/IEC62704-1] (10g)"
                     if peak_sar_col_name in all_regions_row.columns:
-                        self.results_data["peak_sar_10g_W_kg"] = float(all_regions_row[peak_sar_col_name].iloc[0])
+                        self.results_data["peak_sar_10g_W_kg"] = float(all_regions_row[peak_sar_col_name].iloc[0])  # type: ignore
 
                 self.extract_peak_sar_details(em_sensor_extractor)
                 self.results_data.update(
@@ -207,11 +207,11 @@ class SarExtractor(LoggingMixin):
             average_sar_field_evaluator.Update()
 
             peak_sar_output = average_sar_field_evaluator.Outputs["Peak Spatial SAR (psSAR) Results"]
-            peak_sar_output.Update()
+            peak_sar_output.Update()  # type: ignore
 
-            data_collection = peak_sar_output.Data.DataSimpleDataCollection
+            data_collection = peak_sar_output.Data.DataSimpleDataCollection  # type: ignore
             if data_collection:
-                self.results_data["peak_sar_details"] = {key: data_collection.FieldValue(key, 0) for key in data_collection.Keys()}
+                self.results_data["peak_sar_details"] = {key: data_collection.FieldValue(key, 0) for key in data_collection.Keys()}  # type: ignore
             else:
                 self._log(
                     "  - WARNING: Could not extract peak SAR details.",

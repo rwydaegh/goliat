@@ -1,7 +1,6 @@
 import logging
 from unittest.mock import MagicMock
 
-import pytest
 
 from src.logging_manager import LoggingMixin, setup_loggers, shutdown_loggers
 
