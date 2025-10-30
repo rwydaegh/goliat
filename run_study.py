@@ -1,6 +1,7 @@
 import argparse
 import multiprocessing
 import os
+import platform
 import sys
 import traceback
 
@@ -12,6 +13,10 @@ def initial_setup():
     - Installs dependencies if missing.
     - Prepares data files.
     """
+    # Bypass check if running in the Sim4Life cloud environment
+    if "aws" in platform.release():
+        logging.info("AWS environment detected, bypassing initial setup.")
+        return
     # Temporarily add scripts to path to find utils
     base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
     scripts_dir = os.path.join(base_dir, "scripts")

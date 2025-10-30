@@ -1,5 +1,6 @@
 import logging
 import os
+import platform
 import subprocess
 import sys
 
@@ -85,6 +86,11 @@ def check_python_interpreter():
     Checks if the correct Sim4Life Python interpreter is being used.
     If not, it prompts the user to select a valid one and updates .bashrc.
     """
+    # Bypass check if running in the Sim4Life cloud environment
+    if "aws" in platform.release():
+        logging.info("AWS environment detected, bypassing Sim4Life interpreter check.")
+        return
+
     viable_pythons = find_sim4life_python_executables()
 
     # Normalize paths for comparison
