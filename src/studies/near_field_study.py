@@ -270,7 +270,7 @@ class NearFieldStudy(BaseStudy):
             import s4l_v1.document
 
             if s4l_v1.document.AllSimulations:
-                sim_name = f"EM_FDTD_{phantom_name}_{freq}mhz_{placement_name}"
+                sim_name = f"EM_FDTD_{phantom_name}_{freq}MHz_{placement_name}"
                 simulation = next(
                     (s for s in s4l_v1.document.AllSimulations if s.Name == sim_name),
                     None,

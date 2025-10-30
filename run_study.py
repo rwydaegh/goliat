@@ -14,10 +14,6 @@ def initial_setup():
     - Installs dependencies if missing.
     - Prepares data files.
     """
-    # Bypass check if running in the Sim4Life cloud environment
-    if "aws" in platform.release():
-        logging.info("AWS environment detected, bypassing initial setup.")
-        return
     # Temporarily add scripts to path to find utils
     base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
     scripts_dir = os.path.join(base_dir, "scripts")
@@ -37,13 +33,13 @@ def initial_setup():
 
     if not os.path.exists(lock_file):
         check_repo_root()
-        check_python_interpreter()
+        check_python_interpreter()  # This function now handles AWS detection internally
         install_requirements(os.path.join(os.getcwd(), "requirements.txt"))
         prepare_data(os.getcwd())
         with open(lock_file, "w") as f:
             f.write("Setup complete.")
     else:
-        check_python_interpreter()
+        check_python_interpreter()  # This function now handles AWS detection internally
 
 
 # --- Pre-check and Setup ---
