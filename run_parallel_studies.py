@@ -200,7 +200,7 @@ def split_config(config_path, num_splits, logger):
 def run_study_process(args):
     """Runs the study for a given config file."""
     config_file, process_id, no_cache = args
-    title = f"Process {process_id} - Study Runner ({os.path.basename(config_file)})"
+    title = f"[Process {process_id}] "
 
     # Construct the command to run the main study script
     run_study_script = os.path.join(base_dir, "run_study.py")

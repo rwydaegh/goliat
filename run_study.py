@@ -202,7 +202,7 @@ def main():
     parser.add_argument(
         "--title",
         type=str,
-        default="Simulation Progress",
+        default="",
         help="Set the title of the GUI window.",
     )
     parser.add_argument("--pid", type=str, default=None, help="The process ID for logging.")
@@ -250,7 +250,7 @@ def main():
 
         # The GUI runs in the main process
         app = QApplication(sys.argv)
-        gui = ProgressGUI(queue, stop_event, study_process, window_title=args.title)
+        gui = ProgressGUI(queue, stop_event, study_process, init_window_title=args.title)
         gui.show()
 
         app.exec()

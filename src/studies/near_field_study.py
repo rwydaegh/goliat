@@ -108,6 +108,12 @@ class NearFieldStudy(BaseStudy):
                                     level="progress",
                                     log_type="header",
                                 )
+                                if self.gui:
+                                    self.gui.update_simulation_details(
+                                        simulation_count,
+                                        total_simulations,
+                                        f"{phantom_name}, {freq}MHz, {placement_name}",
+                                    )
                                 self._run_placement(
                                     phantom_name,  # type: ignore
                                     freq,
@@ -225,8 +231,8 @@ class NearFieldStudy(BaseStudy):
                             self.gui,
                         )
 
-                        with self.subtask("setup_simulation", instance_to_profile=setup) as wrapper:
-                            simulation = wrapper(setup.run_full_setup)(self.project_manager)
+                        with self.subtask("setup_simulation", instance_to_profile=setup):
+                            simulation = setup.run_full_setup(self.project_manager)
 
                         if not simulation:
                             self._log(f"ERROR: Setup failed for {placement_name}.", level="progress", log_type="error")

@@ -500,7 +500,10 @@ Gets the definition for a specific placement scenario.
 def get_profiling_config(study_type: str) -> dict
 ```
 
-Gets the profiling configuration for a given study type.
+Gets the session-specific profiling configuration for a given study type.
+
+The profiling configuration is now stored in the `data/` folder with a unique session hash
+(e.g., `profiling_config_a1b2c3d4.json`), ensuring each study run has its own timing data.
 
 **Arguments**:
 
@@ -1033,9 +1036,10 @@ class Profiler()
 Manages execution time tracking, ETA estimation, and study phase management.
 
 This class divides a study into phases (setup, run, extract), calculates
-weighted progress, and estimates the time remaining. It also saves updated
-time estimates to a configuration file after each run, making it
-self-improving.
+weighted progress, and estimates the time remaining. It also saves timing
+data to a session-specific configuration file in the `data/` folder
+(e.g., `profiling_config_a1b2c3d4.json`) after each run, ensuring clean
+session isolation and avoiding conflicts between concurrent runs.
 
 <a id="profiler.Profiler.__init__"></a>
 

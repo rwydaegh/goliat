@@ -235,7 +235,10 @@ class Profiler:
         for task_name, times in self.subtask_times.items():
             if times:
                 avg_task_time = sum(times) / len(times)
-                full_config[self.study_type][f"avg_{task_name}"] = round(avg_task_time, 2)
+                avg_key = f"avg_{task_name}"
+                full_config[self.study_type][avg_key] = round(avg_task_time, 2)
+                # Also update the in-memory profiling_config so it's available when sent to GUI
+                self.profiling_config[avg_key] = round(avg_task_time, 2)
 
         with open(self.config_path, "w") as f:
             json.dump(full_config, f, indent=4)
