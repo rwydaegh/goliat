@@ -34,7 +34,7 @@ Sim4Life_Manual.pdf
 Sim4Life_Introduction.pdf
 
 # Configs
-configs/*/
+configs/*
 !configs/base_config.json
 !configs/near_field_config.json
 !configs/far_field_config.json
