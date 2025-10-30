@@ -10,10 +10,9 @@ assignees: ''
 A clear and concise description of what the bug is.
 
 ## Steps to Reproduce
-1. Go to '...'
-2. Click on '...'
-3. Run command '...'
-4. See error
+1. Configure with '...'
+2. Run command '...'
+3. See error
 
 ## Expected Behavior
 A clear and concise description of what you expected to happen.
