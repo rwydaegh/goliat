@@ -176,26 +176,24 @@ class LoggingMixin:
         extra = {"log_type": log_type}
         log_origin = ""
 
-        if level == "verbose":
-            # Inspect the call stack to find the caller's class and method/function name
-            current_frame = inspect.currentframe()
-            if current_frame:
-                caller_frame = current_frame.f_back
-                if caller_frame:
-                    caller_method_name = caller_frame.f_code.co_name
-                    if "self" in caller_frame.f_locals:
-                        caller_class_name = caller_frame.f_locals["self"].__class__.__name__
-                        log_origin = f"{caller_class_name}.{caller_method_name}"
-                    else:
-                        log_origin = caller_method_name
-            extra["caller_info"] = f"[{log_origin}]"
+        # Always try to get caller info for verbose logs
+        current_frame = inspect.currentframe()
+        if current_frame:
+            caller_frame = current_frame.f_back
+            if caller_frame:
+                caller_method_name = caller_frame.f_code.co_name
+                if "self" in caller_frame.f_locals:
+                    caller_class_name = caller_frame.f_locals["self"].__class__.__name__
+                    log_origin = f"{caller_class_name}.{caller_method_name}"
+                else:
+                    log_origin = caller_method_name
+        extra["caller_info"] = f"[{log_origin}]"
 
         if level == "progress":
             self.progress_logger.info(message, extra=extra)
             if hasattr(self, "gui") and self.gui:
-                self.gui.log(message, level="progress")
-        else:
+                # Send to GUI with log_type for counters
+                self.gui.log(message, level="progress", log_type=log_type)
+        else:  # verbose
             self.verbose_logger.info(message, extra=extra)
-            if hasattr(self, "gui") and self.gui and level != "progress":
-                gui_message = f"{message} [{log_origin}]" if log_origin else message
-                self.gui.log(gui_message, level="verbose")
+            # Do not send verbose logs to the GUI status box

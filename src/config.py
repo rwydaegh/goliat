@@ -1,5 +1,9 @@
+import hashlib
 import json
+import logging
 import os
+import time
+from datetime import datetime
 from typing import Optional
 
 from dotenv import load_dotenv
@@ -41,11 +45,25 @@ class Config:
         self.base_dir = base_dir
         self.config_path = self._resolve_config_path(config_filename, self.base_dir)
         self.material_mapping_path = os.path.join(self.base_dir, "data", "material_name_mapping.json")
-        self.profiling_config_path = os.path.join(self.base_dir, "configs", "profiling_config.json")
+
+        # Generate session hash for profiling config (similar to GUI session tracking)
+        session_hash = hashlib.md5(f"{time.time()}_{os.getpid()}".encode()).hexdigest()[:8]
+        data_dir = os.path.join(self.base_dir, "data")
+        os.makedirs(data_dir, exist_ok=True)
+
+        # Generate timestamp for filename
+        session_timestamp = datetime.now().strftime("%d-%m_%H-%M-%S")
+
+        # Cleanup old JSON files before creating new one
+        self._cleanup_old_data_files(data_dir)
+
+        self.profiling_config_path = os.path.join(data_dir, f"profiling_config_{session_timestamp}_{session_hash}.json")
 
         self.config = self._load_config_with_inheritance(self.config_path)
         self.material_mapping = self._load_json(self.material_mapping_path)
-        self.profiling_config = self._load_json(self.profiling_config_path)
+
+        # Load or initialize profiling config
+        self.profiling_config = self._load_or_create_profiling_config()
 
     def _resolve_config_path(self, config_filename: str, base_path: str) -> str:
         """Resolves the absolute path to a configuration file.
@@ -121,6 +139,74 @@ class Config:
             raise FileNotFoundError(f"Configuration file not found at: {path}")
         with open(path, "r") as f:
             return json.load(f)
+
+    def _cleanup_old_data_files(self, data_dir: str):
+        """Removes old CSV and JSON files from the data/ directory when there are more than 50.
+
+        Args:
+            data_dir: Path to the data directory.
+        """
+        try:
+            # Get all CSV and JSON files in the data directory
+            data_files = []
+            for f in os.listdir(data_dir):
+                if f.endswith(".csv") or f.endswith(".json"):
+                    # Only include files with the expected naming pattern
+                    if any(prefix in f for prefix in ["time_remaining_", "overall_progress_", "profiling_config_"]):
+                        full_path = os.path.join(data_dir, f)
+                        data_files.append(full_path)
+
+            # Sort by creation time (oldest first)
+            data_files.sort(key=os.path.getctime)
+
+            # Remove oldest files if we have more than 50
+            while len(data_files) > 50:
+                old_file = None
+                try:
+                    old_file = data_files.pop(0)
+                    os.remove(old_file)
+                    logging.getLogger("verbose").info(f"Removed old data file: {os.path.basename(old_file)}")
+                except OSError as e:
+                    if old_file:
+                        logging.getLogger("verbose").warning(f"Failed to remove {os.path.basename(old_file)}: {e}")
+                    else:
+                        logging.getLogger("verbose").warning(f"Failed to remove a file: {e}")
+        except Exception as e:
+            logging.getLogger("verbose").warning(f"Error during data file cleanup: {e}")
+
+    def _load_or_create_profiling_config(self) -> dict:
+        """Loads or creates the profiling configuration file.
+
+        Since profiling config is now session-specific and stored in data/,
+        we initialize it with empty defaults if it doesn't exist.
+
+        Returns:
+            The loaded or newly created profiling configuration dictionary.
+        """
+        if os.path.exists(self.profiling_config_path):
+            try:
+                with open(self.profiling_config_path, "r") as f:
+                    return json.load(f)
+            except (json.JSONDecodeError, IOError):
+                # If file is corrupted, start fresh
+                pass
+
+        # Create a new profiling config with empty structure
+        profiling_config = {}
+
+        # Initialize with empty structure for each study type
+        for study_type in ["near_field", "far_field"]:
+            profiling_config[study_type] = {}
+
+        # Save the initial config
+        try:
+            with open(self.profiling_config_path, "w") as f:
+                json.dump(profiling_config, f, indent=4)
+        except IOError:
+            # If we can't write, just return the empty dict
+            pass
+
+        return profiling_config
 
     def get_simulation_parameters(self) -> dict:
         """Gets the 'simulation_parameters' dictionary."""

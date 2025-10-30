@@ -7,6 +7,7 @@ dependencies = [
   "pandas",
   "gdown",
   "seaborn",
+  "matplotlib",
   "line-profiler",
   "pytest",
   "scienceplots",

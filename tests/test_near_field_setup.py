@@ -39,6 +39,7 @@ def test_near_field_setup_initialization(mock_config, mock_antenna):
         antenna=mock_antenna,
         verbose_logger=MagicMock(),
         progress_logger=MagicMock(),
+        profiler=MagicMock(),
     )
     assert setup.phantom_name == "test_phantom"
     assert setup.base_placement_name == "by_cheek"
