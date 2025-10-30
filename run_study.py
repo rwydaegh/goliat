@@ -52,7 +52,8 @@ initial_setup()
 try:
     from PySide6.QtWidgets import QApplication
 except ImportError:
-    is_sim4life_interpreter = "Sim4Life" in sys.executable
+    # In the cloud, the python executable is not in a path containing "Sim4Life", but we can detect the OS.
+    is_sim4life_interpreter = "Sim4Life" in sys.executable or "aws" in platform.release()
     print("=" * 80)
     print("ERROR: Could not start the application.")
 
