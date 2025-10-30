@@ -13,11 +13,17 @@ from multiprocessing.synchronize import Event
 import matplotlib
 
 matplotlib.use("Qt5Agg")
-from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
-import matplotlib.dates as mdates
-
-from PySide6.QtCore import QTimer, Qt
+try:
+    from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+    from matplotlib.figure import Figure
+    import matplotlib.dates as mdates
+    from PySide6.QtCore import QTimer, Qt
+except ImportError:
+    FigureCanvas = None
+    Figure = None
+    mdates = None
+    QTimer = None
+    Qt = None
 from PySide6.QtGui import QAction, QIcon
 from PySide6.QtWidgets import (
     QGridLayout,
