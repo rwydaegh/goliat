@@ -108,6 +108,12 @@ class NearFieldStudy(BaseStudy):
                                     level="progress",
                                     log_type="header",
                                 )
+                                if self.gui:
+                                    self.gui.update_simulation_details(
+                                        simulation_count,
+                                        total_simulations,
+                                        f"{phantom_name}, {freq}MHz, {placement_name}",
+                                    )
                                 self._run_placement(
                                     phantom_name,  # type: ignore
                                     freq,

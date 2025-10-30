@@ -94,6 +94,12 @@ class FarFieldStudy(BaseStudy):
                             level="progress",
                             log_type="header",
                         )
+                        if self.gui:
+                            self.gui.update_simulation_details(
+                                simulation_count,
+                                total_simulations,
+                                f"{phantom_name}, {freq}MHz, {direction_name}, {polarization_name}",
+                            )
                         self._run_single_simulation(
                             phantom_name,
                             freq,

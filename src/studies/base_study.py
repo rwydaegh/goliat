@@ -71,7 +71,12 @@ class BaseStudy(LoggingMixin):
     @contextlib.contextmanager
     def subtask(self, task_name: str, instance_to_profile=None):
         """A context manager for a 'subtask' within a phase."""
-        self._log(f"  - {task_name.replace('_', ' ').capitalize()}...", level="progress", log_type="progress")
+        sub_stage_display_name = task_name.replace("_", " ").capitalize()
+        self._log(f"  - {sub_stage_display_name}...", level="progress", log_type="progress")
+        if self.gui and self.profiler.current_phase:
+            self.gui.update_stage_progress(
+                self.profiler.current_phase.capitalize(), 0, 1, sub_stage=sub_stage_display_name
+            )
 
         lp = None
         wrapper = None
