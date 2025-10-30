@@ -204,7 +204,7 @@ class FarFieldStudy(BaseStudy):
             import s4l_v1.document
 
             if s4l_v1.document.AllSimulations:
-                sim_name = f"EM_FDTD_{phantom_name}_{freq}MHz_{direction_name}_{polarization_name}"
+                sim_name = f"EM_FDTD_{phantom_name}_{freq}mhz_{direction_name}_{polarization_name}"
                 simulation = next(
                     (s for s in s4l_v1.document.AllSimulations if s.Name == sim_name),
                     None,
