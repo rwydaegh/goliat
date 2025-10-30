@@ -10,6 +10,7 @@ edit_uri: edit/master/docs/
 theme:
   name: material
   logo: img/goliat.svg
+  favicon: img/favicon.svg
   language: en
   features:
   - announce.dismiss

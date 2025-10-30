@@ -83,7 +83,7 @@ except ImportError:
 
 from src.config import Config  # noqa: E402
 from src.gui_manager import ProgressGUI, QueueGUI  # noqa: E402
-from src.logging_manager import setup_loggers, shutdown_loggers  # noqa: E402
+from src.logging_manager import LoggingMixin, setup_loggers, shutdown_loggers  # noqa: E402
 from src.osparc_batch.runner import main as run_osparc_batch  # noqa: E402
 from src.studies.base_study import StudyCancelledError  # noqa: E402
 
@@ -93,10 +93,11 @@ if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
 
-class ConsoleLogger:
+class ConsoleLogger(LoggingMixin):
     """A console-based logger to substitute for the GUI."""
 
     def __init__(self, progress_logger, verbose_logger):
+        super().__init__()
         self.progress_logger = progress_logger
         self.verbose_logger = verbose_logger
 
@@ -106,11 +107,17 @@ class ConsoleLogger:
         else:
             self.verbose_logger.info(message)
 
+    def update_simulation_details(self, sim_count, total_sims, details):
+        self.progress_logger.info(f"--- Simulation {sim_count}/{total_sims}: {details} ---")
+
     def update_overall_progress(self, current_step, total_steps):
         self.progress_logger.info(f"Overall Progress: {current_step}/{total_steps}")
 
-    def update_stage_progress(self, stage_name, current_step, total_steps):
-        self.progress_logger.info(f"Stage '{stage_name}': {current_step}/{total_steps}")
+    def update_stage_progress(self, stage_name, current_step, total_steps, sub_stage=""):
+        if sub_stage:
+            self.progress_logger.info(f"Stage '{stage_name}' ({sub_stage}): {current_step}/{total_steps}")
+        else:
+            self.progress_logger.info(f"Stage '{stage_name}': {current_step}/{total_steps}")
 
     def start_stage_animation(self, task_name, end_value):
         self.progress_logger.info(f"Starting: {task_name}")
@@ -119,6 +126,9 @@ class ConsoleLogger:
         pass
 
     def update_profiler(self):
+        pass
+
+    def process_events(self):
         pass
 
     def fatal_error(self, message):
