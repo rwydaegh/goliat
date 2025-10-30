@@ -194,6 +194,6 @@ class LoggingMixin:
             if hasattr(self, "gui") and self.gui:
                 # Send to GUI with log_type for counters
                 self.gui.log(message, level="progress", log_type=log_type)
-        else: # verbose
+        else:  # verbose
             self.verbose_logger.info(message, extra=extra)
             # Do not send verbose logs to the GUI status box

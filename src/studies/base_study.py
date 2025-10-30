@@ -77,9 +77,7 @@ class BaseStudy(LoggingMixin):
         if is_top_level_subtask:
             self._log(f"  - {sub_stage_display_name}...", level="progress", log_type="progress")
             if self.gui and self.profiler.current_phase:
-                self.gui.update_stage_progress(
-                    self.profiler.current_phase.capitalize(), 0, 1, sub_stage=sub_stage_display_name
-                )
+                self.gui.update_stage_progress(self.profiler.current_phase.capitalize(), 0, 1, sub_stage=sub_stage_display_name)
                 self.start_stage_animation(task_name, 100)
 
         lp, wrapper = self._setup_line_profiler_if_needed(task_name, instance_to_profile)
@@ -99,10 +97,8 @@ class BaseStudy(LoggingMixin):
                 if self.gui:
                     self.end_stage_animation()
                     if self.profiler.current_phase:
-                        self.gui.update_stage_progress(
-                            self.profiler.current_phase.capitalize(), 1, 1
-                        )
-            
+                        self.gui.update_stage_progress(self.profiler.current_phase.capitalize(), 1, 1)
+
             if lp:
                 self._log_line_profiler_stats(task_name, lp)
 
@@ -212,7 +208,11 @@ class BaseStudy(LoggingMixin):
                 self._log(f"    - Adding function to profiler: {class_name}.{func_name} from {module_path}", log_type="verbose")
                 lp.add_function(func_to_add)
             except (ImportError, AttributeError, ValueError) as e:
-                self._log(f"  - WARNING: Could not find or parse function '{func_path}' for line profiling. Error: {e}", level="progress", log_type="warning")
+                self._log(
+                    f"  - WARNING: Could not find or parse function '{func_path}' for line profiling. Error: {e}",
+                    level="progress",
+                    log_type="warning",
+                )
         return lp, lp.wrap_function
 
     def _log_line_profiler_stats(self, task_name: str, lp: LineProfiler):

@@ -156,7 +156,10 @@ class FarFieldStudy(BaseStudy):
                         )
 
                         with self.subtask("setup_simulation", instance_to_profile=setup) as wrapper:
-                            simulation = wrapper(setup.run_full_setup)(self.project_manager)
+                            if wrapper:
+                                simulation = wrapper(setup.run_full_setup)(self.project_manager)
+                            else:
+                                simulation = setup.run_full_setup(self.project_manager)
 
                         if not simulation:
                             self._log(
