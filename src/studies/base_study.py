@@ -71,46 +71,49 @@ class BaseStudy(LoggingMixin):
     @contextlib.contextmanager
     def subtask(self, task_name: str, instance_to_profile=None):
         """A context manager for a 'subtask' within a phase."""
+        is_top_level_subtask = not self.profiler.subtask_stack
         sub_stage_display_name = task_name.replace("_", " ").capitalize()
-        self._log(f"  - {sub_stage_display_name}...", level="progress", log_type="progress")
-        if self.gui and self.profiler.current_phase:
-            self.gui.update_stage_progress(
-                self.profiler.current_phase.capitalize(), 0, 1, sub_stage=sub_stage_display_name
-            )
 
-        lp = None
-        wrapper = None
-        line_profiling_config = self.config.get_line_profiling_config()
-        if instance_to_profile and line_profiling_config.get("enabled", False) and task_name in line_profiling_config.get("subtasks", {}):
-            self._log(f"    - Activating line profiler for subtask: {task_name}", "verbose", "verbose")
-            lp, wrapper = self._setup_line_profiler(task_name, instance_to_profile)
+        if is_top_level_subtask:
+            self._log(f"  - {sub_stage_display_name}...", level="progress", log_type="progress")
+            if self.gui and self.profiler.current_phase:
+                self.gui.update_stage_progress(
+                    self.profiler.current_phase.capitalize(), 0, 1, sub_stage=sub_stage_display_name
+                )
+                self.start_stage_animation(task_name, 100)
+
+        lp, wrapper = self._setup_line_profiler_if_needed(task_name, instance_to_profile)
 
         try:
             with self.profiler.subtask(task_name):
                 if lp and wrapper:
                     yield wrapper
                 else:
-                    yield lambda func: func
+                    yield
         finally:
             elapsed = self.profiler.subtask_times[task_name][-1]
             self._log(f"    - Subtask '{task_name}' done in {elapsed:.2f}s", log_type="verbose")
-            self._log(f"    - Done in {elapsed:.2f}s", level="progress", log_type="success")
+
+            if is_top_level_subtask:
+                self._log(f"    - Done in {elapsed:.2f}s", level="progress", log_type="success")
+                if self.gui:
+                    self.end_stage_animation()
+                    if self.profiler.current_phase:
+                        self.gui.update_stage_progress(
+                            self.profiler.current_phase.capitalize(), 1, 1
+                        )
+            
             if lp:
-                self._log(f"      - Line profiler stats for '{task_name}':", "verbose", "verbose")
-                s = io.StringIO()
-                lp.print_stats(stream=s)
-                self.verbose_logger.info(s.getvalue())
+                self._log_line_profiler_stats(task_name, lp)
 
     def start_stage_animation(self, task_name: str, end_value: int):
         """Starts the GUI animation for a stage."""
         if self.gui:
-            self._log(f"DEBUG: BaseStudy.start_stage_animation: task={task_name}, end_value={end_value}", level="progress")
             self.gui.start_stage_animation(task_name, end_value)
 
     def end_stage_animation(self):
         """Ends the GUI animation for a stage."""
         if self.gui:
-            self._log("DEBUG: BaseStudy.end_stage_animation", level="progress")
             self.gui.end_stage_animation()
 
     def run(self):
@@ -191,44 +194,30 @@ class BaseStudy(LoggingMixin):
         else:
             self._log(f"Deliverables for '{stage}' phase not found. Metadata not updated.", log_type="warning")
 
-    def _setup_line_profiler(self, subtask_name: str, instance) -> tuple:
+    def _setup_line_profiler_if_needed(self, subtask_name: str, instance) -> tuple:
         """Sets up the line profiler for a specific subtask if configured."""
         line_profiling_config = self.config.get_line_profiling_config()
+        if not (instance and line_profiling_config.get("enabled", False) and subtask_name in line_profiling_config.get("subtasks", {})):
+            return None, None
 
-        if not line_profiling_config.get("enabled", False) or subtask_name not in line_profiling_config.get("subtasks", {}):
-            return None, lambda func: func
-
-        self._log(
-            f"  - Setting up line profiler for subtask: {subtask_name}",
-            level="verbose",
-            log_type="verbose",
-        )
-
+        self._log(f"    - Activating line profiler for subtask: {subtask_name}", "verbose", "verbose")
         lp = LineProfiler()
         functions_to_profile = line_profiling_config["subtasks"][subtask_name]
-
         for func_path in functions_to_profile:
             try:
                 module_path, class_name, func_name = func_path.rsplit(".", 2)
-
-                # Dynamically import the module and get the class
                 module = importlib.import_module(module_path)
                 class_obj = getattr(module, class_name)
-
-                # Get the function object from the class
                 func_to_add = getattr(class_obj, func_name)
-
-                self._log(
-                    f"    - Adding function to profiler: {class_name}.{func_name} from {module_path}",
-                    log_type="verbose",
-                )
+                self._log(f"    - Adding function to profiler: {class_name}.{func_name} from {module_path}", log_type="verbose")
                 lp.add_function(func_to_add)
-
             except (ImportError, AttributeError, ValueError) as e:
-                self._log(
-                    f"  - WARNING: Could not find or parse function '{func_path}' for line profiling. Error: {e}",
-                    level="progress",
-                    log_type="warning",
-                )
-
+                self._log(f"  - WARNING: Could not find or parse function '{func_path}' for line profiling. Error: {e}", level="progress", log_type="warning")
         return lp, lp.wrap_function
+
+    def _log_line_profiler_stats(self, task_name: str, lp: LineProfiler):
+        """Logs the line profiler statistics."""
+        self._log(f"      - Line profiler stats for '{task_name}':", "verbose", "verbose")
+        s = io.StringIO()
+        lp.print_stats(stream=s)
+        self.verbose_logger.info(s.getvalue())

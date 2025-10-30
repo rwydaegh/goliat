@@ -37,9 +37,9 @@ The GUI runs in the main process. It uses a `QTimer` to poll a `multiprocessing.
 
 The `Profiler` class is the engine for all timing and estimation.
 
--   **Historical Averaging**: It maintains a `profiling_config.json` file, which stores the average time taken for each major phase (`avg_setup_time`, `avg_run_time`, etc.) and for granular subtasks. After every run, it updates these averages, making its own future estimates more accurate.
--   **ETA Calculation**: The `get_time_remaining` method provides the core ETA logic. It calculates the total estimated time for all simulations based on the historical averages and subtracts the time that has already elapsed. This elapsed time is a combination of the total time for already completed simulations and the real-time duration of the current, in-progress simulation.
--   **Weighted Progress**: The `Profiler` calculates the progress within a single simulation by using phase weights. These weights are derived from the historical average time of each phase, normalized to sum to 1. This ensures that a longer phase, like `run`, contributes more to the intra-simulation progress than a shorter one, like `extract`.
+-   **Session-Based Timing**: The profiler maintains a session-specific timing configuration file in the `data/` folder (e.g., `profiling_config_31-10_14-15-30_a1b2c3d4.json`). The filename includes a timestamp prefix followed by a unique hash. This file stores the average time taken for each major phase (`avg_setup_time`, `avg_run_time`, etc.) and for granular subtasks. The session-specific approach means each study run tracks its own timing data, allowing for cleaner session management and avoiding conflicts between concurrent runs.
+-   **ETA Calculation**: The `get_time_remaining` method provides the core ETA logic. It calculates the total estimated time for all simulations based on the current session's timing averages and subtracts the time that has already elapsed. This elapsed time is a combination of the total time for already completed simulations and the real-time duration of the current, in-progress simulation.
+-   **Weighted Progress**: The `Profiler` calculates the progress within a single simulation by using phase weights. These weights are derived from the average time of each phase in the current session, normalized to sum to 1. This ensures that a longer phase, like `run`, contributes more to the intra-simulation progress than a shorter one, like `extract`.
 
 ### The animation system
 
@@ -71,6 +71,7 @@ The system uses Python's standard `logging` module, configured to provide two di
 ### Implementation details:
 
 *   **Log Rotation**: The `setup_loggers` function checks the number of log files in the `logs` directory. If it exceeds a limit (15 pairs), it deletes the oldest pair (`.log` and `.progress.log`) to prevent the directory from growing indefinitely.
+*   **Data File Cleanup**: Similarly, the system automatically manages CSV and JSON files in the `data/` directory (progress tracking and profiling files). When more than 50 such files exist, the oldest files are automatically deleted to prevent excessive disk usage. These files follow the naming pattern `time_remaining_DD-MM_HH-MM-SS_hash.csv`, `overall_progress_DD-MM_HH-MM-SS_hash.csv`, and `profiling_config_DD-MM_HH-MM-SS_hash.json`, where the timestamp allows easy identification of when each session was run.
 *   **Handler Configuration**: The function creates file handlers and stream (console) handlers for each logger, ensuring messages go to the right places. `propagate = False` is used to prevent messages from being handled by parent loggers, avoiding duplicate output.
 
 ## 4. Configuration (`config.py`)
