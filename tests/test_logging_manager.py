@@ -1,12 +1,10 @@
 import logging
 from unittest.mock import MagicMock
 
-import pytest
 
 from src.logging_manager import LoggingMixin, setup_loggers, shutdown_loggers
 
 
-@pytest.mark.skip_on_ci
 def test_setup_loggers():
     progress_logger, verbose_logger, _ = setup_loggers()
     assert isinstance(progress_logger, logging.Logger)
@@ -17,7 +15,6 @@ def test_setup_loggers():
 
 
 class TestLoggingMixin:
-    @pytest.mark.skip_on_ci
     def test_log_method(self):
         mixin = LoggingMixin()
         mixin.progress_logger = MagicMock()

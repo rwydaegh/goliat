@@ -1,4 +1,4 @@
-# GOLIAT Technical Guide
+# GOLIAT technical guide
 
 This document provides a comprehensive overview of the GOLIAT project's architecture, key components, and core functionalities. It is intended for developers who want to understand, extend, or maintain the codebase.
 
@@ -138,9 +138,9 @@ This section details GOLIAT's core classes and their roles within the framework.
 - **API Reference**: [src.setups](api_reference.md#src.setups)
 
 #### `SimulationRunner`
-- **Function**: Executes the simulation, either locally using `iSolve.exe` or by submitting it to the oSPARC cloud platform. It also handles real-time logging of the solver output. A key feature is the `_run_isolve_manual` method, which runs the solver in a separate process and uses a non-blocking reader thread to capture and log its output in real-time.
+- **Function**: Executes a single simulation, either locally using `iSolve.exe` or by submitting it to the oSPARC cloud platform. It also handles real-time logging of the solver output. A key feature is the `_run_isolve_manual` method, which runs the solver in a separate process and uses a non-blocking reader thread to capture and log its output in real-time.
 - **Some interesting methods**:
-    - `run_all()`: Iterates through and runs all simulations defined in the study.
+    - `run()`: Executes a single simulation as defined by its configuration.
 - **API Reference**: [src.simulation_runner.SimulationRunner](api_reference.md#src.simulation_runner.SimulationRunner)
 
 #### `ResultsExtractor`
@@ -176,32 +176,11 @@ This section details GOLIAT's core classes and their roles within the framework.
 
 ## Advanced features
 
-*For a deep dive about the advanced features, refer to the [Advanced Features Guide](advanced_features.md)*
+### GUI, profiling, and logging
 
-### GUI and multiprocessing
-The application employs a multi-process architecture to ensure a responsive user experience, even during long-running simulations.
+The application uses a multi-process architecture to provide a responsive GUI. The `Profiler` class manages time estimation and progress tracking, using historical data from `profiling_config.json` to improve its accuracy over time. The logging system is split into a user-facing `progress` stream and a detailed `verbose` stream.
 
-- **Main Process**: A lightweight PySide6 GUI (`ProgressGUI`) is launched. This GUI is responsible for displaying progress, logs, and timing information.
-- **Study Process**: The actual study (`NearFieldStudy` or `FarFieldStudy`) is executed in a separate process using Python's `multiprocessing` module. This prevents the GUI from freezing during intensive calculations.
-- **Communication**: The study process communicates with the GUI process through a `multiprocessing.Queue`. It sends messages containing status updates, progress information, and timing data.
-
-The entry point for the study process is the `study_process_wrapper` function in `run_study.py`, which sets up a special `QueueGUI` object. This object mimics the real GUI's interface but directs all its output to the shared queue.
-
-### Logging
-The system uses Python's standard `logging` module, configured to provide two distinct streams of information:
-
-- **`progress` logger**: For high-level, user-facing messages. These are shown in the GUI and saved to `*.progress.log`.
-- **`verbose` logger**: For detailed, internal messages. These are saved to the main `*.log` file.
-
-The `setup_loggers` function in `src/logging_manager.py` handles log rotation to prevent excessive disk usage.
-
-### Profiling and timing
-The `Profiler` class in `src/profiler.py` is the engine for the timing and progress estimation system.
-
-- **Phases and Weights**: A study is divided into phases (`setup`, `run`, `extract`). `profiling_config.json` assigns a "weight" to each, representing its contribution to the total time.
-- **Dynamic Weights**: The profiler normalizes these weights based on which phases are active.
-- **Time Estimation (ETA)**: The `get_time_remaining` method is adaptive. Initially, it relies on historical estimates. Once one or more stages have completed, it switches to a more accurate method based on the actual average time taken per stage.
-- **Self-Improving Estimates**: After a run, `save_estimates` calculates the average time for each timed subtask and writes these new averages back to `profiling_config.json`.
+*For a deep dive into the architecture of these systems, refer to the [Advanced Features Guide](advanced_features.md).*
 
 ---
 *For a complete and detailed API reference, please refer to the [Full API Reference](api_reference.md).*

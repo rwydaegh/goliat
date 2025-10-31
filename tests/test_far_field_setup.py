@@ -22,7 +22,6 @@ def mock_config():
     return config
 
 
-@pytest.mark.skip_on_ci
 def test_far_field_setup_initialization(mock_config):
     setup = FarFieldSetup(
         config=mock_config,
@@ -33,6 +32,7 @@ def test_far_field_setup_initialization(mock_config):
         project_manager=MagicMock(),
         verbose_logger=MagicMock(),
         progress_logger=MagicMock(),
+        profiler=MagicMock(),
     )
     assert setup.phantom_name == "test_phantom"
     assert setup.frequency_mhz == 700

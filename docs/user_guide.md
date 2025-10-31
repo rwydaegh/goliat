@@ -37,7 +37,7 @@ The core logic of your simulation is managed by specialized **Study** classes (`
 -   **Near-Field Example**: If you're running a near-field study, the `NearFieldStudy` class will systematically loop through all defined phantoms, frequencies, and antenna placements. For instance, it might process "thelonious" phantom at 700 MHz with an antenna placed "by_cheek" (e.g., 8mm from the cheek).
 -   **Far-Field Example**: For far-field studies, the `FarFieldStudy` class iterates through phantoms, frequencies, incident directions (e.g., x_pos, y_neg), and polarizations (e.g., theta, phi).
 -   **Project Management**: For each unique simulation scenario, GOLIAT creates a dedicated Sim4Life project file (`.smash`) within a structured `results/` directory. For a near-field study, this would be `results/near_field/thelonious/700MHz/by_cheek/`. For a far-field study, each simulation gets its own directory, like `results/far_field/thelonious/700MHz/environmental_x_pos_theta/`.
--   **Progress Tracking**: The GUI provides real-time progress updates and a guess for the Time Remaining, which becomes more accurate over time as GOLIAT learns from previous runs (these are stored in `configs/profiling_config.json`).
+-   **Progress Tracking**: The GUI provides real-time progress updates and an estimate for the Time Remaining, which becomes more accurate as the current session progresses. 
 
 ### 3. Setup scene in Sim4Life
 
@@ -120,6 +120,3 @@ While the core GOLIAT workflow remains consistent, the specifics of scene setup 
 -   **Effective Debugging**: Always consult the `logs/` directory for detailed error messages. You can also rerun specific phases of a study (e.g., `"do_setup": false, "do_run": false, "do_extract": true`) to isolate and debug issues more efficiently.
 
 You are now equipped to navigate GOLIAT and perform sophisticated EMF dosimetry simulations! For hands-on examples, proceed to the [Tutorials](tutorials/basic.md). If you have any further questions or encounter issues, please open a [GitHub Issue](https://github.com/rwydaegh/goliat/issues).
-
----
-*Last updated: {date}*

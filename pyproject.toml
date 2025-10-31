@@ -7,6 +7,7 @@ dependencies = [
   "pandas",
   "gdown",
   "seaborn",
+  "matplotlib",
   "line-profiler",
   "pytest",
   "scienceplots",
@@ -52,7 +53,6 @@ exclude = [
 pythonVersion = "3.11"
 reportMissingImports = false
 reportMissingModuleSource = false
-stubPath = "stubs"
 
 [tool.ruff]
 line-length = 140

@@ -83,7 +83,7 @@ except ImportError:
 
 from src.config import Config  # noqa: E402
 from src.gui_manager import ProgressGUI, QueueGUI  # noqa: E402
-from src.logging_manager import setup_loggers, shutdown_loggers  # noqa: E402
+from src.logging_manager import LoggingMixin, setup_loggers, shutdown_loggers  # noqa: E402
 from src.osparc_batch.runner import main as run_osparc_batch  # noqa: E402
 from src.studies.base_study import StudyCancelledError  # noqa: E402
 
@@ -93,10 +93,11 @@ if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
 
-class ConsoleLogger:
+class ConsoleLogger(LoggingMixin):
     """A console-based logger to substitute for the GUI."""
 
     def __init__(self, progress_logger, verbose_logger):
+        super().__init__()
         self.progress_logger = progress_logger
         self.verbose_logger = verbose_logger
 
@@ -106,11 +107,17 @@ class ConsoleLogger:
         else:
             self.verbose_logger.info(message)
 
+    def update_simulation_details(self, sim_count, total_sims, details):
+        self.progress_logger.info(f"--- Simulation {sim_count}/{total_sims}: {details} ---")
+
     def update_overall_progress(self, current_step, total_steps):
         self.progress_logger.info(f"Overall Progress: {current_step}/{total_steps}")
 
-    def update_stage_progress(self, stage_name, current_step, total_steps):
-        self.progress_logger.info(f"Stage '{stage_name}': {current_step}/{total_steps}")
+    def update_stage_progress(self, stage_name, current_step, total_steps, sub_stage=""):
+        if sub_stage:
+            self.progress_logger.info(f"Stage '{stage_name}' ({sub_stage}): {current_step}/{total_steps}")
+        else:
+            self.progress_logger.info(f"Stage '{stage_name}': {current_step}/{total_steps}")
 
     def start_stage_animation(self, task_name, end_value):
         self.progress_logger.info(f"Starting: {task_name}")
@@ -121,6 +128,9 @@ class ConsoleLogger:
     def update_profiler(self):
         pass
 
+    def process_events(self):
+        pass
+
     def fatal_error(self, message):
         self.progress_logger.error(f"FATAL ERROR: {message}")
 
@@ -128,7 +138,7 @@ class ConsoleLogger:
         return False  # No GUI to stop it
 
 
-def study_process_wrapper(queue, stop_event, config_filename, process_id):
+def study_process_wrapper(queue, stop_event, config_filename, process_id, no_cache=False):
     """
     This function runs in a separate process to execute the study.
     It sets up its own loggers and communicates with the main GUI process via a queue
@@ -143,7 +153,7 @@ def study_process_wrapper(queue, stop_event, config_filename, process_id):
         from src.studies.far_field_study import FarFieldStudy
         from src.studies.near_field_study import NearFieldStudy
 
-        config = Config(base_dir, config_filename)
+        config = Config(base_dir, config_filename, no_cache=no_cache)
         study_type = config.get_setting("study_type")
 
         profiling_config_data = config.get_profiling_config(study_type)
@@ -158,9 +168,9 @@ def study_process_wrapper(queue, stop_event, config_filename, process_id):
         gui_proxy = QueueGUI(queue, stop_event, profiler, progress_logger, verbose_logger)
 
         if study_type == "near_field":
-            study = NearFieldStudy(config_filename=config_filename, gui=gui_proxy)
+            study = NearFieldStudy(config_filename=config_filename, gui=gui_proxy, no_cache=no_cache)
         elif study_type == "far_field":
-            study = FarFieldStudy(config_filename=config_filename, gui=gui_proxy)
+            study = FarFieldStudy(config_filename=config_filename, gui=gui_proxy, no_cache=no_cache)
         else:
             raise ValueError(f"Unknown or missing study type '{study_type}' in {config_filename}")
 
@@ -196,16 +206,21 @@ def main():
         "config",
         type=str,
         nargs="?",
-        default="todays_near_field_config",
+        default="near_field_config",
         help="Path or name of the configuration file (e.g., todays_far_field or configs/near_field_config.json).",
     )
     parser.add_argument(
         "--title",
         type=str,
-        default="Simulation Progress",
+        default="",
         help="Set the title of the GUI window.",
     )
     parser.add_argument("--pid", type=str, default=None, help="The process ID for logging.")
+    parser.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="If set, redo simulations even if the configuration matches a completed run.",
+    )
     args = parser.parse_args()
     config_filename = args.config
     process_id = args.pid
@@ -214,11 +229,12 @@ def main():
     lock_files = [f for f in os.listdir(base_dir) if f.endswith(".lock")]
     for lock_file in lock_files:
         lock_file_path = os.path.join(base_dir, lock_file)
-        try:
-            os.remove(lock_file_path)
-            print(f"Removed stale lock file: {lock_file_path}")
-        except OSError as e:
-            print(f"Error removing stale lock file {lock_file_path}: {e}")
+        if lock_file != "uv.lock":
+            try:
+                os.remove(lock_file_path)
+                print(f"Removed stale lock file: {lock_file_path}")
+            except OSError as e:
+                print(f"Error removing stale lock file {lock_file_path}: {e}")
 
     # The main process only needs a minimal logger setup for the GUI.
     progress_logger, verbose_logger, _ = setup_loggers(process_id=process_id)
@@ -238,13 +254,13 @@ def main():
         # Create and start the study process
         study_process = ctx.Process(
             target=study_process_wrapper,
-            args=(queue, stop_event, config_filename, process_id),
+            args=(queue, stop_event, config_filename, process_id, args.no_cache),
         )
         study_process.start()
 
         # The GUI runs in the main process
         app = QApplication(sys.argv)
-        gui = ProgressGUI(queue, stop_event, study_process, window_title=args.title)
+        gui = ProgressGUI(queue, stop_event, study_process, init_window_title=args.title)
         gui.show()
 
         app.exec()
@@ -272,9 +288,9 @@ def main():
             console_logger = ConsoleLogger(progress_logger, verbose_logger)
 
             if study_type == "near_field":
-                study = NearFieldStudy(config_filename=config_filename, gui=console_logger)
+                study = NearFieldStudy(config_filename=config_filename, gui=console_logger, no_cache=args.no_cache)
             elif study_type == "far_field":
-                study = FarFieldStudy(config_filename=config_filename, gui=console_logger)
+                study = FarFieldStudy(config_filename=config_filename, gui=console_logger, no_cache=args.no_cache)
             else:
                 raise ValueError(f"Unknown or missing study type '{study_type}' in {config_filename}")
 

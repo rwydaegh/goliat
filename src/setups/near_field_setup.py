@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from logging import Logger
     from ..antenna import Antenna
     from ..config import Config
+    from ..profiler import Profiler
     from ..project_manager import ProjectManager
 
 
@@ -32,6 +33,8 @@ class NearFieldSetup(BaseSetup):
         antenna: "Antenna",
         verbose_logger: "Logger",
         progress_logger: "Logger",
+        profiler: "Profiler",
+        gui=None,
         free_space: bool = False,
     ):
         super().__init__(config, verbose_logger, progress_logger)
@@ -42,6 +45,8 @@ class NearFieldSetup(BaseSetup):
         self.orientation_name = orientation_name
         self.placement_name = f"{scenario_name}_{position_name}_{orientation_name}"
         self.antenna = antenna
+        self.profiler = profiler
+        self.gui = gui
         self.free_space = free_space
 
         # S4L modules
@@ -51,99 +56,142 @@ class NearFieldSetup(BaseSetup):
         self.XCoreModeling = XCoreModeling
 
     def run_full_setup(self, project_manager: "ProjectManager", lock=None) -> "emfdtd.Simulation":
-        """Executes the full sequence of setup steps."""
+        """Executes the full sequence of setup steps with granular timing."""
         self._log("Running full simulation setup...", log_type="progress")
 
+        # Subtask 1: Load phantom
         if not self.free_space:
-            phantom_setup = PhantomSetup(
+            self._log("    - Load phantom...", level="progress", log_type="progress")
+            with self.profiler.subtask("setup_load_phantom"):
+                phantom_setup = PhantomSetup(
+                    self.config,
+                    self.phantom_name,
+                    self.verbose_logger,
+                    self.progress_logger,
+                )
+                phantom_setup.ensure_phantom_is_loaded()
+            elapsed = self.profiler.subtask_times["setup_load_phantom"][-1]
+            self._log(f"      - Subtask 'setup_load_phantom' done in {elapsed:.2f}s", log_type="verbose")
+            self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
+
+        # Subtask 2: Configure scene
+        self._log("    - Configure scene (bboxes, placement, simulation, sensors)...", level="progress", log_type="progress")
+        with self.profiler.subtask("setup_configure_scene"):
+            if not self.free_space:
+                self._setup_bounding_boxes()
+
+            placement_setup = PlacementSetup(
                 self.config,
+                self.phantom_name,
+                self.frequency_mhz,
+                self.base_placement_name,
+                self.position_name,
+                self.orientation_name,
+                self.antenna,
+                self.verbose_logger,
+                self.progress_logger,
+                self.free_space,
+            )
+            placement_setup.place_antenna()
+
+            antenna_components = self._get_antenna_components()
+            self._create_simulation_bbox()
+            simulation = self._setup_simulation_entity()
+
+            sim_bbox_name = f"{self.placement_name.lower()}_simulation_bbox"
+            self._add_point_sensors(simulation, sim_bbox_name)
+
+            self._handle_phantom_rotation(placement_setup)
+            self._align_simulation_with_phone()
+
+        elapsed = self.profiler.subtask_times["setup_configure_scene"][-1]
+        self._log(f"      - Subtask 'setup_configure_scene' done in {elapsed:.2f}s", log_type="verbose")
+        self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
+
+        # Subtask 3: Assign materials
+        self._log("    - Assign materials...", level="progress", log_type="progress")
+        with self.profiler.subtask("setup_materials"):
+            material_setup = MaterialSetup(
+                self.config,
+                simulation,
+                self.antenna,
                 self.phantom_name,
                 self.verbose_logger,
                 self.progress_logger,
+                self.free_space,
             )
-            phantom_setup.ensure_phantom_is_loaded()
-            self._setup_bounding_boxes()
+            material_setup.assign_materials(antenna_components)
 
-        placement_setup = PlacementSetup(
-            self.config,
-            self.phantom_name,
-            self.frequency_mhz,
-            self.base_placement_name,
-            self.position_name,
-            self.orientation_name,
-            self.antenna,
-            self.verbose_logger,
-            self.progress_logger,
-            self.free_space,
-        )
-        placement_setup.place_antenna()
+        elapsed = self.profiler.subtask_times["setup_materials"][-1]
+        self._log(f"      - Subtask 'setup_materials' done in {elapsed:.2f}s", log_type="verbose")
+        self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
-        antenna_components = self._get_antenna_components()
+        # Subtask 4: Configure solver
+        self._log("    - Configure solver (gridding, boundaries, sources)...", level="progress", log_type="progress")
+        with self.profiler.subtask("setup_solver"):
+            gridding_setup = GriddingSetup(
+                self.config,
+                simulation,
+                self.placement_name,
+                self.antenna,
+                self.verbose_logger,
+                self.progress_logger,
+                frequency_mhz=self.frequency_mhz,
+            )
+            gridding_setup.setup_gridding(antenna_components)
 
-        self._create_simulation_bbox()
+            boundary_setup = BoundarySetup(self.config, simulation, self.verbose_logger, self.progress_logger)
+            boundary_setup.setup_boundary_conditions()
 
-        simulation = self._setup_simulation_entity()
+            source_setup = SourceSetup(
+                self.config,
+                simulation,
+                self.frequency_mhz,
+                self.antenna,
+                self.verbose_logger,
+                self.progress_logger,
+                self.free_space,
+            )
+            source_setup.setup_source_and_sensors(antenna_components)
 
-        sim_bbox_name = f"{self.placement_name.lower()}_simulation_bbox"
-        self._add_point_sensors(simulation, sim_bbox_name)
+        elapsed = self.profiler.subtask_times["setup_solver"][-1]
+        self._log(f"      - Subtask 'setup_solver' done in {elapsed:.2f}s", log_type="verbose")
+        self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
-        self._align_simulation_with_phone()
+        # Subtask 5: Voxelize
+        self._log("    - Voxelize simulation...", level="progress", log_type="progress")
+        with self.profiler.subtask("setup_voxelize"):
+            all_antenna_parts = list(antenna_components.values())
+            point_sensor_entities = [e for e in self.model.AllEntities() if "Point Sensor Entity" in e.Name]
 
-        material_setup = MaterialSetup(
-            self.config,
-            simulation,
-            self.antenna,
-            self.phantom_name,
-            self.verbose_logger,
-            self.progress_logger,
-            self.free_space,
-        )
-        material_setup.assign_materials(antenna_components)
+            if self.free_space:
+                sim_bbox_name = "freespace_simulation_bbox"
+            else:
+                sim_bbox_name = f"{self.placement_name.lower()}_simulation_bbox"
 
-        gridding_setup = GriddingSetup(
-            self.config,
-            simulation,
-            self.placement_name,
-            self.antenna,
-            self.verbose_logger,
-            self.progress_logger,
-            frequency_mhz=self.frequency_mhz,
-        )
-        gridding_setup.setup_gridding(antenna_components)
+            sim_bbox_entity = next(
+                (e for e in self.model.AllEntities() if hasattr(e, "Name") and e.Name == sim_bbox_name),
+                None,
+            )
+            if not sim_bbox_entity:
+                raise RuntimeError(f"Could not find simulation bounding box: '{sim_bbox_name}' for voxelization.")
 
-        boundary_setup = BoundarySetup(self.config, simulation, self.verbose_logger, self.progress_logger)
-        boundary_setup.setup_boundary_conditions()
+            phantom_entities = [e for e in self.model.AllEntities() if isinstance(e, self.XCoreModeling.TriangleMesh)]
+            all_simulation_parts = phantom_entities + all_antenna_parts + point_sensor_entities + [sim_bbox_entity]
 
-        source_setup = SourceSetup(
-            self.config,
-            simulation,
-            self.frequency_mhz,
-            self.antenna,
-            self.verbose_logger,
-            self.progress_logger,
-            self.free_space,
-        )
-        source_setup.setup_source_and_sensors(antenna_components)
+            super()._finalize_setup(project_manager, simulation, all_simulation_parts, self.frequency_mhz)
 
-        all_antenna_parts = list(antenna_components.values())
-        point_sensor_entities = [e for e in self.model.AllEntities() if "Point Sensor Entity" in e.Name]
+        elapsed = self.profiler.subtask_times["setup_voxelize"][-1]
+        self._log(f"      - Subtask 'setup_voxelize' done in {elapsed:.2f}s", log_type="verbose")
+        self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
-        if self.free_space:
-            sim_bbox_name = "freespace_simulation_bbox"
-        else:
-            sim_bbox_name = f"{self.placement_name.lower()}_simulation_bbox"
-
-        sim_bbox_entity = next(
-            (e for e in self.model.AllEntities() if hasattr(e, "Name") and e.Name == sim_bbox_name),
-            None,
-        )
-        if not sim_bbox_entity:
-            raise RuntimeError(f"Could not find simulation bounding box: '{sim_bbox_name}' for voxelization.")
-
-        phantom_entities = [e for e in self.model.AllEntities() if isinstance(e, self.XCoreModeling.TriangleMesh)]
-        all_simulation_parts = phantom_entities + all_antenna_parts + point_sensor_entities + [sim_bbox_entity]
-
-        super()._finalize_setup(project_manager, simulation, all_simulation_parts, self.frequency_mhz)
+        # Subtask 6: Save project
+        self._log("    - Save project...", level="progress", log_type="progress")
+        with self.profiler.subtask("setup_save_project"):
+            project_manager.save()
+        elapsed = self.profiler.subtask_times["setup_save_project"][-1]
+        self._log(f"      - Subtask 'setup_save_project' done in {elapsed:.2f}s", log_type="verbose")
+        self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
         self._log("Full simulation setup complete.", log_type="success")
         return simulation
@@ -265,7 +313,7 @@ class NearFieldSetup(BaseSetup):
             raise RuntimeError(f"Could not find antenna group. Looked for '{placed_name}' and '{initial_name}'.")
 
         flat_component_list = []
-        for entity in antenna_group.Entities:
+        for entity in antenna_group.Entities:  # type: ignore
             if hasattr(entity, "History") and "Union" in entity.History:
                 flat_component_list.extend(entity.GetChildren())
             else:
@@ -394,9 +442,9 @@ class NearFieldSetup(BaseSetup):
         """Creates and configures the base EM-FDTD simulation entity."""
         self._log("Setting up simulation entity...", log_type="progress")
 
-        if self.document.AllSimulations:  # type: ignore
-            for sim in list(self.document.AllSimulations):  # type: ignore
-                self.document.AllSimulations.Remove(sim)  # type: ignore
+        if self.document.AllSimulations:
+            for sim in list(self.document.AllSimulations):
+                self.document.AllSimulations.Remove(sim)
 
         sim_name = f"EM_FDTD_{self.phantom_name}_{self.frequency_mhz}MHz_{self.placement_name}"
         if self.free_space:
@@ -408,7 +456,7 @@ class NearFieldSetup(BaseSetup):
 
         simulation.Frequency = self.frequency_mhz, s4l_v1.units.MHz
 
-        self.document.AllSimulations.Add(simulation)  # type: ignore
+        self.document.AllSimulations.Add(simulation)
 
         self._setup_solver_settings(simulation)
 
@@ -427,3 +475,114 @@ class NearFieldSetup(BaseSetup):
         self._apply_simulation_time_and_termination(simulation, sim_bbox_entity, self.frequency_mhz)
 
         return simulation
+
+    def _handle_phantom_rotation(self, placement_setup: "PlacementSetup"):
+        """Rotates the phantom to the phone if configured for 'by_cheek' placement."""
+        if self.base_placement_name != "by_cheek":
+            return
+
+        scenario = self.config.get_placement_scenario(self.base_placement_name)
+        orientation_config = scenario["orientations"].get(self.orientation_name)
+
+        # Find the phantom rotation dictionary in the list
+        phantom_rot_config = next(
+            (item for item in orientation_config if isinstance(item, dict) and "rotate_phantom_to_cheek" in item), None
+        )
+
+        if not phantom_rot_config:
+            self._log("Phantom rotation not enabled for this orientation.", log_type="info")
+            return
+
+        self._log("--- Handling Phantom Rotation ---", log_type="header")
+
+        # Find touching angle and add offset
+        touching_angle_deg = self._find_touching_angle()
+        angle_offset_deg = phantom_rot_config.get("angle_offset_deg", 0)
+        final_rotation_deg = touching_angle_deg + angle_offset_deg
+
+        self._log(f"Determined touching angle: {touching_angle_deg:.2f} deg.", log_type="info")
+        self._log(f"Applying offset of {angle_offset_deg:.2f} deg. Final rotation: {final_rotation_deg:.2f} deg.", log_type="info")
+
+        # Create the rotation transform around the Z-axis
+        import XCoreMath
+
+        rotation = XCoreMath.Rotation(XCoreMath.Vec3(0, 0, 1), np.deg2rad(final_rotation_deg))
+
+        # Get all entities that need to be rotated
+        all_entities = self.model.AllEntities()
+        phantom_group_name_lower = self.phantom_name.lower()
+        phantom_group = next((e for e in all_entities if phantom_group_name_lower in e.Name.lower() and hasattr(e, "Entities")), None)
+        sim_bbox = next((e for e in all_entities if e.Name.endswith("_simulation_bbox")), None)
+        head_bbox = next((e for e in all_entities if e.Name.endswith("_Head_BBox")), None)
+        trunk_bbox = next((e for e in all_entities if e.Name.endswith("_Trunk_BBox")), None)
+        point_sensors = [e for e in all_entities if "Point Sensor Entity" in e.Name]
+
+        entities_to_transform = [e for e in [phantom_group, sim_bbox, head_bbox, trunk_bbox] if e]
+        entities_to_transform.extend(point_sensors)
+
+        if not phantom_group:
+            self._log(
+                f"Could not find phantom group containing '{phantom_group_name_lower}'. Phantom will not be rotated.", log_type="warning"
+            )
+
+        self._log(f"--- Applying rotation to {len(entities_to_transform)} specific entities.", log_type="verbose")
+        for entity in entities_to_transform:
+            self._log(f"  - Rotating '{entity.Name}'", log_type="verbose")
+            entity.ApplyTransform(rotation)
+
+        self._log("Entities rotated successfully.", log_type="success")
+
+        # Since the phantom is rotated, we remove the phantom rotation instruction
+        # from the list to prevent the phone from being rotated by it.
+        if phantom_rot_config in placement_setup.orientation_rotations:
+            placement_setup.orientation_rotations.remove(phantom_rot_config)
+
+    def _find_touching_angle(self) -> float:
+        """
+        Finds the angle at which the phantom touches the phone using a binary search.
+        Returns the last angle before touching.
+        """
+        self._log("Finding touching angle using binary search...", log_type="progress")
+        import XCoreMath
+
+        all_entities = self.model.AllEntities()
+        skin_entity = next((e for e in all_entities if hasattr(e, "Name") and "Skin" in e.Name), None)
+
+        antenna_group = next((e for e in all_entities if e.Name.startswith("Antenna ") and hasattr(e, "Entities")), None)
+
+        if not antenna_group:
+            self._log("Could not find antenna group for distance check. Returning 0.", log_type="warning")
+            return 0.0
+
+        ground_entities = [e for e in antenna_group.Entities if "Ground" in e.Name or "Substrate" in e.Name]  # type: ignore
+
+        if not skin_entity or not ground_entities:
+            self._log("Could not find all necessary entities for distance check. Returning 0.", log_type="warning")
+            return 0.0
+
+        low_angle, high_angle = 0, 30  # Search space in degrees
+        precision = 0.5
+        last_safe_angle = 0
+
+        while high_angle - low_angle > precision:
+            mid_angle = (low_angle + high_angle) / 2
+
+            # Apply rotation
+            rotation = XCoreMath.Rotation(XCoreMath.Vec3(0, 0, 1), np.deg2rad(mid_angle))
+            skin_entity.ApplyTransform(rotation.Inverse())  # This .Inverse() makes up for the minus sign in the return value
+
+            # Check distance
+            distance, _ = self.XCoreModeling.GetEntityEntityDistance(skin_entity, ground_entities[0])
+
+            # Rotate back
+            skin_entity.ApplyTransform(rotation)
+
+            self._log(f"  - Angle: {mid_angle:.2f} deg, Distance: {distance.Distance:.4f} mm", log_type="verbose")
+
+            if distance.Distance > 0:  # Not touching
+                last_safe_angle = mid_angle
+                low_angle = mid_angle
+            else:  # Touching or intersecting
+                high_angle = mid_angle
+
+        return -last_safe_angle

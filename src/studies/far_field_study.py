@@ -1,10 +1,9 @@
+import os
 import traceback
 from typing import TYPE_CHECKING, Optional
 
 from ..results_extractor import ResultsExtractor
 from ..setups.far_field_setup import FarFieldSetup
-from ..setups.phantom_setup import PhantomSetup
-from ..simulation_runner import SimulationRunner
 from ..utils import profile
 from .base_study import BaseStudy
 
@@ -15,13 +14,19 @@ if TYPE_CHECKING:
 class FarFieldStudy(BaseStudy):
     """Manages a far-field simulation study."""
 
-    def __init__(self, config_filename: str = "far_field_config.json", gui: Optional["QueueGUI"] = None):
-        super().__init__("far_field", config_filename, gui)
+    def __init__(
+        self,
+        config_filename: str = "far_field_config.json",
+        gui: Optional["QueueGUI"] = None,
+        no_cache: bool = False,
+    ):
+        super().__init__("far_field", config_filename, gui, no_cache=no_cache)
 
     def _run_study(self):
         """Executes the far-field study by iterating through each simulation case."""
+        config_filename = os.path.basename(self.config.config_path)
         self._log(
-            f"--- Starting Far-Field Study: {self.config.get_setting('study_name')} ---",
+            f"--- Starting Far-Field Study: {config_filename} ---",
             level="progress",
             log_type="header",
         )
@@ -30,6 +35,16 @@ class FarFieldStudy(BaseStudy):
         do_run = self.config.get_setting("execution_control.do_run", True)
         do_extract = self.config.get_setting("execution_control.do_extract", True)
         auto_cleanup = self.config.get_auto_cleanup_previous_results()
+
+        # Warn about common misconfiguration
+        if self.config.get_only_write_input_file() and not do_run:
+            self._log(
+                "WARNING: 'only_write_input_file' is set to true, but 'do_run' is false. "
+                "The input file will NOT be written because the run phase is disabled. "
+                "Set 'do_run: true' to write the input file.",
+                level="progress",
+                log_type="warning",
+            )
 
         if not do_setup and not do_run and not do_extract:
             self._log(
@@ -66,12 +81,8 @@ class FarFieldStudy(BaseStudy):
         elif do_extract:
             self.profiler.current_phase = "extract"
 
-        if self.gui:
-            self.gui.update_overall_progress(0, 100)  # Initialize GUI progress
-
         simulation_count = 0
         for phantom_name in phantoms:  # type: ignore
-            phantom_setup = PhantomSetup(self.config, phantom_name, self.verbose_logger, self.progress_logger)
             for freq in frequencies:  # type: ignore
                 for direction_name in incident_directions:
                     for polarization_name in polarizations:
@@ -83,6 +94,12 @@ class FarFieldStudy(BaseStudy):
                             level="progress",
                             log_type="header",
                         )
+                        if self.gui:
+                            self.gui.update_simulation_details(
+                                simulation_count,
+                                total_simulations,
+                                f"{phantom_name}, {freq}MHz, {direction_name}, {polarization_name}",
+                            )
                         self._run_single_simulation(
                             phantom_name,
                             freq,
@@ -91,8 +108,10 @@ class FarFieldStudy(BaseStudy):
                             do_setup,  # type: ignore
                             do_run,  # type: ignore
                             do_extract,  # type: ignore
-                            phantom_setup,
                         )
+                        self.profiler.simulation_completed()
+                        if self.gui:
+                            self.gui.update_overall_progress(simulation_count, total_simulations)
 
     def _run_single_simulation(
         self,
@@ -103,7 +122,6 @@ class FarFieldStudy(BaseStudy):
         do_setup: bool,
         do_run: bool,
         do_extract: bool,
-        phantom_setup: "PhantomSetup",
     ):
         """Runs a full simulation for a single far-field case."""
         try:
@@ -111,21 +129,18 @@ class FarFieldStudy(BaseStudy):
 
             # 1. Setup Phase
             if do_setup:
-                needs_setup = self.project_manager.create_or_open_project(
-                    phantom_name,
-                    freq,
-                    "environmental",
-                    polarization_name,
-                    direction_name,
-                )
+                with profile(self, "setup"):
+                    verification_status = self.project_manager.create_or_open_project(
+                        phantom_name,
+                        freq,
+                        "environmental",
+                        polarization_name,
+                        direction_name,
+                    )
+                    needs_setup = not verification_status["setup_done"]
 
-                if needs_setup:
-                    with profile(self, "setup"):
-                        if self.gui:
-                            self.gui.update_stage_progress("Setup", 0, 1)
-
+                    if needs_setup:
                         self.project_manager.create_new()
-                        phantom_setup.ensure_phantom_is_loaded()
 
                         setup = FarFieldSetup(
                             self.config,
@@ -136,9 +151,15 @@ class FarFieldStudy(BaseStudy):
                             self.project_manager,
                             self.verbose_logger,
                             self.progress_logger,
+                            self.profiler,
+                            self.gui,
                         )
+
                         with self.subtask("setup_simulation", instance_to_profile=setup) as wrapper:
-                            simulation = wrapper(setup.run_full_setup)(phantom_setup)
+                            if wrapper:
+                                simulation = wrapper(setup.run_full_setup)(self.project_manager)
+                            else:
+                                simulation = setup.run_full_setup(self.project_manager)
 
                         if not simulation:
                             self._log(
@@ -148,22 +169,29 @@ class FarFieldStudy(BaseStudy):
                             )
                             return
 
-                        self.project_manager.save()
-                        surgical_config = self.config.build_simulation_config(
-                            phantom_name=phantom_name,
-                            frequency_mhz=freq,
-                            direction_name=direction_name,
-                            polarization_name=polarization_name,
-                        )
+                    # Always ensure metadata is written, even if setup is skipped
+                    surgical_config = self.config.build_simulation_config(
+                        phantom_name=phantom_name,
+                        frequency_mhz=freq,
+                        direction_name=direction_name,
+                        polarization_name=polarization_name,
+                    )
+                    if self.project_manager.project_path:
                         self.project_manager.write_simulation_metadata(
-                            self.project_manager.project_path + ".meta.json",  # type: ignore
+                            os.path.join(os.path.dirname(self.project_manager.project_path), "config.json"),
                             surgical_config,
                         )
 
-                        if self.gui:
-                            progress = self.profiler.get_weighted_progress("setup", 1.0)
-                            self.gui.update_overall_progress(int(progress), 100)
-                            self.gui.update_stage_progress("Setup", 1, 1)
+                    # Update do_run and do_extract based on verification
+                    if verification_status["run_done"]:
+                        do_run = False
+                        self._log("Skipping run phase, deliverables found.", log_type="info")
+                    if verification_status["extract_done"]:
+                        do_extract = False
+                        self._log("Skipping extract phase, deliverables found.", log_type="info")
+
+                    if self.gui:
+                        self.gui.update_stage_progress("Setup", 1, 1)
             else:
                 self.project_manager.create_or_open_project(
                     phantom_name,
@@ -192,17 +220,7 @@ class FarFieldStudy(BaseStudy):
             # 2. Run Phase
             if do_run:
                 with profile(self, "run"):
-                    runner = SimulationRunner(
-                        self.config,
-                        self.project_manager.project_path,  # type: ignore
-                        [simulation],  # type: ignore
-                        self.verbose_logger,
-                        self.progress_logger,
-                        self.gui,
-                        self,
-                    )
-                    runner.run_all()
-                    self.profiler.complete_run_phase()
+                    self._execute_run_phase(simulation)  # type: ignore
 
             # 3. Extraction Phase
             if do_extract:
@@ -216,22 +234,26 @@ class FarFieldStudy(BaseStudy):
                     if not reloaded_simulation:
                         raise RuntimeError(f"Could not find simulation '{sim_name}' after reloading.")
 
-                    extractor = ResultsExtractor(
-                        config=self.config,
-                        simulation=reloaded_simulation,  # type: ignore
-                        phantom_name=phantom_name,
-                        frequency_mhz=freq,
-                        scenario_name="environmental",
-                        position_name=polarization_name,
-                        orientation_name=direction_name,
-                        study_type="far_field",
-                        verbose_logger=self.verbose_logger,
-                        progress_logger=self.progress_logger,
-                        gui=self.gui,  # type: ignore
-                        study=self,
-                    )
-                    extractor.extract()
+                    with self.subtask("extract_results_total"):
+                        extractor = ResultsExtractor(
+                            config=self.config,
+                            simulation=reloaded_simulation,  # type: ignore
+                            phantom_name=phantom_name,
+                            frequency_mhz=freq,
+                            scenario_name="environmental",
+                            position_name=polarization_name,
+                            orientation_name=direction_name,
+                            study_type="far_field",
+                            verbose_logger=self.verbose_logger,
+                            progress_logger=self.progress_logger,
+                            gui=self.gui,  # type: ignore
+                            study=self,
+                        )
+                        extractor.extract()
+                    self._verify_and_update_metadata("extract")
                     self.project_manager.save()
+                    if self.gui:
+                        self.gui.update_stage_progress("Extracting Results", 1, 1)
 
         except Exception as e:
             self._log(f"ERROR during simulation: {e}", log_type="error")

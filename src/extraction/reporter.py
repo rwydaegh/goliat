@@ -82,7 +82,8 @@ class Reporter:
             "peak_sar_details": results_data.get("peak_sar_details", {}),
             "point_sensor_data": results_data.get("point_sensor_data", {}),
         }
-        pickle_filepath = os.path.join(results_dir, "sar_stats_all_tissues.pkl")
+        deliverables = self.parent.get_deliverable_filenames()
+        pickle_filepath = os.path.join(results_dir, deliverables["pkl"])
 
         with open(pickle_filepath, "wb") as f:
             pickle.dump(pickle_data, f)
@@ -99,7 +100,8 @@ class Reporter:
     ):
         """Saves a human-readable HTML report."""
         html_content = self._build_html_content(df, tissue_groups, group_sar_stats, results_data)
-        html_filepath = os.path.join(results_dir, "sar_stats_all_tissues.html")
+        deliverables = self.parent.get_deliverable_filenames()
+        html_filepath = os.path.join(results_dir, deliverables["html"])
 
         with open(html_filepath, "w", encoding="utf-8") as f:
             f.write(html_content)

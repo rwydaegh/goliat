@@ -29,6 +29,7 @@ class PowerExtractor(LoggingMixin):
         self.frequency_mhz = parent.frequency_mhz
         self.verbose_logger = parent.verbose_logger
         self.progress_logger = parent.progress_logger
+        self.gui = parent.gui
         self.results_data = results_data
 
         import s4l_v1.document
@@ -44,21 +45,26 @@ class PowerExtractor(LoggingMixin):
         Args:
             simulation_extractor: The results extractor from the simulation object.
         """
-        self._log("  - Extracting input power...", log_type="progress")
-        with self.parent.study.subtask("extract_input_power"):  # type: ignore
-            try:
-                if self.study_type == "far_field":
-                    self._extract_far_field_power()
-                    return
+        self._log("    - Extract input power...", level="progress", log_type="progress")
+        try:
+            elapsed = 0.0
+            if self.parent.study:
+                with self.parent.study.profiler.subtask("extract_input_power"):  # type: ignore
+                    if self.study_type == "far_field":
+                        self._extract_far_field_power()
+                    else:
+                        self._extract_near_field_power(simulation_extractor)
 
-                self._extract_near_field_power(simulation_extractor)
-            except Exception as e:
-                self._log(
-                    f"  - ERROR: An exception occurred during input power extraction: {e}",
-                    level="progress",
-                    log_type="error",
-                )
-                self.verbose_logger.error(traceback.format_exc())
+                elapsed = self.parent.study.profiler.subtask_times["extract_input_power"][-1]
+            self._log(f"      - Subtask 'extract_input_power' done in {elapsed:.2f}s", log_type="verbose")
+            self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
+        except Exception as e:
+            self._log(
+                f"  - ERROR: An exception occurred during input power extraction: {e}",
+                level="progress",
+                log_type="error",
+            )
+            self.verbose_logger.error(traceback.format_exc())
 
     def _extract_far_field_power(self):
         """Calculates theoretical input power for far-field simulations."""
@@ -190,32 +196,39 @@ class PowerExtractor(LoggingMixin):
         Args:
             simulation_extractor: The results extractor from the simulation object.
         """
-        self._log("  - Extracting power balance...", log_type="progress")
+        self._log("    - Extract power balance...", level="progress", log_type="progress")
         try:
-            em_sensor_extractor = simulation_extractor["Overall Field"]
-            power_balance_extractor = em_sensor_extractor.Outputs["Power Balance"]
-            power_balance_extractor.Update()
+            elapsed = 0.0
+            if self.parent.study:
+                with self.parent.study.profiler.subtask("extract_power_balance"):  # type: ignore
+                    em_sensor_extractor = simulation_extractor["Overall Field"]
+                    power_balance_extractor = em_sensor_extractor.Outputs["Power Balance"]
+                    power_balance_extractor.Update()
 
-            power_balance_data = {
-                key: power_balance_extractor.Data.DataSimpleDataCollection.FieldValue(key, 0)
-                for key in power_balance_extractor.Data.DataSimpleDataCollection.Keys()
-                if key != "Balance"
-            }
+                    power_balance_data = {
+                        key: power_balance_extractor.Data.DataSimpleDataCollection.FieldValue(key, 0)
+                        for key in power_balance_extractor.Data.DataSimpleDataCollection.Keys()
+                        if key != "Balance"
+                    }
 
-            if self.parent.study_type == "far_field" and "input_power_W" in self.results_data:
-                power_balance_data["Pin"] = self.results_data["input_power_W"]
-                self._log(
-                    f"    - Overwriting Pin with theoretical value: {float(power_balance_data['Pin']):.4e} W",
-                    log_type="info",
-                )
+                    if self.parent.study_type == "far_field" and "input_power_W" in self.results_data:
+                        power_balance_data["Pin"] = self.results_data["input_power_W"]
+                        self._log(
+                            f"    - Overwriting Pin with theoretical value: {float(power_balance_data['Pin']):.4e} W",
+                            log_type="info",
+                        )
 
-            pin = power_balance_data.get("Pin", 0.0)
-            p_out = power_balance_data.get("DielLoss", 0.0) + power_balance_data.get("RadPower", 0.0)
-            balance = 100 * (p_out / pin) if pin > 1e-9 else float("nan")
+                    pin = power_balance_data.get("Pin", 0.0)
+                    p_out = power_balance_data.get("DielLoss", 0.0) + power_balance_data.get("RadPower", 0.0)
+                    balance = 100 * (p_out / pin) if pin > 1e-9 else float("nan")
 
-            power_balance_data["Balance"] = balance
-            self._log(f"    - Final Balance: {balance:.2f}%", log_type="highlight")
-            self.results_data["power_balance"] = power_balance_data
+                    power_balance_data["Balance"] = balance
+                    self._log(f"    - Final Balance: {balance:.2f}%", log_type="highlight")
+                    self.results_data["power_balance"] = power_balance_data
+
+                elapsed = self.parent.study.profiler.subtask_times["extract_power_balance"][-1]
+            self._log(f"      - Subtask 'extract_power_balance' done in {elapsed:.2f}s", log_type="verbose")
+            self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
         except Exception as e:
             self._log(f"  - WARNING: Could not extract power balance: {e}", log_type="warning")

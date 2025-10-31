@@ -1,4 +1,6 @@
+import contextlib
 import importlib
+import io
 import logging
 import os
 import traceback
@@ -10,7 +12,8 @@ from src.config import Config
 from src.logging_manager import LoggingMixin
 from src.profiler import Profiler
 from src.project_manager import ProjectManager
-from src.utils import StudyCancelledError, ensure_s4l_running, profile_subtask
+from src.simulation_runner import SimulationRunner
+from src.utils import StudyCancelledError, ensure_s4l_running
 
 if TYPE_CHECKING:
     from ..gui_manager import QueueGUI
@@ -25,11 +28,13 @@ class BaseStudy(LoggingMixin):
         config_filename: Optional[str] = None,
         gui: Optional["QueueGUI"] = None,
         profiler=None,
+        no_cache: bool = False,
     ):
         self.study_type = study_type
         self.gui = gui
         self.verbose_logger = logging.getLogger("verbose")
         self.progress_logger = logging.getLogger("progress")
+        self.no_cache = no_cache
 
         self.base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -50,16 +55,52 @@ class BaseStudy(LoggingMixin):
         )
         self.line_profiler = None
 
-        self.project_manager = ProjectManager(self.config, self.verbose_logger, self.progress_logger, self.gui)
+        self.project_manager = ProjectManager(
+            self.config,
+            self.verbose_logger,
+            self.progress_logger,
+            self.gui,
+            no_cache=self.no_cache,
+        )
 
     def _check_for_stop_signal(self):
         """Checks if the GUI has requested a stop."""
         if self.gui and self.gui.is_stopped():
             raise StudyCancelledError("Study cancelled by user.")
 
+    @contextlib.contextmanager
     def subtask(self, task_name: str, instance_to_profile=None):
-        """Returns a context manager that profiles a subtask."""
-        return profile_subtask(self, task_name, instance_to_profile)
+        """A context manager for a 'subtask' within a phase."""
+        is_top_level_subtask = not self.profiler.subtask_stack
+        sub_stage_display_name = task_name.replace("_", " ").capitalize()
+
+        if is_top_level_subtask:
+            self._log(f"  - {sub_stage_display_name}...", level="progress", log_type="progress")
+            if self.gui and self.profiler.current_phase:
+                self.gui.update_stage_progress(self.profiler.current_phase.capitalize(), 0, 1, sub_stage=sub_stage_display_name)
+                self.start_stage_animation(task_name, 100)
+
+        lp, wrapper = self._setup_line_profiler_if_needed(task_name, instance_to_profile)
+
+        try:
+            with self.profiler.subtask(task_name):
+                if lp and wrapper:
+                    yield wrapper
+                else:
+                    yield
+        finally:
+            elapsed = self.profiler.subtask_times[task_name][-1]
+            self._log(f"    - Subtask '{task_name}' done in {elapsed:.2f}s", log_type="verbose")
+
+            if is_top_level_subtask:
+                self._log(f"    - Done in {elapsed:.2f}s", level="progress", log_type="success")
+                if self.gui:
+                    self.end_stage_animation()
+                    if self.profiler.current_phase:
+                        self.gui.update_stage_progress(self.profiler.current_phase.capitalize(), 1, 1)
+
+            if lp:
+                self._log_line_profiler_stats(task_name, lp)
 
     def start_stage_animation(self, task_name: str, end_value: int):
         """Starts the GUI animation for a stage."""
@@ -100,44 +141,83 @@ class BaseStudy(LoggingMixin):
         """Executes the specific study. Must be implemented by subclasses."""
         raise NotImplementedError("The '_run_study' method must be implemented by a subclass.")
 
-    def _setup_line_profiler(self, subtask_name: str, instance) -> tuple:
+    def _execute_run_phase(self, simulation):
+        """Executes the run phase with consistent GUI management and profiling.
+
+        Args:
+            simulation: The simulation object to run.
+        """
+        with self.subtask("run_simulation_total"):
+            runner = SimulationRunner(
+                self.config,
+                self.project_manager.project_path,  # type: ignore
+                simulation,
+                self.profiler,
+                self.verbose_logger,
+                self.progress_logger,
+                self.gui,
+            )
+            runner.run()
+
+        self.profiler.complete_run_phase()
+        self._verify_and_update_metadata("run")
+        self.end_stage_animation()
+        if self.gui:
+            self.gui.update_stage_progress("Running Simulation", 1, 1)
+
+    def _verify_and_update_metadata(self, stage: str):
+        """Verifies deliverables for a stage and updates metadata if they exist."""
+        if not self.project_manager.project_path:
+            return
+
+        project_dir = os.path.dirname(self.project_manager.project_path)
+        project_filename = os.path.basename(self.project_manager.project_path)
+
+        # We need a timestamp for the check, but it's only used to check if files are newer.
+        # For this purpose, we can use a very old timestamp to just check for existence.
+        # A more robust solution might involve getting the setup timestamp from the metadata.
+        # However, for the purpose of updating after a run/extract, checking for existence is sufficient.
+        creation_timestamp = 0
+
+        deliverables_status = self.project_manager._get_deliverables_status(project_dir, project_filename, creation_timestamp)
+
+        if stage == "run" and deliverables_status["run_done"]:
+            self._log("Run deliverables verified. Updating metadata.", log_type="warning")
+            self.project_manager.update_simulation_metadata(os.path.join(project_dir, "config.json"), run_done=True)
+        elif stage == "extract" and deliverables_status["extract_done"]:
+            self._log("Extract deliverables verified. Updating metadata.", log_type="warning")
+            self.project_manager.update_simulation_metadata(os.path.join(project_dir, "config.json"), extract_done=True)
+        else:
+            self._log(f"Deliverables for '{stage}' phase not found. Metadata not updated.", log_type="warning")
+
+    def _setup_line_profiler_if_needed(self, subtask_name: str, instance) -> tuple:
         """Sets up the line profiler for a specific subtask if configured."""
         line_profiling_config = self.config.get_line_profiling_config()
+        if not (instance and line_profiling_config.get("enabled", False) and subtask_name in line_profiling_config.get("subtasks", {})):
+            return None, None
 
-        if not line_profiling_config.get("enabled", False) or subtask_name not in line_profiling_config.get("subtasks", {}):
-            return None, lambda func: func
-
-        self._log(
-            f"  - Setting up line profiler for subtask: {subtask_name}",
-            level="verbose",
-            log_type="verbose",
-        )
-
+        self._log(f"    - Activating line profiler for subtask: {subtask_name}", "verbose", "verbose")
         lp = LineProfiler()
         functions_to_profile = line_profiling_config["subtasks"][subtask_name]
-
         for func_path in functions_to_profile:
             try:
                 module_path, class_name, func_name = func_path.rsplit(".", 2)
-
-                # Dynamically import the module and get the class
                 module = importlib.import_module(module_path)
                 class_obj = getattr(module, class_name)
-
-                # Get the function object from the class
                 func_to_add = getattr(class_obj, func_name)
-
-                self._log(
-                    f"    - Adding function to profiler: {class_name}.{func_name} from {module_path}",
-                    log_type="verbose",
-                )
+                self._log(f"    - Adding function to profiler: {class_name}.{func_name} from {module_path}", log_type="verbose")
                 lp.add_function(func_to_add)
-
             except (ImportError, AttributeError, ValueError) as e:
                 self._log(
                     f"  - WARNING: Could not find or parse function '{func_path}' for line profiling. Error: {e}",
                     level="progress",
                     log_type="warning",
                 )
-
         return lp, lp.wrap_function
+
+    def _log_line_profiler_stats(self, task_name: str, lp: LineProfiler):
+        """Logs the line profiler statistics."""
+        self._log(f"      - Line profiler stats for '{task_name}':", "verbose", "verbose")
+        s = io.StringIO()
+        lp.print_stats(stream=s)
+        self.verbose_logger.info(s.getvalue())

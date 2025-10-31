@@ -20,7 +20,6 @@ def mock_config():
     return config
 
 
-@pytest.mark.skip_on_ci
 def test_boundary_setup_initialization(mock_config):
     setup = BoundarySetup(mock_config, MagicMock(), MagicMock(), MagicMock())
     assert setup.config == mock_config

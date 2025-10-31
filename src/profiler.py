@@ -1,3 +1,4 @@
+import contextlib
 import json
 import time
 from collections import defaultdict
@@ -78,6 +79,10 @@ class Profiler:
         """Sets the index of the currently processing project."""
         self.current_project = project_index
 
+    def simulation_completed(self):
+        """Increments the count of completed simulations."""
+        self.completed_simulations += 1
+
     def start_stage(self, phase_name: str, total_stages: int = 1):
         """Marks the beginning of a new study phase or stage.
 
@@ -103,64 +108,111 @@ class Profiler:
 
     def get_weighted_progress(self, phase_name: str, phase_progress_ratio: float) -> float:
         """Calculates the overall study progress based on phase weights.
-
         Args:
             phase_name: The name of the current phase.
             phase_progress_ratio: The progress of the current phase (0.0 to 1.0).
-
         Returns:
             The total weighted progress percentage.
         """
-        progress = 0
+        if self.total_simulations == 0:
+            return 0.0
+
+        # Progress within the current simulation
+        progress_current_sim = 0
         for p, w in self.phase_weights.items():
             if p == phase_name:
-                progress += w * phase_progress_ratio
+                progress_current_sim += w * phase_progress_ratio
                 break
-            progress += w
-        return progress * 100
+            progress_current_sim += w
+
+        # Overall progress
+        overall_progress = (self.completed_simulations + progress_current_sim) / self.total_simulations
+        # print(f"DEBUG: get_weighted_progress: phase={phase_name}, ratio={phase_progress_ratio:.2f}, completed={self.completed_simulations}, total={self.total_simulations}, progress={overall_progress * 100:.1f}%")
+        return overall_progress * 100
 
     def get_subtask_estimate(self, task_name: str) -> float:
         """Retrieves the estimated time for a specific subtask.
-
         Args:
             task_name: The name of the subtask.
-
         Returns:
             The estimated duration in seconds.
         """
         return self.profiling_config.get(f"avg_{task_name}", 1.0)
 
+    def get_phase_subtasks(self, phase_name: str) -> list:
+        """Gets a list of subtasks for a given phase.
+        Args:
+            phase_name: The name of the phase.
+        Returns:
+            A list of subtask names.
+        """
+        subtasks = []
+        for key in self.profiling_config.keys():
+            if key.startswith(f"avg_{phase_name}_"):
+                subtasks.append(key.replace("avg_", ""))
+        return subtasks
+
     def get_time_remaining(self, current_stage_progress: float = 0.0) -> float:
         """Estimates the total time remaining for the study.
-
         This considers completed phases, current phase progress, and estimated
         time for all future phases.
-
         Args:
             current_stage_progress: The progress of the current stage (0.0 to 1.0).
-
         Returns:
             The estimated time remaining in seconds.
         """
-        if not self.current_phase:
-            return 0
+        if not self.current_phase or self.total_simulations == 0:
+            return 0.0
 
+        # Calculate the total estimated time for one simulation
+        total_time_per_sim = 0
+        for phase in ["setup", "run", "extract"]:
+            if self.execution_control.get(f"do_{phase}", False):
+                total_time_per_sim += self.profiling_config.get(f"avg_{phase}_time", 60)
+
+        # Calculate the time already spent on completed simulations
+        time_for_completed_sims = self.completed_simulations * total_time_per_sim
+
+        # Calculate the time spent on the current simulation so far
+        time_spent_on_current_sim = 0
         ordered_phases = [p for p in ["setup", "run", "extract"] if self.execution_control.get(f"do_{p}", False)]
         try:
             current_phase_index = ordered_phases.index(self.current_phase)
         except ValueError:
-            return 0
+            current_phase_index = 0
 
-        current_phase_total_time = self.profiling_config.get(f"avg_{self.current_phase}_time", 60)
-        time_in_current_phase = current_phase_total_time * (1 - current_stage_progress)
+        for i in range(current_phase_index):
+            phase = ordered_phases[i]
+            time_spent_on_current_sim += self.profiling_config.get(f"avg_{phase}_time", 60)
 
-        time_for_future_phases = 0
-        for i in range(current_phase_index + 1, len(ordered_phases)):
-            future_phase = ordered_phases[i]
-            time_for_future_phases += self.profiling_config.get(f"avg_{future_phase}_time", 60)
+        current_phase_time = self.profiling_config.get(f"avg_{self.current_phase}_time", 60)
+        time_spent_on_current_sim += current_phase_time * current_stage_progress
 
-        eta = time_in_current_phase + time_for_future_phases
+        # Time elapsed in the current phase
+        if self.phase_start_time:
+            time_spent_on_current_sim += time.monotonic() - self.phase_start_time
+
+        # Total time elapsed is the sum of time for completed sims and time spent on the current one
+        total_elapsed_time = time_for_completed_sims + time_spent_on_current_sim
+
+        # Total estimated time for all simulations
+        total_estimated_time = self.total_simulations * total_time_per_sim
+
+        # Estimated time remaining
+        eta = total_estimated_time - total_elapsed_time
         return max(0, eta)
+
+    @contextlib.contextmanager
+    def subtask(self, task_name: str):
+        """A context manager to time a subtask."""
+        self.subtask_stack.append({"name": task_name, "start_time": time.monotonic()})
+        try:
+            yield
+        finally:
+            subtask = self.subtask_stack.pop()
+            elapsed = time.monotonic() - subtask["start_time"]
+            self.subtask_times[subtask["name"]].append(elapsed)
+            self.update_and_save_estimates()
 
     def update_and_save_estimates(self):
         """Updates the profiling configuration with the latest average times and saves it.
@@ -178,12 +230,15 @@ class Profiler:
 
         for key, value in self.profiling_config.items():
             if key.startswith("avg_"):
-                full_config[self.study_type][key] = value
+                full_config[self.study_type][key] = round(value, 2)
 
         for task_name, times in self.subtask_times.items():
             if times:
                 avg_task_time = sum(times) / len(times)
-                full_config[self.study_type][f"avg_{task_name}"] = avg_task_time
+                avg_key = f"avg_{task_name}"
+                full_config[self.study_type][avg_key] = round(avg_task_time, 2)
+                # Also update the in-memory profiling_config so it's available when sent to GUI
+                self.profiling_config[avg_key] = round(avg_task_time, 2)
 
         with open(self.config_path, "w") as f:
             json.dump(full_config, f, indent=4)

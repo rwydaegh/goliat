@@ -1,12 +1,14 @@
 import hashlib
 import json
 import os
+from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
 import h5py
 import s4l_v1.model as s4l_model
 
 from .logging_manager import LoggingMixin
+from .results_extractor import ResultsExtractor
 from .utils import open_project
 
 if TYPE_CHECKING:
@@ -35,6 +37,7 @@ class ProjectManager(LoggingMixin):
         verbose_logger: "Logger",
         progress_logger: "Logger",
         gui: Optional["QueueGUI"] = None,
+        no_cache: bool = False,
     ):
         """Initializes the ProjectManager.
 
@@ -43,11 +46,13 @@ class ProjectManager(LoggingMixin):
             verbose_logger: Logger for detailed output.
             progress_logger: Logger for high-level progress updates.
             gui: The GUI proxy for inter-process communication.
+            no_cache: If True, bypasses metadata verification.
         """
         self.config = config
         self.verbose_logger = verbose_logger
         self.progress_logger = progress_logger
         self.gui = gui
+        self.no_cache = no_cache
         import s4l_v1.document
 
         self.document = s4l_v1.document
@@ -68,7 +73,13 @@ class ProjectManager(LoggingMixin):
             surgical_config: The surgical configuration dictionary for the simulation.
         """
         config_hash = self._generate_config_hash(surgical_config)
-        metadata = {"config_hash": config_hash, "config_snapshot": surgical_config}
+        metadata = {
+            "config_hash": config_hash,
+            "config_snapshot": surgical_config,
+            "setup_timestamp": datetime.now().isoformat(),
+            "run_done": False,
+            "extract_done": False,
+        }
 
         os.makedirs(os.path.dirname(meta_path), exist_ok=True)
         with open(meta_path, "w") as f:
@@ -78,24 +89,66 @@ class ProjectManager(LoggingMixin):
             log_type="info",
         )
 
-    def verify_simulation_metadata(self, meta_path: str, surgical_config: dict, smash_path: Optional[str] = None) -> bool:
-        """Verifies if a simulation's metadata file exists and matches the current config.
+    def update_simulation_metadata(self, meta_path: str, run_done: Optional[bool] = None, extract_done: Optional[bool] = None):
+        """Updates the 'run_done' or 'extract_done' status in a metadata file.
 
         Args:
-            meta_path: The full path to the metadata file to check.
-            surgical_config: The surgical configuration to compare against.
-            smash_path: (Optional) The explicit path to the .smash file to validate.
-                        If not provided, self.project_path is used.
-
-        Returns:
-            True if the metadata is valid and matches, False otherwise.
+            meta_path: The full path to the metadata file.
+            run_done: The new status for the 'run' phase.
+            extract_done: The new status for the 'extract' phase.
         """
         if not os.path.exists(meta_path):
-            self._log(
-                f"  - No metadata file found for this simulation at {os.path.basename(meta_path)}. Verification failed.",
-                log_type="info",
-            )
-            return False
+            self._log(f"Cannot update metadata, file not found: {meta_path}", log_type="warning")
+            return
+
+        with open(meta_path, "r+") as f:
+            metadata = json.load(f)
+            if run_done is not None:
+                metadata["run_done"] = run_done
+            if extract_done is not None:
+                metadata["extract_done"] = extract_done
+            f.seek(0)
+            json.dump(metadata, f, indent=4)
+            f.truncate()
+        self._log(f"Updated metadata in {os.path.basename(meta_path)}", log_type="info")
+
+    def _get_deliverables_status(self, project_dir: str, project_filename: str, setup_timestamp: float) -> dict:
+        """Checks for the existence and freshness of simulation deliverables."""
+        status = {"run_done": False, "extract_done": False}
+
+        # Check for run deliverables
+        results_dir = os.path.join(project_dir, project_filename + "_Results")
+        h5_file_path = None
+        if os.path.exists(results_dir):
+            output_files = [os.path.join(results_dir, f) for f in os.listdir(results_dir) if f.endswith("_Output.h5")]
+            if output_files:
+                # Find the latest file based on modification time
+                h5_file_path = max(output_files, key=os.path.getmtime)
+
+        # TODO: iSolve somehow still produces small _Output.h5 files. 8 MB limit is arbitrary...
+        if h5_file_path and os.path.getsize(h5_file_path) > 8 * 1024 * 1024 and os.path.getmtime(h5_file_path) > setup_timestamp:
+            status["run_done"] = True
+
+        # Check for extract deliverables
+        deliverable_filenames = ResultsExtractor.get_deliverable_filenames()
+        extract_files = [os.path.join(project_dir, filename) for filename in deliverable_filenames.values()]
+
+        # All deliverables must exist and be fresher than the setup timestamp.
+        are_all_deliverables_fresh = all(
+            os.path.exists(file_path) and os.path.getmtime(file_path) > setup_timestamp for file_path in extract_files
+        )
+
+        if are_all_deliverables_fresh:
+            status["extract_done"] = True
+
+        return status
+
+    def verify_simulation_metadata(self, meta_path: str, surgical_config: dict, smash_path: Optional[str] = None) -> dict:
+        """Verifies metadata and returns the completion status of simulation phases."""
+        status = {"setup_done": False, "run_done": False, "extract_done": False}
+        if not os.path.exists(meta_path):
+            self._log(f"No metadata file found at {os.path.basename(meta_path)}.", log_type="info")
+            return status
 
         try:
             with open(meta_path, "r") as f:
@@ -104,50 +157,65 @@ class ProjectManager(LoggingMixin):
             stored_hash = metadata.get("config_hash")
             current_hash = self._generate_config_hash(surgical_config)
 
-            if stored_hash == current_hash:
-                # Hash matches, now also check if the actual .smash file is valid.
-                # Use the explicit smash_path if provided, otherwise use the instance's project_path.
-                path_to_check = smash_path if smash_path else self.project_path
-                if not path_to_check:
-                    self._log(
-                        "  - Project path not set, cannot verify .smash file existence.",
-                        log_type="error",
-                    )
-                    return False
+            if stored_hash != current_hash:
+                self._log(f"Config hash mismatch for {os.path.basename(meta_path)}. Simulation is outdated.", log_type="warning")
+                return status
 
-                # Temporarily set self.project_path to the path we need to check
-                original_path = self.project_path
-                self.project_path = path_to_check
-                is_valid = self._is_valid_smash_file()
-                self.project_path = original_path  # Restore original path
+            path_to_check = smash_path or self.project_path
+            if not path_to_check:
+                self._log("Project path not set, cannot verify .smash file.", log_type="error")
+                return status
 
-                if is_valid:
-                    self._log(
-                        f"  - Configuration hash matches for {os.path.basename(meta_path)} and project file is valid.",
-                        log_type="success",
-                    )
-                    return True
-                else:
-                    self._log(
-                        (
-                            "  - Configuration hash matches, but the project file "
-                            f"'{os.path.basename(path_to_check)}' is missing or corrupted."
-                        ),
-                        log_type="warning",
-                    )
-                    return False
+            original_path = self.project_path
+            self.project_path = path_to_check
+            is_valid = self._is_valid_smash_file()
+            self.project_path = original_path
+
+            if not is_valid:
+                self._log(f"Project file '{os.path.basename(path_to_check)}' is missing or corrupted.", log_type="warning")
+                return status
+
+            status["setup_done"] = True
+
+            setup_timestamp_str = metadata.get("setup_timestamp")
+            if not setup_timestamp_str:
+                self._log("No setup_timestamp in metadata, cannot verify deliverables.", log_type="warning")
+                return status  # Returns all False
+
+            # Convert ISO 8601 string to timestamp
+            if isinstance(setup_timestamp_str, str):
+                setup_timestamp = datetime.fromisoformat(setup_timestamp_str).timestamp()
             else:
-                self._log(
-                    f"  - Configuration hash mismatch for {os.path.basename(meta_path)}. Simulation is outdated.",
-                    log_type="warning",
-                )
-                return False
+                setup_timestamp = float(setup_timestamp_str)  # Backward compatibility
+
+            project_dir = os.path.dirname(path_to_check)
+            project_filename = os.path.basename(path_to_check)
+            deliverables_status = self._get_deliverables_status(project_dir, project_filename, setup_timestamp)
+
+            # The final status is determined *only* by the presence of deliverables on the file system.
+            # This prevents a situation where metadata claims completion but files are missing.
+            status["run_done"] = deliverables_status["run_done"]
+            status["extract_done"] = deliverables_status["extract_done"]
+
+            # Extract cannot possible be done if the corresponding run is not done or invalid
+            if status["extract_done"] and not status["run_done"]:
+                self._log("Extraction was done, but run not. Rerunning both.", log_type="warning")
+                status["extract_done"] = False
+
+            status_parts = []
+            for key, value in status.items():
+                name = key.replace("_done", "").replace("_", " ").title()
+                status_text = "done" if value else "NOT done"
+                status_parts.append(f"{name} {status_text}")
+            status_msg = ", ".join(status_parts)
+            self._log(f"Verified existing project. Status: {status_msg}", log_type="success")
+            if status["run_done"] and status["extract_done"]:
+                self._log("Project already done, skipping.", level="progress", log_type="success")
+            return status
+
         except (json.JSONDecodeError, KeyError):
-            self._log(
-                f"  - Metadata file {os.path.basename(meta_path)} is corrupted. Verification failed.",
-                log_type="error",
-            )
-            return False
+            self._log(f"Metadata file {os.path.basename(meta_path)} is corrupted.", log_type="error")
+            return status
 
     def _is_valid_smash_file(self) -> bool:
         """Checks if the project file is a valid, unlocked HDF5 file.
@@ -201,7 +269,7 @@ class ProjectManager(LoggingMixin):
         position_name: Optional[str] = None,
         orientation_name: Optional[str] = None,
         **kwargs,
-    ) -> bool:
+    ) -> dict:
         """Creates a new project or opens an existing one based on the 'do_setup' flag.
 
         Args:
@@ -305,21 +373,24 @@ class ProjectManager(LoggingMixin):
                 self._log(error_msg, log_type="fatal")
                 raise FileNotFoundError(error_msg)
             self.open()
-            return False  # Indicate setup is not needed
+            # Return a status dict indicating setup is done, but we don't know about the other phases.
+            return {"setup_done": True, "run_done": False, "extract_done": False}
 
-        # If do_setup is true, we verify the project.
-        # The study is responsible for creating the project if this method returns True.
-        project_is_valid = self.verify_simulation_metadata(self.project_path + ".meta.json", surgical_config)
-        if project_is_valid:
-            self._log("Verified existing project. Skipping setup.", log_type="info")
+        # If do_setup is true, we verify the project unless --no-cache is used.
+        if self.no_cache:
+            self._log("`--no-cache` flag is active. Forcing a new setup by skipping verification.", log_type="warning")
+            return {"setup_done": False, "run_done": False, "extract_done": False}
+
+        verification_status = self.verify_simulation_metadata(os.path.join(project_dir, "config.json"), surgical_config)
+
+        if verification_status["setup_done"]:
+            self._log("Verified existing project. Opening.", log_type="info")
             self.open()
-            return False
-        else:
-            self._log(
-                "Existing project is invalid or out of date. A new setup is required.",
-                log_type="info",
-            )
-            return True
+            return verification_status
+
+        if os.path.exists(project_dir):
+            self._log("Existing project is invalid or out of date. A new setup is required.", log_type="info")
+        return {"setup_done": False, "run_done": False, "extract_done": False}
 
     def create_new(self):
         """Creates a new, empty project in memory.

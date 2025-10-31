@@ -33,14 +33,18 @@ def test_near_field_setup_initialization(mock_config, mock_antenna):
         config=mock_config,
         phantom_name="test_phantom",
         frequency_mhz=700,
-        placement_name="by_cheek_center_vertical",
+        scenario_name="by_cheek",
+        position_name="center",
+        orientation_name="vertical",
         antenna=mock_antenna,
         verbose_logger=MagicMock(),
         progress_logger=MagicMock(),
+        profiler=MagicMock(),
     )
     assert setup.phantom_name == "test_phantom"
     assert setup.base_placement_name == "by_cheek"
-    # Removed assertions for position_name and orientation_name as they are not part of NearFieldSetup
+    assert setup.position_name == "center"
+    assert setup.orientation_name == "vertical"
 
 
 # Full setup tests are too complex for this simple testing approach

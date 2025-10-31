@@ -58,7 +58,6 @@ def create_temp_config(base_config, frequency_mhz):
     config_data = json.loads(json.dumps(base_config.config))
 
     # Override for a single free-space simulation
-    config_data["study_name"] = f"Free-Space Validation {frequency_mhz}MHz"
     config_data["phantoms"] = {"freespace": {"do_front_of_eyes_center_vertical": True}}
     config_data["antenna_config"] = {str(frequency_mhz): base_config.get_antenna_config().get(str(frequency_mhz))}
     config_data["placement_scenarios"] = {

@@ -35,6 +35,7 @@ class PlacementSetup(BaseSetup):
         self.placement_name = f"{scenario_name}_{position_name}_{orientation_name}"
         self.antenna = antenna
         self.free_space = free_space
+        self.orientation_rotations = []
 
         import XCoreMath
 
@@ -55,7 +56,7 @@ class PlacementSetup(BaseSetup):
             )
             return
 
-        base_target_point, orientation_rotations, position_offset = self._get_placement_details()
+        base_target_point, position_offset = self._get_placement_details()
 
         # Import antenna model
         antenna_path = self.antenna.get_centered_antenna_path(os.path.join(self.config.base_dir, "data", "antennas", "centered"))
@@ -71,7 +72,7 @@ class PlacementSetup(BaseSetup):
             raise RuntimeError("Could not find imported antenna group.")
 
         # Find the "Ground" entity/entities ("PCB" of the phone excl. IFA antenna)
-        ground_entities = [e for e in antenna_group.Entities if "Ground" in e.Name or "Substrate" in e.Name]
+        ground_entities = [e for e in antenna_group.Entities if "Ground" in e.Name or "Substrate" in e.Name]  # type: ignore
 
         # Rename the entities to include the placement name for uniqueness
         antenna_group.Name = f"{antenna_group.Name} ({self.placement_name})"
@@ -102,8 +103,8 @@ class PlacementSetup(BaseSetup):
             final_transform = rot_z_cheek * final_transform
 
         # 3. Orientation Twist
-        if orientation_rotations:
-            for rot in orientation_rotations:
+        if self.orientation_rotations:
+            for rot in self.orientation_rotations:
                 axis_map = {
                     "X": self.XCoreMath.Vec3(1, 0, 0),
                     "Y": self.XCoreMath.Vec3(0, 1, 0),
@@ -131,14 +132,24 @@ class PlacementSetup(BaseSetup):
     def _get_placement_details(self) -> tuple:
         """Calculates the target point, offset, and orientation rotations."""
         if self.free_space:
-            return self.model.Vec3(0, 0, 0), [], [0, 0, 0]
+            return self.model.Vec3(0, 0, 0), [0, 0, 0]
 
         scenario = self.config.get_placement_scenario(self.base_placement_name)
         if not scenario:
             raise ValueError(f"Placement scenario '{self.base_placement_name}' not defined.")
 
         position_offset = scenario["positions"].get(self.position_name, [0, 0, 0])
-        orientation_rotations = scenario["orientations"].get(self.orientation_name, []).copy()
+
+        orientation_config = scenario["orientations"].get(self.orientation_name, [])
+        if isinstance(orientation_config, dict):
+            # New phantom rotation config, phone does not rotate
+            self.orientation_rotations = []
+        else:
+            # It's a list, which could be a mix of phantom rotation dicts
+            # and phone rotation dicts. Filter for actual rotation dicts.
+            self.orientation_rotations = [
+                rot for rot in orientation_config if isinstance(rot, dict) and "axis" in rot and "angle_deg" in rot
+            ]
 
         all_entities = self.model.AllEntities()
         phantom_definition = self.config.get_phantom_definition(self.phantom_name.lower())
@@ -194,7 +205,7 @@ class PlacementSetup(BaseSetup):
 
             # Add this as a new base rotation
             base_rotation = {"axis": "X", "angle_deg": base_rotation_deg}
-            orientation_rotations.insert(0, base_rotation)
+            self.orientation_rotations.insert(0, base_rotation)
 
             # Set the target point based on the ear
             distance = placements_config.get("distance_from_cheek", 8)
@@ -224,7 +235,7 @@ class PlacementSetup(BaseSetup):
         else:
             raise ValueError(f"Invalid base placement name: {self.base_placement_name}")
 
-        return base_target_point, orientation_rotations, position_offset
+        return base_target_point, position_offset
 
     def _get_speaker_reference(self, ground_entities, upright_transform):
         """Function to find the speaker output reference location on the phone.

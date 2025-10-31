@@ -29,30 +29,28 @@ def mock_study():
     return study
 
 
-@pytest.mark.skip_on_ci
 def test_simulation_runner_initialization(mock_config, mock_study):
     runner = SimulationRunner(
         config=mock_config,
         project_path="/tmp/project.smash",
-        simulations=[],
+        simulation=MagicMock(),
+        profiler=MagicMock(),
         verbose_logger=MagicMock(),
         progress_logger=MagicMock(),
         gui=None,
-        study=mock_study,
     )
     assert runner is not None
 
 
-@pytest.mark.skip_on_ci
 def test_run_no_simulation(mock_config, mock_study):
     runner = SimulationRunner(
         config=mock_config,
         project_path="/tmp/project.smash",
-        simulations=[],
+        simulation=None,
+        profiler=MagicMock(),
         verbose_logger=MagicMock(),
         progress_logger=MagicMock(),
         gui=None,
-        study=mock_study,
     )
     # This should run without error
-    runner.run(None)
+    runner.run()

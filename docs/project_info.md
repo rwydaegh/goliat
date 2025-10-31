@@ -51,7 +51,7 @@ The GOLIAT consortium consists of 22 partners from across Europe and the United 
 The main developer, Robin Wydaeghe, is from the WAVES Research group at Ghent University and IMEC.
 
 <div style="display: flex; justify-content: center; align-items: center; gap: 20px; flex-wrap: wrap;">
-    <img src="img/imec.png" alt="imec" style="height: 80px; object-fit: contain;">
-    <img src="img/ugent.png" alt="ugent" style="height: 80px; object-fit: contain;">
-    <img src="img/waves.svg" alt="waves" style="height: 80px; object-fit: contain;">
+    <img src="../img/imec.png" alt="imec" style="height: 80px; object-fit: contain;">
+    <img src="../img/ugent.png" alt="ugent" style="height: 80px; object-fit: contain;">
+    <img src="../img/waves.svg" alt="waves" style="height: 80px; object-fit: contain;">
 </div>

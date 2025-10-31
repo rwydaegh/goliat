@@ -132,7 +132,6 @@ def analysis_process_wrapper(queue, frequency_mhz, sensitivity_config):
                 config_data["frequencies_mhz"] = [frequency_mhz]
 
                 run_name = f"sensitivity_{param_name}_{value}_freq_{frequency_mhz}"
-                config_data["study_name"] = run_name
                 temp_config_path = os.path.join(
                     PROJECT_ROOT,
                     sensitivity_config["config_dir"],
