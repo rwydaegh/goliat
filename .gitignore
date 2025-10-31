@@ -36,6 +36,7 @@ Sim4Life_Introduction.pdf
 configs/*
 !configs/base_config.json
 !configs/far_field_config.json
+!configs/far_field_sim4life_web.json
 !configs/near_field_config.json
 !configs/near_field_config_no_subgrid.json
 
