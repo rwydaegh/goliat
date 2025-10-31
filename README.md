@@ -19,10 +19,6 @@
 
 </div>
 
-> **⚠️ Warning**
->
-> This is beta software. While it is used in research, it is still in early development and may contain bugs. Please use with caution and report any issues.
-
 <div align="center">
 
 <img src="docs/img/tutorials/tut1_gui.gif" width="50%">
@@ -232,6 +228,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines, code style rules
 
 **Quick links**: [Code of Conduct](CODE_OF_CONDUCT.md) • [Developer Guide](https://rwydaegh.github.io/goliat/developer_guide/)
 
+> **Note**: GOLIAT has just come out of beta and is still in early development. You may still encounter occasional errors. Please report any issues you find.
+
 ---
 
 ## Citing
@@ -244,7 +242,7 @@ If you use this software, please cite it as:
   author  = {Wydaeghe, Robin},
   url     = {https://github.com/rwydaeghe/goliat},
   license = {Apache-2.0},
-  version = {0.3.0-beta.1}
+  version = {1.1.0}
 }
 ```
 
