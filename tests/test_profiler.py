@@ -1,6 +1,6 @@
 import pytest
 
-from src.profiler import Profiler
+from goliat.profiler import Profiler
 
 
 @pytest.fixture

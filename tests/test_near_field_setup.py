@@ -12,7 +12,7 @@ mocks = {
 }
 
 with patch.dict("sys.modules", mocks):
-    from src.setups.near_field_setup import NearFieldSetup
+    from goliat.setups.near_field_setup import NearFieldSetup
 
 
 @pytest.fixture

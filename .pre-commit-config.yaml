@@ -25,10 +25,10 @@ repos:
   rev: v0.14.2
   hooks:
   - id: ruff-format
-    exclude: ^(archive/|analysis/|osparc_api_example/|post_process_results/)
+    exclude: ^(analysis/|osparc_api_example/)
   - id: ruff
     args: [--fix]
-    exclude: ^(archive/|analysis/|osparc_api_example/|post_process_results/|docs/)
+    exclude: ^(analysis/|osparc_api_example/|docs/)
 
 - repo: https://github.com/RobertCraigie/pyright-python
   rev: v1.1.407

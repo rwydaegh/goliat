@@ -27,6 +27,24 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install python-semantic-release
+    - name: Sync version to CITATION.cff and README.md
+      run: |
+        # Extract version from tag (remove 'v' prefix)
+        VERSION=${GITHUB_REF_NAME#v}
+        echo "Syncing version: $VERSION"
+
+        # Update CITATION.cff
+        sed -i "s/^version: .*/version: $VERSION/" CITATION.cff
+
+        # Update README.md citation
+        sed -i "s/version = {[^}]*}/version = {$VERSION}/" README.md
+
+        # Commit and push if changed
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add CITATION.cff README.md
+        git diff --staged --quiet || git commit -m "chore: sync version to $VERSION"
+        git push origin master || echo "No changes to push"
     - name: Create GitHub Release
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

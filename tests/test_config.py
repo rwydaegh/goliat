@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-from src.config import Config
+from goliat.config import Config
 
 
 # Create a dummy base_config.json for testing
