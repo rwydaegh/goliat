@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2025-11-04
+
+Note that the code was already finished last weekend.
+
 ### Added
 - **Linux Compatibility:** Automatic detection of AWS/Linux environments for Sim4Life cloud execution ([#55](https://github.com/rwydaegh/goliat/issues/55))
 - **GUI Enhancements:** Major GUI improvements including componentized architecture, enhanced progress reporting, pie charts, timings table, and system tray integration ([#52](https://github.com/rwydaegh/goliat/issues/52))
@@ -62,3 +66,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Refactoring
 - **Analysis:** Split strategies.py into multiple files ([#14](https://github.com/rwydaegh/goliat/pull/14), [#15](https://github.com/rwydaegh/goliat/pull/15))
+
+[Unreleased]: https://github.com/rwydaegh/goliat/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/rwydaegh/goliat/compare/v1.0.0...v1.1.0
+[0.3.0-beta.1]: https://github.com/rwydaegh/goliat/compare/v0.2.0-beta.1...v0.3.0-beta.1
+[0.2.0-beta.1]: https://github.com/rwydaegh/goliat/compare/v0.1.0-beta.1...v0.2.0-beta.1
