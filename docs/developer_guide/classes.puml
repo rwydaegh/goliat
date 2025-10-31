@@ -1,0 +1,669 @@
+@startuml classes_GOLIAT
+set namespaceSeparator none
+class "Analyzer" as goliat.analysis.analyzer.Analyzer {
+  all_organ_results : list
+  all_results : list
+  base_dir
+  config : str
+  phantom_name : str
+  plotter
+  results_base_dir
+  strategy : str
+  tissue_group_definitions : dict
+  __init__(config: 'Config', phantom_name: str, strategy: 'BaseAnalysisStrategy')
+  _convert_units_and_cache(results_df: pd.DataFrame, organ_results_df: pd.DataFrame) -> pd.DataFrame
+  _export_reports(results_df: pd.DataFrame, all_organ_results_df: pd.DataFrame)
+  _generate_plots(results_df: pd.DataFrame, all_organ_results_df: pd.DataFrame)
+  _process_single_result(frequency_mhz: int, scenario_name: str, pos_name: str, orient_name: str)
+  run_analysis()
+}
+class "Antenna" as goliat.antenna.Antenna {
+  antenna_config
+  config : str
+  frequency_mhz : int
+  __init__(config: 'Config', frequency_mhz: int)
+  get_centered_antenna_path(centered_antennas_dir: str) -> str
+  get_config_for_frequency() -> dict
+  get_model_type() -> str
+  get_source_entity_name() -> str
+}
+class "BaseAnalysisStrategy" as goliat.analysis.base_strategy.BaseAnalysisStrategy {
+  base_dir
+  config : str
+  phantom_name : str
+  __init__(config: 'Config', phantom_name: str)
+  {abstract}apply_bug_fixes(result_entry: dict) -> dict
+  {abstract}calculate_summary_stats(results_df: pd.DataFrame) -> pd.DataFrame
+  {abstract}extract_data(pickle_data: dict, frequency_mhz: int, placement_name: str, scenario_name: str, sim_power: float, norm_factor: float) -> tuple[dict, list]
+  {abstract}generate_plots(analyzer: 'Analyzer', plotter: 'Plotter', results_df: pd.DataFrame, all_organ_results_df: pd.DataFrame)
+  {abstract}get_normalization_factor(frequency_mhz: int, simulated_power_w: float) -> float
+  {abstract}get_plots_dir() -> str
+  {abstract}get_results_base_dir() -> str
+  {abstract}load_and_process_results(analyzer: 'Analyzer')
+}
+class "BaseSetup" as goliat.setups.base_setup.BaseSetup {
+  config : str
+  emfdtd
+  model
+  progress_logger : str
+  s4l_v1
+  verbose_logger : str
+  __init__(config: 'Config', verbose_logger: 'Logger', progress_logger: 'Logger')
+  _add_point_sensors(simulation: 'emfdtd.Simulation', sim_bbox_entity_name: str)
+  _apply_simulation_time_and_termination(simulation: 'emfdtd.Simulation', sim_bbox_entity: 'model.Entity', frequency_mhz: int)
+  _finalize_setup(project_manager: 'ProjectManager', simulation: 'emfdtd.Simulation', all_simulation_parts: list, frequency_mhz: int)
+  _setup_solver_settings(simulation: 'emfdtd.Simulation')
+  {abstract}run_full_setup(project_manager: 'ProjectManager')
+}
+class "BaseStudy" as goliat.studies.base_study.BaseStudy {
+  base_dir
+  config
+  gui : Optional['QueueGUI']
+  line_profiler : NoneType
+  no_cache : bool
+  profiler
+  progress_logger : NoneType, RootLogger
+  project_manager
+  study_type : str
+  verbose_logger : NoneType, RootLogger
+  __init__(study_type: str, config_filename: Optional[str], gui: Optional['QueueGUI'], profiler, no_cache: bool)
+  _check_for_stop_signal()
+  _execute_run_phase(simulation)
+  _log_line_profiler_stats(task_name: str, lp: LineProfiler)
+  {abstract}_run_study()
+  _setup_line_profiler_if_needed(subtask_name: str, instance) -> tuple
+  _verify_and_update_metadata(stage: str)
+  end_stage_animation()
+  run()
+  start_stage_animation(task_name: str, end_value: int)
+  subtask(task_name: str, instance_to_profile)
+}
+class "BatchGUI" as goliat.osparc_batch.gui.BatchGUI {
+  button_layout
+  cancel_jobs_requested
+  force_stop_button
+  print_progress_requested
+  progress_button
+  stop_and_cancel_button
+  stop_run_requested
+  tray_button
+  tray_icon
+  __init__()
+  closeEvent(event)
+  force_stop_run()
+  hide_to_tray()
+  init_ui()
+  show_from_tray()
+  stop_and_cancel_jobs()
+  tray_icon_activated(reason)
+}
+class "BoundarySetup" as goliat.setups.boundary_setup.BoundarySetup {
+  simulation : str
+  __init__(config: 'Config', simulation: 'emfdtd.Simulation', verbose_logger: 'Logger', progress_logger: 'Logger')
+  setup_boundary_conditions()
+}
+class "Cleaner" as goliat.extraction.cleaner.Cleaner {
+  parent : str
+  __init__(parent: 'ResultsExtractor')
+  _delete_files(cleanup_types: list, file_patterns: dict) -> int
+  _delete_single_file(file_path: str) -> bool
+  cleanup_simulation_files()
+}
+class "ColorFormatter" as goliat.logging_manager.ColorFormatter {
+  format(record: logging.LogRecord) -> str
+}
+class "Config" as goliat.config.Config {
+  base_dir : str
+  config
+  config_path
+  material_mapping
+  material_mapping_path
+  profiling_config
+  profiling_config_path
+  __init__(base_dir: str, config_filename: str, no_cache: bool)
+  _cleanup_old_data_files(data_dir: str)
+  _load_config_with_inheritance(path: str) -> dict
+  _load_json(path: str) -> dict
+  _load_or_create_profiling_config() -> dict
+  _resolve_config_path(config_filename: str, base_path: str) -> str
+  build_simulation_config(phantom_name: str, frequency_mhz: int, scenario_name: Optional[str], position_name: Optional[str], orientation_name: Optional[str], direction_name: Optional[str], polarization_name: Optional[str]) -> dict
+  get_antenna_component_names(antenna_model_type: str) -> list
+  get_antenna_config() -> dict
+  get_auto_cleanup_previous_results() -> list
+  get_bandwidth() -> float
+  get_download_email() -> str
+  get_excitation_type() -> str
+  get_freespace_expansion() -> list
+  get_gridding_parameters() -> dict
+  get_line_profiling_config() -> dict
+  get_manual_isolve() -> bool
+  get_material_mapping(phantom_name: str) -> dict
+  get_only_write_input_file() -> bool
+  get_osparc_credentials() -> dict
+  get_phantom_definition(phantom_name: str) -> dict
+  get_placement_scenario(scenario_name: str) -> dict
+  get_profiling_config(study_type: str) -> dict
+  get_setting(path: str, default)
+  get_simulation_parameters() -> dict
+  get_solver_settings() -> dict
+}
+class "CustomFormatter" as goliat.logging_manager.CustomFormatter {
+  format(record: logging.LogRecord) -> str
+}
+class "DataManager" as goliat.gui.components.data_manager.DataManager {
+  data_dir : str
+  overall_progress_file : str
+  session_hash : str
+  time_remaining_file : str
+  verbose_logger : Logger
+  __init__(data_dir: str, verbose_logger: Logger) -> None
+  _cleanup_old_data_files() -> None
+  _initialize_files() -> None
+  write_overall_progress(progress_percent: float) -> None
+  write_time_remaining(hours_remaining: float) -> None
+}
+class "FarFieldAnalysisStrategy" as goliat.analysis.far_field_strategy.FarFieldAnalysisStrategy {
+  apply_bug_fixes(result_entry: dict) -> dict
+  calculate_summary_stats(results_df: pd.DataFrame) -> pd.DataFrame
+  extract_data(pickle_data: dict, frequency_mhz: int, placement_name: str, scenario_name: str, sim_power: float, norm_factor: float) -> tuple[dict, list]
+  generate_plots(analyzer: 'Analyzer', plotter: 'Plotter', results_df: pd.DataFrame, all_organ_results_df: pd.DataFrame)
+  get_normalization_factor(frequency_mhz: int, simulated_power_w: float) -> float
+  get_plots_dir() -> str
+  get_results_base_dir() -> str
+  load_and_process_results(analyzer: 'Analyzer')
+}
+class "FarFieldSetup" as goliat.setups.far_field_setup.FarFieldSetup {
+  direction_name : str
+  document
+  frequency_mhz : int
+  gui : NoneType
+  phantom_name : str
+  polarization_name : str
+  profiler : str
+  project_manager : str
+  simulation_type
+  __init__(config: 'Config', phantom_name: str, frequency_mhz: int, direction_name: str, polarization_name: str, project_manager: 'ProjectManager', verbose_logger: 'Logger', progress_logger: 'Logger', profiler: 'Profiler', gui)
+  _create_or_get_simulation_bbox() -> 'model.Entity'
+  _create_simulation_entity(bbox_entity: 'model.Entity') -> 'emfdtd.Simulation'
+  run_full_setup(project_manager: 'ProjectManager') -> 'emfdtd.Simulation'
+}
+class "FarFieldStudy" as goliat.studies.far_field_study.FarFieldStudy {
+  _run_single_simulation(phantom_name: str, freq: int, direction_name: str, polarization_name: str, do_setup: bool, do_run: bool, do_extract: bool)
+  _run_study()
+  _validate_auto_cleanup_config(do_setup: bool, do_run: bool, do_extract: bool, auto_cleanup: list)
+}
+class "GriddingSetup" as goliat.setups.gridding_setup.GriddingSetup {
+  _setup_main_grid()
+  _setup_subgrids(antenna_components: dict)
+  setup_gridding(antenna_components: dict | None)
+}
+class "LoggingMixin" as goliat.logging_manager.LoggingMixin {
+  gui : Optional['QueueGUI']
+  progress_logger : Logger
+  verbose_logger : Logger
+  _log(message: str, level: str, log_type: str)
+}
+class "MaterialSetup" as goliat.setups.material_setup.MaterialSetup {
+  _assign_antenna_materials(antenna_components: dict)
+  _assign_phantom_materials()
+  assign_materials(antenna_components: dict | None, phantom_only: bool)
+}
+class "NearFieldAnalysisStrategy" as goliat.analysis.near_field_strategy.NearFieldAnalysisStrategy {
+  calculate_summary_stats(results_df: pd.DataFrame) -> pd.DataFrame
+  extract_data(pickle_data: dict, frequency_mhz: int, placement_name: str, scenario_name: str, sim_power: float, norm_factor: float) -> tuple[dict, list]
+  generate_plots(analyzer: 'Analyzer', plotter: 'Plotter', results_df: pd.DataFrame, all_organ_results_df: pd.DataFrame)
+  get_normalization_factor(frequency_mhz: int, simulated_power_w: float) -> float
+  get_plots_dir() -> str
+  get_results_base_dir() -> str
+  load_and_process_results(analyzer: 'Analyzer')
+}
+class "NearFieldSetup" as goliat.setups.near_field_setup.NearFieldSetup {
+  XCoreModeling
+  antenna : str
+  base_placement_name : str
+  document
+  free_space : bool
+  frequency_mhz : int
+  gui : NoneType
+  orientation_name : str
+  phantom_name : str
+  placement_name : str
+  position_name : str
+  profiler : str
+  __init__(config: 'Config', phantom_name: str, frequency_mhz: int, scenario_name: str, position_name: str, orientation_name: str, antenna: 'Antenna', verbose_logger: 'Logger', progress_logger: 'Logger', profiler: 'Profiler', gui, free_space: bool)
+  _align_simulation_with_phone()
+  _create_simulation_bbox()
+  _find_touching_angle() -> float
+  _get_antenna_components() -> dict
+  _handle_phantom_rotation(placement_setup: 'PlacementSetup')
+  _setup_bounding_boxes()
+  _setup_simulation_entity() -> 'emfdtd.Simulation'
+  run_full_setup(project_manager: 'ProjectManager', lock) -> 'emfdtd.Simulation'
+}
+class "NearFieldStudy" as goliat.studies.near_field_study.NearFieldStudy {
+  _run_placement(phantom_name: str, freq: int, scenario_name: str, position_name: str, orientation_name: str, do_setup: bool, do_run: bool, do_extract: bool)
+  _run_study()
+  _validate_auto_cleanup_config(do_setup: bool, do_run: bool, do_extract: bool, auto_cleanup: list)
+}
+class "NumpyArrayEncoder" as goliat.extraction.json_encoder.NumpyArrayEncoder {
+  default(o: Any) -> Any
+}
+class "OverallProgressPlot" as goliat.gui.components.plots.OverallProgressPlot {
+  ax : Axes
+  canvas : FigureCanvasQTAgg
+  data : List[Tuple[datetime, float]]
+  figure : Figure
+  max_progress_seen : float
+  __init__() -> None
+  _refresh() -> None
+  _setup() -> None
+  add_data_point(timestamp: datetime, progress_percent: float) -> None
+}
+class "PhantomSetup" as goliat.setups.phantom_setup.PhantomSetup {
+  XCoreModeling
+  data
+  model
+  phantom_name : str
+  __init__(config: 'Config', phantom_name: str, verbose_logger: 'Logger', progress_logger: 'Logger')
+  _log(message: str, level: str, log_type: str)
+  ensure_phantom_is_loaded() -> bool
+}
+class "PieChartsManager" as goliat.gui.components.plots.PieChartsManager {
+  axes : List[_Axes]
+  canvas : FigureCanvasQTAgg
+  figure : Figure
+  __init__() -> None
+  _setup() -> None
+  update(profiler: 'Profiler') -> None
+}
+class "PlacementSetup" as goliat.setups.placement_setup.PlacementSetup {
+  orientation_rotations : list
+  _get_placement_details() -> tuple
+  _get_speaker_reference(ground_entities, upright_transform)
+  place_antenna()
+}
+class "Plotter" as goliat.analysis.plotter.Plotter {
+  plots_dir : str
+  __init__(plots_dir: str)
+  _plot_heatmap(fig, ax, data: pd.DataFrame, title: str, cbar: bool, cbar_ax)
+  plot_average_sar_bar(scenario_name: str, avg_results: pd.DataFrame, progress_info: pd.Series)
+  plot_far_field_distribution_boxplot(results_df: pd.DataFrame, metric: str)
+  plot_peak_sar_heatmap(organ_df: pd.DataFrame, group_df: pd.DataFrame, tissue_groups: dict, value_col: str, title: str)
+  plot_peak_sar_line(summary_stats: pd.DataFrame)
+  plot_pssar_line(scenario_name: str, avg_results: pd.DataFrame)
+  plot_sar_distribution_boxplots(scenario_name: str, scenario_results_df: pd.DataFrame)
+  plot_sar_heatmap(organ_df: pd.DataFrame, group_df: pd.DataFrame, tissue_groups: dict)
+  plot_whole_body_sar_bar(avg_results: pd.DataFrame)
+}
+class "PowerExtractor" as goliat.extraction.power_extractor.PowerExtractor {
+  config
+  document
+  frequency_mhz
+  gui
+  parent : str
+  placement_name
+  progress_logger
+  results_data : dict
+  simulation
+  study_type
+  verbose_logger
+  __init__(parent: 'ResultsExtractor', results_data: dict)
+  _extract_far_field_power()
+  _extract_near_field_power(simulation_extractor: 'analysis.Extractor')
+  extract_input_power(simulation_extractor: 'analysis.Extractor')
+  extract_power_balance(simulation_extractor: 'analysis.Extractor')
+}
+class "Profiler" as goliat.profiler.Profiler {
+  completed_phases : set
+  completed_simulations : int
+  completed_stages_in_phase : int
+  config_path : str
+  current_phase : NoneType, str
+  current_project : int
+  execution_control : dict
+  phase_start_time : NoneType
+  phase_weights : dict
+  profiling_config : dict
+  run_phase_total_duration : int
+  start_time
+  study_type : str
+  subtask_stack : list
+  subtask_times : defaultdict
+  total_projects : int
+  total_simulations : int
+  total_stages_in_phase : int
+  __init__(execution_control: dict, profiling_config: dict, study_type: str, config_path: str)
+  _calculate_phase_weights() -> dict
+  complete_run_phase()
+  end_stage()
+  get_phase_subtasks(phase_name: str) -> list
+  get_subtask_estimate(task_name: str) -> float
+  get_time_remaining(current_stage_progress: float) -> float
+  get_weighted_progress(phase_name: str, phase_progress_ratio: float) -> float
+  save_estimates()
+  set_current_project(project_index: int)
+  set_project_scope(total_projects: int)
+  set_total_simulations(total: int)
+  simulation_completed()
+  start_stage(phase_name: str, total_stages: int)
+  subtask(task_name: str)
+  update_and_save_estimates()
+}
+class "Profiler" as goliat.utils.Profiler {
+  completed_runs : int
+  config_path : str
+  current_run_start_time : NoneType
+  profiling_config
+  run_times : list
+  start_time
+  study_type : str
+  total_runs : int
+  __init__(config_path: str, study_type: str)
+  _load_config() -> dict
+  end_run()
+  get_average_run_time() -> float
+  get_elapsed() -> float
+  get_time_remaining() -> float
+  save_estimates()
+  start_run()
+  start_study(total_runs: int)
+  subtask(name: str)
+}
+class "ProgressAnimation" as goliat.gui.components.progress_animation.ProgressAnimation {
+  active : bool
+  debug : bool
+  duration : float
+  end_value : int
+  progress_bar
+  start_time : float
+  start_value : int
+  timer
+  __init__(progress_bar: 'QProgressBar', timer: 'QTimer', debug: bool) -> None
+  {abstract}_log(message: str) -> None
+  start(estimated_duration: float, end_step: int) -> None
+  stop() -> None
+  update() -> None
+}
+class "ProgressGUI" as goliat.gui.progress_gui.ProgressGUI {
+  DEBUG : bool
+  animation_timer
+  clock_timer
+  current_simulation_count : int
+  data_manager
+  graph_timer
+  init_window_title : str
+  process : Process
+  profiler : Optional['Profiler']
+  profiler_phase : Optional[str]
+  progress_animation
+  progress_logger : Logger
+  queue
+  queue_handler
+  queue_timer
+  start_time : float
+  status_manager
+  stop_event : Event
+  study_had_errors : bool
+  study_is_finished : bool
+  total_simulations : int
+  total_steps_for_stage : int
+  tray_manager
+  verbose_logger : Logger
+  __init__(queue: Queue, stop_event: Event, process: Process, init_window_title: str) -> None
+  closeEvent(event: Any) -> None
+  end_stage_animation() -> None
+  hide_to_tray() -> None
+  show_from_tray() -> None
+  start_stage_animation(estimated_duration: float, end_step: int) -> None
+  stop_study() -> None
+  study_finished(error: bool) -> None
+  update_animation() -> None
+  update_clock() -> None
+  update_graphs() -> None
+  update_overall_progress(current_step: int, total_steps: int) -> None
+  update_simulation_details(sim_count: int, total_sims: int, details: str) -> None
+  update_stage_progress(stage_name: str, current_step: int, total_steps: int, sub_stage: str) -> None
+  update_status(message: str, log_type: str) -> None
+}
+class "<color:red>ProjectCorruptionError</color>" as goliat.project_manager.ProjectCorruptionError {
+}
+class "ProjectManager" as goliat.project_manager.ProjectManager {
+  config : str
+  document
+  execution_control : dict
+  gui : Optional['QueueGUI']
+  no_cache : bool
+  progress_logger : str
+  project_path : NoneType, Optional[str]
+  verbose_logger : str
+  __init__(config: 'Config', verbose_logger: 'Logger', progress_logger: 'Logger', gui: Optional['QueueGUI'], no_cache: bool)
+  _generate_config_hash(config_dict: dict) -> str
+  _get_deliverables_status(project_dir: str, project_filename: str, setup_timestamp: float) -> dict
+  _is_valid_smash_file() -> bool
+  cleanup()
+  close()
+  create_new()
+  create_or_open_project(phantom_name: str, frequency_mhz: int, scenario_name: Optional[str], position_name: Optional[str], orientation_name: Optional[str]) -> dict
+  open()
+  reload_project()
+  save()
+  update_simulation_metadata(meta_path: str, run_done: Optional[bool], extract_done: Optional[bool])
+  verify_simulation_metadata(meta_path: str, surgical_config: dict, smash_path: Optional[str]) -> dict
+  write_simulation_metadata(meta_path: str, surgical_config: dict)
+}
+class "QueueGUI" as goliat.gui.queue_gui.QueueGUI {
+  profiler : str
+  progress_logger : Logger
+  queue
+  stop_event : Event
+  verbose_logger : Logger
+  __init__(queue: Queue, stop_event: Event, profiler: 'Profiler', progress_logger: Logger, verbose_logger: Logger) -> None
+  end_stage_animation() -> None
+  is_stopped() -> bool
+  log(message: str, level: str, log_type: str) -> None
+  {abstract}process_events() -> None
+  start_stage_animation(task_name: str, end_value: int) -> None
+  update_overall_progress(current_step: int, total_steps: int) -> None
+  update_profiler() -> None
+  update_simulation_details(sim_count: int, total_sims: int, details: str) -> None
+  update_stage_progress(stage_name: str, current_step: int, total_steps: int, sub_stage: str) -> None
+}
+class "QueueHandler" as goliat.gui.components.queue_handler.QueueHandler {
+  gui : str
+  __init__(gui_instance: 'ProgressGUI') -> None
+  process_queue() -> None
+}
+class "Reporter" as goliat.extraction.reporter.Reporter {
+  parent : str
+  __init__(parent: 'ResultsExtractor')
+  _build_html_content(df: pd.DataFrame, tissue_groups: dict, group_sar_stats: dict, results_data: dict) -> str
+  _get_results_dir() -> str
+  _save_html_report(results_dir: str, df: pd.DataFrame, tissue_groups: dict, group_sar_stats: dict, results_data: dict)
+  _save_pickle_report(results_dir: str, df: pd.DataFrame, tissue_groups: dict, group_sar_stats: dict, results_data: dict)
+  save_reports(df: pd.DataFrame, tissue_groups: dict, group_sar_stats: dict, results_data: dict)
+}
+class "ResultsExtractor" as goliat.results_extractor.ResultsExtractor {
+  analysis
+  config : str
+  document
+  free_space : bool
+  frequency_mhz : int
+  gui : str
+  orientation_name : str
+  phantom_name : str
+  placement_name : str
+  progress_logger : str
+  simulation : str
+  study : str
+  study_type : str
+  units
+  verbose_logger : str
+  __init__(config: 'Config', simulation: 's4l_v1.simulation.emfdtd.Simulation', phantom_name: str, frequency_mhz: int, scenario_name: str, position_name: str, orientation_name: str, study_type: str, verbose_logger: 'Logger', progress_logger: 'Logger', free_space: bool, gui: 'Optional[QueueGUI]', study: 'Optional[BaseStudy]')
+  _save_json_results(results_data: dict)
+  extract()
+  get_deliverable_filenames() -> dict
+}
+class "SarExtractor" as goliat.extraction.sar_extractor.SarExtractor {
+  analysis
+  config
+  document
+  gui
+  parent : str
+  phantom_name
+  placement_name
+  progress_logger
+  results_data : dict
+  simulation
+  units
+  verbose_logger
+  __init__(parent: 'ResultsExtractor', results_data: dict)
+  _calculate_group_sar(df: pd.DataFrame, tissue_groups: dict) -> dict
+  _define_tissue_groups(available_tissues: list) -> dict
+  extract_peak_sar_details(em_sensor_extractor: 'analysis.Extractor')
+  extract_sar_statistics(simulation_extractor: 'analysis.Extractor')
+}
+class "SensorExtractor" as goliat.extraction.sensor_extractor.SensorExtractor {
+  parent : str
+  progress_logger
+  results_data : dict
+  verbose_logger
+  __init__(parent: 'ResultsExtractor', results_data: dict)
+  _save_plot(fig, ax)
+  extract_point_sensor_data(simulation_extractor: 'analysis.Extractor')
+}
+class "SimulationRunner" as goliat.simulation_runner.SimulationRunner {
+  config : str
+  document
+  gui : str
+  profiler : str
+  progress_logger : str
+  project_path : str
+  simulation : str
+  verbose_logger : str
+  __init__(config: 'Config', project_path: str, simulation: 's4l_v1.simulation.emfdtd.Simulation', profiler: 'Profiler', verbose_logger: 'Logger', progress_logger: 'Logger', gui: 'Optional[QueueGUI]')
+  _get_server_id(server_name: str) -> Optional[str]
+  _run_isolve_manual(simulation: 's4l_v1.simulation.emfdtd.Simulation')
+  _run_osparc_direct(simulation: 's4l_v1.simulation.emfdtd.Simulation', server_name: str)
+  run()
+}
+class "SourceSetup" as goliat.setups.source_setup.SourceSetup {
+  antenna : str
+  free_space : bool
+  frequency_mhz : int
+  simulation : str
+  units
+  __init__(config: 'Config', simulation: 'emfdtd.Simulation', frequency_mhz: int, antenna: 'Antenna', verbose_logger: 'Logger', progress_logger: 'Logger', free_space: bool)
+  setup_source_and_sensors(antenna_components: dict)
+}
+class "StatusManager" as goliat.gui.components.status_manager.StatusManager {
+  color_map : dict[str, str]
+  error_count : int
+  warning_count : int
+  __init__() -> None
+  format_message(message: str, log_type: str) -> str
+  get_color(log_type: str) -> str
+  get_error_summary() -> str
+  record_log(log_type: str) -> None
+}
+class "<color:red>StudyCancelledError</color>" as goliat.utils.StudyCancelledError {
+}
+class "TimeRemainingPlot" as goliat.gui.components.plots.TimeRemainingPlot {
+  ax : Axes
+  canvas : FigureCanvasQTAgg
+  data : List[Tuple[datetime, float]]
+  figure : Figure
+  max_time_remaining_seen : float
+  __init__() -> None
+  _refresh() -> None
+  _setup() -> None
+  add_data_point(timestamp: datetime, hours_remaining: float) -> None
+}
+class "TimingsTable" as goliat.gui.components.timings_table.TimingsTable {
+  table
+  __init__(table_widget: QTableWidget) -> None
+  _setup_table() -> None
+  update(profiler: 'Profiler') -> None
+}
+class "TrayManager" as goliat.gui.components.tray_manager.TrayManager {
+  parent
+  tray_icon
+  __init__(parent_widget: QWidget, show_callback: Callable[[], None], close_callback: Callable[[], None]) -> None
+  _tray_icon_activated(reason: QSystemTrayIcon.ActivationReason, show_callback: Callable[[], None]) -> None
+  hide() -> None
+  is_visible() -> bool
+  show() -> None
+}
+class "UIBuilder" as goliat.gui.components.ui_builder.UIBuilder {
+  STYLESHEET : str
+  _build_buttons(gui_instance: 'ProgressGUI', main_layout: QVBoxLayout) -> None
+  _build_overall_progress_tab(gui_instance: 'ProgressGUI') -> None
+  _build_piecharts_tab(gui_instance: 'ProgressGUI') -> None
+  _build_progress_tab(gui_instance: 'ProgressGUI', status_manager: 'StatusManager') -> None
+  _build_time_remaining_tab(gui_instance: 'ProgressGUI') -> None
+  _build_timings_tab(gui_instance: 'ProgressGUI') -> None
+  build(gui_instance: 'ProgressGUI', status_manager: 'StatusManager') -> None
+  get_icon_path() -> str
+}
+class "Worker" as goliat.osparc_batch.worker.Worker {
+  client_cfg : NoneType
+  config : NoneType
+  config_path : str
+  download_and_process_results : Callable[..., Any]
+  download_executor : ThreadPoolExecutor
+  downloaded_jobs : set
+  file_retries : dict
+  file_to_job_id : dict
+  finished
+  get_osparc_client_config : Callable[..., Any]
+  get_progress_report : Callable[..., str]
+  input_files : list
+  job_statuses : dict
+  jobs_being_downloaded : set
+  logger : Logger
+  main_process_logic : Callable[..., Any]
+  progress
+  running_jobs : dict
+  status_update_requested
+  stop_requested : bool
+  timer
+  __init__(config_path: str, logger: logging.Logger, get_osparc_client_config_func: Callable[..., Any], download_and_process_results_func: Callable[..., Any], get_progress_report_func: Callable[..., str], main_process_logic_func: Callable[..., Any])
+  _check_jobs_status()
+  _download_job_in_thread(job, solver, file_path: Path)
+  _resubmit_job(file_path: Path)
+  _update_job_status(job_id: str, status: str)
+  cancel_jobs()
+  request_progress_report()
+  run()
+  stop()
+}
+goliat.analysis.far_field_strategy.FarFieldAnalysisStrategy --|> goliat.analysis.base_strategy.BaseAnalysisStrategy
+goliat.analysis.near_field_strategy.NearFieldAnalysisStrategy --|> goliat.analysis.base_strategy.BaseAnalysisStrategy
+goliat.extraction.power_extractor.PowerExtractor --|> goliat.logging_manager.LoggingMixin
+goliat.extraction.sar_extractor.SarExtractor --|> goliat.logging_manager.LoggingMixin
+goliat.gui.queue_gui.QueueGUI --|> goliat.logging_manager.LoggingMixin
+goliat.project_manager.ProjectManager --|> goliat.logging_manager.LoggingMixin
+goliat.results_extractor.ResultsExtractor --|> goliat.logging_manager.LoggingMixin
+goliat.setups.base_setup.BaseSetup --|> goliat.logging_manager.LoggingMixin
+goliat.setups.boundary_setup.BoundarySetup --|> goliat.setups.base_setup.BaseSetup
+goliat.setups.far_field_setup.FarFieldSetup --|> goliat.setups.base_setup.BaseSetup
+goliat.setups.gridding_setup.GriddingSetup --|> goliat.setups.base_setup.BaseSetup
+goliat.setups.material_setup.MaterialSetup --|> goliat.setups.base_setup.BaseSetup
+goliat.setups.near_field_setup.NearFieldSetup --|> goliat.setups.base_setup.BaseSetup
+goliat.setups.phantom_setup.PhantomSetup --|> goliat.setups.base_setup.BaseSetup
+goliat.setups.placement_setup.PlacementSetup --|> goliat.setups.base_setup.BaseSetup
+goliat.setups.source_setup.SourceSetup --|> goliat.setups.base_setup.BaseSetup
+goliat.simulation_runner.SimulationRunner --|> goliat.logging_manager.LoggingMixin
+goliat.studies.base_study.BaseStudy --|> goliat.logging_manager.LoggingMixin
+goliat.studies.far_field_study.FarFieldStudy --|> goliat.studies.base_study.BaseStudy
+goliat.studies.near_field_study.NearFieldStudy --|> goliat.studies.base_study.BaseStudy
+goliat.analysis.plotter.Plotter --* goliat.analysis.analyzer.Analyzer : plotter
+goliat.config.Config --* goliat.studies.base_study.BaseStudy : config
+goliat.gui.components.data_manager.DataManager --* goliat.gui.progress_gui.ProgressGUI : data_manager
+goliat.gui.components.progress_animation.ProgressAnimation --* goliat.gui.progress_gui.ProgressGUI : progress_animation
+goliat.gui.components.queue_handler.QueueHandler --* goliat.gui.progress_gui.ProgressGUI : queue_handler
+goliat.gui.components.status_manager.StatusManager --* goliat.gui.progress_gui.ProgressGUI : status_manager
+goliat.gui.components.tray_manager.TrayManager --* goliat.gui.progress_gui.ProgressGUI : tray_manager
+goliat.profiler.Profiler --* goliat.studies.base_study.BaseStudy : profiler
+goliat.project_manager.ProjectManager --* goliat.studies.base_study.BaseStudy : project_manager
+goliat.config.Config --o goliat.osparc_batch.worker.Worker : config
+@enduml

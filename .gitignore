@@ -27,8 +27,9 @@ data/
 logs/
 commit_message.txt
 
-# Documentation
+# Sim4Life Documentation
 PythonAPIReference/
+Sim4Life.pdf
 Sim4Life_Manual.pdf
 Sim4Life_Introduction.pdf
 
@@ -39,6 +40,7 @@ configs/*
 !configs/far_field_sim4life_web.json
 !configs/near_field_config.json
 !configs/near_field_config_no_subgrid.json
+!configs/tutorial_*.json
 
 # Generated files
 *.csv
@@ -50,11 +52,19 @@ configs/*
 !analysis/**/*.pdf
 
 # Local environment
-.bashrc
+#.bashrc
 .env
 
-resume_logic_brainstorm.md
-resume_logic_plan.md
+.cursorignore
+docs/extracted_style.md
+
+# Cloud setup - credentials and documentation
+cloud_setup/tensordock_documentation.md
+cloud_setup/my_*.bat
+cloud_setup/my_*.py
 
 # Python build artifacts
-src/*.egg-info/
+*.egg-info/
+*.egg
+dist/
+build/

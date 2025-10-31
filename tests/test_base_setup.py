@@ -11,7 +11,7 @@ mocks = {
 }
 
 with patch.dict("sys.modules", mocks):
-    from src.setups.base_setup import BaseSetup
+    from goliat.setups.base_setup import BaseSetup
 
 
 @pytest.fixture

@@ -6,11 +6,12 @@ import pytest
 mocks = {
     "s4l_v1": MagicMock(),
     "s4l_v1.units": MagicMock(),
+    "s4l_v1.model": MagicMock(),
     "numpy": MagicMock(),
 }
 
 with patch.dict("sys.modules", mocks):
-    from src.setups.gridding_setup import GriddingSetup
+    from goliat.setups.gridding_setup import GriddingSetup
 
 
 @pytest.fixture
@@ -28,7 +29,7 @@ def test_gridding_setup_initialization(mock_config):
         config=mock_config,
         simulation=MagicMock(),
         placement_name="test_placement",
-        antenna=None,
+        antenna=MagicMock(),
         verbose_logger=MagicMock(),
         progress_logger=MagicMock(),
     )

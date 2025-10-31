@@ -1,0 +1,237 @@
+@startuml packages_GOLIAT
+set namespaceSeparator none
+package "goliat" as goliat {
+}
+package "goliat.analysis" as goliat.analysis {
+}
+package "goliat.analysis.analyzer" as goliat.analysis.analyzer {
+}
+package "goliat.analysis.base_strategy" as goliat.analysis.base_strategy {
+}
+package "goliat.analysis.far_field_strategy" as goliat.analysis.far_field_strategy {
+}
+package "goliat.analysis.near_field_strategy" as goliat.analysis.near_field_strategy {
+}
+package "goliat.analysis.plotter" as goliat.analysis.plotter {
+}
+package "goliat.antenna" as goliat.antenna {
+}
+package "goliat.colors" as goliat.colors {
+}
+package "goliat.config" as goliat.config {
+}
+package "goliat.data_extractor" as goliat.data_extractor {
+}
+package "goliat.extraction" as goliat.extraction {
+}
+package "goliat.extraction.cleaner" as goliat.extraction.cleaner {
+}
+package "goliat.extraction.json_encoder" as goliat.extraction.json_encoder {
+}
+package "goliat.extraction.power_extractor" as goliat.extraction.power_extractor {
+}
+package "goliat.extraction.reporter" as goliat.extraction.reporter {
+}
+package "goliat.extraction.sar_extractor" as goliat.extraction.sar_extractor {
+}
+package "goliat.extraction.sensor_extractor" as goliat.extraction.sensor_extractor {
+}
+package "goliat.gui" as goliat.gui {
+}
+package "goliat.gui.components" as goliat.gui.components {
+}
+package "goliat.gui.components.data_manager" as goliat.gui.components.data_manager {
+}
+package "goliat.gui.components.plots" as goliat.gui.components.plots {
+}
+package "goliat.gui.components.progress_animation" as goliat.gui.components.progress_animation {
+}
+package "goliat.gui.components.queue_handler" as goliat.gui.components.queue_handler {
+}
+package "goliat.gui.components.status_manager" as goliat.gui.components.status_manager {
+}
+package "goliat.gui.components.timings_table" as goliat.gui.components.timings_table {
+}
+package "goliat.gui.components.tray_manager" as goliat.gui.components.tray_manager {
+}
+package "goliat.gui.components.ui_builder" as goliat.gui.components.ui_builder {
+}
+package "goliat.gui.progress_gui" as goliat.gui.progress_gui {
+}
+package "goliat.gui.queue_gui" as goliat.gui.queue_gui {
+}
+package "goliat.gui_manager" as goliat.gui_manager {
+}
+package "goliat.logging_manager" as goliat.logging_manager {
+}
+package "goliat.osparc_batch" as goliat.osparc_batch {
+}
+package "goliat.osparc_batch.cleanup" as goliat.osparc_batch.cleanup {
+}
+package "goliat.osparc_batch.file_finder" as goliat.osparc_batch.file_finder {
+}
+package "goliat.osparc_batch.gui" as goliat.osparc_batch.gui {
+}
+package "goliat.osparc_batch.logging_utils" as goliat.osparc_batch.logging_utils {
+}
+package "goliat.osparc_batch.main_logic" as goliat.osparc_batch.main_logic {
+}
+package "goliat.osparc_batch.osparc_client" as goliat.osparc_batch.osparc_client {
+}
+package "goliat.osparc_batch.progress" as goliat.osparc_batch.progress {
+}
+package "goliat.osparc_batch.runner" as goliat.osparc_batch.runner {
+}
+package "goliat.osparc_batch.worker" as goliat.osparc_batch.worker {
+}
+package "goliat.profiler" as goliat.profiler {
+}
+package "goliat.project_manager" as goliat.project_manager {
+}
+package "goliat.results_extractor" as goliat.results_extractor {
+}
+package "goliat.setups" as goliat.setups {
+}
+package "goliat.setups.base_setup" as goliat.setups.base_setup {
+}
+package "goliat.setups.boundary_setup" as goliat.setups.boundary_setup {
+}
+package "goliat.setups.far_field_setup" as goliat.setups.far_field_setup {
+}
+package "goliat.setups.gridding_setup" as goliat.setups.gridding_setup {
+}
+package "goliat.setups.material_setup" as goliat.setups.material_setup {
+}
+package "goliat.setups.near_field_setup" as goliat.setups.near_field_setup {
+}
+package "goliat.setups.phantom_setup" as goliat.setups.phantom_setup {
+}
+package "goliat.setups.placement_setup" as goliat.setups.placement_setup {
+}
+package "goliat.setups.source_setup" as goliat.setups.source_setup {
+}
+package "goliat.simulation_runner" as goliat.simulation_runner {
+}
+package "goliat.studies" as goliat.studies {
+}
+package "goliat.studies.base_study" as goliat.studies.base_study {
+}
+package "goliat.studies.far_field_study" as goliat.studies.far_field_study {
+}
+package "goliat.studies.near_field_study" as goliat.studies.near_field_study {
+}
+package "goliat.utils" as goliat.utils {
+}
+goliat.analysis.analyzer --> goliat.analysis.plotter
+goliat.analysis.far_field_strategy --> goliat.analysis.base_strategy
+goliat.analysis.near_field_strategy --> goliat.analysis.base_strategy
+goliat.extraction --> goliat.extraction.cleaner
+goliat.extraction --> goliat.extraction.power_extractor
+goliat.extraction --> goliat.extraction.reporter
+goliat.extraction --> goliat.extraction.sar_extractor
+goliat.extraction --> goliat.extraction.sensor_extractor
+goliat.gui --> goliat.gui.components.data_manager
+goliat.gui --> goliat.gui.components.plots
+goliat.gui --> goliat.gui.components.progress_animation
+goliat.gui --> goliat.gui.components.status_manager
+goliat.gui.components.ui_builder --> goliat.gui.components.plots
+goliat.gui.components.ui_builder --> goliat.gui.components.timings_table
+goliat.gui.progress_gui --> goliat.gui.components.data_manager
+goliat.gui.progress_gui --> goliat.gui.components.plots
+goliat.gui.progress_gui --> goliat.gui.components.progress_animation
+goliat.gui.progress_gui --> goliat.gui.components.queue_handler
+goliat.gui.progress_gui --> goliat.gui.components.status_manager
+goliat.gui.progress_gui --> goliat.gui.components.timings_table
+goliat.gui.progress_gui --> goliat.gui.components.tray_manager
+goliat.gui.progress_gui --> goliat.gui.components.ui_builder
+goliat.gui.progress_gui --> goliat.logging_manager
+goliat.gui.progress_gui --> goliat.utils
+goliat.gui.queue_gui --> goliat.logging_manager
+goliat.gui_manager --> goliat.gui.progress_gui
+goliat.gui_manager --> goliat.gui.queue_gui
+goliat.logging_manager --> goliat.colors
+goliat.osparc_batch.cleanup --> goliat.osparc_batch.logging_utils
+goliat.osparc_batch.file_finder --> goliat.osparc_batch.logging_utils
+goliat.osparc_batch.main_logic --> goliat.osparc_batch.logging_utils
+goliat.osparc_batch.main_logic --> goliat.osparc_batch.osparc_client
+goliat.osparc_batch.osparc_client --> goliat.osparc_batch.logging_utils
+goliat.osparc_batch.progress --> goliat.osparc_batch.logging_utils
+goliat.osparc_batch.runner --> goliat.config
+goliat.osparc_batch.runner --> goliat.osparc_batch.cleanup
+goliat.osparc_batch.runner --> goliat.osparc_batch.file_finder
+goliat.osparc_batch.runner --> goliat.osparc_batch.gui
+goliat.osparc_batch.runner --> goliat.osparc_batch.logging_utils
+goliat.osparc_batch.runner --> goliat.osparc_batch.main_logic
+goliat.osparc_batch.runner --> goliat.osparc_batch.osparc_client
+goliat.osparc_batch.runner --> goliat.osparc_batch.progress
+goliat.osparc_batch.runner --> goliat.osparc_batch.worker
+goliat.osparc_batch.worker --> goliat.osparc_batch.logging_utils
+goliat.osparc_batch.worker --> goliat.osparc_batch.osparc_client
+goliat.project_manager --> goliat.logging_manager
+goliat.project_manager --> goliat.results_extractor
+goliat.project_manager --> goliat.utils
+goliat.results_extractor --> goliat.extraction.cleaner
+goliat.results_extractor --> goliat.extraction.json_encoder
+goliat.results_extractor --> goliat.extraction.power_extractor
+goliat.results_extractor --> goliat.extraction.reporter
+goliat.results_extractor --> goliat.extraction.sar_extractor
+goliat.results_extractor --> goliat.extraction.sensor_extractor
+goliat.results_extractor --> goliat.logging_manager
+goliat.setups.base_setup --> goliat.logging_manager
+goliat.setups.boundary_setup --> goliat.setups.base_setup
+goliat.setups.far_field_setup --> goliat.setups.base_setup
+goliat.setups.far_field_setup --> goliat.setups.boundary_setup
+goliat.setups.far_field_setup --> goliat.setups.gridding_setup
+goliat.setups.far_field_setup --> goliat.setups.material_setup
+goliat.setups.far_field_setup --> goliat.setups.phantom_setup
+goliat.setups.gridding_setup --> goliat.setups.base_setup
+goliat.setups.material_setup --> goliat.setups.base_setup
+goliat.setups.near_field_setup --> goliat.setups.base_setup
+goliat.setups.near_field_setup --> goliat.setups.boundary_setup
+goliat.setups.near_field_setup --> goliat.setups.gridding_setup
+goliat.setups.near_field_setup --> goliat.setups.material_setup
+goliat.setups.near_field_setup --> goliat.setups.phantom_setup
+goliat.setups.near_field_setup --> goliat.setups.placement_setup
+goliat.setups.near_field_setup --> goliat.setups.source_setup
+goliat.setups.phantom_setup --> goliat.setups.base_setup
+goliat.setups.placement_setup --> goliat.setups.base_setup
+goliat.setups.source_setup --> goliat.setups.base_setup
+goliat.simulation_runner --> goliat.logging_manager
+goliat.simulation_runner --> goliat.utils
+goliat.studies.base_study --> goliat.config
+goliat.studies.base_study --> goliat.logging_manager
+goliat.studies.base_study --> goliat.profiler
+goliat.studies.base_study --> goliat.project_manager
+goliat.studies.base_study --> goliat.simulation_runner
+goliat.studies.base_study --> goliat.utils
+goliat.studies.far_field_study --> goliat.studies.base_study
+goliat.studies.near_field_study --> goliat.studies.base_study
+goliat.analysis.analyzer ..> goliat.analysis.base_strategy
+goliat.analysis.base_strategy ..> goliat.analysis.analyzer
+goliat.analysis.base_strategy ..> goliat.analysis.plotter
+goliat.analysis.far_field_strategy ..> goliat.analysis.analyzer
+goliat.analysis.far_field_strategy ..> goliat.analysis.plotter
+goliat.analysis.near_field_strategy ..> goliat.analysis.analyzer
+goliat.analysis.near_field_strategy ..> goliat.analysis.plotter
+goliat.antenna ..> goliat.config
+goliat.gui.components.plots ..> goliat.profiler
+goliat.gui.components.queue_handler ..> goliat.gui.progress_gui
+goliat.gui.components.timings_table ..> goliat.profiler
+goliat.gui.components.ui_builder ..> goliat.gui.components.status_manager
+goliat.gui.components.ui_builder ..> goliat.gui.progress_gui
+goliat.gui.progress_gui ..> goliat.profiler
+goliat.gui.queue_gui ..> goliat.profiler
+goliat.logging_manager ..> goliat.gui_manager
+goliat.osparc_batch.file_finder ..> goliat.config
+goliat.osparc_batch.main_logic ..> goliat.osparc_batch.worker
+goliat.osparc_batch.osparc_client ..> goliat.config
+goliat.project_manager ..> goliat.config
+goliat.project_manager ..> goliat.gui_manager
+goliat.results_extractor ..> goliat.config
+goliat.results_extractor ..> goliat.gui_manager
+goliat.results_extractor ..> goliat.studies.base_study
+goliat.simulation_runner ..> goliat.config
+goliat.simulation_runner ..> goliat.gui_manager
+goliat.simulation_runner ..> goliat.profiler
+goliat.utils ..> goliat.studies.base_study
+@enduml

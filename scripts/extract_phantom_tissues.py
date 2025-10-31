@@ -2,14 +2,13 @@ import argparse
 import json
 import logging
 import os
-import sys
 
-from src.config import Config
-from src.setups.phantom_setup import PhantomSetup
-from src.utils import ensure_s4l_running
+from goliat.config import Config
+from goliat.setups.phantom_setup import PhantomSetup
+from goliat.utils import ensure_s4l_running
 
-# Add the src directory to the Python path to allow for module imports
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+# Base directory for config files (package is installed, no sys.path needed)
+base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 
 def extract_tissues(phantom_name):

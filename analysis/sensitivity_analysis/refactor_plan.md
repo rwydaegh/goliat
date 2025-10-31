@@ -38,7 +38,7 @@ A new configuration file, `sensitivity_analysis_config.json`, will be created in
 
 ## 2. Create Data Extractor Module
 
-A new file, `src/data_extractor.py`, will be created. It will contain a generic function `get_parameter` that can extract data from different sources (e.g., JSON files, simulation outputs) based on the configuration.
+A new file, `goliat/data_extractor.py`, will be created. It will contain a generic function `get_parameter` that can extract data from different sources (e.g., JSON files, simulation outputs) based on the configuration.
 
 ## 3. Refactor `run_sensitivity_analysis.py`
 

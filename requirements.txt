@@ -1,2 +1,1 @@
-# Install the project in editable mode, using pyproject.toml as the source of truth.
 -e .

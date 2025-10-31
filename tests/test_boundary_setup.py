@@ -10,7 +10,7 @@ mocks = {
 }
 
 with patch.dict("sys.modules", mocks):
-    from src.setups.boundary_setup import BoundarySetup
+    from goliat.setups.boundary_setup import BoundarySetup
 
 
 @pytest.fixture

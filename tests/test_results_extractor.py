@@ -15,7 +15,7 @@ mocks = {
 }
 
 with patch.dict("sys.modules", mocks):
-    from src.results_extractor import ResultsExtractor
+    from goliat.results_extractor import ResultsExtractor
 
 
 @pytest.fixture

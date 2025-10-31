@@ -3,6 +3,8 @@ site_description: Automated Python framework for near-field and far-field dosime
 site_author: rwydaegh
 site_url: https://rwydaegh.github.io/goliat/
 
+docs_dir: docs
+
 repo_name: rwydaegh/goliat
 repo_url: https://github.com/rwydaegh/goliat
 edit_uri: edit/master/docs/
@@ -71,24 +73,33 @@ extra:
 extra_css:
 - stylesheets/extra.css
 
+extra_javascript:
+- javascripts/ansi-to-html.js
+
 nav:
 - Home: index.md
-- Quick Start: quick_start.md
-- User Guide: user_guide.md
+- User Guide:
+  - Quick Start: user_guide/quick_start.md
+  - User Guide: user_guide/user_guide.md
 - Tutorials:
-  - Basic: tutorials/basic.md
-  - Intermediate: tutorials/intermediate.md
-  - Advanced: tutorials/advanced.md
+  - Overview: tutorials/overview.md
+  - 1. Far-Field Basics: tutorials/01_far_field_basics.ipynb
+  - 2. Configuration and Caching: tutorials/02_configuration_and_caching.ipynb
+  - 3. Near-Field Basics: tutorials/03_near_field_basics.ipynb
+  - 4. Gridding and Phantom Rotation: tutorials/04_gridding_and_phantom_rotation.ipynb
+  - 5. Parallel and Cloud Execution: tutorials/05_parallel_and_cloud_execution.ipynb
 - Developer Guide:
-  - Overview: developer_guide.md
-  - Coloring Rules: coloring_rules.md
-  - UML: uml.md
-- Reference:
-  - Technical Guide: technical_guide.md
-  - Advanced Features: advanced_features.md
-  - Configuration: configuration.md
-  - API Reference: api_reference.md
+  - Overview: developer_guide/developer_guide.md
+  - Technical Guide: developer_guide/technical_guide.md
+  - Advanced Features: developer_guide/advanced_features.md
+  - Configuration: developer_guide/configuration.md
+  - Cloud Setup: developer_guide/cloud_setup.md
+  - Coloring Rules: developer_guide/coloring_rules.md
+  - UML: developer_guide/uml.md
 - Troubleshooting: troubleshooting.md
+- Reference:
+  - Full List of Features: reference/full_features_list.md
+  - API Reference: reference/api_reference.md
 - Project Info: project_info.md
 
 plugins:
@@ -100,15 +111,15 @@ plugins:
     minify_css: true
     htmlmin_opts:
       remove_comments: true
-- git-revision-date-localized:
-    enable_creation_date: false
-    type: timeago
 - kroki:
     HttpMethod: POST
+- mermaid2: {}
+- mknotebooks:
+    execute: false
 - mkdocstrings:
     handlers:
       python:
-        paths: [src]
+        paths: [goliat]
         options:
           docstring_style: google
           docstring_options:
@@ -127,6 +138,8 @@ plugins:
           filters:
           - '!^_'
           - ^__init__$
+        griffe:
+          warn_missing: false
 
 markdown_extensions:
   # Python Markdown
@@ -157,6 +170,9 @@ markdown_extensions:
 - pymdownx.smartsymbols
 - pymdownx.snippets:
     check_paths: true
+    base_path: docs
+    auto_append:
+    - includes/abbreviations.md
 - pymdownx.tabbed:
     alternate_style: true
     combine_header_slug: true
@@ -167,7 +183,7 @@ markdown_extensions:
     custom_fences:
     - name: mermaid
       class: mermaid
-      format: !!python/name:pymdownx.superfences.fence_code_format
+      format: !!python/name:mermaid2.fence_mermaid_custom
 - pymdownx.emoji:
     emoji_index: !!python/name:material.extensions.emoji.twemoji
     emoji_generator: !!python/name:material.extensions.emoji.to_svg

@@ -9,7 +9,7 @@ mocks = {
 }
 
 with patch.dict("sys.modules", mocks):
-    from src.simulation_runner import SimulationRunner
+    from goliat.simulation_runner import SimulationRunner
 
 
 @pytest.fixture

@@ -6,11 +6,13 @@ import time
 
 import colorama
 
+from goliat.colors import init_colorama
+
 
 # --- 1. Set up Logging ---
 def setup_console_logging():
     """Sets up a basic console logger with color."""
-    colorama.init(autoreset=True)
+    init_colorama()
     logger = logging.getLogger("osparc_batch")
     logger.setLevel(logging.INFO)
     handler = logging.StreamHandler()
@@ -39,7 +41,7 @@ def cancel_all_jobs(config_path: str, max_jobs: int):
     """Cancels all running jobs on the oSPARC platform."""
     import osparc as osparc_module
 
-    from src.config import Config
+    from goliat.config import Config
 
     base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     config = Config(base_dir, config_path)
@@ -124,10 +126,8 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    # Ensure the src directory is in the Python path
+    # Base directory for config files (package is installed, no sys.path needed)
     base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-    if base_dir not in sys.path:
-        sys.path.insert(0, base_dir)
 
     cancel_all_jobs(args.config, args.max_jobs)
     sys.exit(0)

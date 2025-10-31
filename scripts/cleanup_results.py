@@ -6,10 +6,12 @@ from pprint import pprint
 
 import colorama
 
+from goliat.colors import init_colorama
+
 
 def setup_console_logging():
     """Sets up a basic console logger with color."""
-    colorama.init(autoreset=True)
+    init_colorama()
     logger = logging.getLogger("script_logger")
     logger.setLevel(logging.INFO)
     handler = logging.StreamHandler()

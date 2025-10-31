@@ -35,7 +35,7 @@
     "gridding_parameters": {
         "global_gridding": {
             "grid_mode": "manual",
-            "manual_fallback_max_step_mm": 5.0
+            "manual_fallback_max_step_mm": 3.0
         },
         "global_gridding_per_frequency": {
             "450": 2.5,
