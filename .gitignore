@@ -1,4 +1,4 @@
-<![CDATA[# IDE and OS specific
+# IDE and OS specific
 .vscode/
 .roo/
 .DS_Store
@@ -22,7 +22,6 @@ analysis/sensitivity_analysis/plots/
 # Data
 data/
 !data/material_name_mapping.json
-data/.setup_done
 
 # Logs
 logs/
@@ -34,15 +33,12 @@ Sim4Life_Manual.pdf
 Sim4Life_Introduction.pdf
 
 # Configs
-# Ignore everything in the configs directory by default
 configs/*
-# Then, un-ignore the specific config files we want to track
 !configs/base_config.json
 !configs/far_field_config.json
+!configs/far_field_sim4life_web.json
 !configs/near_field_config.json
 !configs/near_field_config_no_subgrid.json
-# Ignore any subdirectories in the configs directory
-configs/*/
 
 # Generated files
 *.csv
@@ -55,7 +51,6 @@ configs/*/
 
 # Local environment
 .bashrc
-.setup_done
 .env
 
 resume_logic_brainstorm.md
@@ -63,4 +58,3 @@ resume_logic_plan.md
 
 # Python build artifacts
 src/*.egg-info/
-]]>

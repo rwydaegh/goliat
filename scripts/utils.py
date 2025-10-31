@@ -1,5 +1,6 @@
 import logging
 import os
+import platform
 import subprocess
 import sys
 
@@ -85,6 +86,11 @@ def check_python_interpreter():
     Checks if the correct Sim4Life Python interpreter is being used.
     If not, it prompts the user to select a valid one and updates .bashrc.
     """
+    # Bypass check if running in the Sim4Life cloud environment
+    if "aws" in platform.release():
+        logging.info("AWS environment detected, bypassing Sim4Life interpreter check.")
+        return
+
     viable_pythons = find_sim4life_python_executables()
 
     # Normalize paths for comparison
@@ -143,9 +149,14 @@ def prepare_data(base_dir):
     phantoms_dir = os.path.join(data_dir, "phantoms")
     if not os.path.exists(phantoms_dir) or len(os.listdir(phantoms_dir)) < 4:
         logging.info("Phantoms directory is missing or incomplete. Downloading phantoms...")
-        download_and_extract_data(base_dir, logging.getLogger())
+        download_and_extract_data(base_dir, logging.getLogger(), aws=False)  # Always download standard phantoms
     else:
         logging.info("Phantoms already exist. Skipping download.")
+
+    # If on AWS, download the extra phantom file
+    if "aws" in platform.release():
+        logging.info("AWS environment detected. Downloading additional phantom...")
+        download_and_extract_data(base_dir, logging.getLogger(), aws=True)
 
     centered_dir = os.path.join(data_dir, "antennas", "centered")
     if not os.path.exists(centered_dir) or not os.listdir(centered_dir):
