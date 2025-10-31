@@ -9,6 +9,9 @@
         "batch_run": false
     },
     "phantoms": [
+        "duke",
+        "ella",
+        "eartha",
         "thelonious"
     ],
     "frequencies_mhz": [

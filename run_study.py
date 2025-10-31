@@ -1,6 +1,7 @@
 import argparse
 import multiprocessing
 import os
+import platform
 import sys
 import traceback
 
@@ -31,13 +32,13 @@ def initial_setup():
 
     if not os.path.exists(lock_file):
         check_repo_root()
-        check_python_interpreter()
+        check_python_interpreter()  # This function now handles AWS detection internally
         install_requirements(os.path.join(os.getcwd(), "requirements.txt"))
         prepare_data(os.getcwd())
         with open(lock_file, "w") as f:
             f.write("Setup complete.")
     else:
-        check_python_interpreter()
+        check_python_interpreter()  # This function now handles AWS detection internally
 
 
 # --- Pre-check and Setup ---
@@ -46,7 +47,8 @@ initial_setup()
 try:
     from PySide6.QtWidgets import QApplication
 except ImportError:
-    is_sim4life_interpreter = "Sim4Life" in sys.executable
+    # In the cloud, the python executable is not in a path containing "Sim4Life", but we can detect the OS.
+    is_sim4life_interpreter = "Sim4Life" in sys.executable or "aws" in platform.release()
     print("=" * 80)
     print("ERROR: Could not start the application.")
 
