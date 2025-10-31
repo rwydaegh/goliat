@@ -47,7 +47,7 @@
     "manual_isolve": true,
     "data_setup": {
         "gdrive_url": "https://drive.google.com/drive/folders/1Ps0ilW6yx4Z5VoWRZKrkhP225m8lBQOV?usp=sharing&confirm=t",
-        "gdrive_url_aws": "https://drive.google.com/file/d/1t5dikkzY9mtmVqotObs1qrZJq4YGZf-a/view?usp=sharing&confirm=t",
+        "gdrive_url_aws": "https://drive.google.com/file/d/1etS9uyi0Ns-vOtG2q0G1hU0LLw0M_dq7/view?usp=sharing&confirm=t",
         "data_dir": "data"
     }
 }
