@@ -2,82 +2,107 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://rwydaegh.github.io/goliat/</loc>
-         <lastmod>2025-10-31</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://rwydaegh.github.io/goliat/COLORING_RULES/</loc>
-         <lastmod>2025-10-31</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://rwydaegh.github.io/goliat/advanced_features/</loc>
-         <lastmod>2025-10-31</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://rwydaegh.github.io/goliat/api_reference/</loc>
-         <lastmod>2025-10-31</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://rwydaegh.github.io/goliat/configuration/</loc>
-         <lastmod>2025-10-31</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://rwydaegh.github.io/goliat/developer_guide/</loc>
-         <lastmod>2025-10-31</lastmod>
+         <lastmod>2025-11-04</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rwydaegh.github.io/goliat/project_info/</loc>
-         <lastmod>2025-10-31</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://rwydaegh.github.io/goliat/quick_start/</loc>
-         <lastmod>2025-10-31</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://rwydaegh.github.io/goliat/technical_guide/</loc>
-         <lastmod>2025-10-31</lastmod>
+         <lastmod>2025-11-04</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rwydaegh.github.io/goliat/troubleshooting/</loc>
-         <lastmod>2025-10-31</lastmod>
+         <lastmod>2025-11-04</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://rwydaegh.github.io/goliat/uml/</loc>
-         <lastmod>2025-10-31</lastmod>
+         <loc>https://rwydaegh.github.io/goliat/developer_guide/advanced_features/</loc>
+         <lastmod>2025-11-04</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://rwydaegh.github.io/goliat/user_guide/</loc>
-         <lastmod>2025-10-31</lastmod>
+         <loc>https://rwydaegh.github.io/goliat/developer_guide/cloud_setup/</loc>
+         <lastmod>2025-11-04</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://rwydaegh.github.io/goliat/developer_guide/coloring_rules/</loc>
+         <lastmod>2025-11-04</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://rwydaegh.github.io/goliat/developer_guide/configuration/</loc>
+         <lastmod>2025-11-04</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://rwydaegh.github.io/goliat/developer_guide/developer_guide/</loc>
+         <lastmod>2025-11-04</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://rwydaegh.github.io/goliat/developer_guide/technical_guide/</loc>
+         <lastmod>2025-11-04</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://rwydaegh.github.io/goliat/developer_guide/uml/</loc>
+         <lastmod>2025-11-04</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rwydaegh.github.io/goliat/includes/abbreviations/</loc>
-         <lastmod>2025-10-31</lastmod>
+         <lastmod>2025-11-04</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://rwydaegh.github.io/goliat/tutorials/advanced/</loc>
-         <lastmod>2025-10-31</lastmod>
+         <loc>https://rwydaegh.github.io/goliat/reference/api_reference/</loc>
+         <lastmod>2025-11-04</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://rwydaegh.github.io/goliat/tutorials/basic/</loc>
-         <lastmod>2025-10-31</lastmod>
+         <loc>https://rwydaegh.github.io/goliat/reference/full_features_list/</loc>
+         <lastmod>2025-11-04</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://rwydaegh.github.io/goliat/tutorials/intermediate/</loc>
-         <lastmod>2025-10-31</lastmod>
+         <loc>https://rwydaegh.github.io/goliat/tutorials/01_far_field_basics/</loc>
+         <lastmod>2025-11-04</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://rwydaegh.github.io/goliat/tutorials/02_configuration_and_caching/</loc>
+         <lastmod>2025-11-04</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://rwydaegh.github.io/goliat/tutorials/03_near_field_basics/</loc>
+         <lastmod>2025-11-04</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://rwydaegh.github.io/goliat/tutorials/04_gridding_and_phantom_rotation/</loc>
+         <lastmod>2025-11-04</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://rwydaegh.github.io/goliat/tutorials/05_parallel_and_cloud_execution/</loc>
+         <lastmod>2025-11-04</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://rwydaegh.github.io/goliat/tutorials/overview/</loc>
+         <lastmod>2025-11-04</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://rwydaegh.github.io/goliat/user_guide/quick_start/</loc>
+         <lastmod>2025-11-04</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://rwydaegh.github.io/goliat/user_guide/user_guide/</loc>
+         <lastmod>2025-11-04</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>

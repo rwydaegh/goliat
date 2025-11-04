@@ -50,3 +50,140 @@
 .md-clipboard:hover {
   color: var(--md-accent-fg-color);
 }
+
+/* Notebook output styling - scrollable blocks */
+.jp-OutputArea-output,
+.jp-OutputArea-output > pre,
+.jp-OutputArea-output > div,
+.jp-OutputArea-output > code {
+  max-height: 600px;
+  overflow-y: auto;
+  overflow-x: auto;
+  margin: 0.5em 0;
+}
+
+.jp-OutputArea-output {
+  padding: 0.5em;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.2rem;
+  background-color: var(--md-code-bg-color);
+}
+
+/* Pre-formatted text in notebook outputs */
+.jp-OutputArea-output pre {
+  margin: 0;
+  padding: 0.5em;
+  background-color: transparent;
+  border: none;
+  overflow-x: auto;
+  max-width: 100%;
+  white-space: pre;
+  word-wrap: normal;
+}
+
+/* Stream output (stdout/stderr) - make scrollable */
+.jp-OutputArea-output[data-mime-type="application/vnd.jupyter.stdout"],
+.jp-OutputArea-output[data-mime-type="application/vnd.jupyter.stderr"],
+.jp-OutputArea-output .jp-OutputArea-prompt {
+  max-height: 600px;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+/* Handle execute_result outputs */
+.jp-OutputArea-output[data-mime-type="text/plain"],
+.jp-OutputArea-output[data-mime-type="text/html"] {
+  max-height: 600px;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+/* ANSI colored output support */
+.jp-OutputArea-output .ansi-black-fg { color: #000000; }
+.jp-OutputArea-output .ansi-red-fg { color: #cd3131; }
+.jp-OutputArea-output .ansi-green-fg { color: #0dbc79; }
+.jp-OutputArea-output .ansi-yellow-fg { color: #e5e510; }
+.jp-OutputArea-output .ansi-blue-fg { color: #2472c8; }
+.jp-OutputArea-output .ansi-magenta-fg { color: #bc3fbc; }
+.jp-OutputArea-output .ansi-cyan-fg { color: #11a8cd; }
+.jp-OutputArea-output .ansi-white-fg { color: #e5e5e5; }
+.jp-OutputArea-output .ansi-black-bg { background-color: #000000; }
+.jp-OutputArea-output .ansi-red-bg { background-color: #cd3131; }
+.jp-OutputArea-output .ansi-green-bg { background-color: #0dbc79; }
+.jp-OutputArea-output .ansi-yellow-bg { background-color: #e5e510; }
+.jp-OutputArea-output .ansi-blue-bg { background-color: #2472c8; }
+.jp-OutputArea-output .ansi-magenta-bg { background-color: #bc3fbc; }
+.jp-OutputArea-output .ansi-cyan-bg { background-color: #11a8cd; }
+.jp-OutputArea-output .ansi-white-bg { background-color: #e5e5e5; }
+.jp-OutputArea-output .ansi-bold { font-weight: bold; }
+.jp-OutputArea-output .ansi-dim { opacity: 0.6; }
+.jp-OutputArea-output .ansi-italic { font-style: italic; }
+.jp-OutputArea-output .ansi-underline { text-decoration: underline; }
+
+/* Alternative class names that mknotebooks might use */
+.notebook-output,
+.jp-Cell-outputWrapper,
+.jp-Cell-output,
+.jp-Cell-outputWrapper > div,
+.jp-Cell-outputWrapper > pre {
+  max-height: 600px;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+/* Handle pre elements in outputs */
+.jp-OutputArea-output pre,
+.jp-OutputArea-output code,
+.jp-Cell-outputWrapper pre,
+.jp-Cell-outputWrapper code {
+  white-space: pre;
+  word-wrap: normal;
+}
+
+/* Ensure code blocks in outputs are scrollable */
+.jp-OutputArea-output pre code,
+.jp-Cell-outputWrapper pre code {
+  display: block;
+  overflow-x: auto;
+}
+
+/* Generic notebook cell output containers */
+.jp-Cell[data-cell-type="code"] .jp-OutputArea,
+.jp-Cell[data-cell-type="code"] .jp-OutputArea-child,
+.jp-Cell[data-cell-type="code"] .jp-OutputArea-output {
+  max-height: 600px;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+/* Handle outputs that might be in highlight blocks */
+.highlight .jp-OutputArea-output,
+.highlight pre.jp-OutputArea-output {
+  max-height: 600px;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+/* Scrollbar styling for better visibility */
+.jp-OutputArea-output::-webkit-scrollbar,
+.jp-Cell-outputWrapper::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.jp-OutputArea-output::-webkit-scrollbar-track,
+.jp-Cell-outputWrapper::-webkit-scrollbar-track {
+  background: var(--md-default-bg-color);
+  border-radius: 4px;
+}
+
+.jp-OutputArea-output::-webkit-scrollbar-thumb,
+.jp-Cell-outputWrapper::-webkit-scrollbar-thumb {
+  background: var(--md-default-fg-color--lighter);
+  border-radius: 4px;
+}
+
+.jp-OutputArea-output::-webkit-scrollbar-thumb:hover,
+.jp-Cell-outputWrapper::-webkit-scrollbar-thumb:hover {
+  background: var(--md-default-fg-color--light);
+}

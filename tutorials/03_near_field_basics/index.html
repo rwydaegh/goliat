@@ -1,0 +1,1375 @@
+<!doctype html><html lang=en class=no-js> <head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="Automated Python framework for near-field and far-field dosimetric assessments using Sim4Life"><meta name=author content=rwydaegh><link href=https://rwydaegh.github.io/goliat/tutorials/03_near_field_basics/ rel=canonical><link href=../02_configuration_and_caching/ rel=prev><link href=../04_gridding_and_phantom_rotation/ rel=next><link rel=icon href=../../img/favicon.svg><meta name=generator content="mkdocs-1.5.3, mkdocs-material-9.5.3"><title>3. Near-Field Basics - GOLIAT Documentation</title><link rel=stylesheet href=../../assets/stylesheets/main.50c56a3b.min.css><link rel=stylesheet href=../../assets/stylesheets/palette.06af60db.min.css><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback"><style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style><link rel=stylesheet href=../../assets/_mkdocstrings.css><link rel=stylesheet href=../../stylesheets/extra.css><link rel=stylesheet href=../../css/ansi-colours.css><link rel=stylesheet href=../../css/jupyter-cells.css><link rel=stylesheet href=../../css/pandas-dataframe.css><script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script></head> <body dir=ltr data-md-color-scheme=default data-md-color-primary=indigo data-md-color-accent=indigo> <input class=md-toggle data-md-toggle=drawer type=checkbox id=__drawer autocomplete=off> <input class=md-toggle data-md-toggle=search type=checkbox id=__search autocomplete=off> <label class=md-overlay for=__drawer></label> <div data-md-component=skip> <a href=#tutorial-3-near-field-basics class=md-skip> Skip to content </a> </div> <div data-md-component=announce> </div> <div data-md-color-scheme=default data-md-component=outdated hidden> </div> <header class="md-header md-header--shadow md-header--lifted" data-md-component=header> <nav class="md-header__inner md-grid" aria-label=Header> <a href=../.. title="GOLIAT Documentation" class="md-header__button md-logo" aria-label="GOLIAT Documentation" data-md-component=logo> <img src=../../img/goliat.svg alt=logo> </a> <label class="md-header__button md-icon" for=__drawer> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg> </label> <div class=md-header__title data-md-component=header-title> <div class=md-header__ellipsis> <div class=md-header__topic> <span class=md-ellipsis> GOLIAT Documentation </span> </div> <div class=md-header__topic data-md-component=header-topic> <span class=md-ellipsis> 3. Near-Field Basics </span> </div> </div> </div> <form class=md-header__option data-md-component=palette> <input class=md-option data-md-color-media data-md-color-scheme=default data-md-color-primary=indigo data-md-color-accent=indigo aria-label="Switch to dark mode" type=radio name=__palette id=__palette_0> <label class="md-header__button md-icon" title="Switch to dark mode" for=__palette_1 hidden> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg> </label> <input class=md-option data-md-color-media data-md-color-scheme=slate data-md-color-primary=indigo data-md-color-accent=indigo aria-label="Switch to light mode" type=radio name=__palette id=__palette_1> <label class="md-header__button md-icon" title="Switch to light mode" for=__palette_0 hidden> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12c0-2.42-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg> </label> </form> <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script> <label class="md-header__button md-icon" for=__search> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg> </label> <div class=md-search data-md-component=search role=dialog> <label class=md-search__overlay for=__search></label> <div class=md-search__inner role=search> <form class=md-search__form name=search> <input type=text class=md-search__input name=query aria-label=Search placeholder=Search autocapitalize=off autocorrect=off autocomplete=off spellcheck=false data-md-component=search-query required> <label class="md-search__icon md-icon" for=__search> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg> </label> <nav class=md-search__options aria-label=Search> <a href=javascript:void(0) class="md-search__icon md-icon" title=Share aria-label=Share data-clipboard data-clipboard-text data-md-component=search-share tabindex=-1> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg> </a> <button type=reset class="md-search__icon md-icon" title=Clear aria-label=Clear tabindex=-1> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg> </button> </nav> <div class=md-search__suggest data-md-component=search-suggest></div> </form> <div class=md-search__output> <div class=md-search__scrollwrap data-md-scrollfix> <div class=md-search-result data-md-component=search-result> <div class=md-search-result__meta> Initializing search </div> <ol class=md-search-result__list role=presentation></ol> </div> </div> </div> </div> </div> <div class=md-header__source> <a href=https://github.com/rwydaegh/goliat title="Go to repository" class=md-source data-md-component=source> <div class="md-source__icon md-icon"> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 496 512"><!-- Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg> </div> <div class=md-source__repository> rwydaegh/goliat </div> </a> </div> </nav> <nav class=md-tabs aria-label=Tabs data-md-component=tabs> <div class=md-grid> <ul class=md-tabs__list> <li class=md-tabs__item> <a href=../.. class=md-tabs__link> Home </a> </li> <li class=md-tabs__item> <a href=../../user_guide/quick_start/ class=md-tabs__link> User Guide </a> </li> <li class="md-tabs__item md-tabs__item--active"> <a href=../overview/ class=md-tabs__link> Tutorials </a> </li> <li class=md-tabs__item> <a href=../../developer_guide/developer_guide/ class=md-tabs__link> Developer Guide </a> </li> <li class=md-tabs__item> <a href=../../troubleshooting/ class=md-tabs__link> Troubleshooting </a> </li> <li class=md-tabs__item> <a href=../../reference/full_features_list/ class=md-tabs__link> Reference </a> </li> <li class=md-tabs__item> <a href=../../project_info/ class=md-tabs__link> Project Info </a> </li> </ul> </div> </nav> </header> <div class=md-container data-md-component=container> <main class=md-main data-md-component=main> <div class="md-main__inner md-grid"> <div class="md-sidebar md-sidebar--primary" data-md-component=sidebar data-md-type=navigation> <div class=md-sidebar__scrollwrap> <div class=md-sidebar__inner> <nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label=Navigation data-md-level=0> <label class=md-nav__title for=__drawer> <a href=../.. title="GOLIAT Documentation" class="md-nav__button md-logo" aria-label="GOLIAT Documentation" data-md-component=logo> <img src=../../img/goliat.svg alt=logo> </a> GOLIAT Documentation </label> <div class=md-nav__source> <a href=https://github.com/rwydaegh/goliat title="Go to repository" class=md-source data-md-component=source> <div class="md-source__icon md-icon"> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 496 512"><!-- Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg> </div> <div class=md-source__repository> rwydaegh/goliat </div> </a> </div> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../.. class=md-nav__link> <span class=md-ellipsis> Home </span> </a> </li> <li class="md-nav__item md-nav__item--section md-nav__item--nested"> <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type=checkbox id=__nav_2> <label class=md-nav__link for=__nav_2 id=__nav_2_label tabindex> <span class=md-ellipsis> User Guide </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=1 aria-labelledby=__nav_2_label aria-expanded=false> <label class=md-nav__title for=__nav_2> <span class="md-nav__icon md-icon"></span> User Guide </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../../user_guide/quick_start/ class=md-nav__link> <span class=md-ellipsis> Quick Start </span> </a> </li> <li class=md-nav__item> <a href=../../user_guide/user_guide/ class=md-nav__link> <span class=md-ellipsis> User Guide </span> </a> </li> </ul> </nav> </li> <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_3 checked> <label class=md-nav__link for=__nav_3 id=__nav_3_label tabindex> <span class=md-ellipsis> Tutorials </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=1 aria-labelledby=__nav_3_label aria-expanded=true> <label class=md-nav__title for=__nav_3> <span class="md-nav__icon md-icon"></span> Tutorials </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../overview/ class=md-nav__link> <span class=md-ellipsis> Overview </span> </a> </li> <li class=md-nav__item> <a href=../01_far_field_basics/ class=md-nav__link> <span class=md-ellipsis> 1. Far-Field Basics </span> </a> </li> <li class=md-nav__item> <a href=../02_configuration_and_caching/ class=md-nav__link> <span class=md-ellipsis> 2. Configuration and Caching </span> </a> </li> <li class="md-nav__item md-nav__item--active"> <input class="md-nav__toggle md-toggle" type=checkbox id=__toc> <label class="md-nav__link md-nav__link--active" for=__toc> <span class=md-ellipsis> 3. Near-Field Basics </span> <span class="md-nav__icon md-icon"></span> </label> <a href=./ class="md-nav__link md-nav__link--active"> <span class=md-ellipsis> 3. Near-Field Basics </span> </a> <nav class="md-nav md-nav--secondary" aria-label="Table of contents"> <label class=md-nav__title for=__toc> <span class="md-nav__icon md-icon"></span> Table of contents </label> <ul class=md-nav__list data-md-component=toc data-md-scrollfix> <li class=md-nav__item> <a href=#what-youll-learn class=md-nav__link> <span class=md-ellipsis> What you'll learn </span> </a> </li> <li class=md-nav__item> <a href=#prerequisites class=md-nav__link> <span class=md-ellipsis> Prerequisites </span> </a> </li> <li class=md-nav__item> <a href=#about-the-notebook-code-blocks class=md-nav__link> <span class=md-ellipsis> About the notebook code blocks </span> </a> </li> <li class=md-nav__item> <a href=#near-field-vs-far-field class=md-nav__link> <span class=md-ellipsis> Near-field vs far-field </span> </a> </li> <li class=md-nav__item> <a href=#the-configuration-file class=md-nav__link> <span class=md-ellipsis> The configuration file </span> </a> <nav class=md-nav aria-label="The configuration file"> <ul class=md-nav__list> <li class=md-nav__item> <a href=#study-type class=md-nav__link> <span class=md-ellipsis> Study type </span> </a> </li> <li class=md-nav__item> <a href=#phantom-selection class=md-nav__link> <span class=md-ellipsis> Phantom selection </span> </a> </li> <li class=md-nav__item> <a href=#antenna-configuration class=md-nav__link> <span class=md-ellipsis> Antenna configuration </span> </a> </li> <li class=md-nav__item> <a href=#placement-scenarios class=md-nav__link> <span class=md-ellipsis> Placement scenarios </span> </a> </li> </ul> </nav> </li> <li class=md-nav__item> <a href=#understanding-the-gui class=md-nav__link> <span class=md-ellipsis> Understanding the GUI </span> </a> <nav class=md-nav aria-label="Understanding the GUI"> <ul class=md-nav__list> <li class=md-nav__item> <a href=#main-tab class=md-nav__link> <span class=md-ellipsis> Main tab </span> </a> </li> <li class=md-nav__item> <a href=#timings-and-timings-piecharts-tabs class=md-nav__link> <span class=md-ellipsis> Timings and Timings Piecharts tabs </span> </a> </li> <li class=md-nav__item> <a href=#time-remaining-and-overall-progress-tabs class=md-nav__link> <span class=md-ellipsis> Time Remaining and Overall Progress tabs. </span> </a> </li> </ul> </nav> </li> <li class=md-nav__item> <a href=#the-logging-system class=md-nav__link> <span class=md-ellipsis> The logging system </span> </a> <nav class=md-nav aria-label="The logging system"> <ul class=md-nav__list> <li class=md-nav__item> <a href=#log-destinations class=md-nav__link> <span class=md-ellipsis> Log destinations </span> </a> </li> <li class=md-nav__item> <a href=#progress-vs-verbose-logs class=md-nav__link> <span class=md-ellipsis> Progress vs verbose logs </span> </a> </li> <li class=md-nav__item> <a href=#phases-and-subtasks class=md-nav__link> <span class=md-ellipsis> Phases and subtasks </span> </a> </li> <li class=md-nav__item> <a href=#simulation-specific-logs class=md-nav__link> <span class=md-ellipsis> Simulation-specific logs </span> </a> </li> </ul> </nav> </li> <li class=md-nav__item> <a href=#running-the-simulation class=md-nav__link> <span class=md-ellipsis> Running the simulation </span> </a> </li> <li class=md-nav__item> <a href=#understanding-the-results class=md-nav__link> <span class=md-ellipsis> Understanding the results </span> </a> <nav class=md-nav aria-label="Understanding the results"> <ul class=md-nav__list> <li class=md-nav__item> <a href=#output-files class=md-nav__link> <span class=md-ellipsis> Output files </span> </a> </li> </ul> </nav> </li> <li class=md-nav__item> <a href=#checking-the-sim4life-project class=md-nav__link> <span class=md-ellipsis> Checking the Sim4Life project </span> </a> </li> <li class=md-nav__item> <a href=#whats-next class=md-nav__link> <span class=md-ellipsis> What's next </span> </a> </li> <li class=md-nav__item> <a href=#summary class=md-nav__link> <span class=md-ellipsis> Summary </span> </a> </li> </ul> </nav> </li> <li class=md-nav__item> <a href=../04_gridding_and_phantom_rotation/ class=md-nav__link> <span class=md-ellipsis> 4. Gridding and Phantom Rotation </span> </a> </li> <li class=md-nav__item> <a href=../05_parallel_and_cloud_execution/ class=md-nav__link> <span class=md-ellipsis> 5. Parallel and Cloud Execution </span> </a> </li> </ul> </nav> </li> <li class="md-nav__item md-nav__item--section md-nav__item--nested"> <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type=checkbox id=__nav_4> <label class=md-nav__link for=__nav_4 id=__nav_4_label tabindex> <span class=md-ellipsis> Developer Guide </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=1 aria-labelledby=__nav_4_label aria-expanded=false> <label class=md-nav__title for=__nav_4> <span class="md-nav__icon md-icon"></span> Developer Guide </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../../developer_guide/developer_guide/ class=md-nav__link> <span class=md-ellipsis> Overview </span> </a> </li> <li class=md-nav__item> <a href=../../developer_guide/technical_guide/ class=md-nav__link> <span class=md-ellipsis> Technical Guide </span> </a> </li> <li class=md-nav__item> <a href=../../developer_guide/advanced_features/ class=md-nav__link> <span class=md-ellipsis> Advanced Features </span> </a> </li> <li class=md-nav__item> <a href=../../developer_guide/configuration/ class=md-nav__link> <span class=md-ellipsis> Configuration </span> </a> </li> <li class=md-nav__item> <a href=../../developer_guide/cloud_setup/ class=md-nav__link> <span class=md-ellipsis> Cloud Setup </span> </a> </li> <li class=md-nav__item> <a href=../../developer_guide/coloring_rules/ class=md-nav__link> <span class=md-ellipsis> Coloring Rules </span> </a> </li> <li class=md-nav__item> <a href=../../developer_guide/uml/ class=md-nav__link> <span class=md-ellipsis> UML </span> </a> </li> </ul> </nav> </li> <li class=md-nav__item> <a href=../../troubleshooting/ class=md-nav__link> <span class=md-ellipsis> Troubleshooting </span> </a> </li> <li class="md-nav__item md-nav__item--section md-nav__item--nested"> <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type=checkbox id=__nav_6> <label class=md-nav__link for=__nav_6 id=__nav_6_label tabindex> <span class=md-ellipsis> Reference </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=1 aria-labelledby=__nav_6_label aria-expanded=false> <label class=md-nav__title for=__nav_6> <span class="md-nav__icon md-icon"></span> Reference </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../../reference/full_features_list/ class=md-nav__link> <span class=md-ellipsis> Full List of Features </span> </a> </li> <li class=md-nav__item> <a href=../../reference/api_reference/ class=md-nav__link> <span class=md-ellipsis> API Reference </span> </a> </li> </ul> </nav> </li> <li class=md-nav__item> <a href=../../project_info/ class=md-nav__link> <span class=md-ellipsis> Project Info </span> </a> </li> </ul> </nav> </div> </div> </div> <div class=md-content data-md-component=content> <article class="md-content__inner md-typeset"> <a href=https://github.com/rwydaegh/goliat/edit/master/docs/tutorials/03_near_field_basics.ipynb title="Edit this page" class="md-content__button md-icon"> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg> </a> <a href=https://github.com/rwydaegh/goliat/raw/master/docs/tutorials/03_near_field_basics.ipynb title="View source of this page" class="md-content__button md-icon"> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M12 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0 8a5 5 0 0 1-5-5 5 5 0 0 1 5-5 5 5 0 0 1 5 5 5 5 0 0 1-5 5m0-12.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5Z"/></svg> </a> <script src=https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js></script> <script>
+(function() {
+  function addWidgetsRenderer() {
+    var requireJsScript = document.createElement('script');
+    requireJsScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js';
+
+    var mimeElement = document.querySelector('script[type="application/vnd.jupyter.widget-view+json"]');
+    var jupyterWidgetsScript = document.createElement('script');
+    var widgetRendererSrc = 'https://unpkg.com/@jupyter-widgets/html-manager@*/dist/embed-amd.js';
+    var widgetState;
+
+    // Fallback for older version:
+    try {
+      widgetState = mimeElement && JSON.parse(mimeElement.innerHTML);
+
+      if (widgetState && (widgetState.version_major < 2 || !widgetState.version_major)) {
+        widgetRendererSrc = 'jupyter-js-widgets@*/dist/embed.js';
+      }
+    } catch(e) {}
+
+    jupyterWidgetsScript.src = widgetRendererSrc;
+
+    document.body.appendChild(requireJsScript);
+    document.body.appendChild(jupyterWidgetsScript);
+  }
+
+  document.addEventListener('DOMContentLoaded', addWidgetsRenderer);
+}());
+</script> <div class="cell border-box-sizing text_cell rendered"> <div class=inner_cell> <div class="text_cell_render border-box-sizing rendered_html"> <h1 id=tutorial-3-near-field-basics>Tutorial 3: Near-field basics<a class=headerlink href=#tutorial-3-near-field-basics title="Permanent link">&para;</a></h1> <p>Learn device exposure simulations with phone antennas near the body.</p> <h2 id=what-youll-learn>What you'll learn<a class=headerlink href=#what-youll-learn title="Permanent link">&para;</a></h2> <ul> <li>How near-field simulations work (antennas near the body)</li> <li>Antenna configuration basics</li> <li>Placement scenarios and anatomical landmarks</li> <li>Understanding the <abbr title="Graphical User Interface">GUI</abbr> and logging system</li> <li>Localized <abbr title="Specific Absorption Rate">SAR</abbr> extraction</li> </ul> <p><strong>Related documentation</strong>: <a href=../../user_guide/user_guide/#near-field-workflow-device-exposure>User guide (near-field workflow)</a></p> <h2 id=prerequisites>Prerequisites<a class=headerlink href=#prerequisites title="Permanent link">&para;</a></h2> <ul> <li>Tutorial 1 completed (far-field basics)</li> <li>Tutorial 2 completed (config system, caching)</li> <li>Antenna <abbr title="Computer-Aided Design">CAD</abbr> models available in <code>antenna_models/</code> directory</li> </ul> <p>If you need antenna models, see the <a href=../../user_guide/quick_start/ >Quick Start guide</a> (antenna models are auto-downloaded as needed).</p> <h2 id=about-the-notebook-code-blocks>About the notebook code blocks<a class=headerlink href=#about-the-notebook-code-blocks title="Permanent link">&para;</a></h2> <p>This tutorial includes Python code blocks for running commands. These are designed for <strong>Jupyter notebooks</strong> if you prefer that workflow.</p> <p><strong>If you're using notebooks</strong>, run this setup once per session:</p> </div> </div> </div> <div class="cell border-box-sizing code_cell rendered"> <div class=input> <div class="language-python highlight"><pre><span></span><code><span id=__span-0-1><a id=__codelineno-0-1 name=__codelineno-0-1 href=#__codelineno-0-1></a><span class=kn>from</span><span class=w> </span><span class=nn>pathlib</span><span class=w> </span><span class=kn>import</span> <span class=n>Path</span><span class=p>;</span> <span class=kn>import</span><span class=w> </span><span class=nn>importlib.util</span>
+</span><span id=__span-0-2><a id=__codelineno-0-2 name=__codelineno-0-2 href=#__codelineno-0-2></a><span class=n>p</span> <span class=o>=</span> <span class=n>Path</span><span class=o>.</span><span class=n>cwd</span><span class=p>()</span>
+</span><span id=__span-0-3><a id=__codelineno-0-3 name=__codelineno-0-3 href=#__codelineno-0-3></a><span class=k>while</span> <span class=ow>not</span> <span class=p>(</span><span class=n>p</span> <span class=o>/</span> <span class=s1>&#39;scripts&#39;</span> <span class=o>/</span> <span class=s1>&#39;notebook_helpers.py&#39;</span><span class=p>)</span><span class=o>.</span><span class=n>exists</span><span class=p>():</span> <span class=n>p</span> <span class=o>=</span> <span class=n>p</span><span class=o>.</span><span class=n>parent</span>
+</span><span id=__span-0-4><a id=__codelineno-0-4 name=__codelineno-0-4 href=#__codelineno-0-4></a><span class=n>spec</span> <span class=o>=</span> <span class=n>importlib</span><span class=o>.</span><span class=n>util</span><span class=o>.</span><span class=n>spec_from_file_location</span><span class=p>(</span><span class=s2>&quot;_&quot;</span><span class=p>,</span> <span class=n>p</span> <span class=o>/</span> <span class=s1>&#39;scripts&#39;</span> <span class=o>/</span> <span class=s1>&#39;notebook_helpers.py&#39;</span><span class=p>)</span>
+</span><span id=__span-0-5><a id=__codelineno-0-5 name=__codelineno-0-5 href=#__codelineno-0-5></a><span class=n>m</span> <span class=o>=</span> <span class=n>importlib</span><span class=o>.</span><span class=n>util</span><span class=o>.</span><span class=n>module_from_spec</span><span class=p>(</span><span class=n>spec</span><span class=p>);</span> <span class=n>spec</span><span class=o>.</span><span class=n>loader</span><span class=o>.</span><span class=n>exec_module</span><span class=p>(</span><span class=n>m</span><span class=p>)</span>
+</span><span id=__span-0-6><a id=__codelineno-0-6 name=__codelineno-0-6 href=#__codelineno-0-6></a><span class=n>run_bash</span> <span class=o>=</span> <span class=n>m</span><span class=o>.</span><span class=n>get_run_bash</span><span class=p>()</span>
+</span><span id=__span-0-7><a id=__codelineno-0-7 name=__codelineno-0-7 href=#__codelineno-0-7></a>
+</span><span id=__span-0-8><a id=__codelineno-0-8 name=__codelineno-0-8 href=#__codelineno-0-8></a><span class=kn>import</span><span class=w> </span><span class=nn>IPython</span>
+</span><span id=__span-0-9><a id=__codelineno-0-9 name=__codelineno-0-9 href=#__codelineno-0-9></a><span class=n>IPython</span><span class=o>.</span><span class=n>core</span><span class=o>.</span><span class=n>display</span><span class=o>.</span><span class=n>max_output_size</span> <span class=o>=</span> <span class=kc>None</span>
+</span></code></pre></div> </div> </div> <div class="cell border-box-sizing text_cell rendered"> <div class=inner_cell> <div class="text_cell_render border-box-sizing rendered_html"> <p>This helper function lets you run bash commands from Python cells using <code>run_bash('command')</code>. The setup also disables output truncation so you can see all command output.</p> <p><strong>If you're using bash directly</strong> (recommended), ignore the Python code blocks and just run the commands directly. Make sure to always run <code>source .bashrc</code> first.</p> </div> </div> </div> <div class="cell border-box-sizing text_cell rendered"> <div class=inner_cell> <div class="text_cell_render border-box-sizing rendered_html"> <hr> <h2 id=near-field-vs-far-field>Near-field vs far-field<a class=headerlink href=#near-field-vs-far-field title="Permanent link">&para;</a></h2> <p>Far-field simulations model environmental exposure where the source is distant. Near-field simulations model device exposure where the antenna is close to the body.</p> <p>The differences matter:</p> <table> <thead> <tr> <th style="text-align: left;">Aspect</th> <th style="text-align: left;">Far-field</th> <th style="text-align: left;">Near-field</th> </tr> </thead> <tbody> <tr> <td style="text-align: left;">Source</td> <td style="text-align: left;">Plane waves (distant)</td> <td style="text-align: left;">Antenna model (near body)</td> </tr> <tr> <td style="text-align: left;"><abbr title="Specific Absorption Rate">SAR</abbr> pattern</td> <td style="text-align: left;">Distributed</td> <td style="text-align: left;">Localized hotspots</td> </tr> <tr> <td style="text-align: left;">Configuration</td> <td style="text-align: left;">Directions + polarizations</td> <td style="text-align: left;">Antenna + placement</td> </tr> <tr> <td style="text-align: left;">Typical use</td> <td style="text-align: left;">Base stations, broadcast</td> <td style="text-align: left;">Phones, wearables, implants</td> </tr> </tbody> </table> <p>In near-field studies, GOLIAT: 1. Imports the antenna <abbr title="Computer-Aided Design">CAD</abbr> model 2. Positions it relative to anatomical landmarks 3. Applies material properties and power settings 4. Runs the <abbr title="Finite-Difference Time-Domain">FDTD</abbr> simulation 5. Extracts localized <abbr title="Specific Absorption Rate">SAR</abbr> values</p> <p><img alt="Near-field setup" src=../../img/tutorials/tut3_setup.png></p> <hr> <h2 id=the-configuration-file>The configuration file<a class=headerlink href=#the-configuration-file title="Permanent link">&para;</a></h2> <p>This tutorial uses a single phantom (Thelonious), one frequency (700 <abbr title=Megahertz>MHz</abbr>), and the front_of_eyes placement.</p> </div> </div> </div> <div class="cell border-box-sizing code_cell rendered"> <div class=input> <div class="language-python highlight"><pre><span></span><code><span id=__span-1-1><a id=__codelineno-1-1 name=__codelineno-1-1 href=#__codelineno-1-1></a><span class=n>run_bash</span><span class=p>(</span><span class=s1>&#39;cat configs/tutorial_3_near_field.json&#39;</span><span class=p>)</span>
+</span></code></pre></div> </div> <div class=output_wrapper> <div class=output> <div class=output_area> <div class="output_subarea output_stream output_stdout output_text"> <pre>
+<code>Running: source .bashrc &amp;&amp; cat configs/tutorial_3_near_field.json
+
+------------------------------------------------------------
+{
+  "extends": "base_config.json",
+  "study_type": "near_field",
+  "phantoms": ["thelonious"],
+  "execution_control": {
+    "do_setup": true,
+    "do_run": true,
+    "do_extract": true
+  },
+  "simulation_parameters": {
+    "number_of_point_sensors": 2
+  },
+  "gridding_parameters": {
+    "global_gridding": {
+      "grid_mode": "manual",
+      "manual_fallback_max_step_mm": 3.0
+    },
+    "global_gridding_per_frequency": {
+      "700": 2.5
+    },
+    "padding": {
+      "padding_mode": "manual",
+      "manual_bottom_padding_mm": [0, 0, 0],
+      "manual_top_padding_mm": [0, 0, 0]
+    }
+  },
+  "antenna_config": {
+    "700": {
+      "center_frequency": 700,
+      "target_power_mW": 267,
+      "model_type": "PIFA",
+      "source_name": "Lines 1",
+      "materials": {
+        "Extrude 1": "Copper",
+        "component1:Battery": "Copper",
+        "component1:Patch": "Copper",
+        "component1:ShortingPin": "Copper",
+        "component1:Substrate": "Rogers RT/duroid 5880"
+      },
+      "gridding": {
+        "automatic": ["component1:Substrate", "Lines 1"]
+      }
+    }
+  },
+  "placement_scenarios": {
+    "front_of_eyes": {
+      "bounding_box": "default",
+      "positions": {
+        "center": [0, 0, -100]
+      },
+      "orientations": {
+        "vertical": []
+      },
+      "antenna_reference": {
+        "distance_from_top": 10
+      },
+      "phantom_reference": "nasion"
+    }
+  },
+  "phantom_definitions": {
+    "thelonious": {
+      "nasion": [-1, 0, 0],
+      "placements": {
+        "do_front_of_eyes": true,
+        "do_by_belly": false,
+        "do_by_cheek": false,
+        "distance_from_eye": 200
+      }
+    }
+  }
+}
+
+------------------------------------------------------------
+
+Command completed with return code: 0
+</code>
+</pre> </div> </div> <div class=output_area> <div class="output_text output_subarea output_execute_result"> <pre>
+<code>0</code>
+</pre> </div> </div> </div> </div> </div> <div class="cell border-box-sizing text_cell rendered"> <div class=inner_cell> <div class="text_cell_render border-box-sizing rendered_html"> <h3 id=study-type>Study type<a class=headerlink href=#study-type title="Permanent link">&para;</a></h3> <div class="language-json highlight"><pre><span></span><code><span id=__span-2-1><a id=__codelineno-2-1 name=__codelineno-2-1 href=#__codelineno-2-1></a><span class=nt>&quot;study_type&quot;</span><span class=p>:</span><span class=w> </span><span class=s2>&quot;near_field&quot;</span>
+</span></code></pre></div> <p>This tells GOLIAT to run a near-field study, which requires <code>antenna_config</code> and <code>placement_scenarios</code> instead of <code>far_field_setup</code>.</p> <h3 id=phantom-selection>Phantom selection<a class=headerlink href=#phantom-selection title="Permanent link">&para;</a></h3> <div class="language-json highlight"><pre><span></span><code><span id=__span-3-1><a id=__codelineno-3-1 name=__codelineno-3-1 href=#__codelineno-3-1></a><span class=nt>&quot;phantoms&quot;</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&quot;thelonious&quot;</span><span class=p>]</span>
+</span></code></pre></div> <p>We use Thelonious (male child) for this tutorial. If you don't have a license for Thelonious, feel free to use another phantoms, like Duke.</p> <h3 id=antenna-configuration>Antenna configuration<a class=headerlink href=#antenna-configuration title="Permanent link">&para;</a></h3> <p>The <code>antenna_config</code> section defines antenna properties for each frequency.</p> <div class="language-json highlight"><pre><span></span><code><span id=__span-4-1><a id=__codelineno-4-1 name=__codelineno-4-1 href=#__codelineno-4-1></a><span class=nt>&quot;antenna_config&quot;</span><span class=p>:</span><span class=w> </span><span class=p>{</span>
+</span><span id=__span-4-2><a id=__codelineno-4-2 name=__codelineno-4-2 href=#__codelineno-4-2></a><span class=w>  </span><span class=nt>&quot;700&quot;</span><span class=p>:</span><span class=w> </span><span class=p>{</span>
+</span><span id=__span-4-3><a id=__codelineno-4-3 name=__codelineno-4-3 href=#__codelineno-4-3></a><span class=w>    </span><span class=nt>&quot;center_frequency&quot;</span><span class=p>:</span><span class=w> </span><span class=mi>700</span><span class=p>,</span>
+</span><span id=__span-4-4><a id=__codelineno-4-4 name=__codelineno-4-4 href=#__codelineno-4-4></a><span class=w>    </span><span class=nt>&quot;target_power_mW&quot;</span><span class=p>:</span><span class=w> </span><span class=mi>267</span><span class=p>,</span>
+</span><span id=__span-4-5><a id=__codelineno-4-5 name=__codelineno-4-5 href=#__codelineno-4-5></a><span class=w>    </span><span class=nt>&quot;model_type&quot;</span><span class=p>:</span><span class=w> </span><span class=s2>&quot;PIFA&quot;</span><span class=p>,</span>
+</span><span id=__span-4-6><a id=__codelineno-4-6 name=__codelineno-4-6 href=#__codelineno-4-6></a><span class=w>    </span><span class=nt>&quot;source_name&quot;</span><span class=p>:</span><span class=w> </span><span class=s2>&quot;Lines 1&quot;</span><span class=p>,</span>
+</span><span id=__span-4-7><a id=__codelineno-4-7 name=__codelineno-4-7 href=#__codelineno-4-7></a><span class=w>    </span><span class=nt>&quot;materials&quot;</span><span class=p>:</span><span class=w> </span><span class=p>{</span><span class=err>...</span><span class=p>},</span>
+</span><span id=__span-4-8><a id=__codelineno-4-8 name=__codelineno-4-8 href=#__codelineno-4-8></a><span class=w>    </span><span class=nt>&quot;gridding&quot;</span><span class=p>:</span><span class=w> </span><span class=p>{</span><span class=err>...</span><span class=p>}</span>
+</span><span id=__span-4-9><a id=__codelineno-4-9 name=__codelineno-4-9 href=#__codelineno-4-9></a><span class=w>  </span><span class=p>}</span>
+</span><span id=__span-4-10><a id=__codelineno-4-10 name=__codelineno-4-10 href=#__codelineno-4-10></a><span class=p>}</span>
+</span></code></pre></div> <p><strong>Key parameters</strong>:</p> <ul> <li><code>center_frequency</code>: Antenna operating frequency in <abbr title=Megahertz>MHz</abbr></li> <li><code>target_power_mW</code>: The necessary power <em>such that</em> the 10g-<abbr title="Specific Absorption Rate">SAR</abbr> in a flat phantom is 1 W/kg. This is for a 300 x 300 mm x 5 skin depth region with tissue parameters from <abbr title="International Electrotechnical Commission">IEC</abbr>/<abbr title="Institute of Electrical and Electronics Engineers">IEEE</abbr> 62209-01 at a distance of 5 mm.</li> <li><code>model_type</code>: Antenna type (<abbr title="Planar Inverted-F Antenna">PIFA</abbr> or <abbr title="Inverted-F Antenna">IFA</abbr>), used to select setup logic</li> <li><code>source_name</code>: Name of the excitation entity in the <abbr title="Computer-Aided Design">CAD</abbr> file</li> <li><code>materials</code>: Maps <abbr title="Computer-Aided Design">CAD</abbr> component names to Sim4Life materials</li> <li><code>gridding</code>: Defines the details of specific sub-meshes in the antenna, per entity group.</li> </ul> <p><strong>Material mapping</strong></p> <p>The <code>materials</code> object tells GOLIAT which material to assign to each antenna component:</p> <div class="language-json highlight"><pre><span></span><code><span id=__span-5-1><a id=__codelineno-5-1 name=__codelineno-5-1 href=#__codelineno-5-1></a><span class=nt>&quot;materials&quot;</span><span class=p>:</span><span class=w> </span><span class=p>{</span>
+</span><span id=__span-5-2><a id=__codelineno-5-2 name=__codelineno-5-2 href=#__codelineno-5-2></a><span class=w>  </span><span class=nt>&quot;Extrude 1&quot;</span><span class=p>:</span><span class=w> </span><span class=s2>&quot;Copper&quot;</span><span class=p>,</span>
+</span><span id=__span-5-3><a id=__codelineno-5-3 name=__codelineno-5-3 href=#__codelineno-5-3></a><span class=w>  </span><span class=nt>&quot;component1:Battery&quot;</span><span class=p>:</span><span class=w> </span><span class=s2>&quot;Copper&quot;</span><span class=p>,</span>
+</span><span id=__span-5-4><a id=__codelineno-5-4 name=__codelineno-5-4 href=#__codelineno-5-4></a><span class=w>  </span><span class=nt>&quot;component1:Patch&quot;</span><span class=p>:</span><span class=w> </span><span class=s2>&quot;Copper&quot;</span><span class=p>,</span>
+</span><span id=__span-5-5><a id=__codelineno-5-5 name=__codelineno-5-5 href=#__codelineno-5-5></a><span class=w>  </span><span class=nt>&quot;component1:ShortingPin&quot;</span><span class=p>:</span><span class=w> </span><span class=s2>&quot;Copper&quot;</span><span class=p>,</span>
+</span><span id=__span-5-6><a id=__codelineno-5-6 name=__codelineno-5-6 href=#__codelineno-5-6></a><span class=w>  </span><span class=nt>&quot;component1:Substrate&quot;</span><span class=p>:</span><span class=w> </span><span class=s2>&quot;Rogers RT/duroid 5880&quot;</span>
+</span><span id=__span-5-7><a id=__codelineno-5-7 name=__codelineno-5-7 href=#__codelineno-5-7></a><span class=p>}</span>
+</span></code></pre></div> <p>These names must match entities in the <abbr title="Computer-Aided Design">CAD</abbr> file. The substrate uses a specific dielectric material (Rogers RT/duroid 5880) while conductive parts use Copper.</p> <p><img alt="Antenna detail" src=../../img/tutorials/tut3_antenna.png></p> <p><em><abbr title="Planar Inverted-F Antenna">PIFA</abbr> antenna components grided with an automatic default grid. The antenna is below the top right circle. One can distinguish a battery, a substrate, ... This is a mock-up phone as is common in very general dosimetric studies.</em></p> <h3 id=placement-scenarios>Placement scenarios<a class=headerlink href=#placement-scenarios title="Permanent link">&para;</a></h3> <p>The <code>placement_scenarios</code> section defines where and how the antenna is positioned relative to the phantom.</p> <div class="language-json highlight"><pre><span></span><code><span id=__span-6-1><a id=__codelineno-6-1 name=__codelineno-6-1 href=#__codelineno-6-1></a><span class=nt>&quot;placement_scenarios&quot;</span><span class=p>:</span><span class=w> </span><span class=p>{</span>
+</span><span id=__span-6-2><a id=__codelineno-6-2 name=__codelineno-6-2 href=#__codelineno-6-2></a><span class=w>  </span><span class=nt>&quot;front_of_eyes&quot;</span><span class=p>:</span><span class=w> </span><span class=p>{</span>
+</span><span id=__span-6-3><a id=__codelineno-6-3 name=__codelineno-6-3 href=#__codelineno-6-3></a><span class=w>    </span><span class=nt>&quot;bounding_box&quot;</span><span class=p>:</span><span class=w> </span><span class=s2>&quot;default&quot;</span><span class=p>,</span>
+</span><span id=__span-6-4><a id=__codelineno-6-4 name=__codelineno-6-4 href=#__codelineno-6-4></a><span class=w>    </span><span class=nt>&quot;positions&quot;</span><span class=p>:</span><span class=w> </span><span class=p>{</span>
+</span><span id=__span-6-5><a id=__codelineno-6-5 name=__codelineno-6-5 href=#__codelineno-6-5></a><span class=w>      </span><span class=nt>&quot;center&quot;</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=mi>0</span><span class=p>,</span><span class=w> </span><span class=mi>0</span><span class=p>,</span><span class=w> </span><span class=mi>-100</span><span class=p>]</span>
+</span><span id=__span-6-6><a id=__codelineno-6-6 name=__codelineno-6-6 href=#__codelineno-6-6></a><span class=w>    </span><span class=p>},</span>
+</span><span id=__span-6-7><a id=__codelineno-6-7 name=__codelineno-6-7 href=#__codelineno-6-7></a><span class=w>    </span><span class=nt>&quot;orientations&quot;</span><span class=p>:</span><span class=w> </span><span class=p>{</span>
+</span><span id=__span-6-8><a id=__codelineno-6-8 name=__codelineno-6-8 href=#__codelineno-6-8></a><span class=w>      </span><span class=nt>&quot;vertical&quot;</span><span class=p>:</span><span class=w> </span><span class=p>[]</span>
+</span><span id=__span-6-9><a id=__codelineno-6-9 name=__codelineno-6-9 href=#__codelineno-6-9></a><span class=w>    </span><span class=p>},</span>
+</span><span id=__span-6-10><a id=__codelineno-6-10 name=__codelineno-6-10 href=#__codelineno-6-10></a><span class=w>    </span><span class=nt>&quot;antenna_reference&quot;</span><span class=p>:</span><span class=w> </span><span class=p>{</span>
+</span><span id=__span-6-11><a id=__codelineno-6-11 name=__codelineno-6-11 href=#__codelineno-6-11></a><span class=w>      </span><span class=nt>&quot;distance_from_top&quot;</span><span class=p>:</span><span class=w> </span><span class=mi>10</span>
+</span><span id=__span-6-12><a id=__codelineno-6-12 name=__codelineno-6-12 href=#__codelineno-6-12></a><span class=w>    </span><span class=p>},</span>
+</span><span id=__span-6-13><a id=__codelineno-6-13 name=__codelineno-6-13 href=#__codelineno-6-13></a><span class=w>    </span><span class=nt>&quot;phantom_reference&quot;</span><span class=p>:</span><span class=w> </span><span class=s2>&quot;nasion&quot;</span>
+</span><span id=__span-6-14><a id=__codelineno-6-14 name=__codelineno-6-14 href=#__codelineno-6-14></a><span class=w>  </span><span class=p>}</span>
+</span><span id=__span-6-15><a id=__codelineno-6-15 name=__codelineno-6-15 href=#__codelineno-6-15></a><span class=p>}</span>
+</span></code></pre></div> <p><strong>Key parameters</strong>:</p> <ul> <li><code>bounding_box</code>: Which part of phantom to include (default, head, trunk, whole_body). Default means head for <code>front_of_eyes</code> and trunk for <code>by_belly</code>.</li> <li><code>positions</code>: Named position offsets in [x, y, z] mm relative to the reference point. GOLIAT will loop through all of these.</li> <li><code>orientations</code>: Named rotation sequences applied to the antenna. GOLIAT will loop through all of these, <em>for each position</em>.</li> <li><code>antenna_reference</code>: Point on antenna used for placement (distance from top of the phone, by the earpiece speaker).</li> <li><code>phantom_reference</code>: Anatomical landmark used as placement origin.</li> </ul> <p><strong>Anatomical landmarks</strong></p> <p>The <code>phantom_reference</code> parameter points to a coordinate defined in <code>phantom_definitions</code>:</p> <div class="language-json highlight"><pre><span></span><code><span id=__span-7-1><a id=__codelineno-7-1 name=__codelineno-7-1 href=#__codelineno-7-1></a><span class=nt>&quot;phantom_definitions&quot;</span><span class=p>:</span><span class=w> </span><span class=p>{</span>
+</span><span id=__span-7-2><a id=__codelineno-7-2 name=__codelineno-7-2 href=#__codelineno-7-2></a><span class=w>  </span><span class=nt>&quot;thelonious&quot;</span><span class=p>:</span><span class=w> </span><span class=p>{</span>
+</span><span id=__span-7-3><a id=__codelineno-7-3 name=__codelineno-7-3 href=#__codelineno-7-3></a><span class=w>    </span><span class=nt>&quot;head_y_separation&quot;</span><span class=p>:</span><span class=w> </span><span class=mi>0</span><span class=p>,</span>
+</span><span id=__span-7-4><a id=__codelineno-7-4 name=__codelineno-7-4 href=#__codelineno-7-4></a><span class=w>    </span><span class=nt>&quot;trunk_z_separation&quot;</span><span class=p>:</span><span class=w> </span><span class=mi>-300</span><span class=p>,</span>
+</span><span id=__span-7-5><a id=__codelineno-7-5 name=__codelineno-7-5 href=#__codelineno-7-5></a><span class=w>    </span><span class=nt>&quot;chest_extension&quot;</span><span class=p>:</span><span class=w> </span><span class=mi>100</span><span class=p>,</span>
+</span><span id=__span-7-6><a id=__codelineno-7-6 name=__codelineno-7-6 href=#__codelineno-7-6></a><span class=w>    </span><span class=nt>&quot;nasion&quot;</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=mi>-1</span><span class=p>,</span><span class=w> </span><span class=mi>0</span><span class=p>,</span><span class=w> </span><span class=mi>0</span><span class=p>],</span>
+</span><span id=__span-7-7><a id=__codelineno-7-7 name=__codelineno-7-7 href=#__codelineno-7-7></a><span class=w>    </span><span class=err>...</span>
+</span><span id=__span-7-8><a id=__codelineno-7-8 name=__codelineno-7-8 href=#__codelineno-7-8></a><span class=w>    </span><span class=nt>&quot;placements&quot;</span><span class=p>:</span><span class=w> </span><span class=p>{</span>
+</span><span id=__span-7-9><a id=__codelineno-7-9 name=__codelineno-7-9 href=#__codelineno-7-9></a><span class=w>      </span><span class=nt>&quot;do_front_of_eyes&quot;</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=p>,</span>
+</span><span id=__span-7-10><a id=__codelineno-7-10 name=__codelineno-7-10 href=#__codelineno-7-10></a><span class=w>      </span><span class=err>...</span>
+</span><span id=__span-7-11><a id=__codelineno-7-11 name=__codelineno-7-11 href=#__codelineno-7-11></a><span class=w>      </span><span class=nt>&quot;distance_from_eye&quot;</span><span class=p>:</span><span class=w> </span><span class=mi>200</span>
+</span><span id=__span-7-12><a id=__codelineno-7-12 name=__codelineno-7-12 href=#__codelineno-7-12></a><span class=w>    </span><span class=p>}</span>
+</span><span id=__span-7-13><a id=__codelineno-7-13 name=__codelineno-7-13 href=#__codelineno-7-13></a><span class=w>  </span><span class=p>}</span>
+</span><span id=__span-7-14><a id=__codelineno-7-14 name=__codelineno-7-14 href=#__codelineno-7-14></a><span class=p>}</span>
+</span></code></pre></div> <p>For front_of_eyes placement: - GOLIAT finds the eye entities in the phantom - Calculates their bounding box center - Applies the nasion offset - Adds the position offset (here [0, 0, -100]) for the <code>center</code> scenario pacement. - Places the antenna at the calculated point - Orients the antenna according to any rotations specified for the scenario.</p> <p>The <code>distance_from_eye</code> parameter (200 mm) sets the separation between the phantom and antenna along the Y axis (pointing out of the face).</p> <p>The three parameters <code>head_y_separation</code>, <code>trunk_z_separation</code> and <code>chest_extension</code> define how the <code>head</code> and <code>trunk</code> bounding boxes are defined. Some dimensions of these bounding boxes are defined intelligently, others unfortuneatly require some manual parameters like these. For example, the <code>head_y_separation</code> determines where the back of the head stops for the Thelonious phantom. The next two determine the z and y dimensions of the trunk bounding box.</p> <p><img alt="Anatomical reference points" src=../../img/tutorials/tut3_reference_points.png></p> <p><em>Nasion point used as reference point for front_of_eyes placement. This aligns with a point on the antenna 10 mm below the top, by the earpiece speaker.</em></p> <p><img alt="Setup for the near-field simulation" src=../../img/tutorials/tut3_setup.png></p> <p><em>Setup for the near-field simulation. Note that the head and trunk bounding boxes are present. The simulation bounding box wraps around the phone and the bounding box of interest (here 'default', i.e., the head). The phone is placed 100 mm below its initial position, where the naison aligns 200 mm from the antenna reference point, 10 mm below the top of the phone.</em></p> <hr> <h2 id=understanding-the-gui>Understanding the <abbr title="Graphical User Interface">GUI</abbr><a class=headerlink href=#understanding-the-gui title="Permanent link">&para;</a></h2> <p>Before running the simulation, let's tour the GOLIAT <abbr title="Graphical User Interface">GUI</abbr>. It shows real-time progress, logs, timings, and system utilization.</p> <p>When you run a study, a window opens automatically. Here's what each section does:</p> <p><img alt="GUI overview" src=../../img/tutorials/tut1_gui.gif></p> <h3 id=main-tab>Main tab<a class=headerlink href=#main-tab title="Permanent link">&para;</a></h3> <p>The main tab shows overall progress and current activity.</p> <p><strong>Progress bars</strong>: - Overall progress: Total completion across all simulations - Stage progress: Current phase (setup, run, extract) within one simulation</p> <p><strong>Simulation info</strong>: - Current simulation count (e.g., Simulation: 1 / 1000) - Case details (phantom, frequency, placement)</p> <p><strong>Timing info</strong>: - Elapsed time since study started - Time remaining (estimated from profiler data)</p> <p><strong>Status log</strong>: - Color-coded messages showing what GOLIAT is doing - Green for success, yellow for warnings, red for errors</p> <p><strong>System utilization</strong>: - <abbr title="Central Processing Unit">CPU</abbr> percentage across all cores - <abbr title="Random Access Memory">RAM</abbr> usage (used/total <abbr title=Gigabyte>GB</abbr>) - <abbr title="Graphics Processing Unit">GPU</abbr> percentage (if <code>nvidia-smi</code> available)</p> <p><strong>Buttons</strong>: - Hitting Stop will try to stop the simulations gracefully. - Closing the window will instantly stop GOLIAT. This may corrupt your <code>.smash</code> files. - You can minimize the <abbr title="Graphical User Interface">GUI</abbr> to the Windows system tray.</p> <h3 id=timings-and-timings-piecharts-tabs>Timings and Timings Piecharts tabs<a class=headerlink href=#timings-and-timings-piecharts-tabs title="Permanent link">&para;</a></h3> <p>Shows execution statistics for phases and subtasks.</p> <p>For each task, you see: - Mean, median, min, max duration - 10<sup>th</sup>, 25<sup>th</sup>, 75<sup>th</sup>, 90<sup>th</sup> percentiles</p> <p>This data comes from the profiler and improves <abbr title="Estimated Time of Arrival">ETA</abbr> accuracy as more simulations complete. The piecharts give a visual depiction of the average timings.</p> <h3 id=time-remaining-and-overall-progress-tabs>Time Remaining and Overall Progress tabs.<a class=headerlink href=#time-remaining-and-overall-progress-tabs title="Permanent link">&para;</a></h3> <p>Shows progress and <abbr title="Estimated Time of Arrival">ETA</abbr> trends over time.</p> <p><strong>Time remaining plot</strong>: - Hours remaining vs time - Should converge to zero as work completes</p> <p><strong>Overall progress plot</strong>: - Percentage complete vs time - Should show smooth upward trend</p> <p>These plots update every 5 seconds during execution.</p> <hr> <h2 id=the-logging-system>The logging system<a class=headerlink href=#the-logging-system title="Permanent link">&para;</a></h2> <p>GOLIAT uses two separate log streams with different purposes.</p> <h3 id=log-destinations>Log destinations<a class=headerlink href=#log-destinations title="Permanent link">&para;</a></h3> <p>Logs go to three places:</p> <ol> <li><strong>Console (shell)</strong>: Real-time output while study runs</li> <li><code>logs/</code> <strong>directory</strong>: Session logs with timestamps (e.g., <code>logs/10_31_25-20-55-16.progress.log</code>)</li> <li><strong>Simulation directories</strong>: Simulation-specific logs in each project folder</li> </ol> <h3 id=progress-vs-verbose-logs>Progress vs verbose logs<a class=headerlink href=#progress-vs-verbose-logs title="Permanent link">&para;</a></h3> <p><strong>Progress log</strong>: - High-level, user-facing messages - Shown in <abbr title="Graphical User Interface">GUI</abbr> status box - Saved to <code>*.progress.log</code> files - Tracks phases and subtasks</p> <p><strong>Verbose log</strong>: - Detailed internal messages - Not shown in <abbr title="Graphical User Interface">GUI</abbr> (console and file only) - Saved to main <code>*.log</code> files - Includes everything, including the Sim4Life and <code>iSolve</code> logs, useful for debugging</p> <p>Both logs write to the console, but only progress logs appear in the <abbr title="Graphical User Interface">GUI</abbr>.</p> <h3 id=phases-and-subtasks>Phases and subtasks<a class=headerlink href=#phases-and-subtasks title="Permanent link">&para;</a></h3> <p>GOLIAT organizes work into three phases, each containing multiple subtasks.</p> <p><strong>The three phases</strong>:</p> <ol> <li><strong>Setup</strong>: Creates Sim4Life project, imports models, configures simulation</li> <li><strong>Run</strong>: Executes <abbr title="Finite-Difference Time-Domain">FDTD</abbr> solver (longest phase)</li> <li><strong>Extract</strong>: Processes <abbr title="Specific Absorption Rate">SAR</abbr> data, generates reports</li> </ol> <p><strong>Subtask logging</strong>:</p> <p>When a subtask starts, you see: <div class="language-text highlight"><pre><span></span><code><span id=__span-8-1><a id=__codelineno-8-1 name=__codelineno-8-1 href=#__codelineno-8-1></a>  - Loading phantom model...
+</span></code></pre></div></p> <p>When it finishes, you see: <div class="language-text highlight"><pre><span></span><code><span id=__span-9-1><a id=__codelineno-9-1 name=__codelineno-9-1 href=#__codelineno-9-1></a>    - Done in 3.2s
+</span></code></pre></div></p> <p>The timing line is indented to align with the subtask name. This format applies to console, <abbr title="Graphical User Interface">GUI</abbr>, and log files. A phase (containing subtasks) is also timed and aligned one tab less.</p> <p><img alt="Logging example" src=../img/tutorials/tut3_logging_example.png></p> <p><em>Console output showing subtask progression with timings.</em></p> <h3 id=simulation-specific-logs>Simulation-specific logs<a class=headerlink href=#simulation-specific-logs title="Permanent link">&para;</a></h3> <p>Each simulation writes logs to its project directory:</p> <div class="language-text highlight"><pre><span></span><code><span id=__span-10-1><a id=__codelineno-10-1 name=__codelineno-10-1 href=#__codelineno-10-1></a>results/near_field/thelonious/700MHz/front_of_eyes_center_vertical/
+</span><span id=__span-10-2><a id=__codelineno-10-2 name=__codelineno-10-2 href=#__codelineno-10-2></a>    progress.log        # High-level progress
+</span><span id=__span-10-3><a id=__codelineno-10-3 name=__codelineno-10-3 href=#__codelineno-10-3></a>    verbose.log         # Detailed logs
+</span><span id=__span-10-4><a id=__codelineno-10-4 name=__codelineno-10-4 href=#__codelineno-10-4></a>    config.json         # Metadata for caching
+</span><span id=__span-10-5><a id=__codelineno-10-5 name=__codelineno-10-5 href=#__codelineno-10-5></a>    simulation.smash    # Sim4Life project
+</span></code></pre></div> <p>The <code>progress.log</code> file is a subset of <code>verbose.log</code>, containing only user-facing messages. This is the log shown in the <abbr title="Graphical User Interface">GUI</abbr>.</p> <hr> <h2 id=running-the-simulation>Running the simulation<a class=headerlink href=#running-the-simulation title="Permanent link">&para;</a></h2> <p>Now that we finally understand all the above, it's time to run the near-field study:</p> </div> </div> </div> <div class="cell border-box-sizing code_cell rendered"> <div class=input> <div class="language-python highlight"><pre><span></span><code><span id=__span-11-1><a id=__codelineno-11-1 name=__codelineno-11-1 href=#__codelineno-11-1></a><span class=n>run_bash</span><span class=p>(</span><span class=s1>&#39;goliat study tutorial_3_near_field&#39;</span><span class=p>)</span>
+</span></code></pre></div> </div> <div class=output_wrapper> <div class=output> <div class=output_area> <div class="output_subarea output_stream output_stdout output_text"> <pre>
+<code>Running: source .bashrc &amp;&amp; goliat study tutorial_3_near_field
+
+------------------------------------------------------------
+<span class=ansi-cyan-fg>Starting Sim4Life application...</span> 
+Initializing Application [stdout]
+Initializing Application [stderr]
+[Warn]  Unable to load module 'C:\Program Files\Sim4Life_8.2.0.16876\MusaikInterface.xdll'
+[Info]  Connection to local Ares successfully established.
+<span class="ansi-green-intense-fg ansi-bold">Sim4Life application started.</span> 
+<span class="ansi-magenta-intense-fg ansi-bold">--- Starting Near-Field Study: tutorial_3_near_field.json ---</span> <span class=ansi-black-fg>[NearFieldStudy._run_study]</span>
+<span class="ansi-magenta-intense-fg ansi-bold">
+--- Processing Simulation 1/1: thelonious, 700MHz, front_of_eyes_center_vertical ---</span> <span class=ansi-black-fg>[NearFieldStudy._run_study]</span>
+<span class="ansi-magenta-intense-fg ansi-bold">--- Starting: setup ---</span> <span class=ansi-black-fg>[profile]</span>
+<span class=ansi-cyan-fg>Project path set to: C:/Users/user/repo-clean/results/near_field/thelonious/700MHz/front_of_eyes_center_vertical/near_field_thelonious_700MHz_front_of_eyes_center_vertical.smash</span> <span class=ansi-black-fg>[ProjectManager.create_or_open_project]</span>
+<span class=ansi-cyan-fg>No metadata file found at config.json.</span> <span class=ansi-black-fg>[ProjectManager.verify_simulation_metadata]</span>
+<span class=ansi-cyan-fg>Existing project is invalid or out of date. A new setup is required.</span> <span class=ansi-black-fg>[ProjectManager.create_or_open_project]</span>
+<span class=ansi-white-fg>--- Simulation-specific progress logging started: C:/Users/user/repo-clean/results/near_field/thelonious/700MHz/front_of_eyes_center_vertical\progress.log ---</span> 
+<span class=ansi-white-fg>--- Simulation-specific verbose logging started: C:/Users/user/repo-clean/results/near_field/thelonious/700MHz/front_of_eyes_center_vertical\verbose.log ---</span> 
+<span class=ansi-cyan-fg>Creating a new empty project in memory.</span> <span class=ansi-black-fg>[ProjectManager.create_new]</span>
+<span class=ansi-blue-fg>Initializing model by creating and deleting a dummy block...</span> <span class=ansi-black-fg>[ProjectManager.create_new]</span>
+<span class=ansi-blue-fg>Model initialized, ready for population.</span> <span class=ansi-black-fg>[ProjectManager.create_new]</span>
+<span class=ansi-green-fg>  - Setup simulation...</span> <span class=ansi-black-fg>[NearFieldStudy.subtask]</span>
+<span class=ansi-green-fg>Running full simulation setup...</span> <span class=ansi-black-fg>[NearFieldSetup.run_full_setup]</span>
+<span class=ansi-green-fg>    - Load phantom...</span> <span class=ansi-black-fg>[NearFieldSetup.run_full_setup]</span>
+<span class="ansi-magenta-intense-fg ansi-bold">--- Running Phantom Check ---</span> <span class=ansi-black-fg>[PhantomSetup._log]</span>
+<span class=ansi-cyan-fg>Found 2 total entities in the project.</span> <span class=ansi-black-fg>[PhantomSetup._log]</span>
+<span class=ansi-yellow-fg>--- Phantom Check Result: Phantom not found in project. ---</span> <span class=ansi-black-fg>[PhantomSetup._log]</span>
+<span class=ansi-cyan-fg>Phantom not found in document. Importing from 'C:\Users\user\repo-clean\data\phantoms\thelonious.sab'...</span> <span class=ansi-black-fg>[PhantomSetup._log]</span>
+[Info]  Checking out license feature 'MODEL_THELONIOUS', version 1.0, (1).
+License  : [Info]  Acquired [ MODEL_THELONIOUS 1.0 ]
+Modeler  : [Warn]  No exact match found for SkullNot changing colors.
+Modeler  : [Warn]  No exact match found for SkullNot changing colors.
+<span class="ansi-green-intense-fg ansi-bold">Phantom imported successfully.</span> <span class=ansi-black-fg>[PhantomSetup._log]</span>
+<span class=ansi-blue-fg>      - Subtask 'setup_load_phantom' done in 8.41s</span> <span class=ansi-black-fg>[NearFieldSetup.run_full_setup]</span>
+<span class="ansi-green-intense-fg ansi-bold">      - Done in 8.41s</span> <span class=ansi-black-fg>[NearFieldSetup.run_full_setup]</span>
+<span class=ansi-green-fg>    - Configure scene (bboxes, placement, simulation, sensors)...</span> <span class=ansi-black-fg>[NearFieldSetup.run_full_setup]</span>
+<span class=ansi-green-fg>Setting up bounding boxes...</span> <span class=ansi-black-fg>[NearFieldSetup._setup_bounding_boxes]</span>
+<span class=ansi-cyan-fg>  - Head BBox created.</span> <span class=ansi-black-fg>[NearFieldSetup._setup_bounding_boxes]</span>
+<span class=ansi-cyan-fg>  - Trunk BBox created.</span> <span class=ansi-black-fg>[NearFieldSetup._setup_bounding_boxes]</span>
+<span class="ansi-magenta-intense-fg ansi-bold">--- Starting Placement: front_of_eyes - center - vertical ---</span> <span class=ansi-black-fg>[PlacementSetup.place_antenna]</span>
+<span class=ansi-green-fg>Composing final transformation...</span> <span class=ansi-black-fg>[PlacementSetup.place_antenna]</span>
+<span class=ansi-green-fg>Applying final composed transform.</span> <span class=ansi-black-fg>[PlacementSetup.place_antenna]</span>
+<span class="ansi-green-intense-fg ansi-bold">--- Transformation Sequence Complete ---</span> <span class=ansi-black-fg>[PlacementSetup.place_antenna]</span>
+<span class=ansi-cyan-fg>  - Bounding box setting: 'default'</span> <span class=ansi-black-fg>[NearFieldSetup._create_simulation_bbox]</span>
+<span class=ansi-cyan-fg>  - Combined BBox created for front_of_eyes_center_vertical.</span> <span class=ansi-black-fg>[NearFieldSetup._create_simulation_bbox]</span>
+<span class=ansi-green-fg>Setting up simulation entity...</span> <span class=ansi-black-fg>[NearFieldSetup._setup_simulation_entity]</span>
+<span class=ansi-green-fg>  - Configuring solver settings...</span> <span class=ansi-black-fg>[NearFieldSetup._setup_solver_settings]</span>
+<span class=ansi-cyan-fg>    - Solver kernel set to: Acceleware (AXware)</span> <span class=ansi-black-fg>[NearFieldSetup._setup_solver_settings]</span>
+<span class=ansi-cyan-fg>  - Using simulation time multiplier: 3.5</span> <span class=ansi-black-fg>[NearFieldSetup._apply_simulation_time_and_termination]</span>
+<span class=ansi-cyan-fg>  - Simulation time set to 4.63 periods.</span> <span class=ansi-black-fg>[NearFieldSetup._apply_simulation_time_and_termination]</span>
+<span class=ansi-cyan-fg>  - Setting termination criteria to: GlobalAutoTerminationUserDefined</span> <span class=ansi-black-fg>[NearFieldSetup._apply_simulation_time_and_termination]</span>
+<span class=ansi-cyan-fg>    - Convergence level set to: -15 dB</span> <span class=ansi-black-fg>[NearFieldSetup._apply_simulation_time_and_termination]</span>
+<span class=ansi-cyan-fg>  - Added point sensor at (-81.86, -50.79, -159.99) (lower_left_bottom)</span> <span class=ansi-black-fg>[NearFieldSetup._add_point_sensors]</span>
+<span class=ansi-cyan-fg>  - Added point sensor at (73.39, 325.47, 204.03) (top_right_up)</span> <span class=ansi-black-fg>[NearFieldSetup._add_point_sensors]</span>
+<span class=ansi-blue-fg>      - Subtask 'setup_configure_scene' done in 0.33s</span> <span class=ansi-black-fg>[NearFieldSetup.run_full_setup]</span>
+<span class="ansi-green-intense-fg ansi-bold">      - Done in 0.33s</span> <span class=ansi-black-fg>[NearFieldSetup.run_full_setup]</span>
+<span class=ansi-green-fg>    - Assign materials...</span> <span class=ansi-black-fg>[NearFieldSetup.run_full_setup]</span>
+<span class=ansi-green-fg>Assigning materials...</span> <span class=ansi-black-fg>[MaterialSetup.assign_materials]</span>
+Simulation : [Warn]  Some properties for material "Air" have been set to their value according to the selected database
+[Info]  
+Mass Density has changed from 1000 to 1.2050000000000001
+Mass Density has changed from 1.2050000000000001 to 1.2
+Relative Permittivity has changed from 1 to 0
+Simulation : [Warn]  Unable to find any match for following settings properties: Magnetic Conductivity
+Simulation : [Warn]  Unable to find any match for following settings properties: Relative Permeability
+Simulation : [Warn]  Unable to find any match for following settings properties: Mass Density
+<span class=ansi-cyan-fg>  - Assigned 'Copper' to 'Extrude 1'.</span> <span class=ansi-black-fg>[MaterialSetup._assign_antenna_materials]</span>
+Simulation : [Warn]  Unable to find any match for following settings properties: Mass Density
+<span class=ansi-cyan-fg>  - Assigned 'Copper' to 'component1:Battery'.</span> <span class=ansi-black-fg>[MaterialSetup._assign_antenna_materials]</span>
+Simulation : [Warn]  Unable to find any match for following settings properties: Mass Density
+<span class=ansi-cyan-fg>  - Assigned 'Copper' to 'component1:Patch'.</span> <span class=ansi-black-fg>[MaterialSetup._assign_antenna_materials]</span>
+Simulation : [Warn]  Unable to find any match for following settings properties: Mass Density
+<span class=ansi-cyan-fg>  - Assigned 'Copper' to 'component1:ShortingPin'.</span> <span class=ansi-black-fg>[MaterialSetup._assign_antenna_materials]</span>
+<span class=ansi-cyan-fg>  - Assigned 'Rogers RT/duroid 5880' to 'component1:Substrate'.</span> <span class=ansi-black-fg>[MaterialSetup._assign_antenna_materials]</span>
+<span class=ansi-blue-fg>      - Subtask 'setup_materials' done in 5.76s</span> <span class=ansi-black-fg>[NearFieldSetup.run_full_setup]</span>
+<span class="ansi-green-intense-fg ansi-bold">      - Done in 5.76s</span> <span class=ansi-black-fg>[NearFieldSetup.run_full_setup]</span>
+<span class=ansi-green-fg>    - Configure solver (gridding, boundaries, sources)...</span> <span class=ansi-black-fg>[NearFieldSetup.run_full_setup]</span>
+<span class=ansi-green-fg>Setting up gridding...</span> <span class=ansi-black-fg>[GriddingSetup.setup_gridding]</span>
+<span class=ansi-blue-fg>  - Looking for global grid bounding box: 'front_of_eyes_center_vertical_simulation_bbox'</span> <span class=ansi-black-fg>[GriddingSetup._setup_main_grid]</span>
+<span class=ansi-cyan-fg>  - Using manual gridding.</span> <span class=ansi-black-fg>[GriddingSetup._setup_main_grid]</span>
+<span class=ansi-blue-fg>  - Global and added manual grid set with frequency-specific (700MHz) resolution: 2.5 mm.</span> <span class=ansi-black-fg>[GriddingSetup._setup_main_grid]</span>
+<span class=ansi-cyan-fg>  - Using manual padding.</span> <span class=ansi-black-fg>[GriddingSetup._setup_main_grid]</span>
+<span class=ansi-blue-fg>    - Manual padding set: Bottom=[0 0 0]mm, Top=[0 0 0]mm</span> <span class=ansi-black-fg>[GriddingSetup._setup_main_grid]</span>
+<span class=ansi-green-fg>Setting up boundary conditions...</span> <span class=ansi-black-fg>[BoundarySetup.setup_boundary_conditions]</span>
+<span class=ansi-cyan-fg>  - Setting global boundary conditions to: UpmlCpml</span> <span class=ansi-black-fg>[BoundarySetup.setup_boundary_conditions]</span>
+<span class=ansi-blue-fg>    - Successfully set GlobalBoundaryType to UpmlCpml</span> <span class=ansi-black-fg>[BoundarySetup.setup_boundary_conditions]</span>
+<span class=ansi-cyan-fg>  - Setting PML strength to: Low</span> <span class=ansi-black-fg>[BoundarySetup.setup_boundary_conditions]</span>
+<span class=ansi-blue-fg>    - Successfully set PmlStrength to Low</span> <span class=ansi-black-fg>[BoundarySetup.setup_boundary_conditions]</span>
+<span class=ansi-green-fg>Setting up source and sensors...</span> <span class=ansi-black-fg>[SourceSetup.setup_source_and_sensors]</span>
+<span class=ansi-cyan-fg>  - Using Harmonic source for phantom simulation.</span> <span class=ansi-black-fg>[SourceSetup.setup_source_and_sensors]</span>
+<span class=ansi-blue-fg>      - Subtask 'setup_solver' done in 0.09s</span> <span class=ansi-black-fg>[NearFieldSetup.run_full_setup]</span>
+<span class="ansi-green-intense-fg ansi-bold">      - Done in 0.09s</span> <span class=ansi-black-fg>[NearFieldSetup.run_full_setup]</span>
+<span class=ansi-green-fg>    - Voxelize simulation...</span> <span class=ansi-black-fg>[NearFieldSetup.run_full_setup]</span>
+<span class=ansi-green-fg>    - Finalizing setup...</span> <span class=ansi-black-fg>[NearFieldSetup._finalize_setup]</span>
+Simulation : [Warn]  Some properties for material "Air" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Tongue" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Adrenal Gland" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Stomach Lumen" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Commissura Anterior" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Eye (Vitreous Humor)" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Blood" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Midbrain" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Testis" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Air 1" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Blood Vessel Wall" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Epididymis" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Pineal Body" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Urinary Bladder Wall" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Bone Marrow (Red)" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Gallbladder" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Hypophysis" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Brain (White Matter)" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Spleen" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Large Intestine Lumen" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Thymus" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Trachea" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Heart Muscle" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Muscle" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Hypothalamus" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Skin" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Brain (Grey Matter)" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Bone (Cortical)" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Eye (Sclera)" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Tendon\Ligament" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Kidney (Medulla)" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Medulla Oblongata" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Esophagus" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Intervertebral Disc" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Vertebrae" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Eye (Lens)" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Commissura Posterior" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Eye (Cornea)" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Trachea Lumen" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Pharynx" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Liver" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Thalamus" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Heart Lumen" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Large Intestine" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Kidney (Cortex)" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Stomach" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Fat" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Lung" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Connective Tissue" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Pons" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Spinal Cord" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "SAT (Subcutaneous Fat)" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Cartilage" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Tooth" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Nerve" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Meniscus" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Skull" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Prostate" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Diaphragm" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Mucous Membrane" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Small Intestine" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Larynx" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Mandible" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Small Intestine Lumen" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Hippocampus" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Cerebellum" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Penis" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Ureter\Urethra" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Bronchi lumen" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Pancreas" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Esophagus Lumen" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Bronchi" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Cerebrospinal Fluid" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Copper" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Copper 2" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Copper 3" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Copper 4" have been set to their value according to the selected database
+<span class=ansi-cyan-fg>Saving project to C:/Users/user/repo-clean/results/near_field/thelonious/700MHz/front_of_eyes_center_vertical/near_field_thelonious_700MHz_front_of_eyes_center_vertical.smash...</span> <span class=ansi-black-fg>[ProjectManager.save]</span>
+[Info]  Document produced by Sim4Life version 8.2.0.16876
+<span class="ansi-green-intense-fg ansi-bold">Project saved.</span> <span class=ansi-black-fg>[ProjectManager.save]</span>
+[Info]  Document produced by Sim4Life version 8.2.0.16876
+[Info]  There have been no model changes since the last time was saved. 
+
+[Info]  Start voxeling
+[Info]  Topological Voxeler Report: Complete Voxel Scene
+    Voxel Scene Memory Consumption: 0.003806 GB
+    Wall Clock Time: 7.09322 s
+
+[Info]  Voxeling succeeded.
+<span class="ansi-green-intense-fg ansi-bold">    - Finalizing setup complete.</span> <span class=ansi-black-fg>[NearFieldSetup._finalize_setup]</span>
+<span class=ansi-blue-fg>      - Subtask 'setup_voxelize' done in 19.31s</span> <span class=ansi-black-fg>[NearFieldSetup.run_full_setup]</span>
+<span class="ansi-green-intense-fg ansi-bold">      - Done in 19.31s</span> <span class=ansi-black-fg>[NearFieldSetup.run_full_setup]</span>
+<span class=ansi-green-fg>    - Save project...</span> <span class=ansi-black-fg>[NearFieldSetup.run_full_setup]</span>
+<span class=ansi-cyan-fg>Saving project to C:/Users/user/repo-clean/results/near_field/thelonious/700MHz/front_of_eyes_center_vertical/near_field_thelonious_700MHz_front_of_eyes_center_vertical.smash...</span> <span class=ansi-black-fg>[ProjectManager.save]</span>
+[Info]  Document produced by Sim4Life version 8.2.0.16876
+<span class="ansi-green-intense-fg ansi-bold">Project saved.</span> <span class=ansi-black-fg>[ProjectManager.save]</span>
+<span class=ansi-blue-fg>      - Subtask 'setup_save_project' done in 7.94s</span> <span class=ansi-black-fg>[NearFieldSetup.run_full_setup]</span>
+<span class="ansi-green-intense-fg ansi-bold">      - Done in 7.94s</span> <span class=ansi-black-fg>[NearFieldSetup.run_full_setup]</span>
+<span class="ansi-green-intense-fg ansi-bold">Full simulation setup complete.</span> <span class=ansi-black-fg>[NearFieldSetup.run_full_setup]</span>
+<span class=ansi-blue-fg>    - Subtask 'setup_simulation' done in 42.02s</span> <span class=ansi-black-fg>[NearFieldStudy.subtask]</span>
+<span class="ansi-green-intense-fg ansi-bold">    - Done in 42.02s</span> <span class=ansi-black-fg>[NearFieldStudy.subtask]</span>
+<span class=ansi-cyan-fg>  - Saved configuration metadata to config.json</span> <span class=ansi-black-fg>[ProjectManager.write_simulation_metadata]</span>
+<span class="ansi-magenta-intense-fg ansi-bold">--- Finished: setup (took 42.06s) ---</span> <span class=ansi-black-fg>[profile]</span>
+<span class="ansi-magenta-intense-fg ansi-bold">--- Starting: run ---</span> <span class=ansi-black-fg>[profile]</span>
+<span class=ansi-green-fg>  - Run simulation total...</span> <span class=ansi-black-fg>[NearFieldStudy.subtask]</span>
+<span class=ansi-blue-fg>Running simulation: EM_FDTD_thelonious_700MHz_front_of_eyes_center_vertical</span> <span class=ansi-black-fg>[SimulationRunner.run]</span>
+<span class=ansi-green-fg>    - Write input file...</span> <span class=ansi-black-fg>[SimulationRunner.run]</span>
+[Info]  Writing solver input file(s) for EM_FDTD_thelonious_700MHz_front_of_eyes_center_vertical
+[Info]  Writing Rectilinear Discretization to Input File. Elapse Time: 0.373037 s
+[Info]  Document produced by Sim4Life version 8.2.0.16876
+[Info]  There have been no model changes since the last time was saved.
+
+<span class=ansi-blue-fg>      - Subtask 'run_write_input_file' done in 4.95s</span> <span class=ansi-black-fg>[SimulationRunner.run]</span>
+<span class="ansi-green-intense-fg ansi-bold">      - Done in 4.95s</span> <span class=ansi-black-fg>[SimulationRunner.run]</span>
+<span class=ansi-cyan-fg>Running iSolve with acceleware on 9077bf1a-0b90-4f6d-8181-ed239422c3b6_Input.h5</span> <span class=ansi-black-fg>[SimulationRunner._run_isolve_manual]</span>
+<span class=ansi-green-fg>    - Execute iSolve...</span> <span class=ansi-black-fg>[SimulationRunner._run_isolve_manual]</span>
+
+<span class=ansi-white-fg>Reading command line</span> 
+<span class=ansi-white-fg>iSolve X, Version 8.2.0 (16876), 64Bit Windows</span> 
+
+<span class=ansi-white-fg>Running MPI version 2.0 on 1 process.</span> 
+
+
+<span class=ansi-white-fg>Simulation 'EM_FDTD_thelonious_700MHz_front_of_eyes_center_vertical' </span> 
+
+<span class=ansi-white-fg>Installed system RAM visible to this process:  16.0 GB</span> 
+
+<span class=ansi-white-fg>Solver type: EmFdtd, SinglePrecision, Acceleware</span> 
+<span class=ansi-white-fg>Input file name: C:/Users/user/repo-clean/results/near_field/thelonious/700MHz/front_of_eyes_center_vertical/near_field_thelonious_700MHz_front_of_eyes_center_vertical.smash_Results\9077bf1a-0b90-4f6d-8181-ed239422c3b6_Input.h5</span> 
+<span class=ansi-white-fg>Input file generated by: Sim4Life, Version 8.2.0.16876</span> 
+<span class=ansi-white-fg>Output file name: C:/Users/user/repo-clean/results/near_field/thelonious/700MHz/front_of_eyes_center_vertical/near_field_thelonious_700MHz_front_of_eyes_center_vertical.smash_Results\9077bf1a-0b90-4f6d-8181-ed239422c3b6_Output.h5</span> 
+
+<span class=ansi-white-fg>Using commercial license features.</span> 
+<span class=ansi-white-fg>Checking out license feature 'FDTD_SOLVER', version 8.2, (1).</span> 
+
+<span class=ansi-white-fg>Running the EM-FDTD solver with the following settings:</span> 
+<span class=ansi-white-fg>Floating Point Arithmetic: single (4 Bytes)</span> 
+<span class=ansi-white-fg>HPC: Acceleware</span> 
+<span class=ansi-white-fg>Used Acceleware library is '11.4.1.13550 (x64, 64-bit)'.</span> 
+<span class=ansi-white-fg>Your NVIDIA display driver is newer than the expected version.</span> 
+<span class=ansi-white-fg>Installed version: 15.7680 Expected: 15.3667 (see also http://www.acceleware.com/fdtd-11-4-1)</span> 
+<span class=ansi-white-fg>Reduced performance could be encountered.</span> 
+
+<span class=ansi-white-fg>Simulation Time Step:   8.16961e-13 sec</span> 
+<span class=ansi-white-fg>Simulation Iterations:  8090</span> 
+<span class=ansi-white-fg>Max Simulated Time: 6.60921e-09 sec</span> 
+
+<span class=ansi-white-fg>Grid:</span> 
+<span class=ansi-white-fg>Number of cells: 76x166x160 = 2018560 cells = 2.0186 MCells</span> 
+<span class=ansi-white-fg>Number of cells including PML: 92x185x176 = 2995520 cells = 2.9955 MCells</span> 
+<span class=ansi-white-fg>X: Range [-0.0846985 ... 0.0762301] with minimal 0.000600006 and maximal step 0.00244118 [m]</span> 
+<span class=ansi-white-fg>Y: Range [-0.0576809 ... 0.332357] with minimal 0.00029999 and maximal step 0.00249848 [m]</span> 
+<span class=ansi-white-fg>Z: Range [-0.166654 ... 0.210697] with minimal 0.000600006 and maximal step 0.00249726 [m]</span> 
+
+<span class=ansi-white-fg>Boundaries:</span> 
+<span class=ansi-white-fg>Side X-: ABC (UPML, 8 layers)</span> 
+<span class=ansi-white-fg>Side X+: ABC (UPML, 8 layers)</span> 
+<span class=ansi-white-fg>Side Y-: ABC (UPML, 8 layers)</span> 
+<span class=ansi-white-fg>Side Y+: ABC (UPML, 11 layers)</span> 
+<span class=ansi-white-fg>Side Z-: ABC (UPML, 8 layers)</span> 
+<span class=ansi-white-fg>Side Z+: ABC (UPML, 8 layers)</span> 
+
+<span class=ansi-white-fg>Created unified material architecture (UMA) model</span> 
+
+<span class=ansi-white-fg>Materials (82):</span> 
+<span class=ansi-white-fg>Background: dielectric (eps_r=1.000000, sigma_E=0.000000, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Tongue  (Thelonious_6y_V6): dielectric (eps_r=55.907533, sigma_E=0.865626, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Adrenal_gland  (Thelonious_6y_V6): dielectric (eps_r=50.989008, sigma_E=0.954350, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>component1:Patch  (Antenna 700 MHz (front_of_eyes_center_vertical)): lossy metal (eps_r=1.000000, sigma_E=58130000.000000, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Stomach_lumen  (Thelonious_6y_V6): dielectric (eps_r=55.587038, sigma_E=0.878895, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>commissura_anterior  (Thelonious_6y_V6): dielectric (eps_r=39.695046, sigma_E=0.531363, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Eye_vitreous_humor  (Thelonious_6y_V6): dielectric (eps_r=68.947390, sigma_E=1.583627, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Vein  (Thelonious_6y_V6): dielectric (eps_r=62.103070, sigma_E=1.455938, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Midbrain  (Thelonious_6y_V6): dielectric (eps_r=51.031533, sigma_E=1.173295, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Testis  (Thelonious_6y_V6): dielectric (eps_r=61.295609, sigma_E=1.130577, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Air_internal  (Thelonious_6y_V6): dielectric (eps_r=1.000000, sigma_E=0.000000, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Blood_vessel  (Thelonious_6y_V6): dielectric (eps_r=45.325498, sigma_E=0.637236, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Epididymis  (Thelonious_6y_V6): dielectric (eps_r=61.295609, sigma_E=1.130577, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Pinealbody  (Thelonious_6y_V6): dielectric (eps_r=60.201963, sigma_E=0.966322, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Bladder  (Thelonious_6y_V6): dielectric (eps_r=19.149003, sigma_E=0.358399, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Marrow_red  (Thelonious_6y_V6): dielectric (eps_r=11.451933, sigma_E=0.207759, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Gallbladder  (Thelonious_6y_V6): dielectric (eps_r=59.551663, sigma_E=1.202528, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Hypophysis  (Thelonious_6y_V6): dielectric (eps_r=60.201963, sigma_E=0.966322, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Brain_white_matter  (Thelonious_6y_V6): dielectric (eps_r=39.695046, sigma_E=0.531363, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Spleen  (Thelonious_6y_V6): dielectric (eps_r=58.688546, sigma_E=1.175182, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Extrude 1  (Antenna 700 MHz (front_of_eyes_center_vertical)): lossy metal (eps_r=1.000000, sigma_E=58130000.000000, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Large_intestine_lumen  (Thelonious_6y_V6): dielectric (eps_r=55.587038, sigma_E=0.878895, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Thymus  (Thelonious_6y_V6): dielectric (eps_r=55.600852, sigma_E=1.115237, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Trachea  (Thelonious_6y_V6): dielectric (eps_r=42.588287, sigma_E=0.713502, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Heart_muscle  (Thelonious_6y_V6): dielectric (eps_r=61.478559, sigma_E=1.125021, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Muscle  (Thelonious_6y_V6): dielectric (eps_r=55.587038, sigma_E=0.878895, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Hypothalamus  (Thelonious_6y_V6): dielectric (eps_r=53.898662, sigma_E=0.859642, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Artery  (Thelonious_6y_V6): dielectric (eps_r=62.103070, sigma_E=1.455938, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Skin  (Thelonious_6y_V6): dielectric (eps_r=42.697659, sigma_E=0.799975, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Brain_grey_matter  (Thelonious_6y_V6): dielectric (eps_r=53.898662, sigma_E=0.859642, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Patella  (Thelonious_6y_V6): dielectric (eps_r=12.662775, sigma_E=0.120578, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Eye_Sclera  (Thelonious_6y_V6): dielectric (eps_r=55.907533, sigma_E=1.096154, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Tendon_Ligament  (Thelonious_6y_V6): dielectric (eps_r=46.258918, sigma_E=0.645211, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Kidney_medulla  (Thelonious_6y_V6): dielectric (eps_r=60.631926, sigma_E=1.277659, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>component1:Battery  (Antenna 700 MHz (front_of_eyes_center_vertical)): lossy metal (eps_r=1.000000, sigma_E=58130000.000000, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Medulla_oblongata  (Thelonious_6y_V6): dielectric (eps_r=51.031533, sigma_E=1.173295, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Esophagus  (Thelonious_6y_V6): dielectric (eps_r=65.714765, sigma_E=1.105511, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Intervertebral_disc  (Thelonious_6y_V6): dielectric (eps_r=44.418065, sigma_E=1.041108, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Vertebrae  (Thelonious_6y_V6): dielectric (eps_r=12.662775, sigma_E=0.120578, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Eye_lens  (Thelonious_6y_V6): dielectric (eps_r=36.279018, sigma_E=0.435952, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>commissura_posterior  (Thelonious_6y_V6): dielectric (eps_r=39.695046, sigma_E=0.531363, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Cornea  (Thelonious_6y_V6): dielectric (eps_r=56.275669, sigma_E=1.311407, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Trachea_lumen  (Thelonious_6y_V6): dielectric (eps_r=1.000000, sigma_E=0.000000, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Pharynx  (Thelonious_6y_V6): dielectric (eps_r=1.000000, sigma_E=0.000000, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Liver  (Thelonious_6y_V6): dielectric (eps_r=47.963211, sigma_E=0.773986, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Thalamus  (Thelonious_6y_V6): dielectric (eps_r=53.898662, sigma_E=0.859642, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Heart_lumen  (Thelonious_6y_V6): dielectric (eps_r=62.103070, sigma_E=1.455938, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Large_intestine  (Thelonious_6y_V6): dielectric (eps_r=59.134765, sigma_E=0.989502, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Kidney_cortex  (Thelonious_6y_V6): dielectric (eps_r=60.631926, sigma_E=1.277659, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Stomach  (Thelonious_6y_V6): dielectric (eps_r=65.714765, sigma_E=1.105511, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Fat  (Thelonious_6y_V6): dielectric (eps_r=11.423242, sigma_E=0.096238, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Lung  (Thelonious_6y_V6): dielectric (eps_r=22.460437, sigma_E=0.423425, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Connective_tissue  (Thelonious_6y_V6): dielectric (eps_r=46.258918, sigma_E=0.645211, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>component1:Substrate  (Antenna 700 MHz (front_of_eyes_center_vertical)): dielectric (eps_r=1.000000, sigma_E=0.000000, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Pons  (Thelonious_6y_V6): dielectric (eps_r=51.031533, sigma_E=1.173295, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Spinal_cord  (Thelonious_6y_V6): dielectric (eps_r=33.263358, sigma_E=0.522929, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>SAT  (Thelonious_6y_V6): dielectric (eps_r=11.423242, sigma_E=0.096238, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Ear_cartilage  (Thelonious_6y_V6): dielectric (eps_r=43.455463, sigma_E=0.697055, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Teeth  (Thelonious_6y_V6): dielectric (eps_r=12.662775, sigma_E=0.120578, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Nerve  (Thelonious_6y_V6): dielectric (eps_r=33.263358, sigma_E=0.522929, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Ear_skin  (Thelonious_6y_V6): dielectric (eps_r=42.697659, sigma_E=0.799975, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Meniscus  (Thelonious_6y_V6): dielectric (eps_r=43.455463, sigma_E=0.697055, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Skull  (Thelonious_6y_V6): dielectric (eps_r=12.662775, sigma_E=0.120578, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Prostate  (Thelonious_6y_V6): dielectric (eps_r=61.295609, sigma_E=1.130577, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Diaphragm  (Thelonious_6y_V6): dielectric (eps_r=55.587038, sigma_E=0.878895, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Bone  (Thelonious_6y_V6): dielectric (eps_r=12.662775, sigma_E=0.120578, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Mucosa  (Thelonious_6y_V6): dielectric (eps_r=55.587038, sigma_E=0.878895, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Small_intestine  (Thelonious_6y_V6): dielectric (eps_r=61.138364, sigma_E=2.062163, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Larynx  (Thelonious_6y_V6): dielectric (eps_r=43.455463, sigma_E=0.697055, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Mandible  (Thelonious_6y_V6): dielectric (eps_r=12.662775, sigma_E=0.120578, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Small_intestine_lumen  (Thelonious_6y_V6): dielectric (eps_r=55.587038, sigma_E=0.878895, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Cartilage  (Thelonious_6y_V6): dielectric (eps_r=43.455463, sigma_E=0.697055, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Hippocampus  (Thelonious_6y_V6): dielectric (eps_r=53.898662, sigma_E=0.859642, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Cerebellum  (Thelonious_6y_V6): dielectric (eps_r=51.031533, sigma_E=1.173295, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Penis  (Thelonious_6y_V6): dielectric (eps_r=45.325498, sigma_E=0.637236, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>component1:ShortingPin  (Antenna 700 MHz (front_of_eyes_center_vertical)): lossy metal (eps_r=1.000000, sigma_E=58130000.000000, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Ureter_Urethra  (Thelonious_6y_V6): dielectric (eps_r=45.325498, sigma_E=0.637236, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Bronchi_lumen  (Thelonious_6y_V6): dielectric (eps_r=1.000000, sigma_E=0.000000, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Pancreas  (Thelonious_6y_V6): dielectric (eps_r=60.201963, sigma_E=0.966322, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Esophagus_lumen  (Thelonious_6y_V6): dielectric (eps_r=1.000000, sigma_E=0.000000, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Bronchi  (Thelonious_6y_V6): dielectric (eps_r=42.588287, sigma_E=0.713502, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class=ansi-white-fg>Cerebrospinal_fluid  (Thelonious_6y_V6): dielectric (eps_r=69.157589, sigma_E=2.338250, mu_r=1.000000, sigma_H=0.000000)</span> 
+
+<span class=ansi-white-fg>Lumped Elements (1):</span> 
+<span class=ansi-white-fg>Initializing lumped element Lines 1  (Antenna 700 MHz (front_of_eyes_center_vertical)) (1 edge(s)) (Resistor, 50 ohm)</span> 
+
+<span class=ansi-white-fg>Host OS: Microsoft Windows 10 Professional 64-bit (Build 9200)</span> 
+<span class=ansi-white-fg>Host CPU: AMD EPYC 7542 32-Core Processor</span> 
+<span class=ansi-white-fg>Host memory: 16379 MB</span> 
+<span class=ansi-white-fg>The following Accelerators have been detected:</span> 
+<span class=ansi-white-fg>NVIDIA GeForce RTX 4090 (device ID = 0), compute capability 8.9, total memory 24563 MB</span> 
+
+
+<span class=ansi-white-fg>Sensors (4):</span> 
+<span class=ansi-white-fg>Initializing path sensor Lines 1  (Antenna 700 MHz (front_of_eyes_center_vertical)).</span> 
+<span class=ansi-white-fg>Harmonic steady state settings for Lines 1  (Antenna 700 MHz (front_of_eyes_center_vertical)): ema-factor-per-period = 0.8, ema factor across check point 0.894427, frequency = 7e+08, recording time step = 2.85936e-11, convergence level = -15 dB.</span> 
+<span class=ansi-white-fg>Initializing field sensor Overall Field.</span> 
+<span class=ansi-white-fg>Initializing point sensor Point Sensor Entity 1 (lower_left_bottom).</span> 
+<span class=ansi-white-fg>Averaging setup for point sensor Point Sensor Entity 1 (lower_left_bottom):</span> 
+<span class=ansi-white-fg>E-Field:</span> 
+<span class=ansi-white-fg>X: 8 edges used for recording.</span> 
+<span class=ansi-white-fg>Y: 8 edges used for recording.</span> 
+<span class=ansi-white-fg>Z: 8 edges used for recording.</span> 
+<span class=ansi-white-fg>H-Field:</span> 
+<span class=ansi-white-fg>X: 8 edges used for recording.</span> 
+<span class=ansi-white-fg>Y: 8 edges used for recording.</span> 
+<span class=ansi-white-fg>Z: 8 edges used for recording.</span> 
+<span class=ansi-white-fg>Harmonic steady state settings for Point Sensor Entity 1 (lower_left_bottom): ema-factor-per-period = 0.8, ema factor across check point 0.894427, frequency = 7e+08, recording time step = 2.85936e-11, convergence level = -15 dB.</span> 
+<span class=ansi-white-fg>Initializing point sensor Point Sensor Entity 2 (top_right_up).</span> 
+<span class=ansi-white-fg>Averaging setup for point sensor Point Sensor Entity 2 (top_right_up):</span> 
+<span class=ansi-white-fg>E-Field:</span> 
+<span class=ansi-white-fg>X: 8 edges used for recording.</span> 
+<span class=ansi-white-fg>Y: 8 edges used for recording.</span> 
+<span class=ansi-white-fg>Z: 8 edges used for recording.</span> 
+<span class=ansi-white-fg>H-Field:</span> 
+<span class=ansi-white-fg>X: 8 edges used for recording.</span> 
+<span class=ansi-white-fg>Y: 8 edges used for recording.</span> 
+<span class=ansi-white-fg>Z: 8 edges used for recording.</span> 
+<span class=ansi-white-fg>Harmonic steady state settings for Point Sensor Entity 2 (top_right_up): ema-factor-per-period = 0.8, ema factor across check point 0.894427, frequency = 7e+08, recording time step = 2.85936e-11, convergence level = -15 dB.</span> 
+<span class=ansi-white-fg>Using DFT to convert to frequency domain.</span> 
+
+<span class=ansi-white-fg>Sources (1):</span> 
+<span class=ansi-white-fg>Initializing edge source Lines 1  (Antenna 700 MHz (front_of_eyes_center_vertical)) (amplitude 1, time shift0, type voltage, excitation id e2220022-6e80-44a2-a40e-20de7c605e77).</span> 
+<span class=ansi-white-fg>Excitation signal: Harmonic signal with frequency 700 MHz and ramp time 2.14286 ns</span> 
+
+<span class=ansi-white-fg>Update coefficient calculation for 12265770 edges using 3 threads.</span> 
+<span class=ansi-white-fg>Calculating update coefficients</span> 
+
+
+<span class=ansi-white-fg>Edge-Material Statistics (Electric/Magnetic):</span> 
+<span class=ansi-white-fg>6158750 / 6107016    (100.00% / 100.00%) : Total</span> 
+<span class=ansi-white-fg>6141150 / 6083739    ( 99.71% /  99.62%) : Dielectric</span> 
+<span class=ansi-white-fg>17600 /   23277      (  0.29% /   0.38%) : Lossy Metal</span> 
+
+<span class=ansi-white-fg>Edge-Region Statistics (regions with more than 1% of all edges, max 20 items):</span> 
+<span class=ansi-white-fg>4571553 / 4548441    ( 74.23% /  74.48%) : Background</span> 
+<span class=ansi-white-fg>202588 /  240362     (  3.29% /   3.94%) : Muscle  (Thelonious_6y_V6)</span> 
+<span class=ansi-white-fg>193767 /  203606     (  3.15% /   3.33%) : Lung  (Thelonious_6y_V6)</span> 
+<span class=ansi-white-fg>96336 /  132166      (  1.56% /   2.16%) : Brain_grey_matter  (Thelonious_6y_V6)</span> 
+<span class=ansi-white-fg>52688 /   70953      (  0.86% /   1.16%) : Brain_white_matter  (Thelonious_6y_V6)</span> 
+<span class=ansi-white-fg>372840 /  527412     (  6.05% /   8.64%) : Other</span> 
+<span class=ansi-white-fg>668978 /  384076     ( 10.86% /   6.29%) : Averaged</span> 
+
+
+<span class=ansi-white-fg>Update coefficient database contains 10798 E-coefficient(s) and 23 H-coefficient(s).</span> 
+<span class=ansi-white-fg>Elapsed time for 'Calculating update coefficients' was 00:00:02 wall clock time.</span> 
+<span class=ansi-white-fg>Preparing for time update</span> 
+<span class=ansi-white-fg>Use hardware resource management option fastest simulation</span> 
+<span class=ansi-white-fg>Checking out license feature 'AXWARE_TOKEN', version 8.2, (1).</span> 
+<span class=ansi-white-fg>[PROGRESS]: 25% [ 25 / 100 ] Preparing for time update</span> 
+<span class=ansi-white-fg>Simulation 1 is using device(s): [0]</span> 
+<span class=ansi-white-fg>Elapsed time for 'Preparing for time update' was 00:00:03 wall clock time.</span> 
+<span class=ansi-white-fg>Starting solver aXware (hardware accelerated).</span> 
+<span class=ansi-white-fg>Time Update</span> 
+<span class=ansi-white-fg>[PROGRESS]: 0% [ 10 / 8090 ] Time Update, estimated remaining time 3 minutes  @ 134.68 MCells/s</span> 
+<span class=ansi-white-fg>[PROGRESS]: 13% [ 1131 / 8090 ] Time Update, estimated remaining time 13 seconds  @ 1610.56 MCells/s</span> 
+<span class=ansi-white-fg>[PROGRESS]: 27% [ 2252 / 8090 ] Time Update, estimated remaining time 11 seconds  @ 1650.20 MCells/s</span> 
+<span class=ansi-white-fg>[PROGRESS]: 41% [ 3373 / 8090 ] Time Update, estimated remaining time 9 seconds  @ 1652.52 MCells/s</span> 
+<span class=ansi-white-fg>[PROGRESS]: 55% [ 4494 / 8090 ] Time Update, estimated remaining time 7 seconds  @ 1656.56 MCells/s</span> 
+<span class=ansi-white-fg>[PROGRESS]: 69% [ 5615 / 8090 ] Time Update, estimated remaining time 5 seconds  @ 1632.63 MCells/s</span> 
+<span class=ansi-white-fg>[PROGRESS]: 83% [ 6736 / 8090 ] Time Update, estimated remaining time 2 seconds  @ 1656.96 MCells/s</span> 
+<span class=ansi-white-fg>Point Sensor Entity 1 (lower_left_bottom): Choosing component 1 to check conventional convergence.</span> 
+<span class=ansi-white-fg>Point Sensor Entity 1 (lower_left_bottom): Choosing component 4 to check conventional convergence.</span> 
+<span class=ansi-white-fg>Point Sensor Entity 2 (top_right_up): Choosing component 1 to check conventional convergence.</span> 
+<span class=ansi-white-fg>Point Sensor Entity 2 (top_right_up): Choosing component 5 to check conventional convergence.</span> 
+<span class=ansi-white-fg>[PROGRESS]: 95% [ 7697 / 8090 ] Time Update, estimated remaining time 1 seconds  @ 1174.38 MCells/s</span> 
+<span class=ansi-white-fg>Simulation performed 8090 iterations.</span> 
+<span class=ansi-white-fg>Elapsed time for 'Time Update' was 00:00:17 wall clock time.</span> 
+
+<span class=ansi-white-fg>Post-process Sensors</span> 
+<span class=ansi-white-fg>Post-process sensor 'Lines 1  (Antenna 700 MHz (front_of_eyes_center_vertical))'</span> 
+<span class=ansi-white-fg>Post-process sensor 'Overall Field'</span> 
+<span class=ansi-white-fg>Post-process sensor 'Point Sensor Entity 1 (lower_left_bottom)'</span> 
+<span class=ansi-white-fg>Post-process sensor 'Point Sensor Entity 2 (top_right_up)'</span> 
+<span class=ansi-white-fg>Trusted frequency is 700 MHz. Expect less accurate results outside.</span> 
+<span class=ansi-white-fg>Elapsed time for 'Post-process Sensors' was 00:00:00 wall clock time.</span> 
+<span class=ansi-white-fg>FDTD simulation finished successfully.</span> 
+
+<span class=ansi-white-fg>Simulation 'EM_FDTD_thelonious_700MHz_front_of_eyes_center_vertical' has ended successfully and took 00:00:32 wall clock time</span> 
+<span class=ansi-white-fg>No compression of solver files requested</span> 
+<span class=ansi-white-fg>Released license feature 'AXWARE_TOKEN'.</span> 
+<span class=ansi-white-fg>Released license feature 'FDTD_SOLVER'.</span> 
+<span class=ansi-white-fg>Peak CPU memory usage: 971.7 MB (1018908672 Bytes)</span> 
+<span class=ansi-white-fg>iSolve ended successfully.</span> 
+<span class=ansi-blue-fg>      - Subtask 'run_isolve_execution' done in 32.67s</span> <span class=ansi-black-fg>[SimulationRunner._run_isolve_manual]</span>
+<span class="ansi-green-intense-fg ansi-bold">      - Done in 32.67s</span> <span class=ansi-black-fg>[SimulationRunner._run_isolve_manual]</span>
+<span class=ansi-green-fg>    - Wait for results...</span> <span class=ansi-black-fg>[SimulationRunner._run_isolve_manual]</span>
+<span class=ansi-blue-fg>      - Subtask 'run_wait_for_results' done in 5.03s</span> <span class=ansi-black-fg>[SimulationRunner._run_isolve_manual]</span>
+<span class="ansi-green-intense-fg ansi-bold">      - Done in 5.03s</span> <span class=ansi-black-fg>[SimulationRunner._run_isolve_manual]</span>
+<span class=ansi-green-fg>    - Reload project...</span> <span class=ansi-black-fg>[SimulationRunner._run_isolve_manual]</span>
+License  : [Info]  Released [ MODEL_THELONIOUS 1.0 ]
+<span class=ansi-cyan-fg>Opening project: C:/Users/user/repo-clean/results/near_field/thelonious/700MHz/front_of_eyes_center_vertical/near_field_thelonious_700MHz_front_of_eyes_center_vertical.smash</span> 
+[Info]  Document produced by Sim4Life version 8.2.0.16876
+[Info]  Checking out license feature 'MODEL_THELONIOUS', version 1.0, (1).
+License  : [Info]  Acquired [ MODEL_THELONIOUS 1.0 ]
+Modeler  : [Warn]  No exact match found for SkullNot changing colors.
+Modeler  : [Warn]  No exact match found for SkullNot changing colors.
+<span class=ansi-blue-fg>      - Subtask 'run_reload_project' done in 11.88s</span> <span class=ansi-black-fg>[SimulationRunner._run_isolve_manual]</span>
+<span class="ansi-green-intense-fg ansi-bold">      - Done in 11.88s</span> <span class=ansi-black-fg>[SimulationRunner._run_isolve_manual]</span>
+<span class="ansi-green-intense-fg ansi-bold">Project reloaded and results are available.</span> <span class=ansi-black-fg>[SimulationRunner._run_isolve_manual]</span>
+<span class=ansi-blue-fg>    - Subtask 'run_simulation_total' done in 54.61s</span> <span class=ansi-black-fg>[NearFieldStudy.subtask]</span>
+<span class="ansi-green-intense-fg ansi-bold">    - Done in 54.61s</span> <span class=ansi-black-fg>[NearFieldStudy.subtask]</span>
+<span class=ansi-yellow-fg>Run deliverables verified. Updating metadata.</span> <span class=ansi-black-fg>[NearFieldStudy._verify_and_update_metadata]</span>
+<span class=ansi-cyan-fg>Updated metadata in config.json</span> <span class=ansi-black-fg>[ProjectManager.update_simulation_metadata]</span>
+<span class="ansi-magenta-intense-fg ansi-bold">--- Finished: run (took 54.69s) ---</span> <span class=ansi-black-fg>[profile]</span>
+<span class="ansi-magenta-intense-fg ansi-bold">--- Starting: extract ---</span> <span class=ansi-black-fg>[profile]</span>
+<span class=ansi-cyan-fg>Run deliverables verified. Proceeding with extraction.</span> <span class=ansi-black-fg>[NearFieldStudy._verify_run_deliverables_before_extraction]</span>
+<span class=ansi-cyan-fg>Validating project file: C:/Users/user/repo-clean/results/near_field/thelonious/700MHz/front_of_eyes_center_vertical/near_field_thelonious_700MHz_front_of_eyes_center_vertical.smash</span> <span class=ansi-black-fg>[ProjectManager.open]</span>
+<span class=ansi-cyan-fg>Opening project with Sim4Life: C:/Users/user/repo-clean/results/near_field/thelonious/700MHz/front_of_eyes_center_vertical/near_field_thelonious_700MHz_front_of_eyes_center_vertical.smash</span> <span class=ansi-black-fg>[ProjectManager.open]</span>
+<span class=ansi-cyan-fg>Opening project: C:/Users/user/repo-clean/results/near_field/thelonious/700MHz/front_of_eyes_center_vertical/near_field_thelonious_700MHz_front_of_eyes_center_vertical.smash</span> 
+License  : [Info]  Released [ MODEL_THELONIOUS 1.0 ]
+[Info]  Document produced by Sim4Life version 8.2.0.16876
+[Info]  Checking out license feature 'MODEL_THELONIOUS', version 1.0, (1).
+License  : [Info]  Acquired [ MODEL_THELONIOUS 1.0 ]
+Modeler  : [Warn]  No exact match found for SkullNot changing colors.
+Modeler  : [Warn]  No exact match found for SkullNot changing colors.
+<span class="ansi-green-intense-fg ansi-bold">Project reloaded.</span> <span class=ansi-black-fg>[ProjectManager.reload_project]</span>
+<span class=ansi-green-fg>  - Extract results total...</span> <span class=ansi-black-fg>[NearFieldStudy.subtask]</span>
+<span class=ansi-green-fg>    - Extract input power...</span> <span class=ansi-black-fg>[PowerExtractor.extract_input_power]</span>
+<span class=ansi-yellow-fg>  - GetPower() not available, falling back to manual extraction.</span> <span class=ansi-black-fg>[PowerExtractor._extract_near_field_power]</span>
+<span class=ansi-blue-fg>      - Subtask 'extract_input_power' done in 3.78s</span> <span class=ansi-black-fg>[PowerExtractor.extract_input_power]</span>
+<span class="ansi-green-intense-fg ansi-bold">      - Done in 3.78s</span> <span class=ansi-black-fg>[PowerExtractor.extract_input_power]</span>
+<span class=ansi-green-fg>    - Extract SAR statistics...</span> <span class=ansi-black-fg>[SarExtractor.extract_sar_statistics]</span>
+<span class=ansi-cyan-fg>  - Loading tissue groups for 'thelonious' from material_name_mapping.json</span> <span class=ansi-black-fg>[SarExtractor._define_tissue_groups]</span>
+<span class=ansi-green-fg>  - Extracting peak SAR details...</span> <span class=ansi-black-fg>[SarExtractor.extract_peak_sar_details]</span>
+<span class=ansi-blue-fg>      - Subtask 'extract_sar_statistics' done in 7.03s</span> <span class=ansi-black-fg>[SarExtractor.extract_sar_statistics]</span>
+<span class="ansi-green-intense-fg ansi-bold">      - Done in 7.03s</span> <span class=ansi-black-fg>[SarExtractor.extract_sar_statistics]</span>
+<span class=ansi-green-fg>    - Extract power balance...</span> <span class=ansi-black-fg>[PowerExtractor.extract_power_balance]</span>
+<span class="ansi-yellow-intense-fg ansi-bold">    - Final Balance: 22.90%</span> <span class=ansi-black-fg>[PowerExtractor.extract_power_balance]</span>
+<span class=ansi-blue-fg>      - Subtask 'extract_power_balance' done in 2.23s</span> <span class=ansi-black-fg>[PowerExtractor.extract_power_balance]</span>
+<span class="ansi-green-intense-fg ansi-bold">      - Done in 2.23s</span> <span class=ansi-black-fg>[PowerExtractor.extract_power_balance]</span>
+<span class=ansi-green-fg>    - Extract point sensors...</span> <span class=ansi-black-fg>[SensorExtractor.extract_point_sensor_data]</span>
+<span class=ansi-cyan-fg>  - Point sensor plot saved to: C:\Users\user\repo-clean\results\near_field\thelonious\700MHz\front_of_eyes_center_vertical\point_sensor_data.png</span> <span class=ansi-black-fg>[SensorExtractor._save_plot]</span>
+<span class=ansi-blue-fg>      - Subtask 'extract_point_sensor_data' done in 0.55s</span> <span class=ansi-black-fg>[SensorExtractor.extract_point_sensor_data]</span>
+<span class="ansi-green-intense-fg ansi-bold">      - Done in 0.55s</span> <span class=ansi-black-fg>[SensorExtractor.extract_point_sensor_data]</span>
+<span class=ansi-cyan-fg>  - Pickle report saved to: C:\Users\user\repo-clean\results\near_field\thelonious\700MHz\front_of_eyes_center_vertical\sar_stats_all_tissues.pkl</span> <span class=ansi-black-fg>[Reporter._save_pickle_report]</span>
+<span class=ansi-cyan-fg>  - HTML report saved to: C:\Users\user\repo-clean\results\near_field\thelonious\700MHz\front_of_eyes_center_vertical\sar_stats_all_tissues.html</span> <span class=ansi-black-fg>[Reporter._save_html_report]</span>
+<span class=ansi-cyan-fg>  - SAR results saved to: C:\Users\user\repo-clean\results\near_field\thelonious\700MHz\front_of_eyes_center_vertical\sar_results.json</span> <span class=ansi-black-fg>[ResultsExtractor._save_json_results]</span>
+<span class=ansi-blue-fg>    - Subtask 'extract_results_total' done in 13.80s</span> <span class=ansi-black-fg>[NearFieldStudy.subtask]</span>
+<span class="ansi-green-intense-fg ansi-bold">    - Done in 13.80s</span> <span class=ansi-black-fg>[NearFieldStudy.subtask]</span>
+<span class=ansi-yellow-fg>Extract deliverables verified. Updating metadata.</span> <span class=ansi-black-fg>[NearFieldStudy._verify_and_update_metadata]</span>
+<span class=ansi-cyan-fg>Updated metadata in config.json</span> <span class=ansi-black-fg>[ProjectManager.update_simulation_metadata]</span>
+<span class=ansi-cyan-fg>Saving project to C:/Users/user/repo-clean/results/near_field/thelonious/700MHz/front_of_eyes_center_vertical/near_field_thelonious_700MHz_front_of_eyes_center_vertical.smash...</span> <span class=ansi-black-fg>[ProjectManager.save]</span>
+[Info]  Document produced by Sim4Life version 8.2.0.16876
+[Info]  There have been no model changes since the last time was saved. 
+
+<span class="ansi-green-intense-fg ansi-bold">Project saved.</span> <span class=ansi-black-fg>[ProjectManager.save]</span>
+<span class="ansi-magenta-intense-fg ansi-bold">--- Finished: extract (took 30.59s) ---</span> <span class=ansi-black-fg>[profile]</span>
+<span class="ansi-green-intense-fg ansi-bold">
+--- NearFieldStudy Finished ---</span> <span class=ansi-black-fg>[NearFieldStudy.run]</span>
+<span class=ansi-white-fg>--- Logging shutdown ---</span> 
+<span class=ansi-white-fg>--- Logging shutdown ---</span> 
+License  : [Info]  Released [ MODEL_THELONIOUS 1.0 ]
+[Info]  Topological Voxeler Report: Muscle
+    Target Grid: Primary
+    Duration: 2038.02 ms
+    Priority: 0
+    Edges: None
+    Voxels: 96103
+    Memory Consumption: 0.084938 kB
+
+[Info]  Topological Voxeler Report: Skin
+    Target Grid: Primary
+    Duration: 2043.38 ms
+    Priority: 0
+    Edges: None
+    Voxels: 21508
+    Memory Consumption: 0.123222 kB
+
+[Info]  Topological Voxeler Report: SAT
+    Target Grid: Primary
+    Duration: 1909.36 ms
+    Priority: 0
+    Edges: None
+    Voxels: 24985
+    Memory Consumption: 0.121010 kB
+
+[Info]  Topological Voxeler Report: Fat
+    Target Grid: Primary
+    Duration: 1916.99 ms
+    Priority: 0
+    Edges: None
+    Voxels: 23715
+    Memory Consumption: 0.083389 kB
+
+[Info]  Topological Voxeler Report: Brain_grey_matter
+    Target Grid: Primary
+    Duration: 660.133 ms
+    Priority: 0
+    Edges: None
+    Voxels: 55992
+    Memory Consumption: 0.024544 kB
+
+[Info]  Topological Voxeler Report: Connective_tissue
+    Target Grid: Primary
+    Duration: 677.102 ms
+    Priority: 0
+    Edges: None
+    Voxels: 12933
+    Memory Consumption: 0.046371 kB
+
+[Info]  Topological Voxeler Report: Bone
+    Target Grid: Primary
+    Duration: 529.629 ms
+    Priority: 0
+    Edges: None
+    Voxels: 9017
+    Memory Consumption: 0.044350 kB
+
+[Info]  Topological Voxeler Report: Cerebrospinal_fluid
+    Target Grid: Primary
+    Duration: 585.837 ms
+    Priority: 0
+    Edges: None
+    Voxels: 14690
+    Memory Consumption: 0.088646 kB
+
+[Info]  Topological Voxeler Report: Brain_white_matter
+    Target Grid: Primary
+    Duration: 347.053 ms
+    Priority: 0
+    Edges: None
+    Voxels: 30817
+    Memory Consumption: 0.019691 kB
+
+[Info]  Topological Voxeler Report: Skull
+    Target Grid: Primary
+    Duration: 490.03 ms
+    Priority: 0
+    Edges: None
+    Voxels: 20263
+    Memory Consumption: 0.036324 kB
+
+[Info]  Topological Voxeler Report: Tendon_Ligament
+    Target Grid: Primary
+    Duration: 228.936 ms
+    Priority: 0
+    Edges: None
+    Voxels: 2012
+    Memory Consumption: 0.021988 kB
+
+[Info]  Topological Voxeler Report: Large_intestine
+    Target Grid: Primary
+    Duration: 237.051 ms
+    Priority: 0
+    Edges: None
+    Voxels: None
+    Memory Consumption: 0 bytes
+
+[Info]  Topological Voxeler Report: Vertebrae
+    Target Grid: Primary
+    Duration: 223.899 ms
+    Priority: 0
+    Edges: None
+    Voxels: 7548
+    Memory Consumption: 0.012505 kB
+
+[Info]  Topological Voxeler Report: Lung
+    Target Grid: Primary
+    Duration: 181.668 ms
+    Priority: 0
+    Edges: None
+    Voxels: 71680
+    Memory Consumption: 0.026184 kB
+
+[Info]  Topological Voxeler Report: Marrow_red
+    Target Grid: Primary
+    Duration: 155.288 ms
+    Priority: 0
+    Edges: None
+    Voxels: 4559
+    Memory Consumption: 0.029617 kB
+
+[Info]  Topological Voxeler Report: Artery
+    Target Grid: Primary
+    Duration: 119.946 ms
+    Priority: 0
+    Edges: None
+    Voxels: 2101
+    Memory Consumption: 0.043495 kB
+
+[Info]  Topological Voxeler Report: Large_intestine_lumen
+    Target Grid: Primary
+    Duration: 102.014 ms
+    Priority: 0
+    Edges: None
+    Voxels: None
+    Memory Consumption: 0 bytes
+
+[Info]  Topological Voxeler Report: Vein
+    Target Grid: Primary
+    Duration: 98.1659 ms
+    Priority: 0
+    Edges: None
+    Voxels: 1338
+    Memory Consumption: 0.020744 kB
+
+[Info]  Topological Voxeler Report: Air_internal
+    Target Grid: Primary
+    Duration: 79.1533 ms
+    Priority: 0
+    Edges: None
+    Voxels: 3390
+    Memory Consumption: 0.007278 kB
+
+[Info]  Topological Voxeler Report: Diaphragm
+    Target Grid: Primary
+    Duration: 88.8875 ms
+    Priority: 0
+    Edges: None
+    Voxels: 8314
+    Memory Consumption: 0.008522 kB
+
+[Info]  Topological Voxeler Report: Liver
+    Target Grid: Primary
+    Duration: 78.388 ms
+    Priority: 0
+    Edges: None
+    Voxels: 18313
+    Memory Consumption: 0.005272 kB
+
+[Info]  Topological Voxeler Report: Stomach
+    Target Grid: Primary
+    Duration: 87.828 ms
+    Priority: 0
+    Edges: None
+    Voxels: 5411
+    Memory Consumption: 0.002693 kB
+
+[Info]  Topological Voxeler Report: Nerve
+    Target Grid: Primary
+    Duration: 87.9098 ms
+    Priority: 0
+    Edges: None
+    Voxels: 1451
+    Memory Consumption: 0.023468 kB
+
+[Info]  Topological Voxeler Report: Mucosa
+    Target Grid: Primary
+    Duration: 60.5404 ms
+    Priority: 0
+    Edges: None
+    Voxels: 329
+    Memory Consumption: 0.003487 kB
+
+[Info]  Topological Voxeler Report: Cartilage
+    Target Grid: Primary
+    Duration: 80.1576 ms
+    Priority: 0
+    Edges: None
+    Voxels: 2561
+    Memory Consumption: 0.037788 kB
+
+[Info]  Topological Voxeler Report: Cerebellum
+    Target Grid: Primary
+    Duration: 53.6068 ms
+    Priority: 0
+    Edges: None
+    Voxels: 12280
+    Memory Consumption: 0.004150 kB
+
+[Info]  Topological Voxeler Report: Intervertebral_disc
+    Target Grid: Primary
+    Duration: 57.954 ms
+    Priority: 0
+    Edges: None
+    Voxels: 1606
+    Memory Consumption: 0.003365 kB
+
+[Info]  Topological Voxeler Report: Blood_vessel
+    Target Grid: Primary
+    Duration: 78.8028 ms
+    Priority: 0
+    Edges: None
+    Voxels: 558
+    Memory Consumption: 0.036507 kB
+
+[Info]  Topological Voxeler Report: Kidney_cortex
+    Target Grid: Primary
+    Duration: 56.6828 ms
+    Priority: 0
+    Edges: None
+    Voxels: None
+    Memory Consumption: 0 bytes
+
+[Info]  Topological Voxeler Report: Heart_muscle
+    Target Grid: Primary
+    Duration: 50.9975 ms
+    Priority: 0
+    Edges: None
+    Voxels: 18049
+    Memory Consumption: 0.006874 kB
+
+[Info]  Topological Voxeler Report: Mandible
+    Target Grid: Primary
+    Duration: 36.7393 ms
+    Priority: 0
+    Edges: None
+    Voxels: 1424
+    Memory Consumption: 0.003334 kB
+
+[Info]  Topological Voxeler Report: Small_intestine
+    Target Grid: Primary
+    Duration: 46.2618 ms
+    Priority: 0
+    Edges: None
+    Voxels: None
+    Memory Consumption: 0 bytes
+
+[Info]  Topological Voxeler Report: Spleen
+    Target Grid: Primary
+    Duration: 31.4035 ms
+    Priority: 0
+    Edges: None
+    Voxels: 4755
+    Memory Consumption: 0.002098 kB
+
+[Info]  Topological Voxeler Report: Stomach_lumen
+    Target Grid: Primary
+    Duration: 35.5623 ms
+    Priority: 0
+    Edges: None
+    Voxels: 6396
+    Memory Consumption: 0.001488 kB
+
+[Info]  Topological Voxeler Report: Kidney_medulla
+    Target Grid: Primary
+    Duration: 23.0735 ms
+    Priority: 0
+    Edges: None
+    Voxels: None
+    Memory Consumption: 0 bytes
+
+[Info]  Topological Voxeler Report: Ear_skin
+    Target Grid: Primary
+    Duration: 25.8537 ms
+    Priority: 0
+    Edges: None
+    Voxels: 745
+    Memory Consumption: 0.003128 kB
+
+[Info]  Topological Voxeler Report: Tongue
+    Target Grid: Primary
+    Duration: 13.7742 ms
+    Priority: 0
+    Edges: None
+    Voxels: 2533
+    Memory Consumption: 688 bytes
+
+[Info]  Topological Voxeler Report: Esophagus
+    Target Grid: Primary
+    Duration: 21.3608 ms
+    Priority: 0
+    Edges: None
+    Voxels: 540
+    Memory Consumption: 0.003250 kB
+
+[Info]  Topological Voxeler Report: Thymus
+    Target Grid: Primary
+    Duration: 15.869 ms
+    Priority: 0
+    Edges: None
+    Voxels: 1942
+    Memory Consumption: 0.001389 kB
+
+[Info]  Topological Voxeler Report: Spinal_cord
+    Target Grid: Primary
+    Duration: 22.8303 ms
+    Priority: 0
+    Edges: None
+    Voxels: 1522
+    Memory Consumption: 0.002632 kB
+
+[Info]  Topological Voxeler Report: Trachea
+    Target Grid: Primary
+    Duration: 23.102 ms
+    Priority: 0
+    Edges: None
+    Voxels: 376
+    Memory Consumption: 0.001137 kB
+
+[Info]  Topological Voxeler Report: Teeth
+    Target Grid: Primary
+    Duration: 26.1998 ms
+    Priority: 0
+    Edges: None
+    Voxels: 371
+    Memory Consumption: 760 bytes
+
+[Info]  Topological Voxeler Report: Eye_Sclera
+    Target Grid: Primary
+    Duration: 11.7457 ms
+    Priority: 0
+    Edges: None
+    Voxels: 377
+    Memory Consumption: 520 bytes
+
+[Info]  Topological Voxeler Report: Ear_cartilage
+    Target Grid: Primary
+    Duration: 12.4414 ms
+    Priority: 0
+    Edges: None
+    Voxels: 262
+    Memory Consumption: 0.002754 kB
+
+[Info]  Topological Voxeler Report: Thalamus
+    Target Grid: Primary
+    Duration: 8.8514 ms
+    Priority: 0
+    Edges: None
+    Voxels: 1208
+    Memory Consumption: 368 bytes
+
+[Info]  Topological Voxeler Report: Small_intestine_lumen
+    Target Grid: Primary
+    Duration: 13.6083 ms
+    Priority: 0
+    Edges: None
+    Voxels: None
+    Memory Consumption: 0 bytes
+
+[Info]  Topological Voxeler Report: Bladder
+    Target Grid: Primary
+    Duration: 10.797 ms
+    Priority: 0
+    Edges: None
+    Voxels: None
+    Memory Consumption: 0 bytes
+
+[Info]  Topological Voxeler Report: Pancreas
+    Target Grid: Primary
+    Duration: 9.436 ms
+    Priority: 0
+    Edges: None
+    Voxels: None
+    Memory Consumption: 0 bytes
+
+[Info]  Topological Voxeler Report: Esophagus_lumen
+    Target Grid: Primary
+    Duration: 8.4816 ms
+    Priority: 0
+    Edges: None
+    Voxels: 243
+    Memory Consumption: 0.001625 kB
+
+[Info]  Topological Voxeler Report: Meniscus
+    Target Grid: Primary
+    Duration: 8.7346 ms
+    Priority: 0
+    Edges: None
+    Voxels: None
+    Memory Consumption: 0 bytes
+
+[Info]  Topological Voxeler Report: Penis
+    Target Grid: Primary
+    Duration: 7.9636 ms
+    Priority: 0
+    Edges: None
+    Voxels: None
+    Memory Consumption: 0 bytes
+
+[Info]  Topological Voxeler Report: Trachea_lumen
+    Target Grid: Primary
+    Duration: 7.7146 ms
+    Priority: 0
+    Edges: None
+    Voxels: 544
+    Memory Consumption: 1016 bytes
+
+[Info]  Topological Voxeler Report: Pons
+    Target Grid: Primary
+    Duration: 5.1731 ms
+    Priority: 0
+    Edges: None
+    Voxels: 824
+    Memory Consumption: 248 bytes
+
+[Info]  Topological Voxeler Report: Eye_vitreous_humor
+    Target Grid: Primary
+    Duration: 6.2173 ms
+    Priority: 0
+    Edges: None
+    Voxels: 939
+    Memory Consumption: 384 bytes
+
+[Info]  Topological Voxeler Report: Midbrain
+    Target Grid: Primary
+    Duration: 5.4243 ms
+    Priority: 0
+    Edges: None
+    Voxels: 510
+    Memory Consumption: 176 bytes
+
+[Info]  Topological Voxeler Report: Gallbladder
+    Target Grid: Primary
+    Duration: 6.1489 ms
+    Priority: 0
+    Edges: None
+    Voxels: None
+    Memory Consumption: 0 bytes
+
+[Info]  Topological Voxeler Report: Heart_lumen
+    Target Grid: Primary
+    Duration: 5.5531 ms
+    Priority: 0
+    Edges: None
+    Voxels: 526
+    Memory Consumption: 280 bytes
+
+[Info]  Topological Voxeler Report: Pharynx
+    Target Grid: Primary
+    Duration: 3.1245 ms
+    Priority: 0
+    Edges: None
+    Voxels: 97
+    Memory Consumption: 80 bytes
+
+[Info]  Topological Voxeler Report: Medulla_oblongata
+    Target Grid: Primary
+    Duration: 2.9105 ms
+    Priority: 0
+    Edges: None
+    Voxels: 359
+    Memory Consumption: 168 bytes
+
+[Info]  Topological Voxeler Report: Hippocampus
+    Target Grid: Primary
+    Duration: 3.1725 ms
+    Priority: 0
+    Edges: None
+    Voxels: 178
+    Memory Consumption: 120 bytes
+
+[Info]  Topological Voxeler Report: Prostate
+    Target Grid: Primary
+    Duration: 3.582 ms
+    Priority: 0
+    Edges: None
+    Voxels: None
+    Memory Consumption: 0 bytes
+
+[Info]  Topological Voxeler Report: Adrenal_gland
+    Target Grid: Primary
+    Duration: 3.8691 ms
+    Priority: 0
+    Edges: None
+    Voxels: None
+    Memory Consumption: 0 bytes
+
+[Info]  Topological Voxeler Report: Bronchi
+    Target Grid: Primary
+    Duration: 2.881 ms
+    Priority: 0
+    Edges: None
+    Voxels: 68
+    Memory Consumption: 64 bytes
+
+[Info]  Topological Voxeler Report: Testis
+    Target Grid: Primary
+    Duration: 2.9861 ms
+    Priority: 0
+    Edges: None
+    Voxels: None
+    Memory Consumption: 0 bytes
+
+[Info]  Topological Voxeler Report: Patella
+    Target Grid: Primary
+    Duration: 4.0883 ms
+    Priority: 0
+    Edges: None
+    Voxels: None
+    Memory Consumption: 0 bytes
+
+[Info]  Topological Voxeler Report: Ureter_Urethra
+    Target Grid: Primary
+    Duration: 3.7368 ms
+    Priority: 0
+    Edges: None
+    Voxels: None
+    Memory Consumption: 0 bytes
+
+[Info]  Topological Voxeler Report: component1:Substrate
+    Target Grid: Primary
+    Duration: 9.8476 ms
+    Priority: 0
+    Edges: None
+    Voxels: 8412
+    Memory Consumption: 0.001396 kB
+
+[Info]  Topological Voxeler Report: Extrude 1
+    Target Grid: Primary
+    Duration: 17.8383 ms
+    Priority: 0
+    Edges: 4319
+    Voxels: None
+    Memory Consumption: 752 bytes
+
+[Info]  Topological Voxeler Report: Bronchi_lumen
+    Target Grid: Primary
+    Duration: 1.5447 ms
+    Priority: 0
+    Edges: None
+    Voxels: 40
+    Memory Consumption: 40 bytes
+
+[Info]  Topological Voxeler Report: component1:Battery
+    Target Grid: Primary
+    Duration: 11.3133 ms
+    Priority: 0
+    Edges: 12000
+    Voxels: 3268
+    Memory Consumption: 0.001846 kB
+
+[Info]  Topological Voxeler Report: Cornea
+    Target Grid: Primary
+    Duration: 1.454 ms
+    Priority: 0
+    Edges: None
+    Voxels: 33
+    Memory Consumption: 56 bytes
+
+[Info]  Topological Voxeler Report: Hypothalamus
+    Target Grid: Primary
+    Duration: 1.0686 ms
+    Priority: 0
+    Edges: None
+    Voxels: 45
+    Memory Consumption: 24 bytes
+
+[Info]  Topological Voxeler Report: Epididymis
+    Target Grid: Primary
+    Duration: 1.5807 ms
+    Priority: 0
+    Edges: None
+    Voxels: None
+    Memory Consumption: 0 bytes
+
+[Info]  Topological Voxeler Report: Eye_lens
+    Target Grid: Primary
+    Duration: 0.7881 ms
+    Priority: 0
+    Edges: None
+    Voxels: 28
+    Memory Consumption: 40 bytes
+
+[Info]  Topological Voxeler Report: Hypophysis
+    Target Grid: Primary
+    Duration: 0.496 ms
+    Priority: 0
+    Edges: None
+    Voxels: 18
+    Memory Consumption: 8 bytes
+
+[Info]  Topological Voxeler Report: Pinealbody
+    Target Grid: Primary
+    Duration: 0.473 ms
+    Priority: 0
+    Edges: None
+    Voxels: 16
+    Memory Consumption: 8 bytes
+
+[Info]  Topological Voxeler Report: component1:ShortingPin
+    Target Grid: Primary
+    Duration: 0.9927 ms
+    Priority: 0
+    Edges: 59
+    Voxels: 8
+    Memory Consumption: 32 bytes
+
+[Info]  Topological Voxeler Report: Larynx
+    Target Grid: Primary
+    Duration: 0.2878 ms
+    Priority: 0
+    Edges: None
+    Voxels: 7
+    Memory Consumption: 8 bytes
+
+[Info]  Topological Voxeler Report: commissura_anterior
+    Target Grid: Primary
+    Duration: 0.1882 ms
+    Priority: 0
+    Edges: None
+    Voxels: 3
+    Memory Consumption: 8 bytes
+
+[Info]  Topological Voxeler Report: commissura_posterior
+    Target Grid: Primary
+    Duration: 0.0682 ms
+    Priority: 0
+    Edges: None
+    Voxels: 1
+    Memory Consumption: 8 bytes
+
+[Info]  Topological Voxeler Report: component1:Patch
+    Target Grid: Primary
+    Duration: 5.3291 ms
+    Priority: 0
+    Edges: 1298
+    Voxels: None
+    Memory Consumption: 176 bytes
+
+[Info]  Topological Voxeler Report: Complete Voxel Scene
+    Voxel Scene Memory Consumption: 0.003806 GB
+    Wall Clock Time: 7.09322 s
+
+[Info]  Visualization Data Memory Consumption: 0.023711 GB
+     Elapsed Time: 0.446288 s
+[Info]  Time step: 8.16961e-13 s
+<span class=ansi-white-fg>--- Logging shutdown ---</span> 
+<span class=ansi-white-fg>--- Logging shutdown ---</span> 
+------------------------------------------------------------
+
+Command completed with return code: 0
+</code>
+</pre> </div> </div> <div class=output_area> <div class="output_text output_subarea output_execute_result"> <pre>
+<code>0</code>
+</pre> </div> </div> </div> </div> </div> <div class="cell border-box-sizing text_cell rendered"> <div class=inner_cell> <div class="text_cell_render border-box-sizing rendered_html"> <p>The <abbr title="Graphical User Interface">GUI</abbr> opens and shows progress through three phases:</p> <p><strong>Setup phase</strong> (1-2 minutes): - Create project directory - Import phantom model (thelonious) - Import antenna <abbr title="Computer-Aided Design">CAD</abbr> model - Place antenna at nasion landmark, and lower this by 100 mm. - Apply material properties - Configure simulation boundaries - Set up gridding</p> <p><strong>Run phase</strong> (anwyhere between 1 minute and 5 hours depending on simulation settings): - Writes the input file - Launch <abbr title="Sim4Life FDTD solver executable">iSolve</abbr> and executes the <abbr title="Finite-Difference Time-Domain">FDTD</abbr> simulation - Monitors convergence</p> <p><strong>Extract phase</strong> (1-2 minutes): - Open completed project - Extract <abbr title="Specific Absorption Rate">SAR</abbr> data from sensors - Generate statistics reports - Save deliverables</p> <p>Watch the <abbr title="Graphical User Interface">GUI</abbr> status log to see each subtask complete with its timing.</p> <hr> <h2 id=understanding-the-results>Understanding the results<a class=headerlink href=#understanding-the-results title="Permanent link">&para;</a></h2> <p>After the simulation completes, find the results in:</p> <div class="language-text highlight"><pre><span></span><code><span id=__span-12-1><a id=__codelineno-12-1 name=__codelineno-12-1 href=#__codelineno-12-1></a>results/near_field/thelonious/700MHz/
+</span><span id=__span-12-2><a id=__codelineno-12-2 name=__codelineno-12-2 href=#__codelineno-12-2></a>  front_of_eyes_center_vertical/
+</span></code></pre></div> <h3 id=output-files>Output files<a class=headerlink href=#output-files title="Permanent link">&para;</a></h3> <p><strong>Simulation project</strong>: - <code>simulation.smash</code>: Complete Sim4Life project with fields and <abbr title="Specific Absorption Rate">SAR</abbr></p> <p><strong><abbr title="Specific Absorption Rate">SAR</abbr> data</strong>: - <code>sar_results.json</code>: Raw <abbr title="Specific Absorption Rate">SAR</abbr> values for all tissues - <code>sar_stats_all_tissues.pkl</code>: Statistical summaries (pickle format) - <code>sar_stats_all_tissues.html</code>: Human-readable <abbr title="HyperText Markup Language">HTML</abbr> report</p> <p><strong>Metadata</strong>: - <code>config.json</code>: Config snapshot and caching flags</p> <p>Analysis and visualization sections will be added in a future tutorial.</p> <hr> <h2 id=checking-the-sim4life-project>Checking the Sim4Life project<a class=headerlink href=#checking-the-sim4life-project title="Permanent link">&para;</a></h2> <p>Open the project to inspect the simulation setup:</p> </div> </div> </div> <div class="cell border-box-sizing code_cell rendered"> <div class=input> <div class="language-python highlight"><pre><span></span><code><span id=__span-13-1><a id=__codelineno-13-1 name=__codelineno-13-1 href=#__codelineno-13-1></a><span class=n>run_bash</span><span class=p>(</span><span class=s1>&#39;ls results/near_field/thelonious/700MHz/front_of_eyes_center_vertical/&#39;</span><span class=p>)</span>
+</span></code></pre></div> </div> <div class=output_wrapper> <div class=output> <div class=output_area> <div class="output_subarea output_stream output_stdout output_text"> <pre>
+<code>Running: source .bashrc &amp;&amp; ls results/near_field/thelonious/700MHz/front_of_eyes_center_vertical/
+
+------------------------------------------------------------
+config.json
+near_field_thelonious_700MHz_front_of_eyes_center_vertical.smash
+near_field_thelonious_700MHz_front_of_eyes_center_vertical.smash_Results
+point_sensor_data.png
+progress.log
+sar_results.json
+sar_stats_all_tissues.html
+sar_stats_all_tissues.pkl
+verbose.log
+------------------------------------------------------------
+
+Command completed with return code: 0
+</code>
+</pre> </div> </div> <div class=output_area> <div class="output_text output_subarea output_execute_result"> <pre>
+<code>0</code>
+</pre> </div> </div> </div> </div> </div> <div class="cell border-box-sizing text_cell rendered"> <div class=inner_cell> <div class="text_cell_render border-box-sizing rendered_html"> <p>You can open this <code>.smash</code> file in Sim4Life to see: - Phantom geometry with tissue materials - Antenna positioned in front of eyes - Simulation bounding box (head region) - <abbr title="Finite-Difference Time-Domain">FDTD</abbr> grid resolution - Point sensors for <abbr title="Specific Absorption Rate">SAR</abbr> measurement</p> <hr> <h2 id=whats-next>What's next<a class=headerlink href=#whats-next title="Permanent link">&para;</a></h2> <p>You've completed your first near-field simulation. Next steps:</p> <p><strong>Tutorial 4</strong>: Gridding and phantom rotation - Manual vs automatic gridding - Subgridding for antenna components - By_cheek placement with phantom rotation - Scene alignment optimization</p> <p><strong>Tutorial 5</strong>: Parallel and cloud execution - Running multiple simulations simultaneously - Config splitting strategies - Using <abbr title="Open Simulation Platform for Advanced Research and Computing">oSPARC</abbr> for cloud compute</p> <hr> <h2 id=summary>Summary<a class=headerlink href=#summary title="Permanent link">&para;</a></h2> <p>You learned: - Near-field simulations model device exposure with antennas near the body - Antenna configuration includes materials, power, and gridding settings - Placement scenarios use anatomical landmarks for positioning - The <abbr title="Graphical User Interface">GUI</abbr> shows real-time progress, logs, timings, and system utilization - GOLIAT uses two log streams (progress and verbose) with different purposes - Simulations progress through setup, run, and extract phases - Results include <abbr title="Specific Absorption Rate">SAR</abbr> data, statistics, and complete Sim4Life projects</p> <p>In Tutorial 4, we'll explore computational gridding strategies and more complex placements requiring phantom rotation.</p> </div> </div> </div> </article> </div> <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var tab,labels=set.querySelector(".tabbed-labels");for(tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script> <script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script> </div> <button type=button class="md-top md-icon" data-md-component=top hidden> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg> Back to top </button> </main> <footer class=md-footer> <nav class="md-footer__inner md-grid" aria-label=Footer> <a href=../02_configuration_and_caching/ class="md-footer__link md-footer__link--prev" aria-label="Previous: 2. Configuration and Caching"> <div class="md-footer__button md-icon"> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg> </div> <div class=md-footer__title> <span class=md-footer__direction> Previous </span> <div class=md-ellipsis> 2. Configuration and Caching </div> </div> </a> <a href=../04_gridding_and_phantom_rotation/ class="md-footer__link md-footer__link--next" aria-label="Next: 4. Gridding and Phantom Rotation"> <div class=md-footer__title> <span class=md-footer__direction> Next </span> <div class=md-ellipsis> 4. Gridding and Phantom Rotation </div> </div> <div class="md-footer__button md-icon"> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg> </div> </a> </nav> <div class="md-footer-meta md-typeset"> <div class="md-footer-meta__inner md-grid"> <div class=md-copyright> </div> <div class=md-social> <a href=https://github.com/rwydaegh/goliat target=_blank rel=noopener title=github.com class=md-social__link> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 496 512"><!-- Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg> </a> </div> </div> </div> </footer> </div> <div class=md-dialog data-md-component=dialog> <div class="md-dialog__inner md-typeset"></div> </div> <div class=md-progress data-md-component=progress role=progressbar></div> <script id=__config type=application/json>{"base": "../..", "features": ["announce.dismiss", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tabs.link", "content.tooltips", "header.autohide", "navigation.expand", "navigation.footer", "navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.prune", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow", "toc.integrate"], "search": "../../assets/javascripts/workers/search.f886a092.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script> <script src=../../assets/javascripts/bundle.d7c377c4.min.js></script> <script src=../../javascripts/ansi-to-html.js></script> </body> </html>

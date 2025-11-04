@@ -1,0 +1,1548 @@
+<!DOCTYPE html>
+<html class="no-js" lang="en"> <head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><meta content="Automated Python framework for near-field and far-field dosimetric assessments using Sim4Life" name="description"/><meta content="rwydaegh" name="author"/><link href="https://rwydaegh.github.io/goliat/tutorials/02_configuration_and_caching/" rel="canonical"/><link href="../01_far_field_basics/" rel="prev"/><link href="../03_near_field_basics/" rel="next"/><link href="../../img/favicon.svg" rel="icon"/><meta content="mkdocs-1.5.3, mkdocs-material-9.5.3" name="generator"/><title>2. Configuration and Caching - GOLIAT Documentation</title><link href="../../assets/stylesheets/main.50c56a3b.min.css" rel="stylesheet"/><link href="../../assets/stylesheets/palette.06af60db.min.css" rel="stylesheet"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback" rel="stylesheet"/><style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style><link href="../../assets/_mkdocstrings.css" rel="stylesheet"/><link href="../../stylesheets/extra.css" rel="stylesheet"/><link href="../../css/ansi-colours.css" rel="stylesheet"/><link href="../../css/jupyter-cells.css" rel="stylesheet"/><link href="../../css/pandas-dataframe.css" rel="stylesheet"/><script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script></head> <body data-md-color-accent="indigo" data-md-color-primary="indigo" data-md-color-scheme="default" dir="ltr"> <input autocomplete="off" class="md-toggle" data-md-toggle="drawer" id="__drawer" type="checkbox"/> <input autocomplete="off" class="md-toggle" data-md-toggle="search" id="__search" type="checkbox"/> <label class="md-overlay" for="__drawer"></label> <div data-md-component="skip"> <a class="md-skip" href="#tutorial-2-configuration-and-caching"> Skip to content </a> </div> <div data-md-component="announce"> </div> <div data-md-color-scheme="default" data-md-component="outdated" hidden=""> </div> <header class="md-header md-header--shadow md-header--lifted" data-md-component="header"> <nav aria-label="Header" class="md-header__inner md-grid"> <a aria-label="GOLIAT Documentation" class="md-header__button md-logo" data-md-component="logo" href="../.." title="GOLIAT Documentation"> <img alt="logo" src="../../img/goliat.svg"/> </a> <label class="md-header__button md-icon" for="__drawer"> <svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"></path></svg> </label> <div class="md-header__title" data-md-component="header-title"> <div class="md-header__ellipsis"> <div class="md-header__topic"> <span class="md-ellipsis"> GOLIAT Documentation </span> </div> <div class="md-header__topic" data-md-component="header-topic"> <span class="md-ellipsis"> 2. Configuration and Caching </span> </div> </div> </div> <form class="md-header__option" data-md-component="palette"> <input aria-label="Switch to dark mode" class="md-option" data-md-color-accent="indigo" data-md-color-media="" data-md-color-primary="indigo" data-md-color-scheme="default" id="__palette_0" name="__palette" type="radio"/> <label class="md-header__button md-icon" for="__palette_1" hidden="" title="Switch to dark mode"> <svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"></path></svg> </label> <input aria-label="Switch to light mode" class="md-option" data-md-color-accent="indigo" data-md-color-media="" data-md-color-primary="indigo" data-md-color-scheme="slate" id="__palette_1" name="__palette" type="radio"/> <label class="md-header__button md-icon" for="__palette_0" hidden="" title="Switch to light mode"> <svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12c0-2.42-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"></path></svg> </label> </form> <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script> <label class="md-header__button md-icon" for="__search"> <svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"></path></svg> </label> <div class="md-search" data-md-component="search" role="dialog"> <label class="md-search__overlay" for="__search"></label> <div class="md-search__inner" role="search"> <form class="md-search__form" name="search"> <input aria-label="Search" autocapitalize="off" autocomplete="off" autocorrect="off" class="md-search__input" data-md-component="search-query" name="query" placeholder="Search" required="" spellcheck="false" type="text"/> <label class="md-search__icon md-icon" for="__search"> <svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"></path></svg> <svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"></path></svg> </label> <nav aria-label="Search" class="md-search__options"> <a aria-label="Share" class="md-search__icon md-icon" data-clipboard="" data-clipboard-text="" data-md-component="search-share" href="javascript:void(0)" tabindex="-1" title="Share"> <svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"></path></svg> </a> <button aria-label="Clear" class="md-search__icon md-icon" tabindex="-1" title="Clear" type="reset"> <svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"></path></svg> </button> </nav> <div class="md-search__suggest" data-md-component="search-suggest"></div> </form> <div class="md-search__output"> <div class="md-search__scrollwrap" data-md-scrollfix=""> <div class="md-search-result" data-md-component="search-result"> <div class="md-search-result__meta"> Initializing search </div> <ol class="md-search-result__list" role="presentation"></ol> </div> </div> </div> </div> </div> <div class="md-header__source"> <a class="md-source" data-md-component="source" href="https://github.com/rwydaegh/goliat" title="Go to repository"> <div class="md-source__icon md-icon"> <svg viewbox="0 0 496 512" xmlns="http://www.w3.org/2000/svg"><!-- Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"></path></svg> </div> <div class="md-source__repository"> rwydaegh/goliat </div> </a> </div> </nav> <nav aria-label="Tabs" class="md-tabs" data-md-component="tabs"> <div class="md-grid"> <ul class="md-tabs__list"> <li class="md-tabs__item"> <a class="md-tabs__link" href="../.."> Home </a> </li> <li class="md-tabs__item"> <a class="md-tabs__link" href="../../user_guide/quick_start/"> User Guide </a> </li> <li class="md-tabs__item md-tabs__item--active"> <a class="md-tabs__link" href="../overview/"> Tutorials </a> </li> <li class="md-tabs__item"> <a class="md-tabs__link" href="../../developer_guide/developer_guide/"> Developer Guide </a> </li> <li class="md-tabs__item"> <a class="md-tabs__link" href="../../troubleshooting/"> Troubleshooting </a> </li> <li class="md-tabs__item"> <a class="md-tabs__link" href="../../reference/full_features_list/"> Reference </a> </li> <li class="md-tabs__item"> <a class="md-tabs__link" href="../../project_info/"> Project Info </a> </li> </ul> </div> </nav> </header> <div class="md-container" data-md-component="container"> <main class="md-main" data-md-component="main"> <div class="md-main__inner md-grid"> <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation"> <div class="md-sidebar__scrollwrap"> <div class="md-sidebar__inner"> <nav aria-label="Navigation" class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" data-md-level="0"> <label class="md-nav__title" for="__drawer"> <a aria-label="GOLIAT Documentation" class="md-nav__button md-logo" data-md-component="logo" href="../.." title="GOLIAT Documentation"> <img alt="logo" src="../../img/goliat.svg"/> </a> GOLIAT Documentation </label> <div class="md-nav__source"> <a class="md-source" data-md-component="source" href="https://github.com/rwydaegh/goliat" title="Go to repository"> <div class="md-source__icon md-icon"> <svg viewbox="0 0 496 512" xmlns="http://www.w3.org/2000/svg"><!-- Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"></path></svg> </div> <div class="md-source__repository"> rwydaegh/goliat </div> </a> </div> <ul class="md-nav__list" data-md-scrollfix=""> <li class="md-nav__item"> <a class="md-nav__link" href="../.."> <span class="md-ellipsis"> Home </span> </a> </li> <li class="md-nav__item md-nav__item--section md-nav__item--nested"> <input class="md-nav__toggle md-toggle md-toggle--indeterminate" id="__nav_2" type="checkbox"/> <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex=""> <span class="md-ellipsis"> User Guide </span> <span class="md-nav__icon md-icon"></span> </label> <nav aria-expanded="false" aria-labelledby="__nav_2_label" class="md-nav" data-md-level="1"> <label class="md-nav__title" for="__nav_2"> <span class="md-nav__icon md-icon"></span> User Guide </label> <ul class="md-nav__list" data-md-scrollfix=""> <li class="md-nav__item"> <a class="md-nav__link" href="../../user_guide/quick_start/"> <span class="md-ellipsis"> Quick Start </span> </a> </li> <li class="md-nav__item"> <a class="md-nav__link" href="../../user_guide/user_guide/"> <span class="md-ellipsis"> User Guide </span> </a> </li> </ul> </nav> </li> <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested"> <input checked="" class="md-nav__toggle md-toggle" id="__nav_3" type="checkbox"/> <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex=""> <span class="md-ellipsis"> Tutorials </span> <span class="md-nav__icon md-icon"></span> </label> <nav aria-expanded="true" aria-labelledby="__nav_3_label" class="md-nav" data-md-level="1"> <label class="md-nav__title" for="__nav_3"> <span class="md-nav__icon md-icon"></span> Tutorials </label> <ul class="md-nav__list" data-md-scrollfix=""> <li class="md-nav__item"> <a class="md-nav__link" href="../overview/"> <span class="md-ellipsis"> Overview </span> </a> </li> <li class="md-nav__item"> <a class="md-nav__link" href="../01_far_field_basics/"> <span class="md-ellipsis"> 1. Far-Field Basics </span> </a> </li> <li class="md-nav__item md-nav__item--active"> <input class="md-nav__toggle md-toggle" id="__toc" type="checkbox"/> <label class="md-nav__link md-nav__link--active" for="__toc"> <span class="md-ellipsis"> 2. Configuration and Caching </span> <span class="md-nav__icon md-icon"></span> </label> <a class="md-nav__link md-nav__link--active" href="./"> <span class="md-ellipsis"> 2. Configuration and Caching </span> </a> <nav aria-label="Table of contents" class="md-nav md-nav--secondary"> <label class="md-nav__title" for="__toc"> <span class="md-nav__icon md-icon"></span> Table of contents </label> <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix=""> <li class="md-nav__item"> <a class="md-nav__link" href="#what-youll-learn"> <span class="md-ellipsis"> What you'll learn </span> </a> </li> <li class="md-nav__item"> <a class="md-nav__link" href="#prerequisites"> <span class="md-ellipsis"> Prerequisites </span> </a> </li> <li class="md-nav__item"> <a class="md-nav__link" href="#bash-setup"> <span class="md-ellipsis"> Bash setup </span> </a> </li> <li class="md-nav__item"> <a class="md-nav__link" href="#config-inheritance"> <span class="md-ellipsis"> Config inheritance </span> </a> <nav aria-label="Config inheritance" class="md-nav"> <ul class="md-nav__list"> <li class="md-nav__item"> <a class="md-nav__link" href="#the-base-config"> <span class="md-ellipsis"> The base config </span> </a> </li> <li class="md-nav__item"> <a class="md-nav__link" href="#study-configs"> <span class="md-ellipsis"> Study configs </span> </a> </li> <li class="md-nav__item"> <a class="md-nav__link" href="#creating-custom-configs"> <span class="md-ellipsis"> Creating custom configs </span> </a> </li> </ul> </nav> </li> <li class="md-nav__item"> <a class="md-nav__link" href="#config-validation"> <span class="md-ellipsis"> Config validation </span> </a> </li> <li class="md-nav__item"> <a class="md-nav__link" href="#the-caching-system"> <span class="md-ellipsis"> The caching system </span> </a> <nav aria-label="The caching system" class="md-nav"> <ul class="md-nav__list"> <li class="md-nav__item"> <a class="md-nav__link" href="#how-it-works"> <span class="md-ellipsis"> How it works </span> </a> </li> <li class="md-nav__item"> <a class="md-nav__link" href="#seeing-it-in-action"> <span class="md-ellipsis"> Seeing it in action </span> </a> </li> <li class="md-nav__item"> <a class="md-nav__link" href="#when-cache-is-invalidated"> <span class="md-ellipsis"> When cache is invalidated </span> </a> </li> <li class="md-nav__item"> <a class="md-nav__link" href="#forcing-a-rerun"> <span class="md-ellipsis"> Forcing a rerun </span> </a> </li> </ul> </nav> </li> <li class="md-nav__item"> <a class="md-nav__link" href="#what-you-learned"> <span class="md-ellipsis"> What you learned </span> </a> <nav aria-label="What you learned" class="md-nav"> <ul class="md-nav__list"> <li class="md-nav__item"> <a class="md-nav__link" href="#common-config-patterns"> <span class="md-ellipsis"> Common config patterns </span> </a> </li> </ul> </nav> </li> <li class="md-nav__item"> <a class="md-nav__link" href="#try-this"> <span class="md-ellipsis"> Try this </span> </a> </li> <li class="md-nav__item"> <a class="md-nav__link" href="#next-steps"> <span class="md-ellipsis"> Next steps </span> </a> </li> </ul> </nav> </li> <li class="md-nav__item"> <a class="md-nav__link" href="../03_near_field_basics/"> <span class="md-ellipsis"> 3. Near-Field Basics </span> </a> </li> <li class="md-nav__item"> <a class="md-nav__link" href="../04_gridding_and_phantom_rotation/"> <span class="md-ellipsis"> 4. Gridding and Phantom Rotation </span> </a> </li> <li class="md-nav__item"> <a class="md-nav__link" href="../05_parallel_and_cloud_execution/"> <span class="md-ellipsis"> 5. Parallel and Cloud Execution </span> </a> </li> </ul> </nav> </li> <li class="md-nav__item md-nav__item--section md-nav__item--nested"> <input class="md-nav__toggle md-toggle md-toggle--indeterminate" id="__nav_4" type="checkbox"/> <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex=""> <span class="md-ellipsis"> Developer Guide </span> <span class="md-nav__icon md-icon"></span> </label> <nav aria-expanded="false" aria-labelledby="__nav_4_label" class="md-nav" data-md-level="1"> <label class="md-nav__title" for="__nav_4"> <span class="md-nav__icon md-icon"></span> Developer Guide </label> <ul class="md-nav__list" data-md-scrollfix=""> <li class="md-nav__item"> <a class="md-nav__link" href="../../developer_guide/developer_guide/"> <span class="md-ellipsis"> Overview </span> </a> </li> <li class="md-nav__item"> <a class="md-nav__link" href="../../developer_guide/technical_guide/"> <span class="md-ellipsis"> Technical Guide </span> </a> </li> <li class="md-nav__item"> <a class="md-nav__link" href="../../developer_guide/advanced_features/"> <span class="md-ellipsis"> Advanced Features </span> </a> </li> <li class="md-nav__item"> <a class="md-nav__link" href="../../developer_guide/configuration/"> <span class="md-ellipsis"> Configuration </span> </a> </li> <li class="md-nav__item"> <a class="md-nav__link" href="../../developer_guide/cloud_setup/"> <span class="md-ellipsis"> Cloud Setup </span> </a> </li> <li class="md-nav__item"> <a class="md-nav__link" href="../../developer_guide/coloring_rules/"> <span class="md-ellipsis"> Coloring Rules </span> </a> </li> <li class="md-nav__item"> <a class="md-nav__link" href="../../developer_guide/uml/"> <span class="md-ellipsis"> UML </span> </a> </li> </ul> </nav> </li> <li class="md-nav__item"> <a class="md-nav__link" href="../../troubleshooting/"> <span class="md-ellipsis"> Troubleshooting </span> </a> </li> <li class="md-nav__item md-nav__item--section md-nav__item--nested"> <input class="md-nav__toggle md-toggle md-toggle--indeterminate" id="__nav_6" type="checkbox"/> <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex=""> <span class="md-ellipsis"> Reference </span> <span class="md-nav__icon md-icon"></span> </label> <nav aria-expanded="false" aria-labelledby="__nav_6_label" class="md-nav" data-md-level="1"> <label class="md-nav__title" for="__nav_6"> <span class="md-nav__icon md-icon"></span> Reference </label> <ul class="md-nav__list" data-md-scrollfix=""> <li class="md-nav__item"> <a class="md-nav__link" href="../../reference/full_features_list/"> <span class="md-ellipsis"> Full List of Features </span> </a> </li> <li class="md-nav__item"> <a class="md-nav__link" href="../../reference/api_reference/"> <span class="md-ellipsis"> API Reference </span> </a> </li> </ul> </nav> </li> <li class="md-nav__item"> <a class="md-nav__link" href="../../project_info/"> <span class="md-ellipsis"> Project Info </span> </a> </li> </ul> </nav> </div> </div> </div> <div class="md-content" data-md-component="content"> <article class="md-content__inner md-typeset"> <a class="md-content__button md-icon" href="https://github.com/rwydaegh/goliat/edit/master/docs/tutorials/02_configuration_and_caching.ipynb" title="Edit this page"> <svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"></path></svg> </a> <a class="md-content__button md-icon" href="https://github.com/rwydaegh/goliat/raw/master/docs/tutorials/02_configuration_and_caching.ipynb" title="View source of this page"> <svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0 8a5 5 0 0 1-5-5 5 5 0 0 1 5-5 5 5 0 0 1 5 5 5 5 0 0 1-5 5m0-12.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5Z"></path></svg> </a> <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script> <script>
+(function() {
+  function addWidgetsRenderer() {
+    var requireJsScript = document.createElement('script');
+    requireJsScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js';
+
+    var mimeElement = document.querySelector('script[type="application/vnd.jupyter.widget-view+json"]');
+    var jupyterWidgetsScript = document.createElement('script');
+    var widgetRendererSrc = 'https://unpkg.com/@jupyter-widgets/html-manager@*/dist/embed-amd.js';
+    var widgetState;
+
+    // Fallback for older version:
+    try {
+      widgetState = mimeElement && JSON.parse(mimeElement.innerHTML);
+
+      if (widgetState && (widgetState.version_major < 2 || !widgetState.version_major)) {
+        widgetRendererSrc = 'jupyter-js-widgets@*/dist/embed.js';
+      }
+    } catch(e) {}
+
+    jupyterWidgetsScript.src = widgetRendererSrc;
+
+    document.body.appendChild(requireJsScript);
+    document.body.appendChild(jupyterWidgetsScript);
+  }
+
+  document.addEventListener('DOMContentLoaded', addWidgetsRenderer);
+}());
+</script> <div class="cell border-box-sizing text_cell rendered"> <div class="inner_cell"> <div class="text_cell_render border-box-sizing rendered_html"> <h1 id="tutorial-2-configuration-and-caching">Tutorial 2: Configuration and caching<a class="headerlink" href="#tutorial-2-configuration-and-caching" title="Permanent link">¶</a></h1> <p>Learn how configs work and how GOLIAT avoids redundant simulations.</p> <h2 id="what-youll-learn">What you'll learn<a class="headerlink" href="#what-youll-learn" title="Permanent link">¶</a></h2> <ul> <li>How config files extend each other (inheritance)</li> <li>Overriding specific parameters</li> <li>Validating configs before running</li> <li>How GOLIAT knows when to skip completed simulations</li> <li>Using the <code>--no-cache</code> flag</li> </ul> <p><strong>Related documentation</strong>: <a href="../../developer_guide/configuration/">Configuration guide</a></p> <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">¶</a></h2> <ul> <li>Completed tutorial 1 (far-field basics)</li> <li>Basic understanding of <abbr title="JavaScript Object Notation">JSON</abbr> files</li> </ul> <h2 id="bash-setup">Bash setup<a class="headerlink" href="#bash-setup" title="Permanent link">¶</a></h2> </div> </div> </div> <div class="cell border-box-sizing code_cell rendered"> <div class="input"> <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a href="#__codelineno-0-1" id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span><span class="p">;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">importlib.util</span>
+</span><span id="__span-0-2"><a href="#__codelineno-0-2" id="__codelineno-0-2" name="__codelineno-0-2"></a><span class="n">p</span> <span class="o">=</span> <span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">()</span>
+</span><span id="__span-0-3"><a href="#__codelineno-0-3" id="__codelineno-0-3" name="__codelineno-0-3"></a><span class="k">while</span> <span class="ow">not</span> <span class="p">(</span><span class="n">p</span> <span class="o">/</span> <span class="s1">'scripts'</span> <span class="o">/</span> <span class="s1">'notebook_helpers.py'</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span> <span class="n">p</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">parent</span>
+</span><span id="__span-0-4"><a href="#__codelineno-0-4" id="__codelineno-0-4" name="__codelineno-0-4"></a><span class="n">spec</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">spec_from_file_location</span><span class="p">(</span><span class="s2">"_"</span><span class="p">,</span> <span class="n">p</span> <span class="o">/</span> <span class="s1">'scripts'</span> <span class="o">/</span> <span class="s1">'notebook_helpers.py'</span><span class="p">)</span>
+</span><span id="__span-0-5"><a href="#__codelineno-0-5" id="__codelineno-0-5" name="__codelineno-0-5"></a><span class="n">m</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">module_from_spec</span><span class="p">(</span><span class="n">spec</span><span class="p">);</span> <span class="n">spec</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">exec_module</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+</span><span id="__span-0-6"><a href="#__codelineno-0-6" id="__codelineno-0-6" name="__codelineno-0-6"></a><span class="n">run_bash</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">get_run_bash</span><span class="p">()</span>
+</span><span id="__span-0-7"><a href="#__codelineno-0-7" id="__codelineno-0-7" name="__codelineno-0-7"></a>
+</span><span id="__span-0-8"><a href="#__codelineno-0-8" id="__codelineno-0-8" name="__codelineno-0-8"></a><span class="kn">import</span><span class="w"> </span><span class="nn">IPython</span>
+</span><span id="__span-0-9"><a href="#__codelineno-0-9" id="__codelineno-0-9" name="__codelineno-0-9"></a><span class="n">IPython</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">display</span><span class="o">.</span><span class="n">max_output_size</span> <span class="o">=</span> <span class="kc">None</span>
+</span></code></pre></div> </div> </div> <div class="cell border-box-sizing text_cell rendered"> <div class="inner_cell"> <div class="text_cell_render border-box-sizing rendered_html"> <p>This helper function lets you run bash commands from Python cells using <code>run_bash('command')</code>. The setup also disables output truncation so you can see all command output.</p> <p><strong>If you're using bash directly</strong> (recommended), ignore the Python code blocks and just run the commands directly. Make sure to always run <code>source .bashrc</code> first.</p> </div> </div> </div> <div class="cell border-box-sizing text_cell rendered"> <div class="inner_cell"> <div class="text_cell_render border-box-sizing rendered_html"> <hr/> <h2 id="config-inheritance">Config inheritance<a class="headerlink" href="#config-inheritance" title="Permanent link">¶</a></h2> <p>GOLIAT uses hierarchical configs. A study-specific config extends a base config, overriding only what's different.</p> <p>This avoids duplicating common settings across every study.</p> <h3 id="the-base-config">The base config<a class="headerlink" href="#the-base-config" title="Permanent link">¶</a></h3> <p>Look at <code>base_config.json</code>:</p> </div> </div> </div> <div class="cell border-box-sizing code_cell rendered"> <div class="input"> <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a href="#__codelineno-1-1" id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="n">run_bash</span><span class="p">(</span><span class="s1">'cat configs/base_config.json'</span><span class="p">)</span>
+</span></code></pre></div> </div> <div class="output_wrapper"> <div class="output"> <div class="output_area"> <div class="output_subarea output_stream output_stdout output_text"> <pre>
+<code>Running: source .bashrc &amp;&amp; cat configs/base_config.json
+
+------------------------------------------------------------
+{
+    "use_gui": true,
+    "execution_control": {
+        "do_setup": true,
+        "do_run": true,
+        "do_extract": true,
+        "only_write_input_file": false,
+        "auto_cleanup_previous_results": []
+    },
+    "simulation_parameters": {
+        "global_auto_termination": "GlobalAutoTerminationUserDefined",
+        "convergence_level_dB": -15,
+        "simulation_time_multiplier": 3.5,
+        "number_of_point_sensors": 2,
+        "point_source_order": [
+            "lower_left_bottom",
+            "top_right_up",
+            "lower_right_bottom",
+            "top_left_up",
+            "lower_left_up",
+            "top_right_bottom",
+            "lower_right_up",
+            "top_left_bottom"
+        ]
+    },
+    "gridding_parameters": {
+        "global_gridding": {
+            "grid_mode": "manual",
+            "manual_fallback_max_step_mm": 3.0
+        },
+        "padding": {
+            "padding_mode": "automatic",
+            "manual_bottom_padding_mm": [0, 0, 0],
+            "manual_top_padding_mm": [0, 0, 0]
+        }
+    },
+    "solver_settings": {
+        "kernel": "acceleware",
+        "server": "localhost",
+        "boundary_conditions": {
+            "type": "UpmlCpml",
+            "strength": "Low"
+        }
+    },
+    "verbose": false,
+    "manual_isolve": true,
+    "data_setup": {
+        "gdrive_url": "https://drive.google.com/drive/folders/1Ps0ilW6yx4Z5VoWRZKrkhP225m8lBQOV?usp=sharing&amp;confirm=t",
+        "gdrive_url_aws": "https://drive.google.com/uc?id=1etS9uyi0Ns-vOtG2q0G1hU0LLw0M_dq7",
+        "data_dir": "data"
+    }
+}
+------------------------------------------------------------
+
+Command completed with return code: 0
+</code>
+</pre> </div> </div> <div class="output_area"> <div class="output_text output_subarea output_execute_result"> <pre>
+<code>0</code>
+</pre> </div> </div> </div> </div> </div> <div class="cell border-box-sizing text_cell rendered"> <div class="inner_cell"> <div class="text_cell_render border-box-sizing rendered_html"> <p>It contains settings shared across all studies: - <code>use_gui</code>: whether to use the <abbr title="Graphical User Interface">GUI</abbr> - <code>simulation_parameters</code>: which we covered last tutorial - <code>gridding_parameters</code>: the default gridding settings. If you forgot to set your specific gridding settings, this is where it will default to. - <code>solver_settings</code>: settings for <code>iSolve</code>. We already covered the kernel, but here you can also enter the name of a remote ARES server here if you want. You can set the strength of the boundary condition too.</p> <p>These apply to every study unless overridden. It recursively merges nested dictionaries: child values override parent values for matching keys, while preserving all parent keys not specified in the child.</p> <h3 id="study-configs">Study configs<a class="headerlink" href="#study-configs" title="Permanent link">¶</a></h3> <p>Now look at <code>far_field_config.json</code>:</p> </div> </div> </div> <div class="cell border-box-sizing code_cell rendered"> <div class="input"> <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a href="#__codelineno-2-1" id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="n">run_bash</span><span class="p">(</span><span class="s1">'cat configs/far_field_config.json'</span><span class="p">)</span>
+</span></code></pre></div> </div> <div class="output_wrapper"> <div class="output"> <div class="output_area"> <div class="output_subarea output_stream output_stdout output_text"> <pre>
+<code>Running: source .bashrc &amp;&amp; cat configs/far_field_config.json
+
+------------------------------------------------------------
+{
+    "extends": "base_config.json",
+    "study_type": "far_field",
+    "execution_control": {
+        "do_setup": true,
+        "only_write_input_file": false,
+        "do_run": true,
+        "do_extract": true,
+        "batch_run": false
+    },
+    "phantoms": [
+        "duke",
+        "ella",
+        "eartha",
+        "thelonious"
+    ],
+    "frequencies_mhz": [
+        450,
+        700,
+        835,
+        1450,
+        2140,
+        2450,
+        3500,
+        5200,
+        5800
+    ],
+    "far_field_setup": {
+        "type": "environmental",
+        "environmental": {
+            "incident_directions": [
+                "x_pos",
+                "x_neg",
+                "y_pos",
+                "y_neg",
+                "z_pos",
+                "z_neg"
+            ],
+            "polarizations": [
+                "theta",
+                "phi"
+            ]
+        },
+        "auto_induced": {
+            "grid_resolution_deg": 15
+        }
+    },
+    "simulation_parameters": {
+        "bbox_padding_mm": 0,
+        "simulation_bbox_points": 8,
+        "number_of_point_sensors": 2
+    },
+    "gridding_parameters": {
+        "global_gridding": {
+            "grid_mode": "manual",
+            "manual_fallback_max_step_mm": 3.0
+        },
+        "global_gridding_per_frequency": {
+            "450": 2.5,
+            "700": 2.5,
+            "835": 2.5,
+            "1450": 2.5,
+            "2140": 1.694,
+            "2450": 1.482,
+            "3500": 1.0,
+            "5200": 1.0,
+            "5800": 1.0
+        },
+        "padding": {
+            "padding_mode": "manual",
+            "manual_bottom_padding_mm": [0, 0, 0],
+            "manual_top_padding_mm": [0, 0, 0]
+        }
+    }
+}
+------------------------------------------------------------
+
+Command completed with return code: 0
+</code>
+</pre> </div> </div> <div class="output_area"> <div class="output_text output_subarea output_execute_result"> <pre>
+<code>0</code>
+</pre> </div> </div> </div> </div> </div> <div class="cell border-box-sizing text_cell rendered"> <div class="inner_cell"> <div class="text_cell_render border-box-sizing rendered_html"> <p>It starts with:</p> <div class="language-json highlight"><pre><span></span><code><span id="__span-3-1"><a href="#__codelineno-3-1" id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="p">{</span>
+</span><span id="__span-3-2"><a href="#__codelineno-3-2" id="__codelineno-3-2" name="__codelineno-3-2"></a><span class="w">  </span><span class="nt">"extends"</span><span class="p">:</span><span class="w"> </span><span class="s2">"base_config.json"</span><span class="p">,</span>
+</span><span id="__span-3-3"><a href="#__codelineno-3-3" id="__codelineno-3-3" name="__codelineno-3-3"></a><span class="w">  </span><span class="nt">"study_type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"far_field"</span><span class="p">,</span>
+</span><span id="__span-3-4"><a href="#__codelineno-3-4" id="__codelineno-3-4" name="__codelineno-3-4"></a><span class="w">  </span><span class="err">...</span>
+</span><span id="__span-3-5"><a href="#__codelineno-3-5" id="__codelineno-3-5" name="__codelineno-3-5"></a><span class="p">}</span>
+</span></code></pre></div> <p>This inherits everything from <code>base_config.json</code>, then adds or overrides: - <code>study_type</code> (specifies this is far-field) - <code>phantoms</code> (lists which phantoms to use) - <code>frequencies_mhz</code> (which frequencies to simulate) - <code>far_field_setup</code> (far-field specific settings like directions, polarizations)</p> <p>The result is a complete config (base settings + far-field overrides).</p> <pre class="mermaid"><code>graph TD
+    base[base_config.json<br/>Shared settings]
+    nf[near_field_config.json<br/>Near-field specifics]
+    ff[far_field_config.json<br/>Far-field specifics]
+
+    base --&gt;|extends| nf
+    base --&gt;|extends| ff
+
+    style base fill:#4CAF50
+    style nf fill:#2196F3
+    style ff fill:#2196F3
+</code></pre> <h3 id="creating-custom-configs">Creating custom configs<a class="headerlink" href="#creating-custom-configs" title="Permanent link">¶</a></h3> <p>Let's create a custom far-field config that changes just a few things:</p> </div> </div> </div> <div class="cell border-box-sizing code_cell rendered"> <div class="input"> <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a href="#__codelineno-4-1" id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="n">run_bash</span><span class="p">(</span><span class="s1">'cat configs/tutorial_2_custom.json'</span><span class="p">)</span>
+</span></code></pre></div> </div> <div class="output_wrapper"> <div class="output"> <div class="output_area"> <div class="output_subarea output_stream output_stdout output_text"> <pre>
+<code>Running: source .bashrc &amp;&amp; cat configs/tutorial_2_custom.json
+
+------------------------------------------------------------
+{
+  "extends": "far_field_config.json",
+  "phantoms": ["thelonious", "eartha"],
+  "frequencies_mhz": [700, 835]
+}
+
+------------------------------------------------------------
+
+Command completed with return code: 0
+</code>
+</pre> </div> </div> <div class="output_area"> <div class="output_text output_subarea output_execute_result"> <pre>
+<code>0</code>
+</pre> </div> </div> </div> </div> </div> <div class="cell border-box-sizing text_cell rendered"> <div class="inner_cell"> <div class="text_cell_render border-box-sizing rendered_html"> <div class="language-json highlight"><pre><span></span><code><span id="__span-5-1"><a href="#__codelineno-5-1" id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="p">{</span>
+</span><span id="__span-5-2"><a href="#__codelineno-5-2" id="__codelineno-5-2" name="__codelineno-5-2"></a><span class="w">  </span><span class="nt">"extends"</span><span class="p">:</span><span class="w"> </span><span class="s2">"far_field_config.json"</span><span class="p">,</span>
+</span><span id="__span-5-3"><a href="#__codelineno-5-3" id="__codelineno-5-3" name="__codelineno-5-3"></a><span class="w">  </span><span class="nt">"phantoms"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"thelonious"</span><span class="p">,</span><span class="w"> </span><span class="s2">"eartha"</span><span class="p">],</span>
+</span><span id="__span-5-4"><a href="#__codelineno-5-4" id="__codelineno-5-4" name="__codelineno-5-4"></a><span class="w">  </span><span class="nt">"frequencies_mhz"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">700</span><span class="p">,</span><span class="w"> </span><span class="mi">835</span><span class="p">]</span>
+</span><span id="__span-5-5"><a href="#__codelineno-5-5" id="__codelineno-5-5" name="__codelineno-5-5"></a><span class="p">}</span>
+</span></code></pre></div> <p>This inherits from <code>far_field_config.json</code> (which already inherits from <code>base_config.json</code>), then overrides only the phantoms and frequencies.</p> <p>The inheritance chain: <code>base_config.json</code> → <code>far_field_config.json</code> → <code>tutorial_2_custom.json</code></p> <p>Everything else (directions, polarizations, solver settings, gridding) comes from the parent configs.</p> <hr/> <h2 id="config-validation">Config validation<a class="headerlink" href="#config-validation" title="Permanent link">¶</a></h2> <p>Before running a study, validate the config file to catch errors early.</p> </div> </div> </div> <div class="cell border-box-sizing code_cell rendered"> <div class="input"> <div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a href="#__codelineno-6-1" id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="n">run_bash</span><span class="p">(</span><span class="s1">'goliat validate tutorial_2_custom.json'</span><span class="p">)</span>
+</span></code></pre></div> </div> <div class="output_wrapper"> <div class="output"> <div class="output_area"> <div class="output_subarea output_stream output_stdout output_text"> <pre>
+<code>Running: source .bashrc &amp;&amp; goliat validate tutorial_2_custom.json
+
+------------------------------------------------------------
+Validating config: tutorial_2_custom.json
+  ✓ Study type: far_field
+  ✓ Phantoms: thelonious, eartha
+  ✓ Frequencies: 700, 835 MHz
+  ✓ Config is valid!
+------------------------------------------------------------
+
+Command completed with return code: 0
+</code>
+</pre> </div> </div> <div class="output_area"> <div class="output_text output_subarea output_execute_result"> <pre>
+<code>0</code>
+</pre> </div> </div> </div> </div> </div> <div class="cell border-box-sizing text_cell rendered"> <div class="inner_cell"> <div class="text_cell_render border-box-sizing rendered_html"> <p>Let's intentionally break the config to see validation catch it. Edit <code>tutorial_2_custom.json</code> and change <code>study_type</code> to <code>invalid_type</code>:</p> <div class="language-json highlight"><pre><span></span><code><span id="__span-7-1"><a href="#__codelineno-7-1" id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="p">{</span>
+</span><span id="__span-7-2"><a href="#__codelineno-7-2" id="__codelineno-7-2" name="__codelineno-7-2"></a><span class="w">  </span><span class="nt">"extends"</span><span class="p">:</span><span class="w"> </span><span class="s2">"far_field_config.json"</span><span class="p">,</span>
+</span><span id="__span-7-3"><a href="#__codelineno-7-3" id="__codelineno-7-3" name="__codelineno-7-3"></a><span class="w">  </span><span class="nt">"study_type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"invalid_type"</span><span class="p">,</span>
+</span><span id="__span-7-4"><a href="#__codelineno-7-4" id="__codelineno-7-4" name="__codelineno-7-4"></a><span class="w">  </span><span class="err">...</span>
+</span><span id="__span-7-5"><a href="#__codelineno-7-5" id="__codelineno-7-5" name="__codelineno-7-5"></a><span class="p">}</span>
+</span></code></pre></div> <p>Run validation again:</p> </div> </div> </div> <div class="cell border-box-sizing code_cell rendered"> <div class="input"> <div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a href="#__codelineno-8-1" id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="n">run_bash</span><span class="p">(</span><span class="s1">'goliat validate tutorial_2_custom.json'</span><span class="p">)</span>
+</span></code></pre></div> </div> <div class="output_wrapper"> <div class="output"> <div class="output_area"> <div class="output_subarea output_stream output_stdout output_text"> <pre>
+<code>Running: source .bashrc &amp;&amp; goliat validate tutorial_2_custom.json
+
+------------------------------------------------------------
+Validating config: tutorial_2_custom.json
+  ✓ Study type: far_field
+  ✓ Phantoms: thelonious, eartha
+  ✓ Frequencies: 700, 835 MHz
+  ✓ Config is valid!
+------------------------------------------------------------
+
+Command completed with return code: 0
+</code>
+</pre> </div> </div> <div class="output_area"> <div class="output_text output_subarea output_execute_result"> <pre>
+<code>0</code>
+</pre> </div> </div> </div> </div> </div> <div class="cell border-box-sizing text_cell rendered"> <div class="inner_cell"> <div class="text_cell_render border-box-sizing rendered_html"> <p>The validator checks: - Required fields are present (<code>study_type</code>, <code>phantoms</code>) - Near-field configs have <code>antenna_config</code>; far-field configs have <code>frequencies_mhz</code> - Config file loads successfully (will error if files referenced in <code>extends</code> don't exist)</p> <p><strong>Note</strong>: The validator checks that required fields exist, but doesn't validate that <code>study_type</code> values are valid. When you run a study, GOLIAT will error if <code>study_type</code> is not "near_field" or "far_field".</p> <p>For full parameter reference: <a href="../../developer_guide/configuration/">configuration guide</a></p> <hr/> <h2 id="the-caching-system">The caching system<a class="headerlink" href="#the-caching-system" title="Permanent link">¶</a></h2> <p>GOLIAT tracks completed simulations and skips them on reruns. This saves time when you run a study multiple times (common during development or parameter tuning).</p> <h3 id="how-it-works">How it works<a class="headerlink" href="#how-it-works" title="Permanent link">¶</a></h3> <p>When a simulation completes, GOLIAT writes a <code>config.json</code> metadata file in the results directory. This file contains: - <strong>Config hash</strong> (SHA256 hash of the simulation-specific config) - <strong>Config snapshot</strong> (the full simulation-specific config used for this simulation) - <strong>Setup timestamp</strong> (when setup completed) - <strong>Completion flags</strong> (which phases finished: run_done, extract_done)</p> <p><strong>Note</strong>: The <code>setup_done</code> flag is not stored in the metadata file. Instead, GOLIAT computes it during verification by checking if the <code>.smash</code> project file exists and is valid. The metadata file stores <code>setup_timestamp</code> to track when setup completed.</p> <p>On the next run, GOLIAT: 1. Generates a hash of the current config 2. Checks if a <code>config.json</code> exists in the results directory 3. Compares hashes 4. If they match and <em>deliverables</em> exist, skips the simulation</p> <p>Deliverables for the run phase are <code>_Output.h5</code> file younger than the creation of the setup, and for the extract phase, these are the <abbr title="Specific Absorption Rate">SAR</abbr> results files. If these are not present after the phase, something must have gone wrong. Next time you run this simulation, GOLIAT will try again.</p> <h3 id="seeing-it-in-action">Seeing it in action<a class="headerlink" href="#seeing-it-in-action" title="Permanent link">¶</a></h3> <p>Run a simple simulation:</p> </div> </div> </div> <div class="cell border-box-sizing code_cell rendered"> <div class="input"> <div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a href="#__codelineno-9-1" id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="n">run_bash</span><span class="p">(</span><span class="s1">'goliat study tutorial_2_caching.json --no-cache'</span><span class="p">)</span>
+</span></code></pre></div> </div> <div class="output_wrapper"> <div class="output"> <div class="output_area"> <div class="output_subarea output_stream output_stdout output_text"> <pre>
+<code>Running: source .bashrc &amp;&amp; goliat study tutorial_2_caching.json --no-cache
+
+------------------------------------------------------------
+<span class="ansi-cyan-fg">Starting Sim4Life application...</span> 
+Initializing Application [stdout]
+Initializing Application [stderr]
+[Warn]  Unable to load module 'C:\Program Files\Sim4Life_8.2.0.16876\MusaikInterface.xdll'
+Josua    : [Info]  Sync
+Josua    : [Info]  Sync
+Josua    : [Info]  Command [Query Handshake] &lt;ef6545cd-b438-4118-91aa-db8ea355525a;127.0.0.1;WIN10-NEW&gt;
+Josua    : [Info]  Property [CAresSettings]
+[Info]  Connection to local Ares successfully established.
+<span class="ansi-green-intense-fg ansi-bold">Sim4Life application started.</span> 
+<span class="ansi-magenta-intense-fg ansi-bold">--- Starting Far-Field Study: tutorial_2_caching.json ---</span> <span class="ansi-black-fg">[FarFieldStudy._run_study]</span>
+<span class="ansi-magenta-intense-fg ansi-bold">
+--- Processing Simulation 1/1: thelonious, 700MHz, x_pos, theta ---</span> <span class="ansi-black-fg">[FarFieldStudy._run_study]</span>
+<span class="ansi-magenta-intense-fg ansi-bold">--- Starting: setup ---</span> <span class="ansi-black-fg">[profile]</span>
+<span class="ansi-cyan-fg">Project path set to: C:/Users/user/repo-clean/results/far_field/thelonious/700MHz/environmental_theta_x_pos/far_field_thelonious_700MHz_environmental_theta_x_pos.smash</span> <span class="ansi-black-fg">[ProjectManager.create_or_open_project]</span>
+<span class="ansi-yellow-fg">`--no-cache` flag is active. Forcing a new setup by skipping verification.</span> <span class="ansi-black-fg">[ProjectManager.create_or_open_project]</span>
+<span class="ansi-white-fg">--- Simulation-specific progress logging started: C:/Users/user/repo-clean/results/far_field/thelonious/700MHz/environmental_theta_x_pos\progress.log ---</span> 
+<span class="ansi-white-fg">--- Simulation-specific verbose logging started: C:/Users/user/repo-clean/results/far_field/thelonious/700MHz/environmental_theta_x_pos\verbose.log ---</span> 
+<span class="ansi-yellow-fg">Deleting existing project file at C:/Users/user/repo-clean/results/far_field/thelonious/700MHz/environmental_theta_x_pos/far_field_thelonious_700MHz_environmental_theta_x_pos.smash</span> <span class="ansi-black-fg">[ProjectManager.create_new]</span>
+<span class="ansi-cyan-fg">Creating a new empty project in memory.</span> <span class="ansi-black-fg">[ProjectManager.create_new]</span>
+<span class="ansi-blue-fg">Initializing model by creating and deleting a dummy block...</span> <span class="ansi-black-fg">[ProjectManager.create_new]</span>
+<span class="ansi-blue-fg">Model initialized, ready for population.</span> <span class="ansi-black-fg">[ProjectManager.create_new]</span>
+<span class="ansi-green-fg">  - Setup simulation...</span> <span class="ansi-black-fg">[FarFieldStudy.subtask]</span>
+<span class="ansi-magenta-intense-fg ansi-bold">--- Setting up single Far-Field sim ---</span> <span class="ansi-black-fg">[FarFieldSetup.run_full_setup]</span>
+<span class="ansi-green-fg">    - Load phantom...</span> <span class="ansi-black-fg">[FarFieldSetup.run_full_setup]</span>
+<span class="ansi-magenta-intense-fg ansi-bold">--- Running Phantom Check ---</span> <span class="ansi-black-fg">[PhantomSetup._log]</span>
+<span class="ansi-cyan-fg">Found 2 total entities in the project.</span> <span class="ansi-black-fg">[PhantomSetup._log]</span>
+<span class="ansi-yellow-fg">--- Phantom Check Result: Phantom not found in project. ---</span> <span class="ansi-black-fg">[PhantomSetup._log]</span>
+<span class="ansi-cyan-fg">Phantom not found in document. Importing from 'C:\Users\user\repo-clean\data\phantoms\thelonious.sab'...</span> <span class="ansi-black-fg">[PhantomSetup._log]</span>
+[Info]  Checking out license feature 'MODEL_THELONIOUS', version 1.0, (1).
+License  : [Info]  Acquired [ MODEL_THELONIOUS 1.0 ]
+Modeler  : [Warn]  No exact match found for SkullNot changing colors.
+Modeler  : [Warn]  No exact match found for SkullNot changing colors.
+<span class="ansi-green-intense-fg ansi-bold">Phantom imported successfully.</span> <span class="ansi-black-fg">[PhantomSetup._log]</span>
+<span class="ansi-blue-fg">      - Subtask 'setup_load_phantom' done in 8.88s</span> <span class="ansi-black-fg">[FarFieldSetup.run_full_setup]</span>
+<span class="ansi-green-intense-fg ansi-bold">      - Done in 8.88s</span> <span class="ansi-black-fg">[FarFieldSetup.run_full_setup]</span>
+<span class="ansi-green-fg">    - Configure scene (bbox, plane wave)...</span> <span class="ansi-black-fg">[FarFieldSetup.run_full_setup]</span>
+<span class="ansi-green-fg">Creating simulation bounding box for far-field...</span> <span class="ansi-black-fg">[FarFieldSetup._create_or_get_simulation_bbox]</span>
+<span class="ansi-cyan-fg">  - Created far-field simulation BBox with 50mm padding.</span> <span class="ansi-black-fg">[FarFieldSetup._create_or_get_simulation_bbox]</span>
+<span class="ansi-cyan-fg">  - Creating simulation: EM_FDTD_thelonious_700MHz_x_pos_theta</span> <span class="ansi-black-fg">[FarFieldSetup._create_simulation_entity]</span>
+<span class="ansi-cyan-fg">  - Using simulation time multiplier: 3.5</span> <span class="ansi-black-fg">[FarFieldSetup._apply_simulation_time_and_termination]</span>
+<span class="ansi-cyan-fg">  - Simulation time set to 11.44 periods.</span> <span class="ansi-black-fg">[FarFieldSetup._apply_simulation_time_and_termination]</span>
+<span class="ansi-cyan-fg">  - Setting termination criteria to: GlobalAutoTerminationUserDefined</span> <span class="ansi-black-fg">[FarFieldSetup._apply_simulation_time_and_termination]</span>
+<span class="ansi-cyan-fg">    - Convergence level set to: -15 dB</span> <span class="ansi-black-fg">[FarFieldSetup._apply_simulation_time_and_termination]</span>
+<span class="ansi-blue-fg">      - Subtask 'setup_configure_scene' done in 0.33s</span> <span class="ansi-black-fg">[FarFieldSetup.run_full_setup]</span>
+<span class="ansi-green-intense-fg ansi-bold">      - Done in 0.33s</span> <span class="ansi-black-fg">[FarFieldSetup.run_full_setup]</span>
+<span class="ansi-green-fg">    - Assign materials...</span> <span class="ansi-black-fg">[FarFieldSetup.run_full_setup]</span>
+<span class="ansi-green-fg">Assigning materials...</span> <span class="ansi-black-fg">[MaterialSetup.assign_materials]</span>
+Simulation : [Warn]  Some properties for material "Air" have been set to their value according to the selected database
+[Info]  
+Mass Density has changed from 1000 to 1.2050000000000001
+Mass Density has changed from 1.2050000000000001 to 1.2
+Relative Permittivity has changed from 1 to 0
+Simulation : [Warn]  Unable to find any match for following settings properties: Magnetic Conductivity
+Simulation : [Warn]  Unable to find any match for following settings properties: Relative Permeability
+<span class="ansi-blue-fg">      - Subtask 'setup_materials' done in 5.84s</span> <span class="ansi-black-fg">[FarFieldSetup.run_full_setup]</span>
+<span class="ansi-green-intense-fg ansi-bold">      - Done in 5.84s</span> <span class="ansi-black-fg">[FarFieldSetup.run_full_setup]</span>
+<span class="ansi-green-fg">    - Configure solver (gridding, boundaries, sensors)...</span> <span class="ansi-black-fg">[FarFieldSetup.run_full_setup]</span>
+<span class="ansi-green-fg">Setting up gridding...</span> <span class="ansi-black-fg">[GriddingSetup.setup_gridding]</span>
+<span class="ansi-blue-fg">  - Looking for global grid bounding box: 'far_field_simulation_bbox'</span> <span class="ansi-black-fg">[GriddingSetup._setup_main_grid]</span>
+<span class="ansi-cyan-fg">  - Using manual gridding.</span> <span class="ansi-black-fg">[GriddingSetup._setup_main_grid]</span>
+<span class="ansi-blue-fg">  - Global and added manual grid set with global resolution: 3.0 mm.</span> <span class="ansi-black-fg">[GriddingSetup._setup_main_grid]</span>
+<span class="ansi-cyan-fg">  - Using automatic padding.</span> <span class="ansi-black-fg">[GriddingSetup._setup_main_grid]</span>
+<span class="ansi-cyan-fg">  - No antenna components provided, skipping subgridding.</span> <span class="ansi-black-fg">[GriddingSetup.setup_gridding]</span>
+<span class="ansi-green-fg">Setting up boundary conditions...</span> <span class="ansi-black-fg">[BoundarySetup.setup_boundary_conditions]</span>
+<span class="ansi-cyan-fg">  - Setting global boundary conditions to: UpmlCpml</span> <span class="ansi-black-fg">[BoundarySetup.setup_boundary_conditions]</span>
+<span class="ansi-blue-fg">    - Successfully set GlobalBoundaryType to UpmlCpml</span> <span class="ansi-black-fg">[BoundarySetup.setup_boundary_conditions]</span>
+<span class="ansi-cyan-fg">  - Setting PML strength to: Low</span> <span class="ansi-black-fg">[BoundarySetup.setup_boundary_conditions]</span>
+<span class="ansi-blue-fg">    - Successfully set PmlStrength to Low</span> <span class="ansi-black-fg">[BoundarySetup.setup_boundary_conditions]</span>
+<span class="ansi-cyan-fg">  - Added point sensor at (Vec3(-231.59, -107.681, -1019.42), Vec3(-231.59, -107.681, -1019.42), Vec3(-231.59, -107.681, -1019.42)) (lower_left_bottom)</span> <span class="ansi-black-fg">[FarFieldSetup._add_point_sensors]</span>
+<span class="ansi-cyan-fg">  - Added point sensor at (Vec3(239.048, 205.076, 260.697), Vec3(239.048, 205.076, 260.697), Vec3(239.048, 205.076, 260.697)) (top_right_up)</span> <span class="ansi-black-fg">[FarFieldSetup._add_point_sensors]</span>
+<span class="ansi-green-fg">  - Configuring solver settings...</span> <span class="ansi-black-fg">[FarFieldSetup._setup_solver_settings]</span>
+<span class="ansi-cyan-fg">    - Solver kernel set to: Acceleware (AXware)</span> <span class="ansi-black-fg">[FarFieldSetup._setup_solver_settings]</span>
+<span class="ansi-blue-fg">      - Subtask 'setup_solver' done in 0.27s</span> <span class="ansi-black-fg">[FarFieldSetup.run_full_setup]</span>
+<span class="ansi-green-intense-fg ansi-bold">      - Done in 0.27s</span> <span class="ansi-black-fg">[FarFieldSetup.run_full_setup]</span>
+<span class="ansi-green-fg">    - Voxelize simulation...</span> <span class="ansi-black-fg">[FarFieldSetup.run_full_setup]</span>
+<span class="ansi-green-fg">    - Finalizing setup...</span> <span class="ansi-black-fg">[FarFieldSetup._finalize_setup]</span>
+Simulation : [Warn]  Some properties for material "Air" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Tongue" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Adrenal Gland" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Stomach Lumen" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Commissura Anterior" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Eye (Vitreous Humor)" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Blood" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Midbrain" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Testis" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Air 1" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Blood Vessel Wall" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Epididymis" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Pineal Body" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Urinary Bladder Wall" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Bone Marrow (Red)" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Gallbladder" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Hypophysis" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Brain (White Matter)" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Spleen" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Large Intestine Lumen" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Thymus" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Trachea" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Heart Muscle" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Muscle" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Hypothalamus" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Skin" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Brain (Grey Matter)" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Bone (Cortical)" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Eye (Sclera)" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Tendon\Ligament" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Kidney (Medulla)" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Medulla Oblongata" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Esophagus" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Intervertebral Disc" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Vertebrae" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Eye (Lens)" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Commissura Posterior" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Eye (Cornea)" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Trachea Lumen" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Pharynx" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Liver" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Thalamus" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Heart Lumen" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Large Intestine" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Kidney (Cortex)" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Stomach" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Fat" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Lung" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Connective Tissue" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Pons" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Spinal Cord" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "SAT (Subcutaneous Fat)" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Cartilage" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Tooth" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Nerve" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Meniscus" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Skull" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Prostate" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Diaphragm" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Mucous Membrane" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Small Intestine" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Larynx" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Mandible" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Small Intestine Lumen" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Hippocampus" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Cerebellum" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Penis" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Ureter\Urethra" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Bronchi lumen" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Pancreas" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Esophagus Lumen" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Bronchi" have been set to their value according to the selected database
+Simulation : [Warn]  Some properties for material "Cerebrospinal Fluid" have been set to their value according to the selected database
+<span class="ansi-cyan-fg">Saving project to C:/Users/user/repo-clean/results/far_field/thelonious/700MHz/environmental_theta_x_pos/far_field_thelonious_700MHz_environmental_theta_x_pos.smash...</span> <span class="ansi-black-fg">[ProjectManager.save]</span>
+[Info]  Document produced by Sim4Life version 8.2.0.16876
+<span class="ansi-green-intense-fg ansi-bold">Project saved.</span> <span class="ansi-black-fg">[ProjectManager.save]</span>
+[Info]  Document produced by Sim4Life version 8.2.0.16876
+[Info]  There have been no model changes since the last time was saved. 
+
+[Info]  Start voxeling
+[Info]  Topological Voxeler Report: Complete Voxel Scene
+    Voxel Scene Memory Consumption: 0.002876 GB
+    Wall Clock Time: 7.68246 s
+
+[Info]  Voxeling succeeded.
+<span class="ansi-green-intense-fg ansi-bold">    - Finalizing setup complete.</span> <span class="ansi-black-fg">[FarFieldSetup._finalize_setup]</span>
+<span class="ansi-blue-fg">      - Subtask 'setup_voxelize' done in 21.92s</span> <span class="ansi-black-fg">[FarFieldSetup.run_full_setup]</span>
+<span class="ansi-green-intense-fg ansi-bold">      - Done in 21.92s</span> <span class="ansi-black-fg">[FarFieldSetup.run_full_setup]</span>
+<span class="ansi-green-fg">    - Save project...</span> <span class="ansi-black-fg">[FarFieldSetup.run_full_setup]</span>
+<span class="ansi-cyan-fg">Saving project to C:/Users/user/repo-clean/results/far_field/thelonious/700MHz/environmental_theta_x_pos/far_field_thelonious_700MHz_environmental_theta_x_pos.smash...</span> <span class="ansi-black-fg">[ProjectManager.save]</span>
+[Info]  Document produced by Sim4Life version 8.2.0.16876
+[Info]  There have been no model changes since the last time was saved. 
+
+<span class="ansi-green-intense-fg ansi-bold">Project saved.</span> <span class="ansi-black-fg">[ProjectManager.save]</span>
+<span class="ansi-blue-fg">      - Subtask 'setup_save_project' done in 4.52s</span> <span class="ansi-black-fg">[FarFieldSetup.run_full_setup]</span>
+<span class="ansi-green-intense-fg ansi-bold">      - Done in 4.52s</span> <span class="ansi-black-fg">[FarFieldSetup.run_full_setup]</span>
+<span class="ansi-green-intense-fg ansi-bold">Common settings applied.</span> <span class="ansi-black-fg">[FarFieldSetup.run_full_setup]</span>
+<span class="ansi-blue-fg">    - Subtask 'setup_simulation' done in 41.91s</span> <span class="ansi-black-fg">[FarFieldStudy.subtask]</span>
+<span class="ansi-green-intense-fg ansi-bold">    - Done in 41.91s</span> <span class="ansi-black-fg">[FarFieldStudy.subtask]</span>
+<span class="ansi-cyan-fg">  - Saved configuration metadata to config.json</span> <span class="ansi-black-fg">[ProjectManager.write_simulation_metadata]</span>
+<span class="ansi-magenta-intense-fg ansi-bold">--- Finished: setup (took 41.97s) ---</span> <span class="ansi-black-fg">[profile]</span>
+<span class="ansi-magenta-intense-fg ansi-bold">--- Starting: run ---</span> <span class="ansi-black-fg">[profile]</span>
+<span class="ansi-green-fg">  - Run simulation total...</span> <span class="ansi-black-fg">[FarFieldStudy.subtask]</span>
+<span class="ansi-blue-fg">Running simulation: EM_FDTD_thelonious_700MHz_x_pos_theta</span> <span class="ansi-black-fg">[SimulationRunner.run]</span>
+<span class="ansi-green-fg">    - Write input file...</span> <span class="ansi-black-fg">[SimulationRunner.run]</span>
+[Info]  Writing solver input file(s) for EM_FDTD_thelonious_700MHz_x_pos_theta
+[Info]  Writing Rectilinear Discretization to Input File. Elapse Time: 0.473051 s
+[Info]  Document produced by Sim4Life version 8.2.0.16876
+[Info]  There have been no model changes since the last time was saved. 
+
+<span class="ansi-blue-fg">      - Subtask 'run_write_input_file' done in 4.86s</span> <span class="ansi-black-fg">[SimulationRunner.run]</span>
+<span class="ansi-green-intense-fg ansi-bold">      - Done in 4.86s</span> <span class="ansi-black-fg">[SimulationRunner.run]</span>
+<span class="ansi-cyan-fg">Running iSolve with acceleware on 096a3ef5-4bd1-4778-b893-dbc6c809377c_Input.h5</span> <span class="ansi-black-fg">[SimulationRunner._run_isolve_manual]</span>
+<span class="ansi-green-fg">    - Execute iSolve...</span> <span class="ansi-black-fg">[SimulationRunner._run_isolve_manual]</span>
+
+<span class="ansi-white-fg">Reading command line</span> 
+<span class="ansi-white-fg">iSolve X, Version 8.2.0 (16876), 64Bit Windows</span> 
+
+<span class="ansi-white-fg">Running MPI version 2.0 on 1 process.</span> 
+
+
+<span class="ansi-white-fg">Simulation 'EM_FDTD_thelonious_700MHz_x_pos_theta' </span> 
+
+<span class="ansi-white-fg">Installed system RAM visible to this process:  16.0 GB</span> 
+
+<span class="ansi-white-fg">Solver type: EmFdtd, SinglePrecision, Acceleware</span> 
+<span class="ansi-white-fg">Input file name: C:/Users/user/repo-clean/results/far_field/thelonious/700MHz/environmental_theta_x_pos/far_field_thelonious_700MHz_environmental_theta_x_pos.smash_Results\096a3ef5-4bd1-4778-b893-dbc6c809377c_Input.h5</span> 
+<span class="ansi-white-fg">Input file generated by: Sim4Life, Version 8.2.0.16876</span> 
+<span class="ansi-white-fg">Output file name: C:/Users/user/repo-clean/results/far_field/thelonious/700MHz/environmental_theta_x_pos/far_field_thelonious_700MHz_environmental_theta_x_pos.smash_Results\096a3ef5-4bd1-4778-b893-dbc6c809377c_Output.h5</span> 
+
+<span class="ansi-white-fg">Using commercial license features.</span> 
+<span class="ansi-white-fg">Checking out license feature 'FDTD_SOLVER', version 8.2, (1).</span> 
+
+<span class="ansi-white-fg">Running the EM-FDTD solver with the following settings:</span> 
+<span class="ansi-white-fg">Floating Point Arithmetic: single (4 Bytes)</span> 
+<span class="ansi-white-fg">HPC: Acceleware</span> 
+<span class="ansi-white-fg">Used Acceleware library is '11.4.1.13550 (x64, 64-bit)'.</span> 
+<span class="ansi-white-fg">Your NVIDIA display driver is newer than the expected version.</span> 
+<span class="ansi-white-fg">Installed version: 15.7680 Expected: 15.3667 (see also http://www.acceleware.com/fdtd-11-4-1)</span> 
+<span class="ansi-white-fg">Reduced performance could be encountered.</span> 
+
+<span class="ansi-white-fg">Simulation Time Step:   5.72711e-12 sec</span> 
+<span class="ansi-white-fg">Simulation Iterations:  2853</span> 
+<span class="ansi-white-fg">Max Simulated Time: 1.63394e-08 sec</span> 
+
+<span class="ansi-white-fg">Grid:</span> 
+<span class="ansi-white-fg">Number of cells: 229x177x499 = 20225967 cells = 20.2260 MCells</span> 
+<span class="ansi-white-fg">Number of cells including PML: 245x193x515 = 24351775 cells = 24.3518 MCells</span> 
+<span class="ansi-white-fg">X: Range [-0.338659 ... 0.346117] with minimal 0.00297412 and maximal step 0.0029977 [m]</span> 
+<span class="ansi-white-fg">Y: Range [-0.21475 ... 0.312145] with minimal 0.00297412 and maximal step 0.00297865 [m]</span> 
+<span class="ansi-white-fg">Z: Range [-1.12649 ... 0.367766] with minimal 0.00297403 and maximal step 0.00299799 [m]</span> 
+
+<span class="ansi-white-fg">Boundaries:</span> 
+<span class="ansi-white-fg">Side X-: ABC (UPML, 8 layers)</span> 
+<span class="ansi-white-fg">Side X+: ABC (UPML, 8 layers)</span> 
+<span class="ansi-white-fg">Side Y-: ABC (UPML, 8 layers)</span> 
+<span class="ansi-white-fg">Side Y+: ABC (UPML, 8 layers)</span> 
+<span class="ansi-white-fg">Side Z-: ABC (UPML, 8 layers)</span> 
+<span class="ansi-white-fg">Side Z+: ABC (UPML, 8 layers)</span> 
+
+<span class="ansi-white-fg">Created unified material architecture (UMA) model</span> 
+
+<span class="ansi-white-fg">Materials (77):</span> 
+<span class="ansi-white-fg">Background: dielectric (eps_r=1.000000, sigma_E=0.000000, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Tongue  (Thelonious_6y_V6): dielectric (eps_r=55.907533, sigma_E=0.865626, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Adrenal_gland  (Thelonious_6y_V6): dielectric (eps_r=50.989008, sigma_E=0.954350, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Stomach_lumen  (Thelonious_6y_V6): dielectric (eps_r=55.587038, sigma_E=0.878895, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">commissura_anterior  (Thelonious_6y_V6): dielectric (eps_r=39.695046, sigma_E=0.531363, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Eye_vitreous_humor  (Thelonious_6y_V6): dielectric (eps_r=68.947390, sigma_E=1.583627, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Vein  (Thelonious_6y_V6): dielectric (eps_r=62.103070, sigma_E=1.455938, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Midbrain  (Thelonious_6y_V6): dielectric (eps_r=51.031533, sigma_E=1.173295, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Testis  (Thelonious_6y_V6): dielectric (eps_r=61.295609, sigma_E=1.130577, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Air_internal  (Thelonious_6y_V6): dielectric (eps_r=1.000000, sigma_E=0.000000, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Blood_vessel  (Thelonious_6y_V6): dielectric (eps_r=45.325498, sigma_E=0.637236, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Epididymis  (Thelonious_6y_V6): dielectric (eps_r=61.295609, sigma_E=1.130577, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Pinealbody  (Thelonious_6y_V6): dielectric (eps_r=60.201963, sigma_E=0.966322, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Bladder  (Thelonious_6y_V6): dielectric (eps_r=19.149003, sigma_E=0.358399, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Marrow_red  (Thelonious_6y_V6): dielectric (eps_r=11.451933, sigma_E=0.207759, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Gallbladder  (Thelonious_6y_V6): dielectric (eps_r=59.551663, sigma_E=1.202528, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Hypophysis  (Thelonious_6y_V6): dielectric (eps_r=60.201963, sigma_E=0.966322, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Brain_white_matter  (Thelonious_6y_V6): dielectric (eps_r=39.695046, sigma_E=0.531363, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Spleen  (Thelonious_6y_V6): dielectric (eps_r=58.688546, sigma_E=1.175182, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Large_intestine_lumen  (Thelonious_6y_V6): dielectric (eps_r=55.587038, sigma_E=0.878895, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Thymus  (Thelonious_6y_V6): dielectric (eps_r=55.600852, sigma_E=1.115237, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Trachea  (Thelonious_6y_V6): dielectric (eps_r=42.588287, sigma_E=0.713502, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Heart_muscle  (Thelonious_6y_V6): dielectric (eps_r=61.478559, sigma_E=1.125021, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Muscle  (Thelonious_6y_V6): dielectric (eps_r=55.587038, sigma_E=0.878895, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Hypothalamus  (Thelonious_6y_V6): dielectric (eps_r=53.898662, sigma_E=0.859642, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Artery  (Thelonious_6y_V6): dielectric (eps_r=62.103070, sigma_E=1.455938, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Skin  (Thelonious_6y_V6): dielectric (eps_r=42.697659, sigma_E=0.799975, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Brain_grey_matter  (Thelonious_6y_V6): dielectric (eps_r=53.898662, sigma_E=0.859642, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Patella  (Thelonious_6y_V6): dielectric (eps_r=12.662775, sigma_E=0.120578, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Eye_Sclera  (Thelonious_6y_V6): dielectric (eps_r=55.907533, sigma_E=1.096154, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Tendon_Ligament  (Thelonious_6y_V6): dielectric (eps_r=46.258918, sigma_E=0.645211, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Kidney_medulla  (Thelonious_6y_V6): dielectric (eps_r=60.631926, sigma_E=1.277659, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Medulla_oblongata  (Thelonious_6y_V6): dielectric (eps_r=51.031533, sigma_E=1.173295, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Esophagus  (Thelonious_6y_V6): dielectric (eps_r=65.714765, sigma_E=1.105511, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Intervertebral_disc  (Thelonious_6y_V6): dielectric (eps_r=44.418065, sigma_E=1.041108, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Vertebrae  (Thelonious_6y_V6): dielectric (eps_r=12.662775, sigma_E=0.120578, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Eye_lens  (Thelonious_6y_V6): dielectric (eps_r=36.279018, sigma_E=0.435952, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">commissura_posterior  (Thelonious_6y_V6): dielectric (eps_r=39.695046, sigma_E=0.531363, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Cornea  (Thelonious_6y_V6): dielectric (eps_r=56.275669, sigma_E=1.311407, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Trachea_lumen  (Thelonious_6y_V6): dielectric (eps_r=1.000000, sigma_E=0.000000, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Pharynx  (Thelonious_6y_V6): dielectric (eps_r=1.000000, sigma_E=0.000000, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Liver  (Thelonious_6y_V6): dielectric (eps_r=47.963211, sigma_E=0.773986, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Thalamus  (Thelonious_6y_V6): dielectric (eps_r=53.898662, sigma_E=0.859642, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Heart_lumen  (Thelonious_6y_V6): dielectric (eps_r=62.103070, sigma_E=1.455938, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Large_intestine  (Thelonious_6y_V6): dielectric (eps_r=59.134765, sigma_E=0.989502, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Kidney_cortex  (Thelonious_6y_V6): dielectric (eps_r=60.631926, sigma_E=1.277659, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Stomach  (Thelonious_6y_V6): dielectric (eps_r=65.714765, sigma_E=1.105511, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Fat  (Thelonious_6y_V6): dielectric (eps_r=11.423242, sigma_E=0.096238, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Lung  (Thelonious_6y_V6): dielectric (eps_r=22.460437, sigma_E=0.423425, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Connective_tissue  (Thelonious_6y_V6): dielectric (eps_r=46.258918, sigma_E=0.645211, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Pons  (Thelonious_6y_V6): dielectric (eps_r=51.031533, sigma_E=1.173295, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Spinal_cord  (Thelonious_6y_V6): dielectric (eps_r=33.263358, sigma_E=0.522929, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">SAT  (Thelonious_6y_V6): dielectric (eps_r=11.423242, sigma_E=0.096238, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Ear_cartilage  (Thelonious_6y_V6): dielectric (eps_r=43.455463, sigma_E=0.697055, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Teeth  (Thelonious_6y_V6): dielectric (eps_r=12.662775, sigma_E=0.120578, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Nerve  (Thelonious_6y_V6): dielectric (eps_r=33.263358, sigma_E=0.522929, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Ear_skin  (Thelonious_6y_V6): dielectric (eps_r=42.697659, sigma_E=0.799975, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Meniscus  (Thelonious_6y_V6): dielectric (eps_r=43.455463, sigma_E=0.697055, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Skull  (Thelonious_6y_V6): dielectric (eps_r=12.662775, sigma_E=0.120578, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Prostate  (Thelonious_6y_V6): dielectric (eps_r=61.295609, sigma_E=1.130577, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Diaphragm  (Thelonious_6y_V6): dielectric (eps_r=55.587038, sigma_E=0.878895, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Bone  (Thelonious_6y_V6): dielectric (eps_r=12.662775, sigma_E=0.120578, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Mucosa  (Thelonious_6y_V6): dielectric (eps_r=55.587038, sigma_E=0.878895, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Small_intestine  (Thelonious_6y_V6): dielectric (eps_r=61.138364, sigma_E=2.062163, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Larynx  (Thelonious_6y_V6): dielectric (eps_r=43.455463, sigma_E=0.697055, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Mandible  (Thelonious_6y_V6): dielectric (eps_r=12.662775, sigma_E=0.120578, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Small_intestine_lumen  (Thelonious_6y_V6): dielectric (eps_r=55.587038, sigma_E=0.878895, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Cartilage  (Thelonious_6y_V6): dielectric (eps_r=43.455463, sigma_E=0.697055, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Hippocampus  (Thelonious_6y_V6): dielectric (eps_r=53.898662, sigma_E=0.859642, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Cerebellum  (Thelonious_6y_V6): dielectric (eps_r=51.031533, sigma_E=1.173295, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Penis  (Thelonious_6y_V6): dielectric (eps_r=45.325498, sigma_E=0.637236, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Ureter_Urethra  (Thelonious_6y_V6): dielectric (eps_r=45.325498, sigma_E=0.637236, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Bronchi_lumen  (Thelonious_6y_V6): dielectric (eps_r=1.000000, sigma_E=0.000000, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Pancreas  (Thelonious_6y_V6): dielectric (eps_r=60.201963, sigma_E=0.966322, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Esophagus_lumen  (Thelonious_6y_V6): dielectric (eps_r=1.000000, sigma_E=0.000000, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Bronchi  (Thelonious_6y_V6): dielectric (eps_r=42.588287, sigma_E=0.713502, mu_r=1.000000, sigma_H=0.000000)</span> 
+<span class="ansi-white-fg">Cerebrospinal_fluid  (Thelonious_6y_V6): dielectric (eps_r=69.157589, sigma_E=2.338250, mu_r=1.000000, sigma_H=0.000000)</span> 
+
+<span class="ansi-white-fg">Lumped Elements: No active lumped elements in the simulation.</span> 
+
+<span class="ansi-white-fg">Host OS: Microsoft Windows 10 Professional 64-bit (Build 9200)</span> 
+<span class="ansi-white-fg">Host CPU: AMD EPYC 7542 32-Core Processor</span> 
+<span class="ansi-white-fg">Host memory: 16379 MB</span> 
+<span class="ansi-white-fg">The following Accelerators have been detected:</span> 
+<span class="ansi-white-fg">NVIDIA GeForce RTX 4090 (device ID = 0), compute capability 8.9, total memory 24563 MB</span> 
+
+
+<span class="ansi-white-fg">Sensors (3):</span> 
+<span class="ansi-white-fg">Initializing field sensor Overall Field.</span> 
+<span class="ansi-white-fg">Initializing point sensor Point Sensor Entity 1 (lower_left_bottom).</span> 
+<span class="ansi-white-fg">Averaging setup for point sensor Point Sensor Entity 1 (lower_left_bottom):</span> 
+<span class="ansi-white-fg">E-Field:</span> 
+<span class="ansi-white-fg">X: 2 edges used for recording.</span> 
+<span class="ansi-white-fg">Y: 2 edges used for recording.</span> 
+<span class="ansi-white-fg">Z: 2 edges used for recording.</span> 
+<span class="ansi-white-fg">H-Field:</span> 
+<span class="ansi-white-fg">X: 4 edges used for recording.</span> 
+<span class="ansi-white-fg">Y: 4 edges used for recording.</span> 
+<span class="ansi-white-fg">Z: 4 edges used for recording.</span> 
+<span class="ansi-white-fg">Harmonic steady state settings for Point Sensor Entity 1 (lower_left_bottom): ema-factor-per-period = 0.8, ema factor across check point 0.894427, frequency = 7e+08, recording time step = 2.86355e-11, convergence level = -15 dB.</span> 
+<span class="ansi-white-fg">Initializing point sensor Point Sensor Entity 2 (top_right_up).</span> 
+<span class="ansi-white-fg">Averaging setup for point sensor Point Sensor Entity 2 (top_right_up):</span> 
+<span class="ansi-white-fg">E-Field:</span> 
+<span class="ansi-white-fg">X: 2 edges used for recording.</span> 
+<span class="ansi-white-fg">Y: 2 edges used for recording.</span> 
+<span class="ansi-white-fg">Z: 2 edges used for recording.</span> 
+<span class="ansi-white-fg">H-Field:</span> 
+<span class="ansi-white-fg">X: 4 edges used for recording.</span> 
+<span class="ansi-white-fg">Y: 4 edges used for recording.</span> 
+<span class="ansi-white-fg">Z: 4 edges used for recording.</span> 
+<span class="ansi-white-fg">Harmonic steady state settings for Point Sensor Entity 2 (top_right_up): ema-factor-per-period = 0.8, ema factor across check point 0.894427, frequency = 7e+08, recording time step = 2.86355e-11, convergence level = -15 dB.</span> 
+<span class="ansi-white-fg">Using DFT to convert to frequency domain.</span> 
+
+<span class="ansi-white-fg">Sources (1):</span> 
+<span class="ansi-white-fg">Initializing plane wave source far_field_simulation_bbox.</span> 
+<span class="ansi-white-fg">Excitation signal: Harmonic signal with frequency 700 MHz and ramp time 2.14286 ns</span> 
+
+<span class="ansi-white-fg">Update coefficient calculation for 122086088 edges using 3 threads.</span> 
+<span class="ansi-white-fg">Calculating update coefficients</span> 
+<span class="ansi-white-fg">[PROGRESS]: 21% [ 25691000 / 122086088 ] Calculating update coefficients</span> 
+<span class="ansi-white-fg">[PROGRESS]: 42% [ 51394640 / 122086088 ] Calculating update coefficients</span> 
+<span class="ansi-white-fg">[PROGRESS]: 63% [ 77063200 / 122086088 ] Calculating update coefficients</span> 
+<span class="ansi-white-fg">[PROGRESS]: 84% [ 102704588 / 122086088 ] Calculating update coefficients</span> 
+
+
+<span class="ansi-white-fg">Edge-Material Statistics (Electric/Magnetic):</span> 
+<span class="ansi-white-fg">61165060 / 60921028      (100.00% / 100.00%) : Total</span> 
+<span class="ansi-white-fg">61165060 / 60921028      (100.00% / 100.00%) : Dielectric</span> 
+
+<span class="ansi-white-fg">Edge-Region Statistics (regions with more than 1% of all edges, max 20 items):</span> 
+<span class="ansi-white-fg">58992181 / 58810012      ( 96.45% /  96.53%) : Background</span> 
+<span class="ansi-white-fg">1084192 /  1496072   (  1.77% /   2.46%) : Other</span> 
+<span class="ansi-white-fg">1088687 /   614944   (  1.78% /   1.01%) : Averaged</span> 
+
+
+<span class="ansi-white-fg">Update coefficient database contains 2099 E-coefficient(s) and 1 H-coefficient(s).</span> 
+<span class="ansi-white-fg">Elapsed time for 'Calculating update coefficients' was 00:00:10 wall clock time.</span> 
+<span class="ansi-white-fg">Preparing for time update</span> 
+<span class="ansi-white-fg">Use hardware resource management option fastest simulation</span> 
+<span class="ansi-white-fg">Checking out license feature 'AXWARE_TOKEN', version 8.2, (1).</span> 
+<span class="ansi-white-fg">[PROGRESS]: 2% [ 2 / 100 ] Preparing for time update</span> 
+<span class="ansi-white-fg">[PROGRESS]: 16% [ 16 / 100 ] Preparing for time update</span> 
+<span class="ansi-white-fg">[PROGRESS]: 30% [ 30 / 100 ] Preparing for time update</span> 
+<span class="ansi-white-fg">[PROGRESS]: 44% [ 44 / 100 ] Preparing for time update</span> 
+<span class="ansi-white-fg">[PROGRESS]: 60% [ 60 / 100 ] Preparing for time update</span> 
+<span class="ansi-white-fg">Simulation 1 is using device(s): [0]</span> 
+<span class="ansi-white-fg">Elapsed time for 'Preparing for time update' was 00:00:17 wall clock time.</span> 
+<span class="ansi-white-fg">Starting solver aXware (hardware accelerated).</span> 
+<span class="ansi-white-fg">Time Update</span> 
+<span class="ansi-white-fg">[PROGRESS]: 0% [ 10 / 2853 ] Time Update, estimated remaining time 1 minutes 43 seconds  @ 674.70 MCells/s</span> 
+<span class="ansi-white-fg">[PROGRESS]: 7% [ 207 / 2853 ] Time Update, estimated remaining time 28 seconds  @ 2284.02 MCells/s</span> 
+<span class="ansi-white-fg">[PROGRESS]: 14% [ 404 / 2853 ] Time Update, estimated remaining time 28 seconds  @ 2162.07 MCells/s</span> 
+<span class="ansi-white-fg">[PROGRESS]: 21% [ 601 / 2853 ] Time Update, estimated remaining time 24 seconds  @ 2311.73 MCells/s</span> 
+<span class="ansi-white-fg">[PROGRESS]: 27% [ 798 / 2853 ] Time Update, estimated remaining time 22 seconds  @ 2290.44 MCells/s</span> 
+<span class="ansi-white-fg">Point Sensor Entity 1 (lower_left_bottom): Choosing component 2 to check conventional convergence.</span> 
+<span class="ansi-white-fg">Point Sensor Entity 1 (lower_left_bottom): Choosing component 4 to check conventional convergence.</span> 
+<span class="ansi-white-fg">Point Sensor Entity 2 (top_right_up): Choosing component 2 to check conventional convergence.</span> 
+<span class="ansi-white-fg">Point Sensor Entity 2 (top_right_up): Choosing component 4 to check conventional convergence.</span> 
+<span class="ansi-white-fg">[PROGRESS]: 34% [ 995 / 2853 ] Time Update, estimated remaining time 20 seconds  @ 2283.90 MCells/s</span> 
+<span class="ansi-white-fg">[PROGRESS]: 41% [ 1192 / 2853 ] Time Update, estimated remaining time 18 seconds  @ 2259.95 MCells/s</span> 
+<span class="ansi-white-fg">[PROGRESS]: 48% [ 1389 / 2853 ] Time Update, estimated remaining time 16 seconds  @ 2255.44 MCells/s</span> 
+<span class="ansi-white-fg">[PROGRESS]: 55% [ 1586 / 2853 ] Time Update, estimated remaining time 14 seconds  @ 2200.96 MCells/s</span> 
+<span class="ansi-white-fg">[PROGRESS]: 61% [ 1755 / 2853 ] Time Update, estimated remaining time 15 seconds  @ 1816.07 MCells/s</span> 
+<span class="ansi-white-fg">Sensor Point Sensor Entity 1 (lower_left_bottom): conventional steady state check successful.</span> 
+<span class="ansi-white-fg">[PROGRESS]: 68% [ 1952 / 2853 ] Time Update, estimated remaining time 11 seconds  @ 2088.30 MCells/s</span> 
+<span class="ansi-white-fg">Sensor Point Sensor Entity 2 (top_right_up): conventional steady state check successful.</span> 
+<span class="ansi-white-fg">Steady state detected at iteration 2060, remaining time steps are 63.</span> 
+<span class="ansi-white-fg">[PROGRESS]: 97% [ 2065 / 2123 ] Time Update, estimated remaining time 3 seconds  @ 477.96 MCells/s</span> 
+<span class="ansi-white-fg">Simulation performed 2123 iterations.</span> 
+<span class="ansi-white-fg">Elapsed time for 'Time Update' was 00:00:35 wall clock time.</span> 
+
+<span class="ansi-white-fg">Post-process Sensors</span> 
+<span class="ansi-white-fg">Post-process sensor 'Overall Field'</span> 
+<span class="ansi-white-fg">Post-process sensor 'Point Sensor Entity 1 (lower_left_bottom)'</span> 
+<span class="ansi-white-fg">[PROGRESS]: 66% [ 2 / 3 ] Post-process Sensors</span> 
+<span class="ansi-white-fg">Post-process sensor 'Point Sensor Entity 2 (top_right_up)'</span> 
+<span class="ansi-white-fg">Trusted frequency is 700 MHz. Expect less accurate results outside.</span> 
+<span class="ansi-white-fg">Elapsed time for 'Post-process Sensors' was 00:00:05 wall clock time.</span> 
+<span class="ansi-white-fg">FDTD simulation finished successfully.</span> 
+
+<span class="ansi-white-fg">Simulation 'EM_FDTD_thelonious_700MHz_x_pos_theta' has ended successfully and took 00:01:18 wall clock time</span> 
+<span class="ansi-white-fg">No compression of solver files requested</span> 
+<span class="ansi-white-fg">Released license feature 'AXWARE_TOKEN'.</span> 
+<span class="ansi-white-fg">Released license feature 'FDTD_SOLVER'.</span> 
+<span class="ansi-white-fg">Peak CPU memory usage:   3.6 GB (3911561216 Bytes)</span> 
+<span class="ansi-white-fg">iSolve ended successfully.</span> 
+<span class="ansi-blue-fg">      - Subtask 'run_isolve_execution' done in 79.26s</span> <span class="ansi-black-fg">[SimulationRunner._run_isolve_manual]</span>
+<span class="ansi-green-intense-fg ansi-bold">      - Done in 79.26s</span> <span class="ansi-black-fg">[SimulationRunner._run_isolve_manual]</span>
+<span class="ansi-green-fg">    - Wait for results...</span> <span class="ansi-black-fg">[SimulationRunner._run_isolve_manual]</span>
+<span class="ansi-blue-fg">      - Subtask 'run_wait_for_results' done in 5.03s</span> <span class="ansi-black-fg">[SimulationRunner._run_isolve_manual]</span>
+<span class="ansi-green-intense-fg ansi-bold">      - Done in 5.03s</span> <span class="ansi-black-fg">[SimulationRunner._run_isolve_manual]</span>
+<span class="ansi-green-fg">    - Reload project...</span> <span class="ansi-black-fg">[SimulationRunner._run_isolve_manual]</span>
+License  : [Info]  Released [ MODEL_THELONIOUS 1.0 ]
+<span class="ansi-cyan-fg">Opening project: C:/Users/user/repo-clean/results/far_field/thelonious/700MHz/environmental_theta_x_pos/far_field_thelonious_700MHz_environmental_theta_x_pos.smash</span> 
+[Info]  Document produced by Sim4Life version 8.2.0.16876
+[Info]  Checking out license feature 'MODEL_THELONIOUS', version 1.0, (1).
+License  : [Info]  Acquired [ MODEL_THELONIOUS 1.0 ]
+Modeler  : [Warn]  No exact match found for SkullNot changing colors.
+Modeler  : [Warn]  No exact match found for SkullNot changing colors.
+<span class="ansi-blue-fg">      - Subtask 'run_reload_project' done in 11.14s</span> <span class="ansi-black-fg">[SimulationRunner._run_isolve_manual]</span>
+<span class="ansi-green-intense-fg ansi-bold">      - Done in 11.14s</span> <span class="ansi-black-fg">[SimulationRunner._run_isolve_manual]</span>
+<span class="ansi-green-intense-fg ansi-bold">Project reloaded and results are available.</span> <span class="ansi-black-fg">[SimulationRunner._run_isolve_manual]</span>
+<span class="ansi-blue-fg">    - Subtask 'run_simulation_total' done in 100.38s</span> <span class="ansi-black-fg">[FarFieldStudy.subtask]</span>
+<span class="ansi-green-intense-fg ansi-bold">    - Done in 100.38s</span> <span class="ansi-black-fg">[FarFieldStudy.subtask]</span>
+<span class="ansi-yellow-fg">Run deliverables verified. Updating metadata.</span> <span class="ansi-black-fg">[FarFieldStudy._verify_and_update_metadata]</span>
+<span class="ansi-cyan-fg">Updated metadata in config.json</span> <span class="ansi-black-fg">[ProjectManager.update_simulation_metadata]</span>
+<span class="ansi-magenta-intense-fg ansi-bold">--- Finished: run (took 100.42s) ---</span> <span class="ansi-black-fg">[profile]</span>
+<span class="ansi-magenta-intense-fg ansi-bold">--- Starting: extract ---</span> <span class="ansi-black-fg">[profile]</span>
+<span class="ansi-cyan-fg">Run deliverables verified. Proceeding with extraction.</span> <span class="ansi-black-fg">[FarFieldStudy._verify_run_deliverables_before_extraction]</span>
+<span class="ansi-cyan-fg">Validating project file: C:/Users/user/repo-clean/results/far_field/thelonious/700MHz/environmental_theta_x_pos/far_field_thelonious_700MHz_environmental_theta_x_pos.smash</span> <span class="ansi-black-fg">[ProjectManager.open]</span>
+<span class="ansi-cyan-fg">Opening project with Sim4Life: C:/Users/user/repo-clean/results/far_field/thelonious/700MHz/environmental_theta_x_pos/far_field_thelonious_700MHz_environmental_theta_x_pos.smash</span> <span class="ansi-black-fg">[ProjectManager.open]</span>
+<span class="ansi-cyan-fg">Opening project: C:/Users/user/repo-clean/results/far_field/thelonious/700MHz/environmental_theta_x_pos/far_field_thelonious_700MHz_environmental_theta_x_pos.smash</span> 
+License  : [Info]  Released [ MODEL_THELONIOUS 1.0 ]
+[Info]  Document produced by Sim4Life version 8.2.0.16876
+[Info]  Checking out license feature 'MODEL_THELONIOUS', version 1.0, (1).
+License  : [Info]  Acquired [ MODEL_THELONIOUS 1.0 ]
+Modeler  : [Warn]  No exact match found for SkullNot changing colors.
+Modeler  : [Warn]  No exact match found for SkullNot changing colors.
+<span class="ansi-green-intense-fg ansi-bold">Project reloaded.</span> <span class="ansi-black-fg">[ProjectManager.reload_project]</span>
+<span class="ansi-green-fg">  - Extract results total...</span> <span class="ansi-black-fg">[FarFieldStudy.subtask]</span>
+<span class="ansi-green-fg">    - Extract input power...</span> <span class="ansi-black-fg">[PowerExtractor.extract_input_power]</span>
+<span class="ansi-cyan-fg">  - Far-field study: using theoretical model for input power.</span> <span class="ansi-black-fg">[PowerExtractor._extract_far_field_power]</span>
+<span class="ansi-yellow-intense-fg ansi-bold">  - Calculated theoretical input power: 5.3099e-04 W</span> <span class="ansi-black-fg">[PowerExtractor._extract_far_field_power]</span>
+<span class="ansi-blue-fg">      - Subtask 'extract_input_power' done in 0.00s</span> <span class="ansi-black-fg">[PowerExtractor.extract_input_power]</span>
+<span class="ansi-green-intense-fg ansi-bold">      - Done in 0.00s</span> <span class="ansi-black-fg">[PowerExtractor.extract_input_power]</span>
+<span class="ansi-green-fg">    - Extract SAR statistics...</span> <span class="ansi-black-fg">[SarExtractor.extract_sar_statistics]</span>
+<span class="ansi-cyan-fg">  - Loading tissue groups for 'thelonious' from material_name_mapping.json</span> <span class="ansi-black-fg">[SarExtractor._define_tissue_groups]</span>
+<span class="ansi-green-fg">  - Extracting peak SAR details...</span> <span class="ansi-black-fg">[SarExtractor.extract_peak_sar_details]</span>
+<span class="ansi-blue-fg">      - Subtask 'extract_sar_statistics' done in 26.59s</span> <span class="ansi-black-fg">[SarExtractor.extract_sar_statistics]</span>
+<span class="ansi-green-intense-fg ansi-bold">      - Done in 26.59s</span> <span class="ansi-black-fg">[SarExtractor.extract_sar_statistics]</span>
+<span class="ansi-green-fg">    - Extract power balance...</span> <span class="ansi-black-fg">[PowerExtractor.extract_power_balance]</span>
+Analysis : [Warn]  Unable to balance the following EM sources: far_field_simulation_bbox,  are still not supported.
+Analysis : [Warn]  Unable to balance the following EM sources: far_field_simulation_bbox,  are still not supported.
+<span class="ansi-cyan-fg">    - Overwriting Pin with theoretical value: 5.3099e-04 W</span> <span class="ansi-black-fg">[PowerExtractor.extract_power_balance]</span>
+<span class="ansi-yellow-intense-fg ansi-bold">    - Final Balance: 117.61%</span> <span class="ansi-black-fg">[PowerExtractor.extract_power_balance]</span>
+<span class="ansi-blue-fg">      - Subtask 'extract_power_balance' done in 8.75s</span> <span class="ansi-black-fg">[PowerExtractor.extract_power_balance]</span>
+<span class="ansi-green-intense-fg ansi-bold">      - Done in 8.75s</span> <span class="ansi-black-fg">[PowerExtractor.extract_power_balance]</span>
+<span class="ansi-green-fg">    - Extract point sensors...</span> <span class="ansi-black-fg">[SensorExtractor.extract_point_sensor_data]</span>
+<span class="ansi-cyan-fg">  - Point sensor plot saved to: C:\Users\user\repo-clean\results\far_field\thelonious\700MHz\environmental_theta_x_pos\point_sensor_data.png</span> <span class="ansi-black-fg">[SensorExtractor._save_plot]</span>
+<span class="ansi-blue-fg">      - Subtask 'extract_point_sensor_data' done in 0.74s</span> <span class="ansi-black-fg">[SensorExtractor.extract_point_sensor_data]</span>
+<span class="ansi-green-intense-fg ansi-bold">      - Done in 0.74s</span> <span class="ansi-black-fg">[SensorExtractor.extract_point_sensor_data]</span>
+<span class="ansi-cyan-fg">  - Pickle report saved to: C:\Users\user\repo-clean\results\far_field\thelonious\700MHz\environmental_theta_x_pos\sar_stats_all_tissues.pkl</span> <span class="ansi-black-fg">[Reporter._save_pickle_report]</span>
+<span class="ansi-cyan-fg">  - HTML report saved to: C:\Users\user\repo-clean\results\far_field\thelonious\700MHz\environmental_theta_x_pos\sar_stats_all_tissues.html</span> <span class="ansi-black-fg">[Reporter._save_html_report]</span>
+<span class="ansi-cyan-fg">  - SAR results saved to: C:\Users\user\repo-clean\results\far_field\thelonious\700MHz\environmental_theta_x_pos\sar_results.json</span> <span class="ansi-black-fg">[ResultsExtractor._save_json_results]</span>
+<span class="ansi-blue-fg">    - Subtask 'extract_results_total' done in 36.25s</span> <span class="ansi-black-fg">[FarFieldStudy.subtask]</span>
+<span class="ansi-green-intense-fg ansi-bold">    - Done in 36.25s</span> <span class="ansi-black-fg">[FarFieldStudy.subtask]</span>
+<span class="ansi-yellow-fg">Extract deliverables verified. Updating metadata.</span> <span class="ansi-black-fg">[FarFieldStudy._verify_and_update_metadata]</span>
+<span class="ansi-cyan-fg">Updated metadata in config.json</span> <span class="ansi-black-fg">[ProjectManager.update_simulation_metadata]</span>
+<span class="ansi-cyan-fg">Saving project to C:/Users/user/repo-clean/results/far_field/thelonious/700MHz/environmental_theta_x_pos/far_field_thelonious_700MHz_environmental_theta_x_pos.smash...</span> <span class="ansi-black-fg">[ProjectManager.save]</span>
+[Info]  Document produced by Sim4Life version 8.2.0.16876
+<span class="ansi-green-intense-fg ansi-bold">Project saved.</span> <span class="ansi-black-fg">[ProjectManager.save]</span>
+<span class="ansi-magenta-intense-fg ansi-bold">--- Finished: extract (took 55.12s) ---</span> <span class="ansi-black-fg">[profile]</span>
+<span class="ansi-green-intense-fg ansi-bold">
+--- FarFieldStudy Finished ---</span> <span class="ansi-black-fg">[FarFieldStudy.run]</span>
+<span class="ansi-white-fg">--- Logging shutdown ---</span> 
+<span class="ansi-white-fg">--- Logging shutdown ---</span> 
+License  : [Info]  Released [ MODEL_THELONIOUS 1.0 ]
+[Info]  Topological Voxeler Report: Muscle
+    Target Grid: Primary
+    Duration: 2232.9 ms
+    Priority: 0
+    Edges: None
+    Voxels: 225848
+    Memory Consumption: 0.329872 kB
+
+[Info]  Topological Voxeler Report: Skin
+    Target Grid: Primary
+    Duration: 2404.2 ms
+    Priority: 0
+    Edges: None
+    Voxels: 50274
+    Memory Consumption: 0.409142 kB
+
+[Info]  Topological Voxeler Report: SAT
+    Target Grid: Primary
+    Duration: 2152.18 ms
+    Priority: 0
+    Edges: None
+    Voxels: 70055
+    Memory Consumption: 0.408096 kB
+
+[Info]  Topological Voxeler Report: Fat
+    Target Grid: Primary
+    Duration: 2018.07 ms
+    Priority: 0
+    Edges: None
+    Voxels: 77275
+    Memory Consumption: 0.334229 kB
+
+[Info]  Topological Voxeler Report: Brain_grey_matter
+    Target Grid: Primary
+    Duration: 556.883 ms
+    Priority: 0
+    Edges: None
+    Voxels: 26240
+    Memory Consumption: 0.011757 kB
+
+[Info]  Topological Voxeler Report: Connective_tissue
+    Target Grid: Primary
+    Duration: 770.832 ms
+    Priority: 0
+    Edges: None
+    Voxels: 10750
+    Memory Consumption: 0.340309 kB
+
+[Info]  Topological Voxeler Report: Cerebrospinal_fluid
+    Target Grid: Primary
+    Duration: 502.342 ms
+    Priority: 0
+    Edges: None
+    Voxels: 7731
+    Memory Consumption: 0.067123 kB
+
+[Info]  Topological Voxeler Report: Skull
+    Target Grid: Primary
+    Duration: 411.995 ms
+    Priority: 0
+    Edges: None
+    Voxels: 10030
+    Memory Consumption: 0.017731 kB
+
+[Info]  Topological Voxeler Report: Bone
+    Target Grid: Primary
+    Duration: 666.94 ms
+    Priority: 0
+    Edges: None
+    Voxels: 26810
+    Memory Consumption: 0.263748 kB
+
+[Info]  Topological Voxeler Report: Brain_white_matter
+    Target Grid: Primary
+    Duration: 296.787 ms
+    Priority: 0
+    Edges: None
+    Voxels: 13777
+    Memory Consumption: 0.009506 kB
+
+[Info]  Topological Voxeler Report: Tendon_Ligament
+    Target Grid: Primary
+    Duration: 368.01 ms
+    Priority: 0
+    Edges: None
+    Voxels: 7601
+    Memory Consumption: 0.264679 kB
+
+[Info]  Topological Voxeler Report: Large_intestine
+    Target Grid: Primary
+    Duration: 202.156 ms
+    Priority: 0
+    Edges: None
+    Voxels: 8087
+    Memory Consumption: 0.018135 kB
+
+[Info]  Topological Voxeler Report: Vertebrae
+    Target Grid: Primary
+    Duration: 173.763 ms
+    Priority: 0
+    Edges: None
+    Voxels: 8635
+    Memory Consumption: 0.016899 kB
+
+[Info]  Topological Voxeler Report: Lung
+    Target Grid: Primary
+    Duration: 132.165 ms
+    Priority: 0
+    Edges: None
+    Voxels: 33854
+    Memory Consumption: 0.013893 kB
+
+[Info]  Topological Voxeler Report: Marrow_red
+    Target Grid: Primary
+    Duration: 211.622 ms
+    Priority: 0
+    Edges: None
+    Voxels: 4051
+    Memory Consumption: 0.136726 kB
+
+[Info]  Topological Voxeler Report: Artery
+    Target Grid: Primary
+    Duration: 193.992 ms
+    Priority: 0
+    Edges: None
+    Voxels: 2634
+    Memory Consumption: 0.164230 kB
+
+[Info]  Topological Voxeler Report: Large_intestine_lumen
+    Target Grid: Primary
+    Duration: 93.3677 ms
+    Priority: 0
+    Edges: None
+    Voxels: 17862
+    Memory Consumption: 0.016106 kB
+
+[Info]  Topological Voxeler Report: Air_internal
+    Target Grid: Primary
+    Duration: 66.3069 ms
+    Priority: 0
+    Edges: None
+    Voxels: 1818
+    Memory Consumption: 0.003288 kB
+
+[Info]  Topological Voxeler Report: Vein
+    Target Grid: Primary
+    Duration: 154.376 ms
+    Priority: 0
+    Edges: None
+    Voxels: 2365
+    Memory Consumption: 0.107765 kB
+
+[Info]  Topological Voxeler Report: Diaphragm
+    Target Grid: Primary
+    Duration: 70.5643 ms
+    Priority: 0
+    Edges: None
+    Voxels: 4149
+    Memory Consumption: 0.004707 kB
+
+[Info]  Topological Voxeler Report: Liver
+    Target Grid: Primary
+    Duration: 72.7156 ms
+    Priority: 0
+    Edges: None
+    Voxels: 20784
+    Memory Consumption: 0.008614 kB
+
+[Info]  Topological Voxeler Report: Stomach
+    Target Grid: Primary
+    Duration: 65.2019 ms
+    Priority: 0
+    Edges: None
+    Voxels: 5088
+    Memory Consumption: 0.004791 kB
+
+[Info]  Topological Voxeler Report: Mucosa
+    Target Grid: Primary
+    Duration: 57.4033 ms
+    Priority: 0
+    Edges: None
+    Voxels: 229
+    Memory Consumption: 0.001251 kB
+
+[Info]  Topological Voxeler Report: Nerve
+    Target Grid: Primary
+    Duration: 79.9097 ms
+    Priority: 0
+    Edges: None
+    Voxels: 2150
+    Memory Consumption: 0.021904 kB
+
+[Info]  Topological Voxeler Report: Cerebellum
+    Target Grid: Primary
+    Duration: 42.4557 ms
+    Priority: 0
+    Edges: None
+    Voxels: 5681
+    Memory Consumption: 0.001984 kB
+
+[Info]  Topological Voxeler Report: Cartilage
+    Target Grid: Primary
+    Duration: 128.655 ms
+    Priority: 0
+    Edges: None
+    Voxels: 1660
+    Memory Consumption: 0.126228 kB
+
+[Info]  Topological Voxeler Report: Blood_vessel
+    Target Grid: Primary
+    Duration: 76.9545 ms
+    Priority: 0
+    Edges: None
+    Voxels: 342
+    Memory Consumption: 0.054993 kB
+
+[Info]  Topological Voxeler Report: Intervertebral_disc
+    Target Grid: Primary
+    Duration: 46.7462 ms
+    Priority: 0
+    Edges: None
+    Voxels: 2778
+    Memory Consumption: 0.005638 kB
+
+[Info]  Topological Voxeler Report: Kidney_cortex
+    Target Grid: Primary
+    Duration: 45.488 ms
+    Priority: 0
+    Edges: None
+    Voxels: 2999
+    Memory Consumption: 0.002182 kB
+
+[Info]  Topological Voxeler Report: Heart_muscle
+    Target Grid: Primary
+    Duration: 40.0194 ms
+    Priority: 0
+    Edges: None
+    Voxels: 8775
+    Memory Consumption: 0.003059 kB
+
+[Info]  Topological Voxeler Report: Small_intestine
+    Target Grid: Primary
+    Duration: 34.9721 ms
+    Priority: 0
+    Edges: None
+    Voxels: 2106
+    Memory Consumption: 0.001465 kB
+
+[Info]  Topological Voxeler Report: Mandible
+    Target Grid: Primary
+    Duration: 29.0763 ms
+    Priority: 0
+    Edges: None
+    Voxels: 630
+    Memory Consumption: 0.001495 kB
+
+[Info]  Topological Voxeler Report: Stomach_lumen
+    Target Grid: Primary
+    Duration: 26.511 ms
+    Priority: 0
+    Edges: None
+    Voxels: 4872
+    Memory Consumption: 0.002899 kB
+
+[Info]  Topological Voxeler Report: Spleen
+    Target Grid: Primary
+    Duration: 24.7537 ms
+    Priority: 0
+    Edges: None
+    Voxels: 4554
+    Memory Consumption: 0.002548 kB
+
+[Info]  Topological Voxeler Report: Ear_skin
+    Target Grid: Primary
+    Duration: 20.8579 ms
+    Priority: 0
+    Edges: None
+    Voxels: 456
+    Memory Consumption: 0.001396 kB
+
+[Info]  Topological Voxeler Report: Esophagus
+    Target Grid: Primary
+    Duration: 16.0094 ms
+    Priority: 0
+    Edges: None
+    Voxels: 289
+    Memory Consumption: 0.001564 kB
+
+[Info]  Topological Voxeler Report: Kidney_medulla
+    Target Grid: Primary
+    Duration: 18.4089 ms
+    Priority: 0
+    Edges: None
+    Voxels: 1878
+    Memory Consumption: 0.001274 kB
+
+[Info]  Topological Voxeler Report: Tongue
+    Target Grid: Primary
+    Duration: 11.8625 ms
+    Priority: 0
+    Edges: None
+    Voxels: 1389
+    Memory Consumption: 344 bytes
+
+[Info]  Topological Voxeler Report: Spinal_cord
+    Target Grid: Primary
+    Duration: 14.2112 ms
+    Priority: 0
+    Edges: None
+    Voxels: 959
+    Memory Consumption: 0.001770 kB
+
+[Info]  Topological Voxeler Report: Thymus
+    Target Grid: Primary
+    Duration: 12.9939 ms
+    Priority: 0
+    Edges: None
+    Voxels: 1083
+    Memory Consumption: 800 bytes
+
+[Info]  Topological Voxeler Report: Teeth
+    Target Grid: Primary
+    Duration: 11.3177 ms
+    Priority: 0
+    Edges: None
+    Voxels: 209
+    Memory Consumption: 440 bytes
+
+[Info]  Topological Voxeler Report: Trachea
+    Target Grid: Primary
+    Duration: 11.0667 ms
+    Priority: 0
+    Edges: None
+    Voxels: 148
+    Memory Consumption: 512 bytes
+
+[Info]  Topological Voxeler Report: Eye_Sclera
+    Target Grid: Primary
+    Duration: 9.6963 ms
+    Priority: 0
+    Edges: None
+    Voxels: 159
+    Memory Consumption: 224 bytes
+
+[Info]  Topological Voxeler Report: Ear_cartilage
+    Target Grid: Primary
+    Duration: 10.7904 ms
+    Priority: 0
+    Edges: None
+    Voxels: 144
+    Memory Consumption: 0.001251 kB
+
+[Info]  Topological Voxeler Report: Small_intestine_lumen
+    Target Grid: Primary
+    Duration: 9.9477 ms
+    Priority: 0
+    Edges: None
+    Voxels: 845
+    Memory Consumption: 560 bytes
+
+[Info]  Topological Voxeler Report: Thalamus
+    Target Grid: Primary
+    Duration: 8.2518 ms
+    Priority: 0
+    Edges: None
+    Voxels: 699
+    Memory Consumption: 192 bytes
+
+[Info]  Topological Voxeler Report: Bladder
+    Target Grid: Primary
+    Duration: 10.055 ms
+    Priority: 0
+    Edges: None
+    Voxels: 1120
+    Memory Consumption: 256 bytes
+
+[Info]  Topological Voxeler Report: Pancreas
+    Target Grid: Primary
+    Duration: 8.4381 ms
+    Priority: 0
+    Edges: None
+    Voxels: 406
+    Memory Consumption: 568 bytes
+
+[Info]  Topological Voxeler Report: Esophagus_lumen
+    Target Grid: Primary
+    Duration: 6.9652 ms
+    Priority: 0
+    Edges: None
+    Voxels: 133
+    Memory Consumption: 0.000984 kB
+
+[Info]  Topological Voxeler Report: Penis
+    Target Grid: Primary
+    Duration: 7.4221 ms
+    Priority: 0
+    Edges: None
+    Voxels: 333
+    Memory Consumption: 296 bytes
+
+[Info]  Topological Voxeler Report: Meniscus
+    Target Grid: Primary
+    Duration: 11.6235 ms
+    Priority: 0
+    Edges: None
+    Voxels: 349
+    Memory Consumption: 288 bytes
+
+[Info]  Topological Voxeler Report: Trachea_lumen
+    Target Grid: Primary
+    Duration: 5.7454 ms
+    Priority: 0
+    Edges: None
+    Voxels: 223
+    Memory Consumption: 512 bytes
+
+[Info]  Topological Voxeler Report: Pons
+    Target Grid: Primary
+    Duration: 4.7081 ms
+    Priority: 0
+    Edges: None
+    Voxels: 461
+    Memory Consumption: 152 bytes
+
+[Info]  Topological Voxeler Report: Eye_vitreous_humor
+    Target Grid: Primary
+    Duration: 4.7098 ms
+    Priority: 0
+    Edges: None
+    Voxels: 336
+    Memory Consumption: 160 bytes
+
+[Info]  Topological Voxeler Report: Midbrain
+    Target Grid: Primary
+    Duration: 4.4479 ms
+    Priority: 0
+    Edges: None
+    Voxels: 284
+    Memory Consumption: 112 bytes
+
+[Info]  Topological Voxeler Report: Gallbladder
+    Target Grid: Primary
+    Duration: 6.0739 ms
+    Priority: 0
+    Edges: None
+    Voxels: 282
+    Memory Consumption: 376 bytes
+
+[Info]  Topological Voxeler Report: Heart_lumen
+    Target Grid: Primary
+    Duration: 4.6322 ms
+    Priority: 0
+    Edges: None
+    Voxels: 254
+    Memory Consumption: 152 bytes
+
+[Info]  Topological Voxeler Report: Pharynx
+    Target Grid: Primary
+    Duration: 2.8749 ms
+    Priority: 0
+    Edges: None
+    Voxels: 56
+    Memory Consumption: 40 bytes
+
+[Info]  Topological Voxeler Report: Hippocampus
+    Target Grid: Primary
+    Duration: 2.5894 ms
+    Priority: 0
+    Edges: None
+    Voxels: 77
+    Memory Consumption: 72 bytes
+
+[Info]  Topological Voxeler Report: Medulla_oblongata
+    Target Grid: Primary
+    Duration: 2.6254 ms
+    Priority: 0
+    Edges: None
+    Voxels: 209
+    Memory Consumption: 96 bytes
+
+[Info]  Topological Voxeler Report: Prostate
+    Target Grid: Primary
+    Duration: 3.6346 ms
+    Priority: 0
+    Edges: None
+    Voxels: 119
+    Memory Consumption: 56 bytes
+
+[Info]  Topological Voxeler Report: Adrenal_gland
+    Target Grid: Primary
+    Duration: 3.3348 ms
+    Priority: 0
+    Edges: None
+    Voxels: 107
+    Memory Consumption: 152 bytes
+
+[Info]  Topological Voxeler Report: Bronchi
+    Target Grid: Primary
+    Duration: 2.6002 ms
+    Priority: 0
+    Edges: None
+    Voxels: 42
+    Memory Consumption: 32 bytes
+
+[Info]  Topological Voxeler Report: Testis
+    Target Grid: Primary
+    Duration: 3.1952 ms
+    Priority: 0
+    Edges: None
+    Voxels: 124
+    Memory Consumption: 40 bytes
+
+[Info]  Topological Voxeler Report: Patella
+    Target Grid: Primary
+    Duration: 6.0684 ms
+    Priority: 0
+    Edges: None
+    Voxels: 124
+    Memory Consumption: 136 bytes
+
+[Info]  Topological Voxeler Report: Ureter_Urethra
+    Target Grid: Primary
+    Duration: 4.4848 ms
+    Priority: 0
+    Edges: None
+    Voxels: 30
+    Memory Consumption: 384 bytes
+
+[Info]  Topological Voxeler Report: Bronchi_lumen
+    Target Grid: Primary
+    Duration: 1.358 ms
+    Priority: 0
+    Edges: None
+    Voxels: 27
+    Memory Consumption: 24 bytes
+
+[Info]  Topological Voxeler Report: Cornea
+    Target Grid: Primary
+    Duration: 1.8124 ms
+    Priority: 0
+    Edges: None
+    Voxels: 11
+    Memory Consumption: 32 bytes
+
+[Info]  Topological Voxeler Report: Hypothalamus
+    Target Grid: Primary
+    Duration: 0.9416 ms
+    Priority: 0
+    Edges: None
+    Voxels: 25
+    Memory Consumption: 16 bytes
+
+[Info]  Topological Voxeler Report: Epididymis
+    Target Grid: Primary
+    Duration: 1.9835 ms
+    Priority: 0
+    Edges: None
+    Voxels: 22
+    Memory Consumption: 24 bytes
+
+[Info]  Topological Voxeler Report: Hypophysis
+    Target Grid: Primary
+    Duration: 0.4471 ms
+    Priority: 0
+    Edges: None
+    Voxels: 11
+    Memory Consumption: 8 bytes
+
+[Info]  Topological Voxeler Report: Eye_lens
+    Target Grid: Primary
+    Duration: 0.618 ms
+    Priority: 0
+    Edges: None
+    Voxels: 10
+    Memory Consumption: 16 bytes
+
+[Info]  Topological Voxeler Report: Pinealbody
+    Target Grid: Primary
+    Duration: 0.4223 ms
+    Priority: 0
+    Edges: None
+    Voxels: 9
+    Memory Consumption: 8 bytes
+
+[Info]  Topological Voxeler Report: Larynx
+    Target Grid: Primary
+    Duration: 0.3953 ms
+    Priority: 0
+    Edges: None
+    Voxels: 3
+    Memory Consumption: 8 bytes
+
+[Info]  Topological Voxeler Report: commissura_anterior
+    Target Grid: Primary
+    Duration: 0.1809 ms
+    Priority: 0
+    Edges: None
+    Voxels: 1
+    Memory Consumption: 8 bytes
+
+[Info]  Topological Voxeler Report: commissura_posterior
+    Target Grid: Primary
+    Duration: 0.0752 ms
+    Priority: 0
+    Edges: None
+    Voxels: None
+    Memory Consumption: 0 bytes
+
+[Info]  Topological Voxeler Report: Complete Voxel Scene
+    Voxel Scene Memory Consumption: 0.002876 GB
+    Wall Clock Time: 7.68246 s
+
+[Info]  Visualization Data Memory Consumption: 0.036381 GB
+     Elapsed Time: 0.653698 s
+[Info]  Time step: 5.72711e-12 s
+<span class="ansi-yellow-fg">Terminating study process...</span> 
+<span class="ansi-white-fg">--- Logging shutdown ---</span> 
+<span class="ansi-white-fg">--- Logging shutdown ---</span> 
+------------------------------------------------------------
+
+Command completed with return code: 0
+</code>
+</pre> </div> </div> <div class="output_area"> <div class="output_text output_subarea output_execute_result"> <pre>
+<code>0</code>
+</pre> </div> </div> </div> </div> </div> <div class="cell border-box-sizing text_cell rendered"> <div class="inner_cell"> <div class="text_cell_render border-box-sizing rendered_html"> <p>This runs through setup, run, and extract phases regardless if the simulation was already done. If you ran tutorial 1, you'll see a warning for this, as this specific simulation has already been run:</p> <p><img alt="A warning that GOLIAT overrides previous results" src="../../img/tutorials/tut2_no_cache.png"/></p> <p>Now check the metadata file:</p> </div> </div> </div> <div class="cell border-box-sizing code_cell rendered"> <div class="input"> <div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a href="#__codelineno-10-1" id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="n">run_bash</span><span class="p">(</span><span class="s1">'cat results/far_field/thelonious/700MHz/environmental_theta_x_pos/config.json'</span><span class="p">)</span>
+</span></code></pre></div> </div> <div class="output_wrapper"> <div class="output"> <div class="output_area"> <div class="output_subarea output_stream output_stdout output_text"> <pre>
+<code>Running: source .bashrc &amp;&amp; cat results/far_field/thelonious/700MHz/environmental_theta_x_pos/config.json
+
+------------------------------------------------------------
+{
+    "config_hash": "4e7840473519f3922962f66b3dc12238937f371428330eb1c65f20cb8e869a9c",
+    "config_snapshot": {
+        "study_type": "far_field",
+        "simulation_parameters": {
+            "global_auto_termination": "GlobalAutoTerminationUserDefined",
+            "convergence_level_dB": -15,
+            "simulation_time_multiplier": 3.5,
+            "number_of_point_sensors": 2,
+            "point_source_order": [
+                "lower_left_bottom",
+                "top_right_up",
+                "lower_right_bottom",
+                "top_left_up",
+                "lower_left_up",
+                "top_right_bottom",
+                "lower_right_up",
+                "top_left_bottom"
+            ]
+        },
+        "solver_settings": {
+            "kernel": "acceleware",
+            "server": "localhost",
+            "boundary_conditions": {
+                "type": "UpmlCpml",
+                "strength": "Low"
+            }
+        },
+        "manual_isolve": true,
+        "gridding_parameters": {
+            "global_gridding": {
+                "grid_mode": "manual",
+                "manual_fallback_max_step_mm": 3.0
+            },
+            "padding": {
+                "padding_mode": "automatic",
+                "manual_bottom_padding_mm": [
+                    0,
+                    0,
+                    0
+                ],
+                "manual_top_padding_mm": [
+                    0,
+                    0,
+                    0
+                ]
+            }
+        },
+        "phantom": "thelonious",
+        "frequency_mhz": 700,
+        "far_field_setup": {
+            "type": "environmental",
+            "environmental": {
+                "incident_directions": [
+                    "x_pos"
+                ],
+                "polarizations": [
+                    "theta"
+                ]
+            }
+        }
+    },
+    "run_done": true,
+    "extract_done": true
+}------------------------------------------------------------
+
+Command completed with return code: 0
+</code>
+</pre> </div> </div> <div class="output_area"> <div class="output_text output_subarea output_execute_result"> <pre>
+<code>0</code>
+</pre> </div> </div> </div> </div> </div> <div class="cell border-box-sizing text_cell rendered"> <div class="inner_cell"> <div class="text_cell_render border-box-sizing rendered_html"> <p>You'll see:</p> <div class="language-json highlight"><pre><span></span><code><span id="__span-11-1"><a href="#__codelineno-11-1" id="__codelineno-11-1" name="__codelineno-11-1"></a><span class="p">{</span>
+</span><span id="__span-11-2"><a href="#__codelineno-11-2" id="__codelineno-11-2" name="__codelineno-11-2"></a><span class="w">  </span><span class="nt">"config_hash"</span><span class="p">:</span><span class="w"> </span><span class="s2">"a3f2c9d8b1e4..."</span><span class="p">,</span>
+</span><span id="__span-11-3"><a href="#__codelineno-11-3" id="__codelineno-11-3" name="__codelineno-11-3"></a><span class="w">  </span><span class="nt">"config_snapshot"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="err">...</span><span class="p">},</span>
+</span><span id="__span-11-4"><a href="#__codelineno-11-4" id="__codelineno-11-4" name="__codelineno-11-4"></a><span class="w">  </span><span class="nt">"run_done"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+</span><span id="__span-11-5"><a href="#__codelineno-11-5" id="__codelineno-11-5" name="__codelineno-11-5"></a><span class="w">  </span><span class="nt">"extract_done"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+</span><span id="__span-11-6"><a href="#__codelineno-11-6" id="__codelineno-11-6" name="__codelineno-11-6"></a><span class="p">}</span>
+</span></code></pre></div> <p>Run the same study again. The cache mechanism is on by default.</p> </div> </div> </div> <div class="cell border-box-sizing code_cell rendered"> <div class="input"> <div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a href="#__codelineno-12-1" id="__codelineno-12-1" name="__codelineno-12-1"></a><span class="n">run_bash</span><span class="p">(</span><span class="s1">'goliat study tutorial_2_caching.json'</span><span class="p">)</span>
+</span></code></pre></div> </div> <div class="output_wrapper"> <div class="output"> <div class="output_area"> <div class="output_subarea output_stream output_stdout output_text"> <pre>
+<code>Running: source .bashrc &amp;&amp; goliat study tutorial_2_caching.json
+
+------------------------------------------------------------
+<span class="ansi-cyan-fg">Starting Sim4Life application...</span> 
+Initializing Application [stdout]
+Initializing Application [stderr]
+[Warn]  Unable to load module 'C:\Program Files\Sim4Life_8.2.0.16876\MusaikInterface.xdll'
+Josua    : [Info]  Sync
+Josua    : [Info]  Sync
+Josua    : [Info]  Command [Query Handshake] &lt;019781c1-92e8-457c-9020-287f3c637111;127.0.0.1;WIN10-NEW&gt;
+Josua    : [Info]  Property [CAresSettings]
+[Info]  Connection to local Ares successfully established.
+<span class="ansi-green-intense-fg ansi-bold">Sim4Life application started.</span> 
+<span class="ansi-magenta-intense-fg ansi-bold">--- Starting Far-Field Study: tutorial_2_caching.json ---</span> <span class="ansi-black-fg">[FarFieldStudy._run_study]</span>
+<span class="ansi-magenta-intense-fg ansi-bold">
+--- Processing Simulation 1/1: thelonious, 700MHz, x_pos, theta ---</span> <span class="ansi-black-fg">[FarFieldStudy._run_study]</span>
+<span class="ansi-magenta-intense-fg ansi-bold">--- Starting: setup ---</span> <span class="ansi-black-fg">[profile]</span>
+<span class="ansi-cyan-fg">Project path set to: C:/Users/user/repo-clean/results/far_field/thelonious/700MHz/environmental_theta_x_pos/far_field_thelonious_700MHz_environmental_theta_x_pos.smash</span> <span class="ansi-black-fg">[ProjectManager.create_or_open_project]</span>
+<span class="ansi-green-intense-fg ansi-bold">Verified existing project. Status: Setup done, Run done, Extract done</span> <span class="ansi-black-fg">[ProjectManager.verify_simulation_metadata]</span>
+<span class="ansi-green-intense-fg ansi-bold">Project already done, skipping.</span> <span class="ansi-black-fg">[ProjectManager.verify_simulation_metadata]</span>
+<span class="ansi-cyan-fg">Verified existing project. Opening.</span> <span class="ansi-black-fg">[ProjectManager.create_or_open_project]</span>
+<span class="ansi-cyan-fg">Validating project file: C:/Users/user/repo-clean/results/far_field/thelonious/700MHz/environmental_theta_x_pos/far_field_thelonious_700MHz_environmental_theta_x_pos.smash</span> <span class="ansi-black-fg">[ProjectManager.open]</span>
+<span class="ansi-cyan-fg">Opening project with Sim4Life: C:/Users/user/repo-clean/results/far_field/thelonious/700MHz/environmental_theta_x_pos/far_field_thelonious_700MHz_environmental_theta_x_pos.smash</span> <span class="ansi-black-fg">[ProjectManager.open]</span>
+<span class="ansi-cyan-fg">Opening project: C:/Users/user/repo-clean/results/far_field/thelonious/700MHz/environmental_theta_x_pos/far_field_thelonious_700MHz_environmental_theta_x_pos.smash</span> 
+[Info]  Document produced by Sim4Life version 8.2.0.16876
+[Info]  Checking out license feature 'MODEL_THELONIOUS', version 1.0, (1).
+License  : [Info]  Acquired [ MODEL_THELONIOUS 1.0 ]
+Modeler  : [Warn]  No exact match found for SkullNot changing colors.
+Modeler  : [Warn]  No exact match found for SkullNot changing colors.
+<span class="ansi-white-fg">--- Simulation-specific progress logging started: C:/Users/user/repo-clean/results/far_field/thelonious/700MHz/environmental_theta_x_pos\progress.log ---</span> 
+<span class="ansi-white-fg">--- Simulation-specific verbose logging started: C:/Users/user/repo-clean/results/far_field/thelonious/700MHz/environmental_theta_x_pos\verbose.log ---</span> 
+<span class="ansi-cyan-fg">  - Saved configuration metadata to config.json</span> <span class="ansi-black-fg">[ProjectManager.write_simulation_metadata]</span>
+<span class="ansi-cyan-fg">Skipping run phase, deliverables found.</span> <span class="ansi-black-fg">[FarFieldStudy._run_single_simulation]</span>
+<span class="ansi-cyan-fg">Skipping extract phase, deliverables found.</span> <span class="ansi-black-fg">[FarFieldStudy._run_single_simulation]</span>
+<span class="ansi-magenta-intense-fg ansi-bold">--- Finished: setup (took 12.08s) ---</span> <span class="ansi-black-fg">[profile]</span>
+<span class="ansi-green-intense-fg ansi-bold">
+--- FarFieldStudy Finished ---</span> <span class="ansi-black-fg">[FarFieldStudy.run]</span>
+<span class="ansi-white-fg">--- Logging shutdown ---</span> 
+<span class="ansi-white-fg">--- Logging shutdown ---</span> 
+License  : [Info]  Released [ MODEL_THELONIOUS 1.0 ]
+<span class="ansi-white-fg">--- Logging shutdown ---</span> 
+<span class="ansi-white-fg">--- Logging shutdown ---</span> 
+------------------------------------------------------------
+
+Command completed with return code: 0
+</code>
+</pre> </div> </div> <div class="output_area"> <div class="output_text output_subarea output_execute_result"> <pre>
+<code>0</code>
+</pre> </div> </div> </div> </div> </div> <div class="cell border-box-sizing text_cell rendered"> <div class="inner_cell"> <div class="text_cell_render border-box-sizing rendered_html"> <p><img alt="Second run cached" src="../../img/tutorials/tut2_cache.png"/></p> <p>GOLIAT checks the hash, finds a match, verifies deliverables exist, and skips the simulation. Instant completion.</p> <h3 id="when-cache-is-invalidated">When cache is invalidated<a class="headerlink" href="#when-cache-is-invalidated" title="Permanent link">¶</a></h3> <p>Change something in the config (add a phantom, change frequency, modify grid settings). The hash changes, so GOLIAT reruns the simulation.</p> <p>Edit <code>tutorial_2_caching.json</code> and change the frequency:</p> <div class="language-json highlight"><pre><span></span><code><span id="__span-13-1"><a href="#__codelineno-13-1" id="__codelineno-13-1" name="__codelineno-13-1"></a><span class="p">{</span>
+</span><span id="__span-13-2"><a href="#__codelineno-13-2" id="__codelineno-13-2" name="__codelineno-13-2"></a><span class="w">  </span><span class="nt">"frequencies_mhz"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">835</span><span class="p">]</span>
+</span><span id="__span-13-3"><a href="#__codelineno-13-3" id="__codelineno-13-3" name="__codelineno-13-3"></a><span class="p">}</span>
+</span></code></pre></div> <p>Run again:</p> </div> </div> </div> <div class="cell border-box-sizing code_cell rendered"> <div class="input"> <div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a href="#__codelineno-14-1" id="__codelineno-14-1" name="__codelineno-14-1"></a><span class="n">run_bash</span><span class="p">(</span><span class="s1">'goliat study tutorial_2_caching.json'</span><span class="p">)</span>
+</span></code></pre></div> </div> </div> <div class="cell border-box-sizing text_cell rendered"> <div class="inner_cell"> <div class="text_cell_render border-box-sizing rendered_html"> <p>New hash, new simulation. The cache only applies to identical configs.</p> <h3 id="forcing-a-rerun">Forcing a rerun<a class="headerlink" href="#forcing-a-rerun" title="Permanent link">¶</a></h3> <p>Sometimes you want to rerun even if the cache says it's done (testing, debugging, or if you suspect bad results). This will redo all three phases.</p> <p>Use the <code>--no-cache</code> flag:</p> </div> </div> </div> <div class="cell border-box-sizing code_cell rendered"> <div class="input"> <div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a href="#__codelineno-15-1" id="__codelineno-15-1" name="__codelineno-15-1"></a><span class="n">run_bash</span><span class="p">(</span><span class="s1">'goliat study tutorial_2_caching.json --no-cache'</span><span class="p">)</span>
+</span></code></pre></div> </div> </div> <div class="cell border-box-sizing text_cell rendered"> <div class="inner_cell"> <div class="text_cell_render border-box-sizing rendered_html"> <hr/> <h2 id="what-you-learned">What you learned<a class="headerlink" href="#what-you-learned" title="Permanent link">¶</a></h2> <ol> <li>Configs extend parent configs (base → study → custom)</li> <li>Override only what's different, inherit the rest</li> <li>Validate configs before running to catch errors</li> <li>GOLIAT uses config hashing to skip completed simulations</li> <li>Metadata tracks what's done (setup, run, extract)</li> <li>Use <code>--no-cache</code> to force reruns when needed</li> </ol> <h3 id="common-config-patterns">Common config patterns<a class="headerlink" href="#common-config-patterns" title="Permanent link">¶</a></h3> <p><strong>Add more phantoms</strong></p> <div class="language-json highlight"><pre><span></span><code><span id="__span-16-1"><a href="#__codelineno-16-1" id="__codelineno-16-1" name="__codelineno-16-1"></a><span class="p">{</span>
+</span><span id="__span-16-2"><a href="#__codelineno-16-2" id="__codelineno-16-2" name="__codelineno-16-2"></a><span class="w">  </span><span class="nt">"extends"</span><span class="p">:</span><span class="w"> </span><span class="s2">"far_field_config.json"</span><span class="p">,</span>
+</span><span id="__span-16-3"><a href="#__codelineno-16-3" id="__codelineno-16-3" name="__codelineno-16-3"></a><span class="w">  </span><span class="nt">"phantoms"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"duke"</span><span class="p">,</span><span class="w"> </span><span class="s2">"eartha"</span><span class="p">,</span><span class="w"> </span><span class="s2">"thelonious"</span><span class="p">]</span>
+</span><span id="__span-16-4"><a href="#__codelineno-16-4" id="__codelineno-16-4" name="__codelineno-16-4"></a><span class="p">}</span>
+</span></code></pre></div> <p><strong>Change solver kernel to <abbr title="Central Processing Unit">CPU</abbr></strong></p> <div class="language-json highlight"><pre><span></span><code><span id="__span-17-1"><a href="#__codelineno-17-1" id="__codelineno-17-1" name="__codelineno-17-1"></a><span class="p">{</span>
+</span><span id="__span-17-2"><a href="#__codelineno-17-2" id="__codelineno-17-2" name="__codelineno-17-2"></a><span class="w">  </span><span class="nt">"extends"</span><span class="p">:</span><span class="w"> </span><span class="s2">"base_config.json"</span><span class="p">,</span>
+</span><span id="__span-17-3"><a href="#__codelineno-17-3" id="__codelineno-17-3" name="__codelineno-17-3"></a><span class="w">  </span><span class="nt">"solver_settings"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-17-4"><a href="#__codelineno-17-4" id="__codelineno-17-4" name="__codelineno-17-4"></a><span class="w">    </span><span class="nt">"kernel"</span><span class="p">:</span><span class="w"> </span><span class="s2">"software"</span>
+</span><span id="__span-17-5"><a href="#__codelineno-17-5" id="__codelineno-17-5" name="__codelineno-17-5"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-17-6"><a href="#__codelineno-17-6" id="__codelineno-17-6" name="__codelineno-17-6"></a><span class="p">}</span>
+</span></code></pre></div> <p><strong>Disable <abbr title="Graphical User Interface">GUI</abbr> for headless runs</strong></p> <div class="language-json highlight"><pre><span></span><code><span id="__span-18-1"><a href="#__codelineno-18-1" id="__codelineno-18-1" name="__codelineno-18-1"></a><span class="p">{</span>
+</span><span id="__span-18-2"><a href="#__codelineno-18-2" id="__codelineno-18-2" name="__codelineno-18-2"></a><span class="w">  </span><span class="nt">"use_gui"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+</span><span id="__span-18-3"><a href="#__codelineno-18-3" id="__codelineno-18-3" name="__codelineno-18-3"></a><span class="p">}</span>
+</span></code></pre></div> <p><strong>Run only extract phase (reprocess existing results)</strong></p> <div class="language-json highlight"><pre><span></span><code><span id="__span-19-1"><a href="#__codelineno-19-1" id="__codelineno-19-1" name="__codelineno-19-1"></a><span class="p">{</span>
+</span><span id="__span-19-2"><a href="#__codelineno-19-2" id="__codelineno-19-2" name="__codelineno-19-2"></a><span class="w">  </span><span class="nt">"execution_control"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-19-3"><a href="#__codelineno-19-3" id="__codelineno-19-3" name="__codelineno-19-3"></a><span class="w">    </span><span class="nt">"do_setup"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+</span><span id="__span-19-4"><a href="#__codelineno-19-4" id="__codelineno-19-4" name="__codelineno-19-4"></a><span class="w">    </span><span class="nt">"do_run"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+</span><span id="__span-19-5"><a href="#__codelineno-19-5" id="__codelineno-19-5" name="__codelineno-19-5"></a><span class="w">    </span><span class="nt">"do_extract"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+</span><span id="__span-19-6"><a href="#__codelineno-19-6" id="__codelineno-19-6" name="__codelineno-19-6"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-19-7"><a href="#__codelineno-19-7" id="__codelineno-19-7" name="__codelineno-19-7"></a><span class="p">}</span>
+</span></code></pre></div> <hr/> <h2 id="try-this">Try this<a class="headerlink" href="#try-this" title="Permanent link">¶</a></h2> <ol> <li>Create a custom config that extends <code>tutorial_1_far_field.json</code></li> <li>Add 2 more directions (<code>y_pos</code> and <code>y_neg</code>)</li> <li>Validate it</li> <li>Run it</li> <li>Run it again and watch it skip completed sims</li> <li>Change one direction and watch it rerun only new combinations</li> </ol> <hr/> <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">¶</a></h2> <ul> <li><strong>Tutorial 3</strong>: Near-field basics (antennas, placements, localized <abbr title="Specific Absorption Rate">SAR</abbr>)</li> <li><strong>Configuration guide</strong>: All parameters at <a href="../../developer_guide/configuration/">../developer_guide/configuration.md</a></li> <li><strong>Features</strong>: Verify and resume details at <a href="../../reference/full_features_list/">Full List of Features</a></li> </ul> <p>Ready for tutorial 3? Learn near-field simulations with antennas.</p> </div> </div> </div> </article> </div> <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var tab,labels=set.querySelector(".tabbed-labels");for(tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script> <script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script> </div> <button class="md-top md-icon" data-md-component="top" hidden="" type="button"> <svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"></path></svg> Back to top </button> </main> <footer class="md-footer"> <nav aria-label="Footer" class="md-footer__inner md-grid"> <a aria-label="Previous: 1. Far-Field Basics" class="md-footer__link md-footer__link--prev" href="../01_far_field_basics/"> <div class="md-footer__button md-icon"> <svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"></path></svg> </div> <div class="md-footer__title"> <span class="md-footer__direction"> Previous </span> <div class="md-ellipsis"> 1. Far-Field Basics </div> </div> </a> <a aria-label="Next: 3. Near-Field Basics" class="md-footer__link md-footer__link--next" href="../03_near_field_basics/"> <div class="md-footer__title"> <span class="md-footer__direction"> Next </span> <div class="md-ellipsis"> 3. Near-Field Basics </div> </div> <div class="md-footer__button md-icon"> <svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"></path></svg> </div> </a> </nav> <div class="md-footer-meta md-typeset"> <div class="md-footer-meta__inner md-grid"> <div class="md-copyright"> </div> <div class="md-social"> <a class="md-social__link" href="https://github.com/rwydaegh/goliat" rel="noopener" target="_blank" title="github.com"> <svg viewbox="0 0 496 512" xmlns="http://www.w3.org/2000/svg"><!-- Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"></path></svg> </a> </div> </div> </div> </footer> </div> <div class="md-dialog" data-md-component="dialog"> <div class="md-dialog__inner md-typeset"></div> </div> <div class="md-progress" data-md-component="progress" role="progressbar"></div> <script id="__config" type="application/json">{"base": "../..", "features": ["announce.dismiss", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tabs.link", "content.tooltips", "header.autohide", "navigation.expand", "navigation.footer", "navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.prune", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow", "toc.integrate"], "search": "../../assets/javascripts/workers/search.f886a092.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script> <script src="../../assets/javascripts/bundle.d7c377c4.min.js"></script> <script src="../../javascripts/ansi-to-html.js"></script> <script type="module">import mermaid from "https://unpkg.com/mermaid@10.4.0/dist/mermaid.esm.min.mjs";
+window.mermaidConfig = {default: {
+    startOnLoad: false
+}};</script></body> </html>
