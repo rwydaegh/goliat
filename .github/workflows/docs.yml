@@ -13,9 +13,15 @@ jobs:
       contents: write
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0   # Required for git-revision-date-localized-plugin
+        lfs: true        # Fetch Git LFS files (required for images in docs/img/tutorials/)
+
+    - name: Install Git LFS
+      run: |
+        git lfs install
+        git lfs pull
 
     - name: Set up Python 3.11
       uses: actions/setup-python@v4

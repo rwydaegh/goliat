@@ -19,7 +19,9 @@ matplotlib.use("Agg")  # Use non-interactive backend before importing pyplot
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 # --- Centralized Startup ---
-initial_setup()
+# Only run initial_setup if not in test/CI environment
+if not os.environ.get("PYTEST_CURRENT_TEST") and not os.environ.get("CI"):
+    initial_setup()
 # --- End Centralized Startup ---
 
 

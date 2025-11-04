@@ -11,51 +11,67 @@ from typing import Optional
 from goliat.utils.setup import initial_setup
 
 # --- Pre-check and Setup ---
-initial_setup()
+# Only run initial_setup if not in test/CI environment
+if not os.environ.get("PYTEST_CURRENT_TEST") and not os.environ.get("CI"):
+    initial_setup()
 
 try:
     from PySide6.QtWidgets import QApplication
 except ImportError:
     # In the cloud, the python executable is not in a path containing "Sim4Life", but we can detect the OS.
     is_sim4life_interpreter = "Sim4Life" in sys.executable or "aws" in platform.release()
-    print("=" * 80)
-    print("ERROR: Could not start the application.")
-
-    if not is_sim4life_interpreter:
-        print("You are not using a Sim4Life Python interpreter.")
-        print("Please ensure you are using the Python executable from your Sim4Life installation.")
-        print("See the documentation for instructions on how to set up your environment.")
+    
+    # Don't exit during test collection or CI - let tests handle missing PySide6
+    if os.environ.get("PYTEST_CURRENT_TEST") or os.environ.get("CI"):
+        QApplication = None  # Set to None so tests can mock it
     else:
-        print("Critical dependencies are missing.")
-        print("This can happen if you haven't installed the project requirements.")
-        print("Attempting to install now...")
         print("=" * 80)
-        try:
-            # Fallback: Try to import from goliat.utils.setup (only for initial setup phase)
-            # This is only reached if PySide6 is missing before initial_setup() completes
-            # Get project root (go up from cli to repo root)
-            base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-            from goliat.utils.setup import install_requirements
+        print("ERROR: Could not start the application.")
 
-            install_requirements(os.path.join(base_dir, "requirements.txt"))
-            print("\nDependencies installed. Restarting the script...")
-            # Restart the script to ensure new packages are loaded
-            executable = f'"{sys.executable}"' if " " in sys.executable else sys.executable
-            os.execv(executable, [executable] + sys.argv)
-        except Exception as e:
-            print(f"\nFailed to install dependencies automatically: {e}")
-            print("Please run the following command in your terminal:")
-            print(f"   {sys.executable} -m pip install -e .")
+        if not is_sim4life_interpreter:
+            print("You are not using a Sim4Life Python interpreter.")
+            print("Please ensure you are using the Python executable from your Sim4Life installation.")
+            print("See the documentation for instructions on how to set up your environment.")
+        else:
+            print("Critical dependencies are missing.")
+            print("This can happen if you haven't installed the project requirements.")
+            print("Attempting to install now...")
+            print("=" * 80)
+            try:
+                # Fallback: Try to import from goliat.utils.setup (only for initial setup phase)
+                # This is only reached if PySide6 is missing before initial_setup() completes
+                # Get project root (go up from cli to repo root)
+                base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+                from goliat.utils.setup import install_requirements
 
-    print("=" * 80)
-    sys.exit(1)
+                install_requirements(os.path.join(base_dir, "requirements.txt"))
+                print("\nDependencies installed. Restarting the script...")
+                # Restart the script to ensure new packages are loaded
+                executable = f'"{sys.executable}"' if " " in sys.executable else sys.executable
+                os.execv(executable, [executable] + sys.argv)
+            except Exception as e:
+                print(f"\nFailed to install dependencies automatically: {e}")
+                print("Please run the following command in your terminal:")
+                print(f"   {sys.executable} -m pip install -e .")
+
+        print("=" * 80)
+        sys.exit(1)
 # --- End Pre-check ---
 
 from goliat.config import Config  # noqa: E402
-from goliat.gui_manager import ProgressGUI, QueueGUI  # noqa: E402
 from goliat.logging_manager import LoggingMixin, setup_loggers, shutdown_loggers  # noqa: E402
-from goliat.osparc_batch.runner import main as run_osparc_batch  # noqa: E402
 from goliat.studies.base_study import StudyCancelledError  # noqa: E402
+
+# Import GUI components - will be None if PySide6 not available
+from goliat.gui_manager import ProgressGUI, QueueGUI  # noqa: E402
+
+# Only import osparc batch runner if GUI is available (it requires PySide6)
+if QApplication is not None:
+    from goliat.osparc_batch.runner import main as run_osparc_batch  # noqa: E402
+else:
+    # Mock function for CI/test environments
+    def run_osparc_batch(config_filename):
+        raise RuntimeError("oSPARC batch execution requires PySide6 and is not available in CI/test environments")
 
 # Base directory for config files (package is installed, no sys.path needed)
 # Get project root (go up from cli to repo root)
@@ -222,7 +238,11 @@ def study_process_wrapper(queue, stop_event, config_filename, process_id, no_cac
         )
 
         # The study will use the QueueGUI to send updates back to the main process.
-        gui_proxy = QueueGUI(queue, stop_event, profiler, progress_logger, verbose_logger)
+        # Fallback to ConsoleLogger if GUI not available (CI/test environments)
+        if QueueGUI is None:
+            gui_proxy = ConsoleLogger(progress_logger, verbose_logger)
+        else:
+            gui_proxy = QueueGUI(queue, stop_event, profiler, progress_logger, verbose_logger)
 
         if study_type == "near_field":
             study = NearFieldStudy(study_type="near_field", config_filename=config_filename, gui=gui_proxy, no_cache=no_cache)
@@ -303,29 +323,35 @@ def main():
     if execution_control.get("batch_run"):
         run_osparc_batch(config_filename)
     elif use_gui:
-        # Use spawn context for compatibility across platforms
-        ctx = multiprocessing.get_context("spawn")
-        queue = ctx.Queue()
-        stop_event = ctx.Event()
+        # Check if GUI is available
+        if QApplication is None or ProgressGUI is None:
+            # Fallback to console mode if GUI not available
+            progress_logger.info("GUI not available, running in console mode...")
+            use_gui = False
+        else:
+            # Use spawn context for compatibility across platforms
+            ctx = multiprocessing.get_context("spawn")
+            queue = ctx.Queue()
+            stop_event = ctx.Event()
 
-        # Create and start the study process
-        study_process = ctx.Process(
-            target=study_process_wrapper,
-            args=(queue, stop_event, config_filename, process_id, args.no_cache),
-        )
-        study_process.start()
+            # Create and start the study process
+            study_process = ctx.Process(
+                target=study_process_wrapper,
+                args=(queue, stop_event, config_filename, process_id, args.no_cache),
+            )
+            study_process.start()
 
-        # The GUI runs in the main process
-        app = QApplication(sys.argv)
-        gui = ProgressGUI(queue, stop_event, study_process, init_window_title=args.title)
-        gui.show()
+            # The GUI runs in the main process
+            app = QApplication(sys.argv)
+            gui = ProgressGUI(queue, stop_event, study_process, init_window_title=args.title)
+            gui.show()
 
-        app.exec()
+            app.exec()
 
-        # Ensure the study process is cleaned up
-        if study_process.is_alive():
-            study_process.terminate()
-            study_process.join()
+            # Ensure the study process is cleaned up
+            if study_process.is_alive():
+                study_process.terminate()
+                study_process.join()
     else:
         try:
             from goliat.profiler import Profiler

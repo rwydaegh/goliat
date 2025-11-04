@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING
 
 import numpy as np
-import s4l_v1.simulation.emfdtd as emfdtd
 
 from .base_setup import BaseSetup
 from .boundary_setup import BoundarySetup
@@ -17,6 +16,7 @@ if TYPE_CHECKING:
     from ..config import Config
     from ..profiler import Profiler
     from ..project_manager import ProjectManager
+    import s4l_v1.simulation.emfdtd as emfdtd
 
 
 class NearFieldSetup(BaseSetup):

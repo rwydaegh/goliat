@@ -39,19 +39,23 @@ source .bashrc
 
 **Note**: The `.bashrc` file is pre-configured for the default Sim4Life location (`C:/Program Files/Sim4Life_8.2.0/Python`). If Sim4Life is installed elsewhere or you're using a different version, GOLIAT will automatically prompt you to edit `.bashrc` when needed. Most users won't need to edit it manually.
 
-**Important**: Now initialize GOLIAT by running:
+**Important**: Install the GOLIAT package in editable mode:
+
+```bash
+python -m pip install -e .
+```
+
+This installs GOLIAT and its dependencies. The editable mode allows code modifications to be reflected immediately without reinstalling.
+
+Now initialize GOLIAT by running:
 
 ```bash
 goliat init
 ```
 
 This will:
-- Check and install Python dependencies from `requirements.txt`
-- Install the GOLIAT package in editable mode (allows code modifications)
 - Verify Sim4Life Python interpreter is being used
 - Prepare data files (phantoms, antennas)
-
-After installation, you can modify the code and changes will be reflected immediately without reinstalling.
 
 **Alternative**: If you skip `goliat init`, commands like `goliat study` will automatically prompt you to install when first run.
 
