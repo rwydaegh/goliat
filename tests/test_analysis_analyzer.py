@@ -1,5 +1,4 @@
 """Tests for goliat.analysis.analyzer module."""
-
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -30,7 +29,7 @@ class TestAnalyzer:
     def test_analyzer_initialization(self, mock_config, mock_strategy):
         """Test analyzer initialization."""
         analyzer = Analyzer(mock_config, "thelonious", mock_strategy)
-
+        
         assert analyzer.config == mock_config
         assert analyzer.phantom_name == "thelonious"
         assert analyzer.strategy == mock_strategy
@@ -43,17 +42,17 @@ class TestAnalyzer:
     def test_analyzer_tissue_group_definitions(self, mock_config, mock_strategy):
         """Test that tissue group definitions are correct."""
         analyzer = Analyzer(mock_config, "thelonious", mock_strategy)
-
+        
         # Check eyes group
         assert "eye" in analyzer.tissue_group_definitions["eyes_group"]
         assert "cornea" in analyzer.tissue_group_definitions["eyes_group"]
         assert "lens" in analyzer.tissue_group_definitions["eyes_group"]
-
+        
         # Check brain group
         assert "brain" in analyzer.tissue_group_definitions["brain_group"]
         assert "cerebellum" in analyzer.tissue_group_definitions["brain_group"]
         assert "hippocampus" in analyzer.tissue_group_definitions["brain_group"]
-
+        
         # Check skin group
         assert analyzer.tissue_group_definitions["skin_group"] == ["skin"]
 
@@ -61,11 +60,11 @@ class TestAnalyzer:
         """Test processing single result for near-field."""
         mock_strategy.__class__.__name__ = "NearFieldAnalysisStrategy"
         analyzer = Analyzer(mock_config, "thelonious", mock_strategy)
-
+        
         # Mock file system
         with patch("os.path.exists", return_value=False):
             analyzer._process_single_result(700, "by_cheek", "center", "vertical")
-
+        
         # Should handle missing files gracefully
         assert len(analyzer.all_results) == 0
 
@@ -73,11 +72,11 @@ class TestAnalyzer:
         """Test processing single result for far-field."""
         mock_strategy.__class__.__name__ = "FarFieldAnalysisStrategy"
         analyzer = Analyzer(mock_config, "thelonious", mock_strategy)
-
+        
         # Mock file system
         with patch("os.path.exists", return_value=False):
             analyzer._process_single_result(700, "scenario", "full_placement_name", "orient")
-
+        
         # Should handle missing files gracefully
         assert len(analyzer.all_results) == 0
 
@@ -87,9 +86,9 @@ class TestAnalyzer:
         """Test running analysis with no results."""
         analyzer = Analyzer(mock_config, "thelonious", mock_strategy)
         analyzer.all_results = []  # No results
-
+        
         analyzer.run_analysis()
-
+        
         # Should log warning about no results
         mock_logging.getLogger.return_value.info.assert_called()
 
@@ -99,21 +98,23 @@ class TestAnalyzer:
         """Test running analysis with results."""
         analyzer = Analyzer(mock_config, "thelonious", mock_strategy)
         analyzer.all_results = [{"test": "data"}]
-
+        
         # Mock DataFrame
         mock_df_instance = MagicMock()
         mock_df.return_value = mock_df_instance
-
+        
         # Mock strategy methods
         mock_strategy.load_and_process_results = MagicMock()
         analyzer._convert_units_and_cache = MagicMock(return_value=mock_df_instance)
         analyzer._export_reports = MagicMock()
         mock_strategy.generate_plots = MagicMock()
-
+        
         analyzer.run_analysis()
-
+        
         # Should call strategy methods
         mock_strategy.load_and_process_results.assert_called_once()
         analyzer._convert_units_and_cache.assert_called_once()
         analyzer._export_reports.assert_called_once()
         mock_strategy.generate_plots.assert_called_once()
+
+

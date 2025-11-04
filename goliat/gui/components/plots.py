@@ -1,7 +1,7 @@
 """Plotting components for GUI: time remaining, overall progress, and pie charts."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Tuple, Dict
+from typing import TYPE_CHECKING, List, Tuple, Dict, Any, Optional
 
 import matplotlib
 
@@ -18,6 +18,7 @@ except ImportError:
     Axes = None  # type: ignore
 
 if TYPE_CHECKING:
+    from matplotlib.axes import Axes
     from matplotlib.figure import Figure
     from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
     from goliat.profiler import Profiler
@@ -39,7 +40,7 @@ class TimeRemainingPlot:
         from matplotlib.figure import Figure as _Figure
         from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as _FigureCanvas
         from matplotlib.axes import Axes as _Axes
-
+        
         self.figure: _Figure = _Figure(figsize=(10, 6), facecolor="#2b2b2b")
         self.canvas: _FigureCanvas = _FigureCanvas(self.figure)
         self.ax: _Axes = self.figure.add_subplot(111)
@@ -134,7 +135,7 @@ class OverallProgressPlot:
         from matplotlib.figure import Figure as _Figure
         from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as _FigureCanvas
         from matplotlib.axes import Axes as _Axes
-
+        
         self.figure: _Figure = _Figure(figsize=(10, 6), facecolor="#2b2b2b")
         self.canvas: _FigureCanvas = _FigureCanvas(self.figure)
         self.ax: _Axes = self.figure.add_subplot(111)
@@ -234,7 +235,7 @@ class PieChartsManager:
         from matplotlib.figure import Figure as _Figure
         from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as _FigureCanvas
         from matplotlib.axes import Axes as _Axes
-
+        
         self.figure: _Figure = _Figure(figsize=(12, 10), facecolor="#2b2b2b")
         self.canvas: _FigureCanvas = _FigureCanvas(self.figure)
         self.axes: List[_Axes] = [

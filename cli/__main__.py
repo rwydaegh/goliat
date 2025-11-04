@@ -1,5 +1,4 @@
 """Main CLI entry point for GOLIAT."""
-
 import argparse
 import os
 import sys
@@ -73,20 +72,20 @@ def create_parser():
     )
 
     # init command
-    _init_parser = subparsers.add_parser("init", help="Initialize GOLIAT environment (install dependencies, check setup)")
+    init_parser = subparsers.add_parser("init", help="Initialize GOLIAT environment (install dependencies, check setup)")
 
     # status command
-    _status_parser = subparsers.add_parser("status", help="Show GOLIAT setup status and environment information")
+    status_parser = subparsers.add_parser("status", help="Show GOLIAT setup status and environment information")
 
     # validate command
     validate_parser = subparsers.add_parser("validate", help="Validate a GOLIAT config file")
     validate_parser.add_argument("config", type=str, help="Path to the configuration file to validate")
 
     # version command
-    _version_parser = subparsers.add_parser("version", help="Show GOLIAT version information")
+    version_parser = subparsers.add_parser("version", help="Show GOLIAT version information")
 
     # free-space command
-    _free_space_parser = subparsers.add_parser(
+    free_space_parser = subparsers.add_parser(
         "free-space",
         help="Run free-space simulations for antenna validation",
         aliases=["freespace"],
@@ -105,7 +104,7 @@ def main():
     if args.command == "init":
         # Run initial setup (install dependencies, check Python, prepare data)
         from goliat.utils.setup import initial_setup
-
+        
         initial_setup()
         print("\n✓ GOLIAT initialization complete!")
         print("  You can now run 'goliat study <config>' to start a simulation.")

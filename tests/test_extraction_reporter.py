@@ -1,6 +1,7 @@
 """Tests for goliat.extraction.reporter module."""
-
 import os
+import pickle
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
@@ -152,3 +153,4 @@ class TestReporter:
         assert "<h2>Grouped SAR Statistics</h2>" in html_content
         assert "<h2>Peak SAR Details</h2>" in html_content
         assert "Brain" in html_content or "brain" in html_content.lower()
+

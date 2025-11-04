@@ -3,7 +3,6 @@
 This module provides functions for checking Python interpreter, installing requirements,
 and preparing data files needed for studies.
 """
-
 import logging
 import os
 import platform
@@ -32,20 +31,20 @@ def install_requirements(requirements_path):
 def check_package_installed():
     """Check if goliat is installed as a package (editable or regular)."""
     try:
-        import importlib.util
-
-        spec = importlib.util.find_spec("goliat")
-        if spec is None:
-            return False
+        import goliat
         # Check if goliat is installed via pip by checking pip list
         try:
-            result = subprocess.run([sys.executable, "-m", "pip", "list", "--format=json"], capture_output=True, text=True, check=True)
+            result = subprocess.run(
+                [sys.executable, "-m", "pip", "list", "--format=json"],
+                capture_output=True,
+                text=True,
+                check=True
+            )
             import json
-
             installed_packages = json.loads(result.stdout)
             # Check if goliat is in the pip list
-            return any(pkg["name"].lower() == "goliat" for pkg in installed_packages)
-        except (subprocess.CalledProcessError, json.JSONDecodeError):  # type: ignore[name-defined]
+            return any(pkg['name'].lower() == 'goliat' for pkg in installed_packages)
+        except (subprocess.CalledProcessError, json.JSONDecodeError):
             # Fallback: check if .egg-info exists in project root
             base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
             egg_info_dir = os.path.join(base_dir, "goliat.egg-info")
@@ -100,40 +99,9 @@ def update_bashrc(selected_python_path):
     selected_python_path = selected_python_path.strip().strip('"').strip("'")
 
     # Prepare the new path lines
-    # Normalize Windows path: replace backslashes with forward slashes
-    normalized_path = selected_python_path.replace("\\", "/")
-
-    # Extract drive letter and path rest
-    # Handle both Windows (where splitdrive works) and Linux (where it might not)
     drive, path_rest = os.path.splitdrive(selected_python_path)
-
-    if not drive:
-        # On Linux, splitdrive might not recognize Windows paths, extract manually
-        # Check if normalized path starts with drive letter pattern (e.g., "C:/")
-        if len(normalized_path) >= 2 and normalized_path[1] == ":":
-            drive = normalized_path[0:2]  # e.g., "C:"
-            path_rest = normalized_path[2:].lstrip("/")  # Remove "C:" prefix and leading slash
-        else:
-            # No drive letter found, use as-is
-            path_rest = normalized_path
-            drive = ""
-    else:
-        # Normal case: splitdrive worked, use normalized_path to extract the rest
-        # Find the drive letter in normalized_path and get everything after it
-        drive_normalized = drive.replace("\\", "/")
-        if normalized_path.startswith(drive_normalized):
-            path_rest = normalized_path[len(drive_normalized) :].lstrip("/")
-        else:
-            # Fallback: normalize path_rest from splitdrive result
-            path_rest = path_rest.replace("\\", "/").lstrip("/")
-
-    # Build Git Bash path format: /C/Program Files/...
-    drive_letter = drive.strip(":").upper() if drive else ""
-    if drive_letter:
-        bash_path = f"/{drive_letter}/{path_rest}"
-    else:
-        bash_path = f"/{path_rest}"
-
+    bash_path = f"/{drive.strip(':')}{path_rest.replace(os.sep, '/')}"
+    
     # Write BOTH Python and Scripts directories to PATH
     # Python directory: for python.exe itself
     python_line = f'export PATH="{bash_path}:$PATH"\n'
@@ -246,12 +214,12 @@ def initial_setup():
     # Skip everything in CI/test environment
     if os.environ.get("CI") or os.environ.get("PYTEST_CURRENT_TEST"):
         return
-
+    
     base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-
+    
     # Check if goliat is installed as a package
     package_installed = check_package_installed()
-
+    
     if not package_installed:
         # Prompt user for permission to install
         print("=" * 80)
@@ -266,15 +234,15 @@ def initial_setup():
         print("be reflected immediately without reinstalling.")
         print()
         response = input("Do you want to install dependencies and GOLIAT package? [Y/n]: ").strip().lower()
-
-        if response and response != "y" and response != "yes":
+        
+        if response and response != 'y' and response != 'yes':
             print("Installation cancelled. GOLIAT cannot run without installation.")
             sys.exit(1)
-
+        
         # Install requirements.txt first
         print("\nInstalling Python dependencies...")
         install_requirements(os.path.join(base_dir, "requirements.txt"))
-
+        
         # Install editable package
         print("\nInstalling GOLIAT package in editable mode...")
         try:
@@ -283,23 +251,19 @@ def initial_setup():
         except subprocess.CalledProcessError as e:
             logging.error(f"Failed to install GOLIAT package: {e}")
             sys.exit(1)
-
+    
     # Verify package is importable
     try:
-        import importlib.util
-
-        spec = importlib.util.find_spec("goliat")
-        if spec is None:
-            raise ImportError("goliat package not found")
+        import goliat
     except ImportError:
         logging.error("GOLIAT package could not be imported. Please ensure installation completed successfully.")
         sys.exit(1)
-
+    
     # Rest of setup (data preparation, etc.)
     data_dir = os.path.join(base_dir, "data")
     os.makedirs(data_dir, exist_ok=True)
     lock_file = os.path.join(data_dir, ".setup_done")
-
+    
     if not os.path.exists(lock_file):
         check_repo_root()
         # Skip interpreter check in CI/test environment
@@ -312,3 +276,4 @@ def initial_setup():
         # Skip interpreter check in CI/test environment
         if not os.environ.get("CI") and not os.environ.get("PYTEST_CURRENT_TEST"):
             check_python_interpreter()  # This function now handles AWS detection internally
+

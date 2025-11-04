@@ -2,7 +2,6 @@
 
 Downloads phantoms and antenna data from Google Drive using gdown.
 """
-
 import json
 import logging
 import os
@@ -29,26 +28,26 @@ def setup_console_logging():
 def _convert_gdrive_url_for_wget(url):
     """
     Convert Google Drive URL to wget-compatible format.
-
+    
     Args:
         url: Google Drive URL
-
+        
     Returns:
         wget-compatible URL or None if conversion not possible
     """
     # Extract file ID from various Google Drive URL formats
     # Format 1: https://drive.google.com/uc?id=FILE_ID
-    match = re.search(r"[?&]id=([a-zA-Z0-9_-]+)", url)
+    match = re.search(r'[?&]id=([a-zA-Z0-9_-]+)', url)
     if match:
         file_id = match.group(1)
         return f"https://drive.google.com/uc?export=download&id={file_id}"
-
+    
     # Format 2: https://drive.google.com/drive/folders/FOLDER_ID
-    match = re.search(r"/folders/([a-zA-Z0-9_-]+)", url)
+    match = re.search(r'/folders/([a-zA-Z0-9_-]+)', url)
     if match:
         # wget doesn't support folder downloads from Google Drive
         return None
-
+    
     return None
 
 
@@ -76,7 +75,7 @@ def download_and_extract_data(base_dir, logger, aws=False):
             os.makedirs(phantoms_dir)
         output_path = os.path.join(phantoms_dir, "duke_posable.sab")
         logger.info(f"{colorama.Fore.CYAN}Downloading data from {gdrive_url} into {output_path}...")
-
+        
         try:
             gdown.download(gdrive_url, output=output_path, quiet=False)
         except Exception as e:
@@ -85,7 +84,10 @@ def download_and_extract_data(base_dir, logger, aws=False):
             wget_url = _convert_gdrive_url_for_wget(gdrive_url)
             if wget_url:
                 try:
-                    subprocess.run(["wget", "--no-check-certificate", "-O", output_path, wget_url], check=True)
+                    subprocess.run(
+                        ["wget", "--no-check-certificate", "-O", output_path, wget_url],
+                        check=True
+                    )
                     logger.info(f"{colorama.Fore.GREEN}Download completed with wget.")
                 except (subprocess.CalledProcessError, FileNotFoundError) as wget_error:
                     logger.error(f"{colorama.Fore.RED}wget also failed: {wget_error}")
@@ -96,7 +98,7 @@ def download_and_extract_data(base_dir, logger, aws=False):
     else:
         gdrive_url = config["data_setup"]["gdrive_url"]
         logger.info(f"{colorama.Fore.CYAN}Downloading data from {gdrive_url} into {data_dir}...")
-
+        
         try:
             gdown.download_folder(gdrive_url, output=data_dir, quiet=False)
         except Exception as e:
@@ -112,3 +114,4 @@ if __name__ == "__main__":
     logger = setup_console_logging()
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
     download_and_extract_data(project_root, logger)
+

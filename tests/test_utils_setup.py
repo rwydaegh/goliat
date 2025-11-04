@@ -1,6 +1,6 @@
 """Tests for goliat.utils.setup module."""
-
 import json
+import os
 import subprocess
 import sys
 from unittest.mock import MagicMock, patch
@@ -90,7 +90,6 @@ class TestFindSim4LifePythonExecutables:
     @patch("glob.glob")
     def test_finds_sim4life_executables(self, mock_glob, mock_exists):
         """Test finding Sim4Life Python executables."""
-
         # Mock drive existence - only C drive exists
         def exists_side_effect(path):
             if path.endswith(":\\"):
@@ -117,7 +116,6 @@ class TestFindSim4LifePythonExecutables:
     @patch("glob.glob")
     def test_finds_no_executables(self, mock_glob, mock_exists):
         """Test when no Sim4Life executables are found."""
-
         def exists_side_effect(path):
             if path.endswith(":\\"):
                 return path == "C:\\"
@@ -186,7 +184,8 @@ class TestUpdateBashrc:
             content = f.read()
             assert "export PATH=" in content
             # Path conversion may use uppercase /C/ or lowercase /c/
-            assert "/C/Program Files/Sim4Life_8.2.0.16876/Python" in content or "/c/Program Files/Sim4Life_8.2.0.16876/Python" in content
+            assert ("/C/Program Files/Sim4Life_8.2.0.16876/Python" in content or 
+                    "/c/Program Files/Sim4Life_8.2.0.16876/Python" in content)
 
     def test_update_bashrc_strips_quotes(self, tmp_path, monkeypatch):
         """Test that quotes are stripped from path."""
@@ -200,3 +199,4 @@ class TestUpdateBashrc:
             content = f.read()
             # Function writes 2 lines, each with quotes around path: 4 quotes total
             assert content.count('"') == 4  # Two lines: Python and Scripts paths
+
