@@ -513,6 +513,8 @@ class ProjectManager(LoggingMixin):
             "Initializing model by creating and deleting a dummy block...",
             log_type="verbose",
         )
+        import s4l_v1.model as s4l_model
+
         dummy_block = s4l_model.CreateSolidBlock(s4l_model.Vec3(0, 0, 0), s4l_model.Vec3(1, 1, 1))
         dummy_block.Delete()
         self._log("Model initialized, ready for population.", log_type="verbose")

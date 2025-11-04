@@ -1,7 +1,7 @@
 """Comprehensive tests for goliat.project_manager core workflow."""
+
 import json
 import os
-import tempfile
 import time
 from unittest.mock import MagicMock, patch
 
@@ -17,11 +17,7 @@ class TestProjectManagerCoreWorkflow:
         """Create a temporary config."""
         config = MagicMock()
         config.base_dir = str(tmp_path)
-        config.get_setting.return_value = {
-            "do_setup": True,
-            "do_run": True,
-            "do_extract": True
-        }
+        config.get_setting.return_value = {"do_setup": True, "do_run": True, "do_extract": True}
         return config
 
     def test_project_manager_create_or_open_project(self, dummy_config, tmp_path):
@@ -30,7 +26,7 @@ class TestProjectManagerCoreWorkflow:
 
         dummy_config.get_setting.side_effect = lambda key, default=None: {
             "study_type": "near_field",
-            "execution_control.do_setup": True
+            "execution_control.do_setup": True,
         }.get(key, default)
 
         manager = ProjectManager(
@@ -47,11 +43,7 @@ class TestProjectManagerCoreWorkflow:
 
         with patch("s4l_v1.document", mock_document):
             status = manager.create_or_open_project(
-                phantom_name="thelonious",
-                frequency_mhz=700,
-                scenario_name="by_cheek",
-                position_name="center",
-                orientation_name="vertical"
+                phantom_name="thelonious", frequency_mhz=700, scenario_name="by_cheek", position_name="center", orientation_name="vertical"
             )
 
             assert isinstance(status, dict)
@@ -167,7 +159,7 @@ class TestProjectManagerCoreWorkflow:
         manager.cleanup()
 
         # Verify cleanup was called
-        assert hasattr(mock_document, 'CloseAll') or True  # May or may not exist
+        assert hasattr(mock_document, "CloseAll") or True  # May or may not exist
 
     def test_project_manager_verify_simulation_metadata_no_file(self, dummy_config, tmp_path):
         """Test verify_simulation_metadata when metadata file doesn't exist."""
@@ -207,4 +199,3 @@ class TestProjectManagerCoreWorkflow:
 
         assert timestamp is not None
         assert isinstance(timestamp, float)
-

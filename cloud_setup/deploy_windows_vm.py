@@ -1,46 +1,36 @@
-import os
 import requests
 import json
 
 API_TOKEN = "YOUR_TENSORDOCK_API_TOKEN"
 BASE_URL = "https://dashboard.tensordock.com/api/v2"
-GPU_TYPE = "geforcertx4090-pcie-24gb" # Switched to RTX 4090
+GPU_TYPE = "geforcertx4090-pcie-24gb"  # Switched to RTX 4090
 REQUESTED_VCPUS = 8
 REQUESTED_RAM_GB = 32
 
+
 def find_hostnode():
     """Finds a specific hostnode that supports dedicated IPs."""
-    headers = {
-        "Authorization": f"Bearer {API_TOKEN}",
-        "Accept": "application/json"
-    }
-    params = {
-        "gpu": GPU_TYPE,
-        "minVcpu": REQUESTED_VCPUS,
-        "minRamGb": REQUESTED_RAM_GB
-    }
+    headers = {"Authorization": f"Bearer {API_TOKEN}", "Accept": "application/json"}
+    params = {"gpu": GPU_TYPE, "minVcpu": REQUESTED_VCPUS, "minRamGb": REQUESTED_RAM_GB}
     print(f"Querying available hostnodes for {GPU_TYPE} with dedicated IP support...")
     response = requests.get(f"{BASE_URL}/hostnodes", headers=headers, params=params)
     response.raise_for_status()
     hostnodes = response.json().get("data", {}).get("hostnodes", [])
-    
+
     for node in hostnodes:
         if node.get("available_resources", {}).get("has_public_ip_available"):
-            node_id = node['id']
+            node_id = node["id"]
             location_name = node.get("location", {}).get("city", "Unknown")
             print(f"Found suitable hostnode: {node_id} in {location_name}")
             return node_id
-                
+
     print("No suitable hostnode found with dedicated IP support.")
     return None
 
+
 def create_vm_with_dedicated_ip(hostnode_id):
     """Creates a Windows VM on a specific hostnode with a dedicated IP."""
-    headers = {
-        "Authorization": f"Bearer {API_TOKEN}",
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-    }
+    headers = {"Authorization": f"Bearer {API_TOKEN}", "Content-Type": "application/json", "Accept": "application/json"}
     payload = {
         "data": {
             "type": "virtualmachine",
@@ -54,17 +44,15 @@ def create_vm_with_dedicated_ip(hostnode_id):
                     "vcpu_count": REQUESTED_VCPUS,
                     "ram_gb": REQUESTED_RAM_GB,
                     "storage_gb": 250,
-                    "gpus": {
-                        GPU_TYPE: {"count": 1}
-                    }
+                    "gpus": {GPU_TYPE: {"count": 1}},
                 },
-                "password": "YOUR_VM_PASSWORD"
-            }
+                "password": "YOUR_VM_PASSWORD",
+            },
         }
     }
     print(f"Sending creation request to hostnode {hostnode_id}...")
     response = requests.post(f"{BASE_URL}/instances", headers=headers, data=json.dumps(payload))
-    
+
     print(f"Status Code: {response.status_code}")
     try:
         print("Response JSON:")
@@ -75,6 +63,7 @@ def create_vm_with_dedicated_ip(hostnode_id):
 
     response.raise_for_status()
     return response.json()
+
 
 if __name__ == "__main__":
     print("Searching for a suitable hostnode...")

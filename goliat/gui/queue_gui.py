@@ -82,9 +82,7 @@ class QueueGUI(LoggingMixin):
         """
         self.queue.put({"type": "overall_progress", "current": current_step, "total": total_steps})
 
-    def update_stage_progress(
-        self, stage_name: str, current_step: int, total_steps: int, sub_stage: str = ""
-    ) -> None:
+    def update_stage_progress(self, stage_name: str, current_step: int, total_steps: int, sub_stage: str = "") -> None:
         """Updates progress for a specific stage (setup/run/extract).
 
         Args:

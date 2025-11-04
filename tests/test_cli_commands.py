@@ -1,8 +1,7 @@
 """Tests for CLI commands module."""
+
 import json
-import os
 import sys
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -213,7 +212,7 @@ class TestShowVersion:
         # Mock the goliat module import
         mock_goliat = MagicMock()
         mock_goliat.__version__ = "1.2.3"
-        import sys
+
         original_goliat = sys.modules.get("goliat")
         sys.modules["goliat"] = mock_goliat
         try:
@@ -241,4 +240,3 @@ class TestShowVersion:
                 captured = capsys.readouterr()
                 # Should handle gracefully
                 assert "GOLIAT" in captured.out
-
