@@ -54,7 +54,9 @@ class QueueHandler:
                 elif msg_type == "overall_progress":
                     self.gui.update_overall_progress(msg["current"], msg["total"])
                 elif msg_type == "stage_progress":
-                    self.gui.update_stage_progress(msg["name"], msg["current"], msg["total"], msg.get("sub_stage", ""))
+                    self.gui.update_stage_progress(
+                        msg["name"], msg["current"], msg["total"], msg.get("sub_stage", "")
+                    )
                 elif msg_type == "start_animation":
                     self.gui.start_stage_animation(msg["estimate"], msg["end_value"])
                 elif msg_type == "end_animation":

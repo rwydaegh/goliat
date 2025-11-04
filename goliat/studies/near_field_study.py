@@ -220,8 +220,6 @@ class NearFieldStudy(BaseStudy):
                     if self.project_manager.project_path:
                         project_dir = os.path.dirname(self.project_manager.project_path)
                         sim_log_handlers = add_simulation_log_handlers(project_dir)
-                    else:
-                        sim_log_handlers = None
                     needs_setup = not verification_status["setup_done"]
 
                     if needs_setup:
@@ -274,11 +272,8 @@ class NearFieldStudy(BaseStudy):
                         self.gui.update_stage_progress("Setup", 1, 1)
 
             else:
-                verification_status = self.project_manager.create_or_open_project(
-                    phantom_name, freq, scenario_name, position_name, orientation_name
-                )
+                verification_status = self.project_manager.create_or_open_project(phantom_name, freq, scenario_name, position_name, orientation_name)
                 # Add simulation-specific log handlers after project directory is created
-                sim_log_handlers = None  # Initialize to avoid unbound variable error
                 if self.project_manager.project_path:
                     project_dir = os.path.dirname(self.project_manager.project_path)
                     sim_log_handlers = add_simulation_log_handlers(project_dir)

@@ -335,3 +335,4 @@ if __name__ == "__main__":
     # This is crucial for multiprocessing to work correctly, especially on Windows
     multiprocessing.freeze_support()
     main()
+

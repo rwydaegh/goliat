@@ -20,7 +20,7 @@ try:
 except ImportError:
     # In the cloud, the python executable is not in a path containing "Sim4Life", but we can detect the OS.
     is_sim4life_interpreter = "Sim4Life" in sys.executable or "aws" in platform.release()
-
+    
     # Don't exit during test collection or CI - let tests handle missing PySide6
     if os.environ.get("PYTEST_CURRENT_TEST") or os.environ.get("CI"):
         QApplication = None  # Set to None so tests can mock it
@@ -72,7 +72,6 @@ else:
     # Mock function for CI/test environments
     def run_osparc_batch(config_filename):
         raise RuntimeError("oSPARC batch execution requires PySide6 and is not available in CI/test environments")
-
 
 # Base directory for config files (package is installed, no sys.path needed)
 # Get project root (go up from cli to repo root)
@@ -149,7 +148,7 @@ class ConsoleLogger(LoggingMixin):
             total_steps: Total number of steps.
         """
         if total_steps > 0:
-            percent = current_step / total_steps * 100
+            percent = (current_step / total_steps * 100)
             # Only show at 25%, 50%, 75%, 100% milestones
             if int(percent) in [25, 50, 75] or current_step == total_steps:
                 message = f"Overall Progress: {current_step}/{total_steps} ({percent:.1f}%)"
@@ -398,3 +397,4 @@ if __name__ == "__main__":
     # This is crucial for multiprocessing to work correctly on Windows
     multiprocessing.freeze_support()
     main()
+

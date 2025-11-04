@@ -37,3 +37,4 @@ start "OpenVPN" "C:\Program Files\OpenVPN\bin\openvpn.exe" --config "Intec-iGent
 echo VPN connection initiated. Check connection status with: ipconfig /all
 pause
 endlocal
+
