@@ -247,12 +247,30 @@
         "tragus": [0, 0, 0]
       },
       "orientations": {
-        "cheek_base": [{"axis": "Z", "angle_deg": 15}],
-        "cheek_up": [{"axis": "Z", "angle_deg": 15}, {"axis": "X", "angle_deg": 10}],
-        "cheek_down": [{"axis": "Z", "angle_deg": 15}, {"axis": "X", "angle_deg": -10}],
-        "tilt_base": [],
-        "tilt_up": [{"axis": "X", "angle_deg": 10}],
-        "tilt_down": [{"axis": "X", "angle_deg": -10}]
+        "cheek_base": [{
+          "rotate_phantom_to_cheek": true,
+          "angle_offset_deg": 0
+        }],
+        "cheek_up": [{
+          "rotate_phantom_to_cheek": true,
+          "angle_offset_deg": 0
+        }, {"axis": "X", "angle_deg": 10}],
+        "cheek_down": [{
+          "rotate_phantom_to_cheek": true,
+          "angle_offset_deg": 0
+        }, {"axis": "X", "angle_deg": -10}],
+        "tilt_base": [{
+          "rotate_phantom_to_cheek": true,
+          "angle_offset_deg": 15
+        }],
+        "tilt_up": [{
+          "rotate_phantom_to_cheek": true,
+          "angle_offset_deg": 15
+        }, {"axis": "X", "angle_deg": 10}],
+        "tilt_down": [{
+          "rotate_phantom_to_cheek": true,
+          "angle_offset_deg": 15
+        }, {"axis": "X", "angle_deg": -10}]
       },
       "antenna_reference": {
         "distance_from_top": 10
