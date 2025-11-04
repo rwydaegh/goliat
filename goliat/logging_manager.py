@@ -148,65 +148,65 @@ def shutdown_loggers():
 
 def add_simulation_log_handlers(simulation_dir: str) -> list[logging.Handler]:
     """Adds file handlers for progress and verbose logs to a simulation-specific directory.
-    
+
     Creates log files in the simulation directory while keeping the main logs/ directory
     handlers intact. Both progress and verbose logs are written to the simulation directory.
-    
+
     Args:
         simulation_dir: Directory path where simulation-specific logs should be written.
-        
+
     Returns:
         List of handlers that were added (for later removal via remove_simulation_log_handlers).
     """
     if not os.path.exists(simulation_dir):
         os.makedirs(simulation_dir)
-    
+
     file_formatter = CustomFormatter("%(asctime)s - %(levelname)s - %(message)s")
-    
+
     # Create log file paths in the simulation directory
     progress_log_path = os.path.join(simulation_dir, "progress.log")
     verbose_log_path = os.path.join(simulation_dir, "verbose.log")
-    
+
     # Create handlers
     progress_file_handler = logging.FileHandler(progress_log_path, mode="a")
     progress_file_handler.setFormatter(file_formatter)
-    progress_file_handler._is_simulation_handler = True  # Mark for later removal
-    
+    setattr(progress_file_handler, "_is_simulation_handler", True)  # Mark for later removal
+
     verbose_file_handler = logging.FileHandler(verbose_log_path, mode="a")
     verbose_file_handler.setFormatter(file_formatter)
-    verbose_file_handler._is_simulation_handler = True  # Mark for later removal
-    
+    setattr(verbose_file_handler, "_is_simulation_handler", True)  # Mark for later removal
+
     # Add handlers to loggers
     progress_logger = logging.getLogger("progress")
     verbose_logger = logging.getLogger("verbose")
-    
+
     progress_logger.addHandler(progress_file_handler)
     verbose_logger.addHandler(verbose_file_handler)
-    
+
     # Log that simulation-specific logging has started
     progress_logger.info(f"--- Simulation-specific progress logging started: {progress_log_path} ---")
     verbose_logger.info(f"--- Simulation-specific verbose logging started: {verbose_log_path} ---")
-    
+
     return [progress_file_handler, verbose_file_handler]
 
 
 def remove_simulation_log_handlers(handlers: list[logging.Handler]):
     """Removes simulation-specific log handlers and closes their files.
-    
+
     Args:
         handlers: List of handlers to remove (typically returned from add_simulation_log_handlers).
     """
     for handler in handlers:
-        if hasattr(handler, '_is_simulation_handler') and handler._is_simulation_handler:
+        if hasattr(handler, "_is_simulation_handler") and getattr(handler, "_is_simulation_handler", False):
             # Find and remove from appropriate logger
             progress_logger = logging.getLogger("progress")
             verbose_logger = logging.getLogger("verbose")
-            
+
             if handler in progress_logger.handlers:
                 progress_logger.removeHandler(handler)
             if handler in verbose_logger.handlers:
                 verbose_logger.removeHandler(handler)
-            
+
             handler.close()
 
 

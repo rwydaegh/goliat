@@ -1,5 +1,5 @@
 """Tests for CLI run_analysis module."""
-import argparse
+
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -12,6 +12,7 @@ def cli_run_analysis_module():
     """Fixture to import cli.run_analysis with initial_setup patched."""
     with patch("goliat.utils.setup.initial_setup"):
         import cli.run_analysis
+
         return cli.run_analysis
 
 
@@ -26,18 +27,16 @@ class TestRunAnalysis:
             "phantoms": ["thelonious"],
             "study_type": "near_field",
         }.get(key, default)
-        
+
         # Mock the strategy and analyzer imports
-        with patch("cli.run_analysis.initial_setup"), \
-             patch("cli.run_analysis.setup_loggers"), \
-             patch("cli.run_analysis.Config", return_value=mock_config), \
-             patch("cli.run_analysis.NearFieldAnalysisStrategy") as mock_strategy, \
-             patch("cli.run_analysis.Analyzer") as mock_analyzer:
+        with patch("cli.run_analysis.initial_setup"), patch("cli.run_analysis.setup_loggers"), patch(
+            "cli.run_analysis.Config", return_value=mock_config
+        ), patch("cli.run_analysis.NearFieldAnalysisStrategy") as mock_strategy, patch("cli.run_analysis.Analyzer") as mock_analyzer:
             mock_strategy_instance = MagicMock()
             mock_strategy.return_value = mock_strategy_instance
             mock_analyzer_instance = MagicMock()
             mock_analyzer.return_value = mock_analyzer_instance
-            
+
             # Mock argparse
             with patch("sys.argv", ["run_analysis.py", "--config", "test_config.json"]):
                 cli_run_analysis_module.main()
@@ -49,17 +48,15 @@ class TestRunAnalysis:
             "phantoms": ["thelonious"],
             "study_type": "far_field",
         }.get(key, default)
-        
-        with patch("cli.run_analysis.initial_setup"), \
-             patch("cli.run_analysis.setup_loggers"), \
-             patch("cli.run_analysis.Config", return_value=mock_config), \
-             patch("cli.run_analysis.FarFieldAnalysisStrategy") as mock_strategy, \
-             patch("cli.run_analysis.Analyzer") as mock_analyzer:
+
+        with patch("cli.run_analysis.initial_setup"), patch("cli.run_analysis.setup_loggers"), patch(
+            "cli.run_analysis.Config", return_value=mock_config
+        ), patch("cli.run_analysis.FarFieldAnalysisStrategy") as mock_strategy, patch("cli.run_analysis.Analyzer") as mock_analyzer:
             mock_strategy_instance = MagicMock()
             mock_strategy.return_value = mock_strategy_instance
             mock_analyzer_instance = MagicMock()
             mock_analyzer.return_value = mock_analyzer_instance
-            
+
             with patch("sys.argv", ["run_analysis.py", "--config", "test_config.json"]):
                 cli_run_analysis_module.main()
 
@@ -70,18 +67,17 @@ class TestRunAnalysis:
             "phantoms": [],
             "study_type": "near_field",
         }.get(key, default)
-        
+
         mock_logger = MagicMock()
-        
-        with patch("cli.run_analysis.initial_setup"), \
-             patch("cli.run_analysis.setup_loggers"), \
-             patch("cli.run_analysis.Config", return_value=mock_config), \
-             patch("cli.run_analysis.logging") as mock_logging:
+
+        with patch("cli.run_analysis.initial_setup"), patch("cli.run_analysis.setup_loggers"), patch(
+            "cli.run_analysis.Config", return_value=mock_config
+        ), patch("cli.run_analysis.logging") as mock_logging:
             mock_logging.getLogger.return_value = mock_logger
-            
+
             with patch("sys.argv", ["run_analysis.py", "--config", "test_config.json"]):
                 cli_run_analysis_module.main()
-        
+
         # Should log error
         mock_logger.error.assert_called()
 
@@ -92,18 +88,16 @@ class TestRunAnalysis:
             "phantoms": ["thelonious"],
             "study_type": None,
         }.get(key, default)
-        
+
         mock_logger = MagicMock()
-        
-        with patch("cli.run_analysis.initial_setup"), \
-             patch("cli.run_analysis.setup_loggers"), \
-             patch("cli.run_analysis.Config", return_value=mock_config), \
-             patch("cli.run_analysis.logging") as mock_logging:
+
+        with patch("cli.run_analysis.initial_setup"), patch("cli.run_analysis.setup_loggers"), patch(
+            "cli.run_analysis.Config", return_value=mock_config
+        ), patch("cli.run_analysis.logging") as mock_logging:
             mock_logging.getLogger.return_value = mock_logger
-            
+
             with patch("sys.argv", ["run_analysis.py", "--config", "test_config.json"]):
                 cli_run_analysis_module.main()
-        
+
         # Should log error
         mock_logger.error.assert_called()
-

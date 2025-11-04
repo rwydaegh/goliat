@@ -1,10 +1,8 @@
 """Tests for goliat.utils.core module."""
-import json
-import tempfile
-import time
-from pathlib import Path
 
-import pytest
+import json
+import time
+
 
 from goliat.utils.core import Profiler, format_time, suppress_stdout_stderr
 
@@ -124,7 +122,7 @@ class TestProfiler:
         config_data = {"sensitivity_analysis": {"average_run_time": 10.0}}
         with open(config_path, "w") as f:
             json.dump(config_data, f)
-        
+
         profiler = Profiler(str(config_path), "sensitivity_analysis")
         profiler.start_study(total_runs=5)
         profiler.start_run()
@@ -183,7 +181,7 @@ class TestProfiler:
         # Subtask context manager exists and doesn't raise
         with profiler.subtask("test_task"):
             time.sleep(0.01)
-        
+
         # Note: utils.core.Profiler's subtask just logs, doesn't track subtask_times
         # This test just verifies the context manager works without error
         # The subtask method exists and executes without raising exceptions
@@ -212,4 +210,3 @@ class TestSuppressStdoutStderr:
 
         assert sys.stdout == original_stdout
         assert sys.stderr == original_stderr
-
