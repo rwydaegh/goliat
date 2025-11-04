@@ -1,4 +1,5 @@
 """Tests for goliat.simulation_runner module core functionality."""
+
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -139,7 +140,7 @@ class TestSimulationRunner:
         )
 
         # Mock the _run_isolve_manual method
-        with patch.object(runner, '_run_isolve_manual') as mock_isolve:
+        with patch.object(runner, "_run_isolve_manual") as mock_isolve:
             runner.run()
             # Should call manual isolve if configured
             assert mock_isolve.called
@@ -162,4 +163,3 @@ class TestSimulationRunner:
         )
 
         assert runner.gui == mock_gui
-

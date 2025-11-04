@@ -1,6 +1,6 @@
 import os
 import traceback
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from ..logging_manager import add_simulation_log_handlers, remove_simulation_log_handlers
 from ..results_extractor import ResultsExtractor
@@ -9,7 +9,7 @@ from ..utils import profile
 from .base_study import BaseStudy
 
 if TYPE_CHECKING:
-    from ..gui_manager import QueueGUI
+    pass
 
 
 class FarFieldStudy(BaseStudy):

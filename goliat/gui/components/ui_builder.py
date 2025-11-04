@@ -173,9 +173,7 @@ class UIBuilder:
         Returns:
             Absolute path to favicon.svg.
         """
-        return os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "docs", "img", "favicon.svg"
-        )
+        return os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "docs", "img", "favicon.svg")
 
     @staticmethod
     def build(gui_instance: "ProgressGUI", status_manager: "StatusManager") -> None:
@@ -223,17 +221,17 @@ class UIBuilder:
         # Info Grid with utilization bars on the right
         info_grid = QGridLayout()
         info_grid.setVerticalSpacing(2)  # Reduce vertical spacing between rows
-        
+
         # Left side: Simulation info
         gui_instance.sim_counter_label = QLabel("Simulation: N/A")
         gui_instance.sim_details_label = QLabel("Current Case: N/A")
         info_grid.addWidget(gui_instance.sim_counter_label, 0, 0)
         info_grid.addWidget(gui_instance.sim_details_label, 1, 0)
-        
+
         # Right side: System Utilization Widgets (CPU, RAM, GPU) and Error counter
         utilization_layout = QHBoxLayout()
         utilization_layout.setSpacing(8)
-        
+
         # CPU Utilization
         cpu_container = QWidget()
         cpu_container_layout = QVBoxLayout(cpu_container)
@@ -263,7 +261,7 @@ class UIBuilder:
         """)
         cpu_container_layout.addWidget(gui_instance.cpu_bar)
         utilization_layout.addWidget(cpu_container)
-        
+
         # RAM Utilization
         ram_container = QWidget()
         ram_container_layout = QVBoxLayout(ram_container)
@@ -293,7 +291,7 @@ class UIBuilder:
         """)
         ram_container_layout.addWidget(gui_instance.ram_bar)
         utilization_layout.addWidget(ram_container)
-        
+
         # GPU Utilization
         gpu_container = QWidget()
         gpu_container_layout = QVBoxLayout(gpu_container)
@@ -323,27 +321,27 @@ class UIBuilder:
         """)
         gpu_container_layout.addWidget(gui_instance.gpu_bar)
         utilization_layout.addWidget(gpu_container)
-        
+
         # Utilization widget container
         utilization_widget = QWidget()
         utilization_widget.setLayout(utilization_layout)
-        
+
         # Error counter label
         gui_instance.error_counter_label = QLabel(status_manager.get_error_summary())
-        
+
         # Right side layout: utilization bars above error counter
         right_side_layout = QVBoxLayout()
         right_side_layout.setContentsMargins(0, 0, 0, 0)
         right_side_layout.setSpacing(4)
         right_side_layout.addWidget(utilization_widget)
         right_side_layout.addWidget(gui_instance.error_counter_label)
-        
+
         right_side_widget = QWidget()
         right_side_widget.setLayout(right_side_layout)
-        
+
         # Add right side widget to grid
         info_grid.addWidget(right_side_widget, 0, 1, 2, 1, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignTop)
-        
+
         progress_layout.addLayout(info_grid)
 
         gui_instance.overall_progress_label = QLabel("Overall Progress:")

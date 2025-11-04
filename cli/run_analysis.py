@@ -1,7 +1,6 @@
 import argparse
 import logging
 import os
-import sys
 
 import matplotlib
 
@@ -60,4 +59,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

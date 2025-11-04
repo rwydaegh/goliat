@@ -1,8 +1,7 @@
 """Additional tests for goliat.profiler module."""
+
 import json
-import tempfile
 import time
-from pathlib import Path
 
 import pytest
 
@@ -300,4 +299,3 @@ class TestProfilerProjectTracking:
         profiler.complete_run_phase()
 
         assert profiler.run_phase_total_duration == 105.0
-

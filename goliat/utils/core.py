@@ -217,4 +217,3 @@ def suppress_stdout_stderr():
             yield
         finally:
             sys.stdout, sys.stderr = saved_stdout, saved_stderr
-

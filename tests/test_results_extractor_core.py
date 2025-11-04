@@ -1,7 +1,6 @@
 """Tests for goliat.results_extractor module core functionality."""
+
 import json
-import os
-import tempfile
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -143,10 +142,9 @@ class TestResultsExtractor:
         )
 
         # Mock extractors
-        with patch("goliat.results_extractor.PowerExtractor") as mock_power_extractor, \
-             patch("goliat.results_extractor.SarExtractor") as mock_sar_extractor, \
-             patch("goliat.results_extractor.SensorExtractor") as mock_sensor_extractor:
-
+        with patch("goliat.results_extractor.PowerExtractor") as mock_power_extractor, patch(
+            "goliat.results_extractor.SarExtractor"
+        ) as mock_sar_extractor, patch("goliat.results_extractor.SensorExtractor") as mock_sensor_extractor:
             mock_power_instance = MagicMock()
             mock_power_extractor.return_value = mock_power_instance
 
@@ -206,4 +204,3 @@ class TestResultsExtractor:
                 saved_data = json.load(f)
                 assert "_temp_sar_df" not in saved_data
                 assert "power" in saved_data
-

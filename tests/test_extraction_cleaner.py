@@ -1,7 +1,5 @@
 """Tests for goliat.extraction.cleaner module."""
-import glob
-import os
-from pathlib import Path
+
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -117,6 +115,7 @@ class TestCleaner:
     @patch("goliat.extraction.cleaner.os.remove")
     def test_cleanup_simulation_files_multiple_types(self, mock_remove, mock_glob, mock_parent_with_study):
         """Test cleanup of multiple file types."""
+
         def glob_side_effect(pattern):
             if "*_Output.h5" in pattern:
                 return ["/tmp/test_Results/file1_Output.h5"]
@@ -159,4 +158,3 @@ class TestCleaner:
 
         # Should not delete anything
         mock_remove.assert_not_called()
-

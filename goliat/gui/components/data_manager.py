@@ -32,12 +32,8 @@ class DataManager:
         # Cleanup old CSV files before creating new ones
         self._cleanup_old_data_files()
 
-        self.time_remaining_file: str = os.path.join(
-            self.data_dir, f"time_remaining_{session_timestamp}_{self.session_hash}.csv"
-        )
-        self.overall_progress_file: str = os.path.join(
-            self.data_dir, f"overall_progress_{session_timestamp}_{self.session_hash}.csv"
-        )
+        self.time_remaining_file: str = os.path.join(self.data_dir, f"time_remaining_{session_timestamp}_{self.session_hash}.csv")
+        self.overall_progress_file: str = os.path.join(self.data_dir, f"overall_progress_{session_timestamp}_{self.session_hash}.csv")
 
         # Initialize data files
         self._initialize_files()

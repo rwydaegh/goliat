@@ -1,4 +1,5 @@
 """Comprehensive tests for goliat.studies.base_study core methods."""
+
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -13,7 +14,6 @@ class TestBaseStudyCoreMethods:
         """Create a BaseStudy instance for testing."""
         from goliat.studies.base_study import BaseStudy
         import json
-        import os
 
         # Create minimal config structure
         config_dir = tmp_path / "configs"
@@ -101,10 +101,7 @@ class TestBaseStudyCoreMethods:
         """Test _verify_run_deliverables_before_extraction."""
         mock_project_manager = MagicMock()
         mock_project_manager.project_path = "/tmp/test.smash"
-        mock_project_manager._get_deliverables_status.return_value = {
-            "run_done": True,
-            "extract_done": False
-        }
+        mock_project_manager._get_deliverables_status.return_value = {"run_done": True, "extract_done": False}
 
         base_study.project_manager = mock_project_manager
 
@@ -120,7 +117,7 @@ class TestBaseStudyCoreMethods:
 
         base_study.project_manager = mock_project_manager
 
-        with patch.object(base_study, '_log') as mock_log:
+        with patch.object(base_study, "_log") as mock_log:
             result = base_study._verify_run_deliverables_before_extraction()
 
             assert result is False
@@ -134,7 +131,7 @@ class TestBaseStudyCoreMethods:
 
         base_study.project_manager = mock_project_manager
 
-        with patch.object(base_study.project_manager, 'update_simulation_metadata') as mock_update:
+        with patch.object(base_study.project_manager, "update_simulation_metadata") as mock_update:
             base_study._verify_and_update_metadata("run")
 
             assert mock_update.called
@@ -147,10 +144,10 @@ class TestBaseStudyCoreMethods:
         base_study.profiler = mock_profiler
 
         # Test StudyCancelledError handling
-        with patch("goliat.studies.base_study.ensure_s4l_running"), \
-             patch.object(base_study, '_run_study', side_effect=StudyCancelledError("Cancelled")):
-            
-            with patch.object(base_study, '_log') as mock_log:
+        with patch("goliat.studies.base_study.ensure_s4l_running"), patch.object(
+            base_study, "_run_study", side_effect=StudyCancelledError("Cancelled")
+        ):
+            with patch.object(base_study, "_log") as mock_log:
                 base_study.run()
 
                 # Should log cancellation message
@@ -161,10 +158,10 @@ class TestBaseStudyCoreMethods:
         mock_profiler = MagicMock()
         base_study.profiler = mock_profiler
 
-        with patch("goliat.studies.base_study.ensure_s4l_running"), \
-             patch.object(base_study, '_run_study', side_effect=RuntimeError("Test error")):
-            
-            with patch.object(base_study, '_log') as mock_log:
+        with patch("goliat.studies.base_study.ensure_s4l_running"), patch.object(
+            base_study, "_run_study", side_effect=RuntimeError("Test error")
+        ):
+            with patch.object(base_study, "_log") as mock_log:
                 base_study.run()
 
                 # Should log fatal error
@@ -180,13 +177,10 @@ class TestBaseStudyCoreMethods:
         base_study.project_manager = mock_project_manager
         base_study.gui = mock_gui
 
-        with patch("goliat.studies.base_study.ensure_s4l_running"), \
-             patch.object(base_study, '_run_study'):
-            
+        with patch("goliat.studies.base_study.ensure_s4l_running"), patch.object(base_study, "_run_study"):
             base_study.run()
 
             # Verify finally block execution
             assert mock_profiler.save_estimates.called
             assert mock_project_manager.cleanup.called
             assert mock_gui.update_profiler.called
-
