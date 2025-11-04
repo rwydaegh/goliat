@@ -8,7 +8,7 @@ import logging
 import os
 import platform
 import subprocess
-import sys 
+import sys
 
 
 def install_requirements(requirements_path):
@@ -110,7 +110,7 @@ def update_bashrc(selected_python_path):
         if len(path_rest) >= 2 and path_rest[1] == ":":
             drive = path_rest[0:2]  # Get "C:"
             path_rest = path_rest[2:]  # Get rest after "C:"
-    
+
     # Replace backslashes with forward slashes (works on both Windows and Linux)
     path_rest_normalized = path_rest.replace("\\", "/")
     # Remove colon from drive letter (C: -> C) for bash path conversion
