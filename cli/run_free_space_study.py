@@ -1,6 +1,5 @@
 import json
 import os
-import sys
 import tempfile
 import traceback
 
@@ -134,4 +133,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

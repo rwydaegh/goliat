@@ -30,9 +30,7 @@ except ImportError:
 from goliat.gui.components.data_manager import DataManager
 from goliat.gui.components.status_manager import StatusManager
 from goliat.gui.components.progress_animation import ProgressAnimation
-from goliat.gui.components.plots import PieChartsManager
 from goliat.gui.components.queue_handler import QueueHandler
-from goliat.gui.components.timings_table import TimingsTable
 from goliat.gui.components.tray_manager import TrayManager
 from goliat.gui.components.ui_builder import UIBuilder
 from goliat.gui.components.system_monitor import SystemMonitor, PSUTIL_AVAILABLE
@@ -114,11 +112,10 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
 
         # Initialize animation (must be after UI build to ensure stage_progress_bar exists)
         from PySide6.QtCore import QTimer as _QTimer
+
         self.animation_timer: _QTimer = _QTimer(self)
         self.animation_timer.timeout.connect(self.update_animation)
-        self.progress_animation: ProgressAnimation = ProgressAnimation(
-            self.stage_progress_bar, self.animation_timer, self.DEBUG
-        )
+        self.progress_animation: ProgressAnimation = ProgressAnimation(self.stage_progress_bar, self.animation_timer, self.DEBUG)
 
         # Initialize tray manager
         self.tray_manager: TrayManager = TrayManager(self, self.show_from_tray, self.close)
@@ -132,6 +129,7 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
 
         # Setup timers
         from PySide6.QtCore import QTimer as _QTimer
+
         self.queue_timer: _QTimer = _QTimer(self)
         self.queue_timer.timeout.connect(self.queue_handler.process_queue)
         self.queue_timer.start(100)
@@ -149,14 +147,15 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
         self.utilization_timer: _QTimer = _QTimer(self)
         self.utilization_timer.timeout.connect(self.update_utilization)
         self.utilization_timer.start(1000)
-        
+
         # Initialize GPU availability check
         self.gpu_available: bool = SystemMonitor.is_gpu_available()
-        
+
         # Initialize CPU measurement (first call needs to be blocking)
         if PSUTIL_AVAILABLE:
             try:
                 import psutil
+
                 psutil.cpu_percent(interval=0.1)  # Initialize measurement
             except Exception:
                 pass
@@ -436,6 +435,7 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
         self.tray_button.setEnabled(False)
         self.update_clock()  # Final title update
         from PySide6.QtCore import QTimer as _QTimer
+
         _QTimer.singleShot(3000, self.close)
 
     def closeEvent(self, event: Any) -> None:
