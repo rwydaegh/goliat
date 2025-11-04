@@ -12,7 +12,7 @@ mocks = {
 }
 
 with patch.dict("sys.modules", mocks):
-    from src.setups.far_field_setup import FarFieldSetup
+    from goliat.setups.far_field_setup import FarFieldSetup
 
 
 @pytest.fixture

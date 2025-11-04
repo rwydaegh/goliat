@@ -1,0 +1,74 @@
+{
+  "extends": "base_config.json",
+  "study_type": "near_field",
+  "phantoms": ["thelonious"],
+  "execution_control": {
+    "do_setup": true,
+    "do_run": true,
+    "do_extract": true
+  },
+  "simulation_parameters": {
+    "number_of_point_sensors": 2
+  },
+  "gridding_parameters": {
+    "global_gridding": {
+      "grid_mode": "manual",
+      "manual_fallback_max_step_mm": 3.0
+    },
+    "global_gridding_per_frequency": {
+      "700": 2.5
+    },
+    "padding": {
+      "padding_mode": "manual",
+      "manual_bottom_padding_mm": [0, 0, 0],
+      "manual_top_padding_mm": [0, 0, 0]
+    }
+  },
+  "antenna_config": {
+    "700": {
+      "center_frequency": 700,
+      "target_power_mW": 267,
+      "model_type": "PIFA",
+      "source_name": "Lines 1",
+      "materials": {
+        "Extrude 1": "Copper",
+        "component1:Battery": "Copper",
+        "component1:Patch": "Copper",
+        "component1:ShortingPin": "Copper",
+        "component1:Substrate": "Rogers RT/duroid 5880"
+      },
+      "gridding": {
+        "automatic": ["component1:Substrate", "Lines 1"]
+      }
+    }
+  },
+  "placement_scenarios": {
+    "front_of_eyes": {
+      "bounding_box": "default",
+      "positions": {
+        "center": [0, 0, -100]
+      },
+      "orientations": {
+        "vertical": []
+      },
+      "antenna_reference": {
+        "distance_from_top": 10
+      },
+      "phantom_reference": "nasion"
+    }
+  },
+  "phantom_definitions": {
+    "thelonious": {
+      "head_y_separation": 0,
+      "trunk_z_separation": -300,
+      "chest_extension": 100,
+      "nasion": [-1, 0, 0],
+      "placements": {
+        "do_front_of_eyes": true,
+        "do_by_belly": false,
+        "do_by_cheek": false,
+        "distance_from_eye": 200
+      }
+    }
+  }
+}

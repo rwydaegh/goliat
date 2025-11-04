@@ -1,0 +1,1 @@
+"""GOLIAT CLI entry points."""

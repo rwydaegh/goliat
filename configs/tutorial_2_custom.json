@@ -1,0 +1,5 @@
+{
+  "extends": "far_field_config.json",
+  "phantoms": ["thelonious", "eartha"],
+  "frequencies_mhz": [700, 835]
+}
