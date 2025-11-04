@@ -22,13 +22,13 @@ repos:
     args: [--autofix, --trailing-commas]
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.14.2
+  rev: v0.14.3
   hooks:
   - id: ruff-format
-    exclude: ^(archive/|analysis/|osparc_api_example/|post_process_results/)
+    exclude: ^(analysis/|osparc_api_example/)
   - id: ruff
     args: [--fix]
-    exclude: ^(archive/|analysis/|osparc_api_example/|post_process_results/|docs/)
+    exclude: ^(analysis/|osparc_api_example/|docs/)
 
 - repo: https://github.com/RobertCraigie/pyright-python
   rev: v1.1.407
@@ -43,6 +43,6 @@ repos:
     - tomli
 
 - repo: https://github.com/astral-sh/uv-pre-commit
-  rev: 0.9.5
+  rev: 0.9.7
   hooks:
   - id: uv-lock

@@ -8,14 +8,14 @@ The primary objectives of the project include:
 
 -   **Automated Dosimetry**: Creating a Python-based framework to automate simulations using the Sim4Life platform.
 -   **Child Phantom Analysis**: Performing simulations on detailed child phantoms, such as "Thelonious" and "Eartha," to understand age-dependent effects.
--   **Comprehensive SAR Analysis**: Calculating Specific Absorption Rate (SAR) metrics, including whole-body, head, trunk, and peak spatial-average SAR (psSAR10g) in sensitive tissues like the skin, eyes, and brain.
+-   **SAR Analysis**: Calculating Specific Absorption Rate (SAR) metrics, including whole-body, head, trunk, and peak spatial-average SAR (psSAR10g) in sensitive tissues like the skin, eyes, and brain.
 -   **Varied Exposure Scenarios**: Investigating numerous exposure conditions, including different frequencies, antenna types, and device positions (e.g., by the cheek, in front of the eyes, near the belly).
 
 Check out the [GOLIAT website](https://projectgoliat.eu/)!
 
 ## Funding and acknowledgements
 
-This work is part of the GOLIAT project, which has received funding from the **European Union's Horizon Health program** under the call HORIZON-HEALTH-2021-ENVHLTH-02-01 – Exposure to electromagnetic fields (EMF) and health. GOLIAT is part of the CLUE-H consortium with ETAIN, NextGEM and SEAWave.
+This work is part of the GOLIAT project, which has received funding from the **European Union's Horizon Health program** under the call HORIZON-HEALTH-2021-ENVHLTH-02-01 - Exposure to electromagnetic fields (EMF) and health. GOLIAT is part of the CLUE-H consortium with ETAIN, NextGEM and SEAWave.
 
 Check out the [CLUE-H website](https://www.emf-health-cluster.eu/)!
 
@@ -51,7 +51,7 @@ The GOLIAT consortium consists of 22 partners from across Europe and the United 
 The main developer, Robin Wydaeghe, is from the WAVES Research group at Ghent University and IMEC.
 
 <div style="display: flex; justify-content: center; align-items: center; gap: 20px; flex-wrap: wrap;">
-    <img src="../img/imec.png" alt="imec" style="height: 80px; object-fit: contain;">
-    <img src="../img/ugent.png" alt="ugent" style="height: 80px; object-fit: contain;">
-    <img src="../img/waves.svg" alt="waves" style="height: 80px; object-fit: contain;">
+    <img src="img/imec.png" alt="imec" style="height: 80px; object-fit: contain;">
+    <img src="img/ugent.png" alt="ugent" style="height: 80px; object-fit: contain;">
+    <img src="img/waves.svg" alt="waves" style="height: 80px; object-fit: contain;">
 </div>

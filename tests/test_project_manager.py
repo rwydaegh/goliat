@@ -11,7 +11,7 @@ mocks = {
 }
 
 with patch.dict("sys.modules", mocks):
-    from src.project_manager import ProjectManager
+    from goliat.project_manager import ProjectManager
 
 
 @pytest.fixture

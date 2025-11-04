@@ -2,7 +2,7 @@ import logging
 from unittest.mock import MagicMock
 
 
-from src.logging_manager import LoggingMixin, setup_loggers, shutdown_loggers
+from goliat.logging_manager import LoggingMixin, setup_loggers, shutdown_loggers
 
 
 def test_setup_loggers():

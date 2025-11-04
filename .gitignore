@@ -1,4 +1,4 @@
-<![CDATA[# IDE and OS specific
+# IDE and OS specific
 .vscode/
 .roo/
 .DS_Store
@@ -22,27 +22,25 @@ analysis/sensitivity_analysis/plots/
 # Data
 data/
 !data/material_name_mapping.json
-data/.setup_done
 
 # Logs
 logs/
 commit_message.txt
 
-# Documentation
+# Sim4Life Documentation
 PythonAPIReference/
+Sim4Life.pdf
 Sim4Life_Manual.pdf
 Sim4Life_Introduction.pdf
 
 # Configs
-# Ignore everything in the configs directory by default
 configs/*
-# Then, un-ignore the specific config files we want to track
 !configs/base_config.json
 !configs/far_field_config.json
+!configs/far_field_sim4life_web.json
 !configs/near_field_config.json
 !configs/near_field_config_no_subgrid.json
-# Ignore any subdirectories in the configs directory
-configs/*/
+!configs/tutorial_*.json
 
 # Generated files
 *.csv
@@ -54,13 +52,19 @@ configs/*/
 !analysis/**/*.pdf
 
 # Local environment
-.bashrc
-.setup_done
+#.bashrc
 .env
 
-resume_logic_brainstorm.md
-resume_logic_plan.md
+.cursorignore
+docs/extracted_style.md
+
+# Cloud setup - credentials and documentation
+cloud_setup/tensordock_documentation.md
+cloud_setup/my_*.bat
+cloud_setup/my_*.py
 
 # Python build artifacts
-src/*.egg-info/
-]]>
+*.egg-info/
+*.egg
+dist/
+build/

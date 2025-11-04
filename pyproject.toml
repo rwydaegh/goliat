@@ -1,27 +1,33 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=61.0", "wheel"]
+
 [project]
 authors = [
   {name = "rwydaegh", email = "robin.wydaeghe@ugent.be"},
 ]
 dependencies = [
-  "numpy",
-  "pandas",
-  "gdown",
-  "seaborn",
-  "matplotlib",
-  "line-profiler",
-  "pytest",
-  "scienceplots",
-  "PySide6",
-  "osparc",
-  "colorama",
-  "python-dotenv",
+    "numpy<2",
+    "pandas",
+    "gdown",
+    "seaborn",
+    "matplotlib",
+    "line-profiler",
+    "pytest",
+    "scienceplots",
+    "PySide6",
+    "osparc",
+    "colorama",
+    "python-dotenv",
+    "psutil",
+    "h5py",
 ]
 description = "A Python framework for dosimetric assessments using Sim4Life."
 license = {file = "LICENSE"}
 name = "goliat"
 readme = "README.md"
 requires-python = ">=3.8"
-version = "0.2.0"
+version = "1.1.0"
 
 [project.optional-dependencies]
 docs = [
@@ -33,7 +39,12 @@ docs = [
   "mkdocs-git-revision-date-localized-plugin",
   "mkdocs-minify-plugin",
   "mkdocs-kroki-plugin",
+  "mknotebooks>=0.8.0",
+  "ansi2html>=1.8.0",
 ]
+
+[project.scripts]
+goliat = "cli.__main__:main"
 
 [tool.codespell]
 ignore-words-list = "Studi"
@@ -44,11 +55,7 @@ exclude = [
   "analysis",
   "tests",
   "scripts",
-  "run_analysis.py",
-  "run_free_space_study.py",
-  "run_parallel_studies.py",
-  "run_study.py",
-  "post_process_results",
+  "cli",
 ]
 pythonVersion = "3.11"
 reportMissingImports = false
@@ -83,3 +90,6 @@ version_variables = [
   "README.md:version = \\{{version}\\}",
   "CITATION.cff:version: {version}",
 ]
+
+[tool.setuptools]
+packages = ["goliat", "cli"]

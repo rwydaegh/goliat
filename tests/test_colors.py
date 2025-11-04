@@ -1,6 +1,6 @@
 from colorama import Fore, Style
 
-from src.colors import get_color
+from goliat.colors import get_color
 
 
 def test_get_color():

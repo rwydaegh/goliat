@@ -3,7 +3,6 @@
 import logging
 import os
 import re
-import sys
 
 import numpy as np
 import s4l_v1
@@ -16,8 +15,8 @@ from s4l_v1.model import Vec3
 # --- 1. Set up Logging ---
 logger = logging.getLogger(__name__)
 
-# Add project root to Python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+# Base directory for config files (package is installed, no sys.path needed)
+base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 
 def center_antenna_and_export_sab(file_path, output_dir):
