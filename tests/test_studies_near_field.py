@@ -1,6 +1,7 @@
 """Tests for goliat.studies.near_field_study module."""
-
-from unittest.mock import patch
+import os
+import tempfile
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -23,31 +24,58 @@ class TestNearFieldStudy:
         config_content = {
             "study_type": "near_field",
             "phantoms": ["thelonious"],
-            "antenna_config": {"700": {"model_type": "PIFA", "power_w": 1.0}},
-            "placement_scenarios": {"by_cheek": {"positions": {"center": [0, 0, 0]}, "orientations": {"vertical": [0, 0, 0]}}},
-            "execution_control": {"do_setup": True, "do_run": True, "do_extract": True},
+            "antenna_config": {
+                "700": {"model_type": "PIFA", "power_w": 1.0}
+            },
+            "placement_scenarios": {
+                "by_cheek": {
+                    "positions": {"center": [0, 0, 0]},
+                    "orientations": {"vertical": [0, 0, 0]}
+                }
+            },
+            "execution_control": {
+                "do_setup": True,
+                "do_run": True,
+                "do_extract": True
+            }
         }
 
         import json
-
         with open(config_path, "w") as f:
             json.dump(config_content, f)
 
         # Create phantom definition
         phantom_def_path = data_dir / "phantom_definitions.json"
-        phantom_def = {"thelonious": {"placements": {"do_by_cheek": True}}}
+        phantom_def = {
+            "thelonious": {
+                "placements": {
+                    "do_by_cheek": True
+                }
+            }
+        }
         with open(phantom_def_path, "w") as f:
             json.dump(phantom_def, f)
 
         # Create profiling config
         profiling_path = data_dir / "profiling_config.json"
-        profiling_config = {"near_field": {"avg_setup_time": 10.0, "avg_run_time": 60.0, "avg_extract_time": 5.0}}
+        profiling_config = {
+            "near_field": {
+                "avg_setup_time": 10.0,
+                "avg_run_time": 60.0,
+                "avg_extract_time": 5.0
+            }
+        }
         with open(profiling_path, "w") as f:
             json.dump(profiling_config, f)
 
         # Create material_name_mapping.json (required by Config)
         material_mapping_path = data_dir / "material_name_mapping.json"
-        material_mapping = {"thelonious": {"Brain": "Brain (IT'IS)", "_tissue_groups": {"brain_group": ["Brain"]}}}
+        material_mapping = {
+            "thelonious": {
+                "Brain": "Brain (IT'IS)",
+                "_tissue_groups": {"brain_group": ["Brain"]}
+            }
+        }
         with open(material_mapping_path, "w") as f:
             json.dump(material_mapping, f)
 
@@ -100,15 +128,25 @@ class TestNearFieldStudy:
         # Mock the config to have specific structure
         study.config.config = {
             "phantoms": ["thelonious"],
-            "antenna_config": {"700": {}, "900": {}},
-            "placement_scenarios": {
-                "by_cheek": {"positions": {"center": {}, "offset": {}}, "orientations": {"vertical": {}, "horizontal": {}}}
+            "antenna_config": {
+                "700": {},
+                "900": {}
             },
+            "placement_scenarios": {
+                "by_cheek": {
+                    "positions": {"center": {}, "offset": {}},
+                    "orientations": {"vertical": {}, "horizontal": {}}
+                }
+            }
         }
 
         # Mock phantom definition
-        with patch.object(study.config, "get_phantom_definition") as mock_get_phantom:
-            mock_get_phantom.return_value = {"placements": {"do_by_cheek": True}}
+        with patch.object(study.config, 'get_phantom_definition') as mock_get_phantom:
+            mock_get_phantom.return_value = {
+                "placements": {
+                    "do_by_cheek": True
+                }
+            }
 
             # Count simulations: 2 frequencies * 2 positions * 2 orientations = 8
             total = 0
@@ -145,7 +183,11 @@ class TestNearFieldStudy:
             "study_type": "near_field",
             "phantoms": ["thelonious"],
             "antenna_config": {"700": {"model_type": "PIFA"}},
-            "execution_control": {"do_setup": False, "do_run": False, "do_extract": False},
+            "execution_control": {
+                "do_setup": False,
+                "do_run": False,
+                "do_extract": False
+            }
         }
         with open(config_path, "w") as f:
             json.dump(config_content, f)
@@ -168,7 +210,11 @@ class TestNearFieldStudy:
         )
 
         # Modify config after loading (Config loads from file)
-        study.config.config["execution_control"] = {"do_setup": False, "do_run": False, "do_extract": False}
+        study.config.config["execution_control"] = {
+            "do_setup": False,
+            "do_run": False,
+            "do_extract": False
+        }
 
         # Should not crash when all phases disabled
         # The actual run would return early, but we can test the check
@@ -195,7 +241,11 @@ class TestNearFieldStudy:
             "phantoms": ["thelonious"],
             "antenna_config": {"700": {"model_type": "PIFA"}},
             "only_write_input_file": True,
-            "execution_control": {"do_setup": True, "do_run": False, "do_extract": False},
+            "execution_control": {
+                "do_setup": True,
+                "do_run": False,
+                "do_extract": False
+            }
         }
         with open(config_path, "w") as f:
             json.dump(config_content, f)
@@ -219,7 +269,11 @@ class TestNearFieldStudy:
 
         # Modify config after loading
         study.config.config["only_write_input_file"] = True
-        study.config.config["execution_control"] = {"do_setup": True, "do_run": False, "do_extract": False}
+        study.config.config["execution_control"] = {
+            "do_setup": True,
+            "do_run": False,
+            "do_extract": False
+        }
 
         # Check the condition that triggers the warning
         # get_only_write_input_file has a default of False, so we need to check the config directly
@@ -227,3 +281,4 @@ class TestNearFieldStudy:
         do_run = study.config.get_setting("execution_control.do_run", True)
 
         assert only_write and not do_run  # This would trigger the warning
+

@@ -1,7 +1,7 @@
 """Comprehensive tests for goliat.studies.near_field_study core workflow."""
-
+import os
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, call
 
 import pytest
 
@@ -24,9 +24,20 @@ class TestNearFieldStudyCoreWorkflow:
         config_content = {
             "study_type": "near_field",
             "phantoms": ["thelonious"],
-            "antenna_config": {"700": {"model_type": "PIFA", "power_w": 1.0}},
-            "placement_scenarios": {"by_cheek": {"positions": {"center": [0, 0, 0]}, "orientations": {"vertical": [0, 0, 0]}}},
-            "execution_control": {"do_setup": True, "do_run": True, "do_extract": True},
+            "antenna_config": {
+                "700": {"model_type": "PIFA", "power_w": 1.0}
+            },
+            "placement_scenarios": {
+                "by_cheek": {
+                    "positions": {"center": [0, 0, 0]},
+                    "orientations": {"vertical": [0, 0, 0]}
+                }
+            },
+            "execution_control": {
+                "do_setup": True,
+                "do_run": True,
+                "do_extract": True
+            }
         }
 
         with open(config_path, "w") as f:
@@ -34,19 +45,36 @@ class TestNearFieldStudyCoreWorkflow:
 
         # Create phantom definition
         phantom_def_path = data_dir / "phantom_definitions.json"
-        phantom_def = {"thelonious": {"placements": {"do_by_cheek": True}}}
+        phantom_def = {
+            "thelonious": {
+                "placements": {
+                    "do_by_cheek": True
+                }
+            }
+        }
         with open(phantom_def_path, "w") as f:
             json.dump(phantom_def, f)
 
         # Create profiling config
         profiling_path = data_dir / "profiling_config.json"
-        profiling_config = {"near_field": {"avg_setup_time": 10.0, "avg_run_time": 60.0, "avg_extract_time": 5.0}}
+        profiling_config = {
+            "near_field": {
+                "avg_setup_time": 10.0,
+                "avg_run_time": 60.0,
+                "avg_extract_time": 5.0
+            }
+        }
         with open(profiling_path, "w") as f:
             json.dump(profiling_config, f)
 
         # Create material_name_mapping.json
         material_mapping_path = data_dir / "material_name_mapping.json"
-        material_mapping = {"thelonious": {"Brain": "Brain (IT'IS)", "_tissue_groups": {"brain_group": ["Brain"]}}}
+        material_mapping = {
+            "thelonious": {
+                "Brain": "Brain (IT'IS)",
+                "_tissue_groups": {"brain_group": ["Brain"]}
+            }
+        }
         with open(material_mapping_path, "w") as f:
             json.dump(material_mapping, f)
 
@@ -65,7 +93,7 @@ class TestNearFieldStudyCoreWorkflow:
         )
 
         # Mock the _run_placement method to avoid actual execution
-        with patch.object(study, "_run_placement") as mock_run_placement:
+        with patch.object(study, '_run_placement') as mock_run_placement:
             study._run_study()
 
             # Verify profiler was set up (total_simulations calculation happens in _run_study)
@@ -100,13 +128,16 @@ class TestNearFieldStudyCoreWorkflow:
         mock_document.AllSimulations = [mock_simulation]
         mock_simulation.Name = "EM_FDTD_thelonious_700MHz_by_cheek_center_vertical"
 
-        with patch("goliat.studies.near_field_study.NearFieldSetup", return_value=mock_setup), patch(
-            "s4l_v1.document", mock_document
-        ), patch.object(study, "project_manager", mock_project_manager), patch.object(study, "_execute_run_phase"), patch.object(
-            study, "_verify_run_deliverables_before_extraction", return_value=True
-        ), patch("goliat.studies.near_field_study.ResultsExtractor"), patch("goliat.studies.near_field_study.Antenna"), patch(
-            "goliat.studies.near_field_study.add_simulation_log_handlers"
-        ), patch("goliat.studies.near_field_study.remove_simulation_log_handlers"):
+        with patch("goliat.studies.near_field_study.NearFieldSetup", return_value=mock_setup), \
+             patch("s4l_v1.document", mock_document), \
+             patch.object(study, 'project_manager', mock_project_manager), \
+             patch.object(study, '_execute_run_phase'), \
+             patch.object(study, '_verify_run_deliverables_before_extraction', return_value=True), \
+             patch("goliat.studies.near_field_study.ResultsExtractor"), \
+             patch("goliat.studies.near_field_study.Antenna"), \
+             patch("goliat.studies.near_field_study.add_simulation_log_handlers"), \
+             patch("goliat.studies.near_field_study.remove_simulation_log_handlers"):
+
             # Mock the setup to return a simulation
             mock_setup.run_full_setup.return_value = mock_simulation
 
@@ -146,11 +177,13 @@ class TestNearFieldStudyCoreWorkflow:
         mock_document = MagicMock()
         mock_document.AllSimulations = [mock_simulation]
 
-        with patch("s4l_v1.document", mock_document), patch.object(study, "project_manager", mock_project_manager), patch.object(
-            study, "_verify_run_deliverables_before_extraction", return_value=True
-        ), patch("goliat.studies.near_field_study.ResultsExtractor") as mock_extractor_class, patch(
-            "goliat.studies.near_field_study.add_simulation_log_handlers"
-        ), patch("goliat.studies.near_field_study.remove_simulation_log_handlers"):
+        with patch("s4l_v1.document", mock_document), \
+             patch.object(study, 'project_manager', mock_project_manager), \
+             patch.object(study, '_verify_run_deliverables_before_extraction', return_value=True), \
+             patch("goliat.studies.near_field_study.ResultsExtractor") as mock_extractor_class, \
+             patch("goliat.studies.near_field_study.add_simulation_log_handlers"), \
+             patch("goliat.studies.near_field_study.remove_simulation_log_handlers"):
+
             mock_extractor = MagicMock()
             mock_extractor_class.return_value = mock_extractor
 
@@ -182,12 +215,12 @@ class TestNearFieldStudyCoreWorkflow:
         )
 
         # Test warning when not all phases enabled but cleanup is configured
-        with patch.object(study, "_log") as mock_log:
+        with patch.object(study, '_log') as mock_log:
             study._validate_auto_cleanup_config(
                 do_setup=True,
                 do_run=True,
                 do_extract=False,  # Extract disabled
-                auto_cleanup=["output"],
+                auto_cleanup=["output"]
             )
 
             # Should log a warning
@@ -229,15 +262,26 @@ class TestNearFieldStudyCoreWorkflow:
         # Set up config with multiple frequencies and placements
         study.config.config = {
             "phantoms": ["thelonious"],
-            "antenna_config": {"700": {}, "900": {}, "1800": {}},
-            "placement_scenarios": {
-                "by_cheek": {"positions": {"center": {}, "left": {}, "right": {}}, "orientations": {"vertical": {}, "horizontal": {}}}
+            "antenna_config": {
+                "700": {},
+                "900": {},
+                "1800": {}
             },
+            "placement_scenarios": {
+                "by_cheek": {
+                    "positions": {"center": {}, "left": {}, "right": {}},
+                    "orientations": {"vertical": {}, "horizontal": {}}
+                }
+            }
         }
 
         # Mock phantom definition
-        with patch.object(study.config, "get_phantom_definition") as mock_get_phantom:
-            mock_get_phantom.return_value = {"placements": {"do_by_cheek": True}}
+        with patch.object(study.config, 'get_phantom_definition') as mock_get_phantom:
+            mock_get_phantom.return_value = {
+                "placements": {
+                    "do_by_cheek": True
+                }
+            }
 
             # Count: 3 frequencies * 3 positions * 2 orientations = 18
             total = 0
@@ -271,10 +315,15 @@ class TestNearFieldStudyCoreWorkflow:
         )
 
         # Modify config to disable all phases
-        study.config.config["execution_control"] = {"do_setup": False, "do_run": False, "do_extract": False}
+        study.config.config["execution_control"] = {
+            "do_setup": False,
+            "do_run": False,
+            "do_extract": False
+        }
 
-        with patch.object(study, "_run_placement") as mock_run_placement:
+        with patch.object(study, '_run_placement') as mock_run_placement:
             study._run_study()
 
             # Should return early without calling _run_placement
             assert not mock_run_placement.called
+

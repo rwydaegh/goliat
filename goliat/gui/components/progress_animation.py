@@ -12,7 +12,7 @@ else:
         from PySide6.QtWidgets import QProgressBar
     except ImportError:
         from typing import Any  # type: ignore
-
+        
         QTimer = Any  # type: ignore
         QProgressBar = Any  # type: ignore
 
@@ -39,7 +39,6 @@ class ProgressAnimation:
         """
         from PySide6.QtWidgets import QProgressBar as _QProgressBar
         from PySide6.QtCore import QTimer as _QTimer
-
         self.progress_bar: _QProgressBar = progress_bar
         self.timer: _QTimer = timer
         self.debug: bool = debug
