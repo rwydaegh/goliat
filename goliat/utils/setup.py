@@ -99,8 +99,39 @@ def update_bashrc(selected_python_path):
     selected_python_path = selected_python_path.strip().strip('"').strip("'")
 
     # Prepare the new path lines
+    # Normalize Windows path: replace backslashes with forward slashes
+    normalized_path = selected_python_path.replace('\\', '/')
+    
+    # Extract drive letter and path rest
+    # Handle both Windows (where splitdrive works) and Linux (where it might not)
     drive, path_rest = os.path.splitdrive(selected_python_path)
-    bash_path = f"/{drive.strip(':')}{path_rest.replace(os.sep, '/')}"
+    
+    if not drive:
+        # On Linux, splitdrive might not recognize Windows paths, extract manually
+        # Check if normalized path starts with drive letter pattern (e.g., "C:/")
+        if len(normalized_path) >= 2 and normalized_path[1] == ':':
+            drive = normalized_path[0:2]  # e.g., "C:"
+            path_rest = normalized_path[2:].lstrip('/')  # Remove "C:" prefix and leading slash
+        else:
+            # No drive letter found, use as-is
+            path_rest = normalized_path
+            drive = ''
+    else:
+        # Normal case: splitdrive worked, use normalized_path to extract the rest
+        # Find the drive letter in normalized_path and get everything after it
+        drive_normalized = drive.replace('\\', '/')
+        if normalized_path.startswith(drive_normalized):
+            path_rest = normalized_path[len(drive_normalized):].lstrip('/')
+        else:
+            # Fallback: normalize path_rest from splitdrive result
+            path_rest = path_rest.replace('\\', '/').lstrip('/')
+    
+    # Build Git Bash path format: /C/Program Files/...
+    drive_letter = drive.strip(':').upper() if drive else ''
+    if drive_letter:
+        bash_path = f"/{drive_letter}/{path_rest}"
+    else:
+        bash_path = f"/{path_rest}"
     
     # Write BOTH Python and Scripts directories to PATH
     # Python directory: for python.exe itself
