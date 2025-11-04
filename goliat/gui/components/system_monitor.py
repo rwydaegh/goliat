@@ -5,6 +5,7 @@ from typing import Tuple, Optional
 
 try:
     import psutil
+
     PSUTIL_AVAILABLE = True
 except ImportError:
     PSUTIL_AVAILABLE = False
@@ -32,7 +33,8 @@ class SystemMonitor:
             return 0.0
         try:
             # Non-blocking call - returns utilization since last call
-            cpu_percent = psutil.cpu_percent(interval=None)
+            # psutil is guaranteed to be available here due to PSUTIL_AVAILABLE check
+            cpu_percent = psutil.cpu_percent(interval=None)  # type: ignore[possibly-unbound]
             return cpu_percent
         except Exception:
             return 0.0
@@ -47,7 +49,8 @@ class SystemMonitor:
         if not PSUTIL_AVAILABLE:
             return (0.0, 0.0)
         try:
-            memory = psutil.virtual_memory()
+            # psutil is guaranteed to be available here due to PSUTIL_AVAILABLE check
+            memory = psutil.virtual_memory()  # type: ignore[possibly-unbound]
             used_gb = memory.used / (1024**3)
             total_gb = memory.total / (1024**3)
             return (used_gb, total_gb)
@@ -85,4 +88,3 @@ class SystemMonitor:
             True if nvidia-smi is available and returns successfully, False otherwise.
         """
         return SystemMonitor.get_gpu_utilization() is not None
-

@@ -2,6 +2,7 @@
 .vscode/
 .roo/
 .DS_Store
+.cursor/
 
 # Python
 __pycache__/
@@ -54,9 +55,6 @@ configs/*
 # Local environment
 #.bashrc
 .env
-
-.cursorignore
-docs/extracted_style.md
 
 # Cloud setup - credentials and documentation
 cloud_setup/tensordock_documentation.md

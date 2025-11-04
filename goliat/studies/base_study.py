@@ -213,9 +213,7 @@ class BaseStudy(LoggingMixin):
             setup_timestamp = 0
 
         # Check deliverables status
-        deliverables_status = self.project_manager._get_deliverables_status(
-            project_dir, project_filename, setup_timestamp
-        )
+        deliverables_status = self.project_manager._get_deliverables_status(project_dir, project_filename, setup_timestamp)
 
         if not deliverables_status["run_done"]:
             self._log(

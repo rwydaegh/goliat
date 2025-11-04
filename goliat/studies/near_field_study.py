@@ -272,7 +272,9 @@ class NearFieldStudy(BaseStudy):
                         self.gui.update_stage_progress("Setup", 1, 1)
 
             else:
-                verification_status = self.project_manager.create_or_open_project(phantom_name, freq, scenario_name, position_name, orientation_name)
+                verification_status = self.project_manager.create_or_open_project(
+                    phantom_name, freq, scenario_name, position_name, orientation_name
+                )
                 # Add simulation-specific log handlers after project directory is created
                 if self.project_manager.project_path:
                     project_dir = os.path.dirname(self.project_manager.project_path)
@@ -357,7 +359,7 @@ class NearFieldStudy(BaseStudy):
             self.verbose_logger.error(traceback.format_exc())
         finally:
             # Remove simulation-specific log handlers
-            if sim_log_handlers:
+            if sim_log_handlers:  # type: ignore[possibly-unbound]
                 remove_simulation_log_handlers(sim_log_handlers)
             if self.project_manager and hasattr(self.project_manager.document, "IsOpen") and self.project_manager.document.IsOpen():  # type: ignore
                 self.project_manager.close()

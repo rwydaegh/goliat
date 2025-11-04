@@ -216,24 +216,24 @@ class BaseSetup(LoggingMixin):
 
             # Convert corner coordinates to numpy array
             corner_pos = np.array([corner_coords[0][0], corner_coords[1][1], corner_coords[2][2]])
-            
+
             # Calculate vector from center to corner
             center_to_corner = corner_pos - bbox_center
             distance_to_corner = np.linalg.norm(center_to_corner)
-            
+
             # Calculate 2% reduction distance
             reduction_distance = distance_to_corner * 0.02
             min_distance_from_center = 10.0  # 10 mm minimum
-            
+
             # Determine final distance: 2% less, but at least 10 mm from center
             if reduction_distance < min_distance_from_center:
                 final_distance = distance_to_corner - min_distance_from_center
             else:
                 final_distance = distance_to_corner * 0.98
-            
+
             # Ensure final distance is positive
             final_distance = max(final_distance, min_distance_from_center)
-            
+
             # Calculate adjusted position along center-to-corner vector
             if distance_to_corner > 0:
                 unit_vector = center_to_corner / distance_to_corner

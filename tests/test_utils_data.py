@@ -1,9 +1,8 @@
 """Tests for goliat.utils.data module."""
+
 import json
-import os
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 from goliat.utils.data import download_and_extract_data, setup_console_logging
 
@@ -113,4 +112,3 @@ class TestDownloadAndExtractData:
         calls = [str(call) for call in mock_makedirs.call_args_list]
         data_dir_calls = [c for c in calls if "data" in c]
         assert len(data_dir_calls) == 0 or mock_exists.return_value is True
-
