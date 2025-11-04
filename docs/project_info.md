@@ -11,7 +11,7 @@ The primary objectives of the project include:
 -   **SAR Analysis**: Calculating Specific Absorption Rate (SAR) metrics, including whole-body, head, trunk, and peak spatial-average SAR (psSAR10g) in sensitive tissues like the skin, eyes, and brain.
 -   **Varied Exposure Scenarios**: Investigating numerous exposure conditions, including different frequencies, antenna types, and device positions (e.g., by the cheek, in front of the eyes, near the belly).
 
-Check out the [GOLIAT website](https://projectgoliat.eu/)!
+Check out [the GOLIAT website](https://projectgoliat.eu/)!
 
 ## Funding and acknowledgements
 
