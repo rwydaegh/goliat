@@ -1,5 +1,4 @@
 exclude_patterns = [
   "scripts/**",
-  "analysis/**"
+  "analysis/**",
 ]
-
