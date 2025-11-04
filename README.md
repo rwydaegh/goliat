@@ -91,14 +91,17 @@ cd goliat
 # 2. Set up Sim4Life Python (uses Sim4Life's Python)
 source .bashrc
 
-# 3. Initialize GOLIAT
+# 3. Install GOLIAT package in editable mode
+python -m pip install -e .
+
+# 4. Initialize GOLIAT (downloads phantoms, antennas, verifies setup)
 goliat init
 
-# 4. Run your first simulation
+# 5. Run your first simulation
 goliat study near_field_config
 ```
 
-> **Note**: For first-time setup, you can run `goliat init` to install dependencies and set up the environment. Alternatively, `goliat study` will automatically prompt you to install if needed. This is a one-time setup that installs Python dependencies and the GOLIAT package in editable mode.
+> **Note**: The `goliat init` command checks your setup and downloads required data files. If you skip this step, `goliat study` will automatically prompt you to install when first run.
 
 That's it! The GUI will launch, download required phantoms/antennas, and run the simulation. Results appear in `results/` with JSON metrics and plots.
 
@@ -265,6 +268,6 @@ This project is licensed under the **Apache 2.0 License** – see [LICENSE](LICE
 
 <div align="center">
 
-⭐ **Star this repo if GOLIAT helps your research!**
+⭐ **Star this repo if you like the GOLIAT code project!**
 
 </div>

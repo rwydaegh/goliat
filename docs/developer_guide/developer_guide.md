@@ -22,18 +22,28 @@ Key flow: Config → BaseStudy.run() → Setups → Runner → Extractor → Ana
 
 ## Installation
 
-GOLIAT uses an editable package installation (`pip install -e .`). This is the **only** supported installation method.
+GOLIAT uses an editable package installation (`python -m pip install -e .`). This is the **only** supported installation method.
 
 **First-time setup**:
 
-Run the initialization command:
-```bash
-goliat init
-```
+1. Set up Sim4Life Python environment:
+   ```bash
+   source .bashrc
+   ```
+
+2. Install GOLIAT package in editable mode:
+   ```bash
+   python -m pip install -e .
+   ```
+
+   > **Always use `python -m pip`**: Always use `python -m pip` instead of `pip` directly. This ensures you're using the pip associated with Sim4Life's Python interpreter. The same applies to other Python commands: use `python -m <module>` when possible.
+
+3. Run the initialization command:
+   ```bash
+   goliat init
+   ```
 
 This will:
-- Check and install Python dependencies from `requirements.txt`
-- Install the GOLIAT package in editable mode
 - Verify Sim4Life Python interpreter is being used
 - Prepare data files (phantoms, antennas)
 
@@ -146,7 +156,7 @@ To build the documentation, you first need to install the documentation-specific
 
 ```bash
 # Install docs dependencies
-pip install -r requirements-docs.txt
+python -m pip install -r requirements-docs.txt
 ```
 
 Then, you can use MkDocs to serve the documentation locally or build the static site.

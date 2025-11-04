@@ -5,7 +5,6 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
 import h5py
-import s4l_v1.model as s4l_model
 
 from .logging_manager import LoggingMixin
 from .results_extractor import ResultsExtractor

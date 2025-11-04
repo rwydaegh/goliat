@@ -11,7 +11,7 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    if: "!contains(github.event.head_commit.message, '[docs-only]') && !contains(github.event.head_commit.message, '[skip ci]')"
+    if: ${{ !contains(github.event.head_commit.message, '[docs-only]') && !contains(github.event.head_commit.message, '[skip ci]') }}
     permissions:
       contents: write
 
@@ -35,4 +35,5 @@ jobs:
     - name: Run Pytest tests
       run: |
         export PYTHONPATH=$PYTHONPATH:./goliat
+        export CI=true
         pytest tests/ -m "not skip_on_ci"
