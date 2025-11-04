@@ -21,12 +21,12 @@ COLOR_MAP = {
 
 def init_colorama():
     """Initialize colorama with appropriate settings for the current environment.
-
+    
     Preserves ANSI codes when stdout is piped (e.g., in Jupyter notebooks)
     by checking for JUPYTER_NOTEBOOK or COLORAMA_STRIP environment variables.
     """
     # Preserve ANSI codes when stdout is piped (e.g., in Jupyter notebooks)
-    strip_codes = os.environ.get("COLORAMA_STRIP", "").lower() == "0" or os.environ.get("JUPYTER_NOTEBOOK", "").lower() == "1"
+    strip_codes = os.environ.get('COLORAMA_STRIP', '').lower() == '0' or os.environ.get('JUPYTER_NOTEBOOK', '').lower() == '1'
     init(autoreset=True, strip=not strip_codes, convert=False if strip_codes else True)
 
 

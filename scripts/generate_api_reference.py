@@ -4,7 +4,7 @@
 import ast
 import os
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Set, Tuple
 
 # Mapping of directory paths to category names and descriptions
 CATEGORY_MAPPING = {
@@ -103,7 +103,7 @@ CATEGORY_MAPPING = {
 
 def get_main_class_from_file(file_path: Path) -> str:
     """Extract the main class name from a Python file.
-
+    
     Returns the first public (non-underscore) class, or the first class if no public ones exist.
     For modules without classes, returns None.
     """
@@ -390,25 +390,23 @@ def generate_api_reference(src_root: Path = Path("goliat"), output_path: Path = 
             generate_section(category_key, categories[category_key], src_root, output_lines)
 
     # Add scripts section
-    output_lines.extend(
-        [
-            "## Scripts",
-            "",
-            "Entry point scripts for running studies and analysis.",
-            "",
-            '!!! note "Scripts"',
-            "    These are top-level scripts for running studies. They are not part of the core API but are included for reference.",
-            "",
-            "- `goliat study` - Main entry point for running studies",
-            "- `goliat analyze` - Entry point for post-processing analysis",
-            "- `goliat parallel` - Script for running parallel study batches",
-            "- `goliat free-space` - Script for free-space validation runs",
-            "- `goliat init` - Initialize GOLIAT environment (install dependencies, setup)",
-            "- `goliat status` - Show setup status and environment information",
-            "- `goliat validate` - Validate configuration files",
-            "- `goliat version` - Show GOLIAT version information",
-        ]
-    )
+    output_lines.extend([
+        "## Scripts",
+        "",
+        "Entry point scripts for running studies and analysis.",
+        "",
+        '!!! note "Scripts"',
+        "    These are top-level scripts for running studies. They are not part of the core API but are included for reference.",
+        "",
+        "- `goliat study` - Main entry point for running studies",
+        "- `goliat analyze` - Entry point for post-processing analysis",
+        "- `goliat parallel` - Script for running parallel study batches",
+        "- `goliat free-space` - Script for free-space validation runs",
+        "- `goliat init` - Initialize GOLIAT environment (install dependencies, setup)",
+        "- `goliat status` - Show setup status and environment information",
+        "- `goliat validate` - Validate configuration files",
+        "- `goliat version` - Show GOLIAT version information",
+    ])
 
     # Write output
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -421,3 +419,4 @@ def generate_api_reference(src_root: Path = Path("goliat"), output_path: Path = 
 
 if __name__ == "__main__":
     generate_api_reference()
+

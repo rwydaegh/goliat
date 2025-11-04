@@ -1,5 +1,4 @@
 """Tests for goliat.extraction.json_encoder module."""
-
 import json
 
 import numpy as np
@@ -64,3 +63,4 @@ class TestNumpyArrayEncoder:
         result = json.dumps(data, cls=NumpyArrayEncoder)
         decoded = json.loads(result)
         assert decoded == data
+
