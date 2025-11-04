@@ -3,11 +3,12 @@
 This module provides functions for checking Python interpreter, installing requirements,
 and preparing data files needed for studies.
 """
+
 import logging
 import os
 import platform
 import subprocess
-import sys
+import sys 
 
 
 def install_requirements(requirements_path):
@@ -31,19 +32,21 @@ def install_requirements(requirements_path):
 def check_package_installed():
     """Check if goliat is installed as a package (editable or regular)."""
     try:
-        import goliat
+        import importlib.util
+
+        # Check if goliat module can be imported
+        spec = importlib.util.find_spec("goliat")
+        if spec is None:
+            return False
         # Check if goliat is installed via pip by checking pip list
+        import json
+
         try:
-            result = subprocess.run(
-                [sys.executable, "-m", "pip", "list", "--format=json"],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            import json
+            result = subprocess.run([sys.executable, "-m", "pip", "list", "--format=json"], capture_output=True, text=True, check=True)
+
             installed_packages = json.loads(result.stdout)
             # Check if goliat is in the pip list
-            return any(pkg['name'].lower() == 'goliat' for pkg in installed_packages)
+            return any(pkg["name"].lower() == "goliat" for pkg in installed_packages)
         except (subprocess.CalledProcessError, json.JSONDecodeError):
             # Fallback: check if .egg-info exists in project root
             base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
@@ -100,8 +103,20 @@ def update_bashrc(selected_python_path):
 
     # Prepare the new path lines
     drive, path_rest = os.path.splitdrive(selected_python_path)
-    bash_path = f"/{drive.strip(':')}{path_rest.replace(os.sep, '/')}"
+    # On Linux, os.path.splitdrive may not split Windows paths correctly
+    # If drive is empty, extract it manually from the path
+    if not drive and path_rest:
+        # Check if path starts with a drive letter (e.g., "C:\...")
+        if len(path_rest) >= 2 and path_rest[1] == ":":
+            drive = path_rest[0:2]  # Get "C:"
+            path_rest = path_rest[2:]  # Get rest after "C:"
     
+    # Replace backslashes with forward slashes (works on both Windows and Linux)
+    path_rest_normalized = path_rest.replace("\\", "/")
+    # Remove colon from drive letter (C: -> C) for bash path conversion
+    drive_letter = drive.replace(":", "").upper() if drive else ""
+    bash_path = f"/{drive_letter}{path_rest_normalized}"
+
     # Write BOTH Python and Scripts directories to PATH
     # Python directory: for python.exe itself
     python_line = f'export PATH="{bash_path}:$PATH"\n'
@@ -214,12 +229,12 @@ def initial_setup():
     # Skip everything in CI/test environment
     if os.environ.get("CI") or os.environ.get("PYTEST_CURRENT_TEST"):
         return
-    
+
     base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-    
+
     # Check if goliat is installed as a package
     package_installed = check_package_installed()
-    
+
     if not package_installed:
         # Prompt user for permission to install
         print("=" * 80)
@@ -234,15 +249,15 @@ def initial_setup():
         print("be reflected immediately without reinstalling.")
         print()
         response = input("Do you want to install dependencies and GOLIAT package? [Y/n]: ").strip().lower()
-        
-        if response and response != 'y' and response != 'yes':
+
+        if response and response != "y" and response != "yes":
             print("Installation cancelled. GOLIAT cannot run without installation.")
             sys.exit(1)
-        
+
         # Install requirements.txt first
         print("\nInstalling Python dependencies...")
         install_requirements(os.path.join(base_dir, "requirements.txt"))
-        
+
         # Install editable package
         print("\nInstalling GOLIAT package in editable mode...")
         try:
@@ -251,19 +266,23 @@ def initial_setup():
         except subprocess.CalledProcessError as e:
             logging.error(f"Failed to install GOLIAT package: {e}")
             sys.exit(1)
-    
+
     # Verify package is importable
     try:
-        import goliat
+        import importlib.util
+
+        spec = importlib.util.find_spec("goliat")
+        if spec is None:
+            raise ImportError("goliat module not found")
     except ImportError:
         logging.error("GOLIAT package could not be imported. Please ensure installation completed successfully.")
         sys.exit(1)
-    
+
     # Rest of setup (data preparation, etc.)
     data_dir = os.path.join(base_dir, "data")
     os.makedirs(data_dir, exist_ok=True)
     lock_file = os.path.join(data_dir, ".setup_done")
-    
+
     if not os.path.exists(lock_file):
         check_repo_root()
         # Skip interpreter check in CI/test environment
@@ -276,4 +295,3 @@ def initial_setup():
         # Skip interpreter check in CI/test environment
         if not os.environ.get("CI") and not os.environ.get("PYTEST_CURRENT_TEST"):
             check_python_interpreter()  # This function now handles AWS detection internally
-
