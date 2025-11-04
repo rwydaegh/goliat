@@ -35,4 +35,5 @@ jobs:
     - name: Run Pytest tests
       run: |
         export PYTHONPATH=$PYTHONPATH:./goliat
+        export CI=true
         pytest tests/ -m "not skip_on_ci"

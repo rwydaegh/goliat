@@ -357,7 +357,7 @@ Entry point scripts for running studies and analysis.
 - `goliat analyze` - Entry point for post-processing analysis
 - `goliat parallel` - Script for running parallel study batches
 - `goliat free-space` - Script for free-space validation runs
-- `goliat init` - Initialize GOLIAT environment (install dependencies, setup)
+- `goliat init` - Initialize GOLIAT environment (verify setup, download data files)
 - `goliat status` - Show setup status and environment information
 - `goliat validate` - Validate configuration files
 - `goliat version` - Show GOLIAT version information

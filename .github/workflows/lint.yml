@@ -60,8 +60,11 @@ jobs:
       run: |
         uv pip install --system pre-commit
         uv pip install --system -e .
+      env:
+        CI: true
 
     - name: Run pre-commit hooks
       run: pre-commit run --all-files
       env:
         SKIP: pyright # Because no s4l_v1 available on remote
+        CI: true

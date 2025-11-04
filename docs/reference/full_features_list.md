@@ -6,9 +6,8 @@ This document provides a complete reference of every feature available in GOLIAT
 
 ## Installation and setup
 
-- Initialize GOLIAT environment using `goliat init` command
-- Automatically install Python dependencies from `requirements.txt`
-- Install GOLIAT package in editable mode (code changes reflect immediately)
+- Install GOLIAT package in editable mode using `python -m pip install -e .` (installs dependencies automatically)
+- Initialize GOLIAT environment using `goliat init` command (verifies setup, downloads data files)
 - Verify Sim4Life Python interpreter is being used
 - Prepare data files (phantoms, antennas) during initialization
 - Automatic prompt for installation when running `goliat study` if not initialized

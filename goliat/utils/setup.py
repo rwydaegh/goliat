@@ -211,6 +211,10 @@ def initial_setup():
     - Installs package in editable mode if not already installed.
     - Prepares data files.
     """
+    # Skip everything in CI/test environment
+    if os.environ.get("CI") or os.environ.get("PYTEST_CURRENT_TEST"):
+        return
+    
     base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
     
     # Check if goliat is installed as a package
@@ -262,10 +266,14 @@ def initial_setup():
     
     if not os.path.exists(lock_file):
         check_repo_root()
-        check_python_interpreter()  # This function now handles AWS detection internally
+        # Skip interpreter check in CI/test environment
+        if not os.environ.get("CI") and not os.environ.get("PYTEST_CURRENT_TEST"):
+            check_python_interpreter()  # This function now handles AWS detection internally
         prepare_data(base_dir)
         with open(lock_file, "w") as f:
             f.write("Setup complete.")
     else:
-        check_python_interpreter()  # This function now handles AWS detection internally
+        # Skip interpreter check in CI/test environment
+        if not os.environ.get("CI") and not os.environ.get("PYTEST_CURRENT_TEST"):
+            check_python_interpreter()  # This function now handles AWS detection internally
 
