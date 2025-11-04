@@ -1,5 +1,6 @@
 *[SAR]: Specific Absorption Rate
 *[psSAR]: Peak Spatial-Average Specific Absorption Rate
+*[psSAR10g]: Peak Spatial-Average Specific Absorption Rate over 10-gram tissue cube
 *[EMF]: Electromagnetic Field
 *[GUI]: Graphical User Interface
 *[API]: Application Programming Interface
@@ -9,6 +10,7 @@
 *[ETA]: Estimated Time of Arrival
 *[CAD]: Computer-Aided Design
 *[HDF5]: Hierarchical Data Format version 5
+*[H5]: HDF5 file format (Hierarchical Data Format version 5)
 *[oSPARC]: Open Simulation Platform for Advanced Research and Computing
 *[PIFA]: Planar Inverted-F Antenna
 *[IFA]: Inverted-F Antenna
@@ -19,6 +21,14 @@
 *[CUDA]: Compute Unified Device Architecture
 *[GPU]: Graphics Processing Unit
 *[CPU]: Central Processing Unit
+*[RAM]: Random Access Memory
+*[GB]: Gigabyte
+*[MHz]: Megahertz
+*[GHz]: Gigahertz
+*[Hz]: Hertz
+*[V/m]: Volts per meter
+*[mW/kg]: Milliwatts per kilogram
+*[iSolve]: Sim4Life FDTD solver executable
 *[CI]: Continuous Integration
 *[CD]: Continuous Deployment
 *[PR]: Pull Request
@@ -33,3 +43,7 @@
 *[IEC]: International Electrotechnical Commission
 *[ZMT]: Zurich MedTech AG
 *[IT'IS]: Foundation for Research on Information Technologies in Society
+*[RDP]: Remote Desktop Protocol
+*[VM]: Virtual Machine
+*[RF]: Radio Frequency
+*[EM]: Electromagnetic

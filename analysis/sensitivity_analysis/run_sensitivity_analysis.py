@@ -11,25 +11,23 @@ import pickle
 import argparse
 import sys
 
-# Ensure the project root directory is in the Python path
+# Base directory for config files (package is installed, no sys.path needed)
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.join(SCRIPT_DIR, "..", "..")
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
 
-from src.studies.near_field_study import NearFieldStudy
-from src.studies.far_field_study import FarFieldStudy
-from src.utils import ensure_s4l_running
-from src.logging_manager import setup_loggers, shutdown_loggers
-from src.utils import (
+from goliat.studies.near_field_study import NearFieldStudy
+from goliat.studies.far_field_study import FarFieldStudy
+from goliat.utils import ensure_s4l_running
+from goliat.logging_manager import setup_loggers, shutdown_loggers
+from goliat.utils import (
     Profiler as SimpleProfiler,
 )  # Use the simple profiler for this analysis
 import traceback
 import multiprocessing
 from PySide6.QtWidgets import QApplication
 from analysis.sensitivity_analysis.gui import SensitivityAnalysisGUI
-from src.config import Config
-from src.data_extractor import get_parameter
+from goliat.config import Config
+from goliat.data_extractor import get_parameter
 
 # --- Configuration ---
 SENSITIVITY_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "sensitivity_analysis_config.json")
@@ -97,9 +95,9 @@ def analysis_process_wrapper(queue, frequency_mhz, sensitivity_config):
         study_type = base_config.get("study_type")
 
         if study_type == "near_field":
-            study = NearFieldStudy(config_filename=base_config_path, gui=DummyGUI())
+            study = NearFieldStudy(study_type="near_field", config_filename=base_config_path, gui=DummyGUI())
         elif study_type == "far_field":
-            study = FarFieldStudy(config_filename=base_config_path, gui=DummyGUI())
+            study = FarFieldStudy(study_type="far_field", config_filename=base_config_path, gui=DummyGUI())
         else:
             raise ValueError(f"Unknown study type '{study_type}' in config.")
 

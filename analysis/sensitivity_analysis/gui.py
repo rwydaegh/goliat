@@ -161,7 +161,7 @@ class SensitivityAnalysisGUI(QWidget):
 
     def update_timing(self, elapsed, eta):
         """Updates the timing labels."""
-        from src.utils import format_time
+        from goliat.utils import format_time
 
         if eta is not None:
             self.eta_label.setText(f"Time Remaining: {format_time(eta)}")
@@ -170,7 +170,7 @@ class SensitivityAnalysisGUI(QWidget):
 
     def update_clock(self):
         """Updates the elapsed time label every second."""
-        from src.utils import format_time
+        from goliat.utils import format_time
 
         elapsed_sec = time.monotonic() - self.start_time
         self.elapsed_label.setText(f"Elapsed: {format_time(elapsed_sec)}")
