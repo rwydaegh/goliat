@@ -93,6 +93,68 @@ def create_parser():
     )
     # No arguments needed for free-space
 
+    # super_study command
+    super_study_parser = subparsers.add_parser("super_study", help="Create a super study and upload it to the web dashboard")
+    super_study_parser.add_argument(
+        "config",
+        type=str,
+        help="Path to the configuration file (e.g., configs/near_field_config.json).",
+    )
+    super_study_parser.add_argument(
+        "--name",
+        type=str,
+        required=True,
+        help="Name for the super study (used by workers to join).",
+    )
+    super_study_parser.add_argument(
+        "--description",
+        type=str,
+        default="",
+        help="Optional description for the super study.",
+    )
+    super_study_parser.add_argument(
+        "--num-splits",
+        type=int,
+        default=4,
+        help="Number of assignments to split into (default: 4).",
+    )
+    super_study_parser.add_argument(
+        "--server-url",
+        type=str,
+        default=None,
+        help="URL of the monitoring server (default: from GOLIAT_MONITORING_URL env var).",
+    )
+
+    # worker command
+    worker_parser = subparsers.add_parser("worker", help="Run as a worker on a super study assignment")
+    worker_parser.add_argument(
+        "assignment_index",
+        type=int,
+        help="Assignment index to run (0-based).",
+    )
+    worker_parser.add_argument(
+        "super_study_name",
+        type=str,
+        help="Name of the super study to join.",
+    )
+    worker_parser.add_argument(
+        "--title",
+        type=str,
+        default="",
+        help="Set the title of the GUI window.",
+    )
+    worker_parser.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="If set, redo simulations even if the configuration matches a completed run.",
+    )
+    worker_parser.add_argument(
+        "--server-url",
+        type=str,
+        default=None,
+        help="URL of the monitoring server (default: from GOLIAT_MONITORING_URL env var).",
+    )
+
     return parser
 
 
@@ -195,6 +257,38 @@ def main():
         sys.argv = ["goliat-free-space"]
         try:
             free_space_main()
+        finally:
+            sys.argv = original_argv
+
+    elif args.command == "super_study":
+        from cli.run_super_study import main as super_study_main
+
+        original_argv = sys.argv[:]
+        sys.argv = ["goliat-super-study", args.config, "--name", args.name]
+        if args.description:
+            sys.argv.extend(["--description", args.description])
+        if args.num_splits != 4:
+            sys.argv.extend(["--num-splits", str(args.num_splits)])
+        if args.server_url:
+            sys.argv.extend(["--server-url", args.server_url])
+        try:
+            super_study_main()
+        finally:
+            sys.argv = original_argv
+
+    elif args.command == "worker":
+        from cli.run_worker import main as worker_main
+
+        original_argv = sys.argv[:]
+        sys.argv = ["goliat-worker", str(args.assignment_index), args.super_study_name]
+        if args.title:
+            sys.argv.extend(["--title", args.title])
+        if args.no_cache:
+            sys.argv.append("--no-cache")
+        if args.server_url:
+            sys.argv.extend(["--server-url", args.server_url])
+        try:
+            worker_main()
         finally:
             sys.argv = original_argv
 
