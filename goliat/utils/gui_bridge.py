@@ -44,6 +44,9 @@ class WebGUIBridge:
         self.running = False
         self.thread: Optional[threading.Thread] = None
         self.logger = logging.getLogger("web_gui_bridge")
+        self.is_connected = False
+        self.last_heartbeat_success = False
+        self.connection_callback: Optional[callable] = None
         
     def enqueue(self, message: Dict[str, Any]) -> None:
         """Enqueue a message to be forwarded to the dashboard.
@@ -75,22 +78,70 @@ class WebGUIBridge:
         )
         
         # Send initial heartbeat to register worker
+        # Wait a bit for it to complete and call callback with initial status
         self._send_heartbeat()
+        # Also trigger callback with current status (even if unchanged) so GUI gets initial state
+        if self.connection_callback:
+            self.connection_callback(self.is_connected)
     
     def _send_heartbeat(self) -> None:
         """Send a heartbeat to register/update worker status."""
+        was_connected = self.is_connected
         try:
             response = requests.post(
                 f"{self.server_url}/api/heartbeat",
                 json={"machineId": self.machine_id},
-                timeout=5,
+                timeout=10,  # Increased timeout from 5 to 10 seconds
             )
             if response.status_code == 200:
-                self.logger.debug(f"Heartbeat sent successfully")
+                self.is_connected = True
+                self.last_heartbeat_success = True
+                if not was_connected:
+                    self.logger.info("Web dashboard connection established")
+                if self.connection_callback:
+                    self.connection_callback(True)
             else:
-                self.logger.warning(f"Heartbeat returned status {response.status_code}")
+                self.is_connected = False
+                self.last_heartbeat_success = False
+                self.logger.warning(f"Heartbeat returned status {response.status_code}: {response.text[:200]}")
+                if was_connected and self.connection_callback:
+                    self.connection_callback(False)
+                elif not was_connected and self.connection_callback:
+                    # Call callback even on initial failure so GUI knows the status
+                    self.connection_callback(False)
+        except requests.exceptions.Timeout:
+            self.is_connected = False
+            self.last_heartbeat_success = False
+            if was_connected:
+                self.logger.warning(f"Heartbeat timeout after 10s - connection may be slow or server unreachable")
+                if self.connection_callback:
+                    self.connection_callback(False)
+            else:
+                self.logger.info(f"Heartbeat timeout - server may be unreachable: {self.server_url}")
+                if self.connection_callback:
+                    self.connection_callback(False)
+        except requests.exceptions.ConnectionError as e:
+            self.is_connected = False
+            self.last_heartbeat_success = False
+            if was_connected:
+                self.logger.warning(f"Lost connection to web dashboard: {e}")
+                if self.connection_callback:
+                    self.connection_callback(False)
+            else:
+                self.logger.info(f"Cannot connect to web dashboard: {e}")
+                if self.connection_callback:
+                    self.connection_callback(False)
         except Exception as e:
-            self.logger.warning(f"Failed to send heartbeat: {e}")
+            self.is_connected = False
+            self.last_heartbeat_success = False
+            if was_connected:
+                self.logger.warning(f"Lost connection to web dashboard: {e}")
+            else:
+                # Log initial connection failure for debugging
+                self.logger.info(f"Initial heartbeat failed: {type(e).__name__}: {e}")
+            if self.connection_callback:
+                self.connection_callback(False)
+            # Don't log every failure, only when connection changes or on initial failure
     
     def stop(self) -> None:
         """Stop the forwarding thread."""
@@ -184,16 +235,33 @@ class WebGUIBridge:
             response = requests.post(
                 f"{self.server_url}/api/gui-update",
                 json=payload,
-                timeout=5,
+                timeout=10,  # Increased timeout from 5 to 10 seconds
             )
             
-            if response.status_code != 200:
-                self.logger.warning(
-                    f"API returned status {response.status_code}: {response.text}"
-                )
+            if response.status_code == 200:
+                self.is_connected = True
+                # Don't call callback here - heartbeat handles connection status
+            else:
+                # Only mark as disconnected if we get a persistent error
+                # Don't override successful heartbeat status immediately
+                self.logger.debug(f"GUI update returned status {response.status_code}")
+                # Don't set is_connected = False here - let heartbeat handle connection status
             
-        except requests.exceptions.RequestException as e:
-            self.logger.warning(f"Failed to send message to dashboard: {e}")
+        except requests.exceptions.Timeout:
+            # Timeout - don't mark as disconnected immediately, heartbeat will handle it
+            self.logger.debug("GUI update timeout")
+        except requests.exceptions.ConnectionError:
+            # Connection error - don't mark as disconnected immediately, heartbeat will handle it
+            self.logger.debug("GUI update connection error")
         except Exception as e:
+            # Only log unexpected errors
             self.logger.error(f"Unexpected error sending message: {e}")
+    
+    def set_connection_callback(self, callback: callable) -> None:
+        """Set a callback function to be called when connection status changes.
+        
+        Args:
+            callback: Function that takes a boolean (True=connected, False=disconnected)
+        """
+        self.connection_callback = callback
 

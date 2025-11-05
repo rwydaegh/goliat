@@ -21,6 +21,7 @@ dependencies = [
   "python-dotenv",
   "psutil",
   "h5py",
+  "requests",
 ]
 description = "A Python framework for dosimetric assessments using Sim4Life."
 license = {file = "LICENSE"}
