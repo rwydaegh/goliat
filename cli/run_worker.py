@@ -6,7 +6,6 @@ import logging
 import os
 import socket
 import sys
-import tempfile
 
 import colorama
 
@@ -135,23 +134,24 @@ def fetch_assignment(super_study_name, assignment_index, server_url, machine_id,
 
 def run_assignment(assignment, super_study_name, assignment_index, title, no_cache, logger):
     """Run the study with the assignment config."""
-    # Create a temporary config file
+    # Create config file in configs directory (not temp)
     config_data = assignment.get("splitConfig", {})
     
-    # Create temp directory for configs
-    temp_dir = tempfile.mkdtemp(prefix=f"goliat_{super_study_name}_")
-    config_path = os.path.join(temp_dir, f"{super_study_name}_assignment_{assignment_index}.json")
+    # Use configs directory instead of temp
+    configs_dir = os.path.join(base_dir, "configs")
+    os.makedirs(configs_dir, exist_ok=True)
+    config_path = os.path.join(configs_dir, f"{super_study_name}_assignment_{assignment_index}.json")
     
     # Check if config has "extends" and copy base config if needed
     base_config_name = config_data.get("extends")
     if base_config_name:
         # Try to find base config in configs directory
-        base_config_path = os.path.join(base_dir, "configs", base_config_name)
+        base_config_path = os.path.join(configs_dir, base_config_name)
         if os.path.exists(base_config_path):
-            import shutil
-            dest_base_config = os.path.join(temp_dir, base_config_name)
-            shutil.copy(base_config_path, dest_base_config)
-            logger.info(f"  Copied base config: {base_config_name}")
+            # Already exists, no need to copy
+            logger.info(f"  Using existing base config: {base_config_name}")
+        else:
+            logger.warning(f"  Base config not found: {base_config_name}")
     
     # Write the assignment config
     with open(config_path, "w") as f:
@@ -183,12 +183,6 @@ def run_assignment(assignment, super_study_name, assignment_index, title, no_cac
         return False
     finally:
         sys.argv = original_argv
-        # Clean up temp directory
-        try:
-            import shutil
-            shutil.rmtree(temp_dir)
-        except Exception:
-            pass
 
 
 def main():

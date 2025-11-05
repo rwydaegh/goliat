@@ -47,6 +47,7 @@ class WebGUIBridge:
         self.is_connected = False
         self.last_heartbeat_success = False
         self.connection_callback: Optional[callable] = None
+        self._system_info: Optional[Dict[str, Any]] = None
         
     def enqueue(self, message: Dict[str, Any]) -> None:
         """Enqueue a message to be forwarded to the dashboard.
@@ -79,18 +80,26 @@ class WebGUIBridge:
         
         # Send initial heartbeat to register worker
         # Wait a bit for it to complete and call callback with initial status
-        self._send_heartbeat()
+        self._send_heartbeat(self._system_info)
         # Also trigger callback with current status (even if unchanged) so GUI gets initial state
         if self.connection_callback:
             self.connection_callback(self.is_connected)
     
-    def _send_heartbeat(self) -> None:
-        """Send a heartbeat to register/update worker status."""
+    def _send_heartbeat(self, system_info: Optional[Dict[str, Any]] = None) -> None:
+        """Send a heartbeat to register/update worker status.
+        
+        Args:
+            system_info: Optional system information dict with gpuName, cpuCores, totalRamGB, hostname
+        """
         was_connected = self.is_connected
         try:
+            payload = {"machineId": self.machine_id}
+            if system_info:
+                payload.update(system_info)
+            
             response = requests.post(
                 f"{self.server_url}/api/heartbeat",
-                json={"machineId": self.machine_id},
+                json=payload,
                 timeout=10,  # Increased timeout from 5 to 10 seconds
             )
             if response.status_code == 200:
@@ -143,6 +152,22 @@ class WebGUIBridge:
                 self.connection_callback(False)
             # Don't log every failure, only when connection changes or on initial failure
     
+    def set_system_info(self, system_info: Dict[str, Any]) -> None:
+        """Set system information to be sent with heartbeats.
+        
+        Args:
+            system_info: Dict with gpuName, cpuCores, totalRamGB, hostname
+        """
+        self._system_info = system_info
+    
+    def send_heartbeat_with_system_info(self, system_info: Dict[str, Any]) -> None:
+        """Send a heartbeat with system information.
+        
+        Args:
+            system_info: Dict with gpuName, cpuCores, totalRamGB, hostname
+        """
+        self._send_heartbeat(system_info)
+    
     def stop(self) -> None:
         """Stop the forwarding thread."""
         self.running = False
@@ -162,7 +187,7 @@ class WebGUIBridge:
                 
                 # Send periodic heartbeat
                 if current_time - last_heartbeat_time >= heartbeat_interval:
-                    self._send_heartbeat()
+                    self._send_heartbeat(self._system_info)
                     last_heartbeat_time = current_time
                 
                 # Throttle: wait if needed

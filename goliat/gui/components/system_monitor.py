@@ -81,6 +81,60 @@ class SystemMonitor:
             return None
 
     @staticmethod
+    def get_gpu_name() -> Optional[str]:
+        """Gets GPU name via nvidia-smi.
+        
+        Returns:
+            GPU name (e.g., "RTX 4090"), or None if nvidia-smi unavailable.
+        """
+        try:
+            result = subprocess.run(
+                ["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"],
+                capture_output=True,
+                text=True,
+                timeout=2,
+                check=False,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                # Get first GPU's name and clean it up
+                gpu_name = result.stdout.strip().split("\n")[0].strip()
+                # Remove common prefixes like "NVIDIA " and clean up
+                gpu_name = gpu_name.replace("NVIDIA ", "").strip()
+                return gpu_name
+            return None
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError):
+            return None
+    
+    @staticmethod
+    def get_cpu_cores() -> int:
+        """Gets number of CPU cores.
+        
+        Returns:
+            Number of CPU cores, or 0 if psutil unavailable.
+        """
+        if not PSUTIL_AVAILABLE:
+            return 0
+        try:
+            return psutil.cpu_count(logical=True) or 0  # type: ignore[possibly-unbound]
+        except Exception:
+            return 0
+    
+    @staticmethod
+    def get_total_ram_gb() -> float:
+        """Gets total RAM in GB.
+        
+        Returns:
+            Total RAM in GB, or 0.0 if psutil unavailable.
+        """
+        if not PSUTIL_AVAILABLE:
+            return 0.0
+        try:
+            memory = psutil.virtual_memory()  # type: ignore[possibly-unbound]
+            return memory.total / (1024**3)
+        except Exception:
+            return 0.0
+
+    @staticmethod
     def is_gpu_available() -> bool:
         """Checks if GPU is available via nvidia-smi.
 
