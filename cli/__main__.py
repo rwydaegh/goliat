@@ -122,7 +122,7 @@ def create_parser():
         "--server-url",
         type=str,
         default=None,
-        help="URL of the monitoring server (default: from GOLIAT_MONITORING_URL env var).",
+        help="URL of the monitoring server (default: https://goliat-monitoring.up.railway.app).",
     )
 
     # worker command
@@ -152,7 +152,7 @@ def create_parser():
         "--server-url",
         type=str,
         default=None,
-        help="URL of the monitoring server (default: from GOLIAT_MONITORING_URL env var).",
+        help="URL of the monitoring server (default: https://goliat-monitoring.up.railway.app).",
     )
 
     return parser
