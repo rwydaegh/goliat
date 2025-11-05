@@ -138,13 +138,38 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
         # Initialize web GUI bridge after UI is built (so we can set callback)
         if self.machine_id:
             try:
+                import socket
                 from goliat.utils.gui_bridge import WebGUIBridge
+                from goliat.gui.components.system_monitor import SystemMonitor
+                
                 self.web_bridge = WebGUIBridge(self.server_url, self.machine_id)
+                
+                # Collect system info
+                gpu_name = SystemMonitor.get_gpu_name()
+                cpu_cores = SystemMonitor.get_cpu_cores()
+                total_ram_gb = SystemMonitor.get_total_ram_gb()
+                hostname = socket.gethostname()
+                
+                system_info = {
+                    "gpuName": gpu_name or "N/A",
+                    "cpuCores": cpu_cores,
+                    "totalRamGB": total_ram_gb,
+                    "hostname": hostname
+                }
+                self.web_bridge.set_system_info(system_info)
+                
                 # Set callback to update GUI indicator BEFORE starting
                 self.web_bridge.set_connection_callback(self._update_web_status)
                 self.web_bridge.start()
+                
+                # Send initial heartbeat with system info
+                self.web_bridge.send_heartbeat_with_system_info(system_info)
+                
                 self.verbose_logger.info(
                     f"Web GUI bridge enabled: {self.server_url}, machine_id={self.machine_id}"
+                )
+                self.verbose_logger.info(
+                    f"System info: GPU={gpu_name or 'N/A'}, CPU={cpu_cores} cores, RAM={total_ram_gb:.1f} GB, Hostname={hostname}"
                 )
             except ImportError:
                 self.verbose_logger.warning(
@@ -400,6 +425,8 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
         # Update window title with status
         progress_percent = max(0, self.overall_progress_bar.value() / 100.0)
         title = self.init_window_title
+        if title:
+            title += " | "
         title += f"[{progress_percent:.2f}%] GOLIAT"
         if self.total_simulations > 0:
             title += f" | Sim {self.current_simulation_count}/{self.total_simulations}"
