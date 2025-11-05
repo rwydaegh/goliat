@@ -75,10 +75,14 @@ class StatusManager:
         elif log_type in ["error", "fatal"]:
             self.error_count += 1
 
-    def get_error_summary(self) -> str:
-        """Gets formatted summary of warnings and errors.
+    def get_error_summary(self, web_connected: bool = False) -> str:
+        """Gets formatted summary of warnings and errors with optional web status.
+
+        Args:
+            web_connected: Whether web dashboard is connected (optional).
 
         Returns:
             Formatted string with emoji indicators and counts.
         """
-        return f"⚠️ Warnings: {self.warning_count} | ❌ Errors: {self.error_count}"
+        web_status = "🟢" if web_connected else "🔴"
+        return f"⚠️ Warnings: {self.warning_count} | ❌ Errors: {self.error_count} | {web_status} Web"

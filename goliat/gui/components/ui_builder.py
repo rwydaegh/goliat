@@ -326,7 +326,7 @@ class UIBuilder:
         utilization_widget = QWidget()
         utilization_widget.setLayout(utilization_layout)
 
-        # Error counter label
+        # Error counter label (includes web status)
         gui_instance.error_counter_label = QLabel(status_manager.get_error_summary())
 
         # Right side layout: utilization bars above error counter
