@@ -272,18 +272,13 @@ def main():
         "--server-url",
         type=str,
         default=None,
-        help="URL of the monitoring server (default: from GOLIAT_MONITORING_URL env var).",
+        help="URL of the monitoring server (default: https://goliat-monitoring.up.railway.app).",
     )
 
     args = parser.parse_args()
 
-    # Get server URL from env or arg
-    server_url = args.server_url or os.getenv("GOLIAT_MONITORING_URL")
-    if not server_url:
-        logger.error(f"{colorama.Fore.RED}Error: No server URL provided.")
-        logger.error("Either set GOLIAT_MONITORING_URL environment variable or use --server-url")
-        sys.exit(1)
-    
+    # Get server URL: command arg > env var > hardcoded default
+    server_url = args.server_url or os.getenv("GOLIAT_MONITORING_URL") or "https://goliat-monitoring.up.railway.app"
     server_url = server_url.rstrip("/")
 
     if args.num_splits < 1:
