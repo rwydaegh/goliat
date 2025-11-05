@@ -123,7 +123,7 @@ class TimingsTable:
             ]
             for item in items:
                 item.setForeground(light_text_color)
-            
+
             self.table.setItem(row_position, 0, items[0])
             self.table.setItem(row_position, 1, items[1])
             self.table.setItem(row_position, 2, items[2])

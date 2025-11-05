@@ -5,13 +5,12 @@ try:
 except metadata.PackageNotFoundError:
     # Fallback: read from pyproject.toml directly
     import tomllib
-    import os
     from pathlib import Path
-    
+
     pyproject_path = Path(__file__).parent.parent / "pyproject.toml"
     if pyproject_path.exists():
-        with open(pyproject_path, 'rb') as f:
+        with open(pyproject_path, "rb") as f:
             pyproject = tomllib.load(f)
-            __version__ = pyproject.get('project', {}).get('version', 'unknown')
+            __version__ = pyproject.get("project", {}).get("version", "unknown")
     else:
         __version__ = "unknown"

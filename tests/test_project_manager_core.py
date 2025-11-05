@@ -1,8 +1,8 @@
 """Tests for goliat.project_manager module core functionality."""
+
 import json
 import os
-import tempfile
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -16,11 +16,7 @@ class TestProjectManager:
         """Create a temporary config."""
         config = MagicMock()
         config.base_dir = str(tmp_path)
-        config.get_setting.return_value = {
-            "do_setup": True,
-            "do_run": True,
-            "do_extract": True
-        }
+        config.get_setting.return_value = {"do_setup": True, "do_run": True, "do_extract": True}
         return config
 
     def test_project_manager_initialization(self, dummy_config):
@@ -76,11 +72,7 @@ class TestProjectManager:
         )
 
         meta_path = str(tmp_path / "metadata.json")
-        surgical_config = {
-            "phantom": "thelonious",
-            "frequency": 700,
-            "placement": "by_cheek"
-        }
+        surgical_config = {"phantom": "thelonious", "frequency": 700, "placement": "by_cheek"}
 
         manager.write_simulation_metadata(meta_path, surgical_config)
 
@@ -213,4 +205,3 @@ class TestProjectManager:
 
         # Small file should be ignored
         assert status["run_done"] is False
-
