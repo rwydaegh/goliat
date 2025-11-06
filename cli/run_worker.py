@@ -205,7 +205,8 @@ def run_assignment(assignment, super_study_name, assignment_index, title, no_cac
 
     try:
         study_main()
-        logger.info(f"\n{colorama.Fore.GREEN}✓ Assignment {assignment_index} completed successfully!")
+        logger.info(f"\n{colorama.Fore.CYAN}Study process finished for assignment {assignment_index}.")
+        logger.info(f"{colorama.Fore.YELLOW}Note: Check the web dashboard to verify completion status.")
         return True
     except Exception as e:
         logger.error(f"\n{colorama.Fore.RED}✗ Assignment {assignment_index} failed: {e}")
