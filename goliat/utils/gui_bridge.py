@@ -3,6 +3,7 @@
 import time
 import threading
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from queue import Queue, Empty
 from typing import Dict, Any, Optional, Callable
 
@@ -45,6 +46,8 @@ class WebGUIBridge:
         self.last_heartbeat_success = False
         self.connection_callback: Optional[Callable[[bool], None]] = None
         self._system_info: Optional[Dict[str, Any]] = None
+        # ThreadPoolExecutor for non-blocking HTTP requests (max 10 concurrent)
+        self.executor: Optional[ThreadPoolExecutor] = None
 
     def enqueue(self, message: Dict[str, Any]) -> None:
         """Enqueue a message to be forwarded to the dashboard.
@@ -69,6 +72,8 @@ class WebGUIBridge:
             return
 
         self.running = True
+        # Start thread pool for async HTTP requests
+        self.executor = ThreadPoolExecutor(max_workers=10, thread_name_prefix="web_bridge_http")
         self.thread = threading.Thread(target=self._forward_loop, daemon=True)
         self.thread.start()
         self.logger.info(f"WebGUIBridge started: {self.server_url}, machine_id={self.machine_id}")
@@ -170,6 +175,8 @@ class WebGUIBridge:
         self.running = False
         if self.thread:
             self.thread.join(timeout=2.0)
+        if self.executor:
+            self.executor.shutdown(wait=False, cancel_futures=True)
         self.logger.info("WebGUIBridge stopped")
 
     def _forward_loop(self) -> None:
@@ -306,17 +313,27 @@ class WebGUIBridge:
         return sanitized
 
     def _send_log_batch(self, log_messages: list[Dict[str, Any]]) -> None:
-        """Send a batch of log messages to the dashboard API.
+        """Send a batch of log messages to the dashboard API (async).
 
         Args:
             log_messages: List of status/log message dictionaries
         """
-        if not REQUESTS_AVAILABLE or requests is None:
+        if not REQUESTS_AVAILABLE or requests is None or not self.executor:
             return
 
         if not log_messages:
             return
 
+        # Submit to thread pool for async execution (non-blocking)
+        self.executor.submit(self._send_log_batch_sync, log_messages)
+
+    def _send_log_batch_sync(self, log_messages: list[Dict[str, Any]]) -> None:
+        """Synchronous implementation of log batch sending (runs in thread pool).
+
+        Args:
+            log_messages: List of status/log message dictionaries
+        """
+        send_start = time.time()
         try:
             # Create batch payload with all logs
             payload = {
@@ -328,7 +345,7 @@ class WebGUIBridge:
                 "timestamp": time.time(),
             }
 
-            response = requests.post(
+            response = requests.post(  # type: ignore[attr-defined]
                 f"{self.server_url}/api/gui-update",
                 json=payload,
                 timeout=10,
@@ -339,23 +356,38 @@ class WebGUIBridge:
             else:
                 self.logger.warning(f"Log batch ({len(log_messages)} logs) returned status {response.status_code}: {response.text[:100]}")
 
-        except requests.exceptions.Timeout:
-            self.logger.warning(f"Log batch timeout ({len(log_messages)} logs)")
-        except requests.exceptions.ConnectionError:
-            self.logger.warning(f"Log batch connection error ({len(log_messages)} logs)")
         except Exception as e:
-            self.logger.error(f"Unexpected error sending log batch: {e}")
+            if "Timeout" in str(type(e).__name__):
+                self.logger.warning(f"Log batch timeout ({len(log_messages)} logs)")
+            elif "ConnectionError" in str(type(e).__name__):
+                self.logger.warning(f"Log batch connection error ({len(log_messages)} logs)")
+            else:
+                self.logger.error(f"Unexpected error sending log batch: {e}")
+        finally:
+            send_duration = time.time() - send_start
+            if send_duration > 0.5:
+                self.logger.warning(f"Slow batch send: {len(log_messages)} logs took {send_duration:.2f}s")
 
     def _send_message(self, message: Dict[str, Any]) -> None:
-        """Send a single message to the dashboard API.
+        """Send a single message to the dashboard API (async).
 
         Args:
             message: GUI message dictionary
         """
-        if not REQUESTS_AVAILABLE or requests is None:
+        if not REQUESTS_AVAILABLE or requests is None or not self.executor:
             return
 
+        # Submit to thread pool for async execution (non-blocking)
+        self.executor.submit(self._send_message_sync, message)
+
+    def _send_message_sync(self, message: Dict[str, Any]) -> None:
+        """Synchronous implementation of message sending (runs in thread pool).
+
+        Args:
+            message: GUI message dictionary
+        """
         message_type = message.get("type", "unknown")
+        send_start = time.time()
 
         try:
             # Sanitize message to remove non-serializable objects
@@ -367,29 +399,28 @@ class WebGUIBridge:
                 "timestamp": time.time(),
             }
 
-            response = requests.post(
+            response = requests.post(  # type: ignore[attr-defined]
                 f"{self.server_url}/api/gui-update",
                 json=payload,
-                timeout=10,  # Increased timeout from 5 to 10 seconds
+                timeout=10,
             )
 
             if response.status_code == 200:
                 self.is_connected = True
-                # Don't call callback here - heartbeat handles connection status
             else:
-                # Log non-200 responses for debugging
                 self.logger.warning(f"GUI update ({message_type}) returned status {response.status_code}: {response.text[:100]}")
-                # Don't set is_connected = False here - let heartbeat handle connection status
 
-        except requests.exceptions.Timeout:
-            # Timeout - don't mark as disconnected immediately, heartbeat will handle it
-            self.logger.warning(f"GUI update timeout for message type: {message_type}")
-        except requests.exceptions.ConnectionError:
-            # Connection error - don't mark as disconnected immediately, heartbeat will handle it
-            self.logger.warning(f"GUI update connection error for message type: {message_type}")
         except Exception as e:
-            # Only log unexpected errors
-            self.logger.error(f"Unexpected error sending {message_type} message: {e}")
+            if "Timeout" in str(type(e).__name__):
+                self.logger.warning(f"GUI update timeout for message type: {message_type}")
+            elif "ConnectionError" in str(type(e).__name__):
+                self.logger.warning(f"GUI update connection error for message type: {message_type}")
+            else:
+                self.logger.error(f"Unexpected error sending {message_type} message: {e}")
+        finally:
+            send_duration = time.time() - send_start
+            if send_duration > 0.5:
+                self.logger.warning(f"Slow send: {message_type} took {send_duration:.2f}s")
 
     def set_connection_callback(self, callback: Callable[[bool], None]) -> None:
         """Set a callback function to be called when connection status changes.
