@@ -8,6 +8,14 @@ from typing import TYPE_CHECKING, Optional
 
 from line_profiler import LineProfiler
 
+try:
+    import requests
+
+    REQUESTS_AVAILABLE = True
+except ImportError:
+    REQUESTS_AVAILABLE = False
+    requests = None  # type: ignore
+
 from goliat.config import Config
 from goliat.logging_manager import LoggingMixin
 from goliat.profiler import Profiler
@@ -256,8 +264,88 @@ class BaseStudy(LoggingMixin):
         elif stage == "extract" and deliverables_status["extract_done"]:
             self._log("Extract deliverables verified. Updating metadata.", log_type="warning")
             self.project_manager.update_simulation_metadata(os.path.join(project_dir, "config.json"), extract_done=True)
+            # Upload results if running as part of an assignment
+            self._upload_results_if_assignment(project_dir)
         else:
             self._log(f"Deliverables for '{stage}' phase not found. Metadata not updated.", log_type="warning")
+
+    def _upload_results_if_assignment(self, project_dir: str):
+        """Upload results to web dashboard if running as part of an assignment.
+
+        Collects deliverable files and uploads them to the monitoring dashboard.
+        Only runs if GOLIAT_ASSIGNMENT_ID environment variable is set.
+
+        Args:
+            project_dir: Path to the simulation results directory
+        """
+        assignment_id = os.environ.get("GOLIAT_ASSIGNMENT_ID", "")
+        if not assignment_id:
+            return  # Not running as part of an assignment
+
+        if not REQUESTS_AVAILABLE or requests is None:
+            self._log("WARNING: requests library not available, cannot upload results", log_type="warning")
+            return
+
+        # Get monitoring server URL from environment (set by run_worker.py)
+        server_url = "https://goliat-monitoring.up.railway.app"
+
+        self._log("Uploading results to web dashboard...", log_type="info")
+
+        # Define files to upload with their expected names
+        files_to_upload = [
+            "config.json",
+            "verbose.log",
+            "progress.log",
+            "sar_results.json",
+            "sar_stats_all_tissues.pkl",
+            "sar_stats_all_tissues.html",
+        ]
+
+        # Collect files that exist
+        files = {}
+        for filename in files_to_upload:
+            file_path = os.path.join(project_dir, filename)
+            if os.path.exists(file_path):
+                try:
+                    with open(file_path, "rb") as f:
+                        files[filename] = f.read()
+                except Exception as e:
+                    self._log(f"WARNING: Could not read {filename}: {e}", log_type="warning")
+
+        if not files:
+            self._log("WARNING: No result files found to upload", log_type="warning")
+            return
+
+        # Get relative path from results/ root for directory structure
+        # Example: results/near_field/thelonious/700MHz/by_belly_up_vertical
+        # Should extract: near_field/thelonious/700MHz/by_belly_up_vertical
+        results_root = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(project_dir)))), "results")
+        try:
+            relative_path = os.path.relpath(project_dir, results_root)
+        except ValueError:
+            # Fallback if relpath fails (different drives on Windows)
+            relative_path = project_dir.split("results" + os.sep, 1)[-1] if "results" in project_dir else ""
+
+        # Upload files
+        try:
+            # Prepare multipart form data
+            upload_files = []
+            for filename, content in files.items():
+                upload_files.append(("files", (filename, content)))
+
+            response = requests.post(  # type: ignore[attr-defined]
+                f"{server_url}/api/assignments/{assignment_id}/results",
+                files=upload_files,
+                data={"relativePath": relative_path},
+                timeout=30,
+            )
+
+            if response.status_code == 200:
+                self._log(f"✓ Results uploaded successfully ({len(files)} files)", log_type="success")
+            else:
+                self._log(f"WARNING: Results upload failed (status {response.status_code}): {response.text[:100]}", log_type="warning")
+        except Exception as e:
+            self._log(f"WARNING: Error uploading results: {e}", log_type="warning")
 
     def _setup_line_profiler_if_needed(self, subtask_name: str, instance) -> tuple:
         """Sets up line profiler if configured for this subtask.
