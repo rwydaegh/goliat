@@ -192,6 +192,9 @@ def run_assignment(assignment, super_study_name, assignment_index, title, no_cac
     logger.info(f"  Config saved to: {config_path}")
     logger.info("  Starting study...\n")
 
+    # Set environment variables for web integration
+    os.environ["GOLIAT_ASSIGNMENT_ID"] = assignment.get("id", "")
+
     # Run the study using goliat study command
     from cli.run_study import main as study_main
 
