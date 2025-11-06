@@ -81,4 +81,3 @@ With software kernel, this simple test should take:
 - **Total: ~7-13 minutes**
 
 You can watch the progress in real-time on the dashboard!
-

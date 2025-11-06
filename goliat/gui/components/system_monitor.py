@@ -83,7 +83,7 @@ class SystemMonitor:
     @staticmethod
     def get_gpu_name() -> Optional[str]:
         """Gets GPU name via nvidia-smi.
-        
+
         Returns:
             GPU name (e.g., "RTX 4090"), or None if nvidia-smi unavailable.
         """
@@ -104,11 +104,11 @@ class SystemMonitor:
             return None
         except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError):
             return None
-    
+
     @staticmethod
     def get_cpu_cores() -> int:
         """Gets number of CPU cores.
-        
+
         Returns:
             Number of CPU cores, or 0 if psutil unavailable.
         """
@@ -118,11 +118,11 @@ class SystemMonitor:
             return psutil.cpu_count(logical=True) or 0  # type: ignore[possibly-unbound]
         except Exception:
             return 0
-    
+
     @staticmethod
     def get_total_ram_gb() -> float:
         """Gets total RAM in GB.
-        
+
         Returns:
             Total RAM in GB, or 0.0 if psutil unavailable.
         """
