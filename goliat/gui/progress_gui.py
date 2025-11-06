@@ -111,18 +111,30 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
         self.web_bridge: Optional[Any] = None
         self.server_url = "https://goliat-monitoring.up.railway.app"
         self.machine_id = None
-        
+
         # Auto-detect machine ID
         try:
             import socket
             import requests
-            # Try external service first
-            try:
-                response = requests.get("https://api.ipify.org", timeout=5)
-                if response.status_code == 200:
-                    self.machine_id = response.text.strip()
-                    self.verbose_logger.info(f"Auto-detected public IP: {self.machine_id}")
-            except Exception:
+
+            # Try external service first with retries (matches run_worker.py)
+            public_ip = None
+            for attempt in range(3):  # Try up to 3 times
+                try:
+                    response = requests.get("https://api.ipify.org", timeout=10)
+                    if response.status_code == 200:
+                        public_ip = response.text.strip()
+                        if public_ip:
+                            break
+                except Exception:
+                    if attempt < 2:  # Not the last attempt
+                        continue
+                    # Last attempt failed, will fall through to local IP
+
+            if public_ip:
+                self.machine_id = public_ip
+                self.verbose_logger.info(f"Auto-detected public IP: {self.machine_id}")
+            else:
                 # Fallback to local IP
                 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 s.connect(("8.8.8.8", 80))
@@ -141,51 +153,41 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
                 import socket
                 from goliat.utils.gui_bridge import WebGUIBridge
                 from goliat.gui.components.system_monitor import SystemMonitor
-                
+
                 self.web_bridge = WebGUIBridge(self.server_url, self.machine_id)
-                
+
                 # Collect system info
                 gpu_name = SystemMonitor.get_gpu_name()
                 cpu_cores = SystemMonitor.get_cpu_cores()
                 total_ram_gb = SystemMonitor.get_total_ram_gb()
                 hostname = socket.gethostname()
-                
-                system_info = {
-                    "gpuName": gpu_name or "N/A",
-                    "cpuCores": cpu_cores,
-                    "totalRamGB": total_ram_gb,
-                    "hostname": hostname
-                }
+
+                system_info = {"gpuName": gpu_name or "N/A", "cpuCores": cpu_cores, "totalRamGB": total_ram_gb, "hostname": hostname}
                 self.web_bridge.set_system_info(system_info)
-                
+
                 # Set callback to update GUI indicator BEFORE starting
                 self.web_bridge.set_connection_callback(self._update_web_status)
                 self.web_bridge.start()
-                
+
                 # Send initial heartbeat with system info
                 self.web_bridge.send_heartbeat_with_system_info(system_info)
-                
-                self.verbose_logger.info(
-                    f"Web GUI bridge enabled: {self.server_url}, machine_id={self.machine_id}"
-                )
+
+                self.verbose_logger.info(f"Web GUI bridge enabled: {self.server_url}, machine_id={self.machine_id}")
                 self.verbose_logger.info(
                     f"System info: GPU={gpu_name or 'N/A'}, CPU={cpu_cores} cores, RAM={total_ram_gb:.1f} GB, Hostname={hostname}"
                 )
             except ImportError:
                 self.verbose_logger.warning(
-                    "Web GUI bridge requested but 'requests' library not available. "
-                    "Install with: pip install requests"
+                    "Web GUI bridge requested but 'requests' library not available. Install with: pip install requests"
                 )
-                if hasattr(self, 'error_counter_label') and hasattr(self, 'status_manager'):
+                if hasattr(self, "error_counter_label") and hasattr(self, "status_manager"):
                     self._update_web_status(False)
             except Exception as e:
-                self.verbose_logger.warning(
-                    f"Failed to initialize web GUI bridge: {e}. Continuing without web monitoring."
-                )
-                if hasattr(self, 'error_counter_label') and hasattr(self, 'status_manager'):
+                self.verbose_logger.warning(f"Failed to initialize web GUI bridge: {e}. Continuing without web monitoring.")
+                if hasattr(self, "error_counter_label") and hasattr(self, "status_manager"):
                     self._update_web_status(False)
         else:
-            if hasattr(self, 'error_counter_label') and hasattr(self, 'status_manager'):
+            if hasattr(self, "error_counter_label") and hasattr(self, "status_manager"):
                 self._update_web_status(False)
 
         # Initialize animation (must be after UI build to ensure stage_progress_bar exists)
@@ -232,7 +234,8 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
         self.progress_sync_timer.start(2000)
 
         # Initialize GPU availability check
-        self.gpu_available: bool = SystemMonitor.is_gpu_available()
+        # SystemMonitor is imported at module level, so it's always available
+        self.gpu_available: bool = SystemMonitor.is_gpu_available()  # type: ignore[possibly-unbound]
 
         # Initialize CPU measurement (first call needs to be blocking)
         if PSUTIL_AVAILABLE:
@@ -355,7 +358,7 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
         self.status_manager.record_log(log_type)
         # Update error counter with current web status
         web_connected = False
-        if hasattr(self, 'web_bridge') and self.web_bridge and hasattr(self.web_bridge, 'is_connected'):
+        if hasattr(self, "web_bridge") and self.web_bridge and hasattr(self.web_bridge, "is_connected"):
             web_connected = self.web_bridge.is_connected
         self.error_counter_label.setText(self.status_manager.get_error_summary(web_connected=web_connected))
         formatted_message = self.status_manager.format_message(message, log_type)
@@ -441,62 +444,53 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
 
         title += f" | {status}"
         self.setWindowTitle(title)
-        
+
         # Update web connection status indicator periodically
-        if hasattr(self, 'web_bridge') and self.web_bridge and hasattr(self.web_bridge, 'is_connected'):
-            if hasattr(self, 'error_counter_label') and hasattr(self, 'status_manager'):
+        if hasattr(self, "web_bridge") and self.web_bridge and hasattr(self.web_bridge, "is_connected"):
+            if hasattr(self, "error_counter_label") and hasattr(self, "status_manager"):
                 self._update_web_status(self.web_bridge.is_connected)
 
     def _update_web_status(self, connected: bool, message: str = "") -> None:
         """Update the web connection status in the error counter label.
-        
+
         Args:
             connected: True if connected, False if disconnected
             message: Optional status message (not used, kept for compatibility)
         """
-        if hasattr(self, 'error_counter_label') and hasattr(self, 'status_manager'):
+        if hasattr(self, "error_counter_label") and hasattr(self, "status_manager"):
             self.error_counter_label.setText(self.status_manager.get_error_summary(web_connected=connected))
-    
+
     def _sync_progress_to_web(self) -> None:
         """Periodically sync actual GUI progress bar values to web dashboard.
-        
+
         Sends the current progress bar values to the web bridge so the dashboard
         always shows the actual progress, even if progress messages aren't sent.
         """
-        if not hasattr(self, 'web_bridge') or self.web_bridge is None:
+        if not hasattr(self, "web_bridge") or self.web_bridge is None:
             return
-        
+
         try:
             # Get actual progress bar values
             overall_value = self.overall_progress_bar.value()
             overall_max = self.overall_progress_bar.maximum()
             overall_progress = (overall_value / overall_max * 100) if overall_max > 0 else 0
-            
+
             stage_value = self.stage_progress_bar.value()
             stage_max = self.stage_progress_bar.maximum()
             stage_progress = (stage_value / stage_max * 100) if stage_max > 0 else 0
-            
+
             # Send overall progress
             if overall_progress > 0:
-                self.web_bridge.enqueue({
-                    "type": "overall_progress",
-                    "current": overall_progress,
-                    "total": 100
-                })
-            
+                self.web_bridge.enqueue({"type": "overall_progress", "current": overall_progress, "total": 100})
+
             # Send stage progress if we have a stage name
-            if stage_progress > 0 and hasattr(self, 'stage_label'):
+            if stage_progress > 0 and hasattr(self, "stage_label"):
                 stage_name = self.stage_label.text().replace("Current Stage: ", "")
                 if stage_name and stage_name != "Current Stage:":
-                    self.web_bridge.enqueue({
-                        "type": "stage_progress",
-                        "name": stage_name,
-                        "current": stage_progress,
-                        "total": 100
-                    })
+                    self.web_bridge.enqueue({"type": "stage_progress", "name": stage_name, "current": stage_progress, "total": 100})
         except Exception as e:
             # Don't let progress sync errors break the GUI
-            if hasattr(self, 'verbose_logger'):
+            if hasattr(self, "verbose_logger"):
                 self.verbose_logger.debug(f"Failed to sync progress to web: {e}")
 
     def update_graphs(self) -> None:
@@ -580,29 +574,25 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
 
         self.stop_button.setEnabled(False)
         self.tray_button.setEnabled(False)
-        
+
         # Send final status update to web before stopping bridge
         if self.web_bridge is not None:
             try:
                 # Send final 100% progress to web
-                self.web_bridge.enqueue({
-                    "type": "overall_progress",
-                    "current": 100,
-                    "total": 100
-                })
-                self.web_bridge.enqueue({
-                    "type": "finished",
-                    "message": "Study finished successfully" if not error else "Study finished with errors"
-                })
+                self.web_bridge.enqueue({"type": "overall_progress", "current": 100, "total": 100})
+                self.web_bridge.enqueue(
+                    {"type": "finished", "message": "Study finished successfully" if not error else "Study finished with errors"}
+                )
                 # Wait a moment for final messages to send
                 import time
+
                 time.sleep(1)
                 self.web_bridge.stop()
             except Exception as e:
                 self.verbose_logger.warning(f"Error stopping web bridge: {e}")
-        
+
         self.update_clock()  # Final title update
-        
+
         # Instead of auto-closing, show a message that user can close the window
         if not error:
             self.update_status("\n✓ All done! You may close this window now.", log_type="success")

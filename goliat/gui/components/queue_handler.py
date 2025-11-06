@@ -43,7 +43,7 @@ class QueueHandler:
         Catches and logs exceptions to prevent one bad message from crashing GUI.
 
         This method is called every 100ms by Qt timer to keep UI responsive.
-        
+
         After processing each message for the GUI, forwards a copy to WebGUIBridge
         if it exists (for web dashboard monitoring).
         """

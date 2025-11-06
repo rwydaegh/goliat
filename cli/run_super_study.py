@@ -13,6 +13,7 @@ from goliat.colors import init_colorama
 
 try:
     import requests
+
     REQUESTS_AVAILABLE = True
 except ImportError:
     REQUESTS_AVAILABLE = False
@@ -26,6 +27,7 @@ def setup_console_logging():
     init_colorama()
     logger = logging.getLogger("super_study_logger")
     logger.setLevel(logging.INFO)
+    logger.propagate = False  # Prevent propagation to root logger
     handler = logging.StreamHandler()
     handler.setFormatter(logging.Formatter("%(message)s"))
     if logger.hasHandlers():
@@ -89,7 +91,7 @@ def calculate_split_factors(num_phantoms, num_items, target_splits):
 def split_config(config_path, num_splits, logger):
     """
     Splits the configuration file into multiple assignment configs.
-    
+
     Returns: (base_config, assignment_configs) where assignment_configs is a list of dicts
     """
     if not os.path.exists(config_path):
@@ -160,7 +162,7 @@ def split_config(config_path, num_splits, logger):
     for i, phantom_group in enumerate(phantom_groups):
         for j, item_group in enumerate(item_groups):
             assignment_config = deepcopy(base_config)
-            
+
             # Update phantoms
             if is_near_field_dict:
                 # Near-field dict format: keep only selected phantoms
@@ -176,13 +178,10 @@ def split_config(config_path, num_splits, logger):
                 assignment_config["antenna_config"] = {key: original_antenna_config[key] for key in item_group}
             else:
                 assignment_config["frequencies_mhz"] = item_group
-            
-            assignment_configs.append({
-                "config": assignment_config,
-                "phantoms": phantom_group,
-                "items": item_group,
-                "items_name": items_name
-            })
+
+            assignment_configs.append(
+                {"config": assignment_config, "phantoms": phantom_group, "items": item_group, "items_name": items_name}
+            )
 
     return base_config, assignment_configs
 
@@ -192,29 +191,19 @@ def upload_super_study(name, description, base_config, assignment_configs, serve
     if not REQUESTS_AVAILABLE:
         logger.error(f"{colorama.Fore.RED}Error: requests library is required. Install with: pip install requests")
         sys.exit(1)
-    
+
     try:
         # Create super study
         payload = {
             "name": name,
             "description": description or "",
             "baseConfig": base_config,
-            "assignments": [
-                {
-                    "splitConfig": assignment["config"],
-                    "status": "PENDING"
-                }
-                for assignment in assignment_configs
-            ]
+            "assignments": [{"splitConfig": assignment["config"], "status": "PENDING"} for assignment in assignment_configs],
         }
-        
+
         logger.info(f"Uploading super study '{name}' to {server_url}...")
-        response = requests.post(
-            f"{server_url}/api/super-studies",
-            json=payload,
-            timeout=30
-        )
-        
+        response = requests.post(f"{server_url}/api/super-studies", json=payload, timeout=30)
+
         if response.status_code == 200:
             result = response.json()
             logger.info(f"{colorama.Fore.GREEN}✓ Super study created successfully!")
@@ -229,7 +218,7 @@ def upload_super_study(name, description, base_config, assignment_configs, serve
             logger.error(f"{colorama.Fore.RED}Error: Server returned status {response.status_code}")
             logger.error(f"Response: {response.text[:500]}")
             sys.exit(1)
-    
+
     except requests.exceptions.ConnectionError:
         logger.error(f"{colorama.Fore.RED}Error: Could not connect to {server_url}")
         logger.error("Make sure the server is running and accessible.")
@@ -242,9 +231,7 @@ def upload_super_study(name, description, base_config, assignment_configs, serve
 def main():
     """Main function to create and upload a super study."""
     logger = setup_console_logging()
-    parser = argparse.ArgumentParser(
-        description="Create a super study by splitting a config file and uploading it to the web dashboard."
-    )
+    parser = argparse.ArgumentParser(description="Create a super study by splitting a config file and uploading it to the web dashboard.")
     parser.add_argument(
         "config",
         type=str,
@@ -292,18 +279,10 @@ def main():
 
     # Split the config
     base_config, assignment_configs = split_config(args.config, args.num_splits, logger)
-    
+
     # Upload to server
-    upload_super_study(
-        args.name,
-        args.description,
-        base_config,
-        assignment_configs,
-        server_url,
-        logger
-    )
+    upload_super_study(args.name, args.description, base_config, assignment_configs, server_url, logger)
 
 
 if __name__ == "__main__":
     main()
-
