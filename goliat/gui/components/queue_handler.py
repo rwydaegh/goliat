@@ -77,7 +77,7 @@ class QueueHandler:
                     self.gui.study_finished(error=True)
 
                 # Forward message to web bridge if enabled
-                if hasattr(self.gui, "web_bridge") and self.gui.web_bridge is not None:
+                if hasattr(self.gui, "web_bridge_manager") and self.gui.web_bridge_manager.web_bridge is not None:
                     try:
                         # Sanitize profiler_update messages before forwarding
                         if msg_type == "profiler_update" and "profiler" in msg:
@@ -87,9 +87,9 @@ class QueueHandler:
                                 "type": "profiler_update",
                                 "eta_seconds": getattr(profiler, "eta_seconds", None) if profiler else None,
                             }
-                            self.gui.web_bridge.enqueue(sanitized_msg)
+                            self.gui.web_bridge_manager.web_bridge.enqueue(sanitized_msg)
                         else:
-                            self.gui.web_bridge.enqueue(msg)
+                            self.gui.web_bridge_manager.web_bridge.enqueue(msg)
                     except Exception as e:
                         # Don't let web bridge errors crash the GUI
                         self.gui.verbose_logger.warning(f"Failed to forward message to web bridge: {e}")
