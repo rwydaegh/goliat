@@ -1,4 +1,26 @@
 @echo off
+
+:: ============================================================================
+:: Check Computer Name
+:: ============================================================================
+if not "%COMPUTERNAME%"=="YOUR_COMPUTER_NAME" (
+    echo ============================================================================
+    echo ERROR: Computer name mismatch!
+    echo ============================================================================
+    echo Current computer name: %COMPUTERNAME%
+    echo Required computer name: YOUR_COMPUTER_NAME
+    echo.
+    echo You must rename this computer to "YOUR_COMPUTER_NAME" and restart before running this script.
+    echo.
+    echo To rename the computer from Administrator Command Prompt, run:
+    echo     wmic computersystem where name="%COMPUTERNAME%" call rename name="YOUR_COMPUTER_NAME"
+    echo.
+    echo After renaming, you MUST restart the computer for the change to take effect.
+    echo ============================================================================
+    pause
+    exit /b 1
+)
+
 setlocal enabledelayedexpansion
 
 :: ============================================================================
@@ -15,7 +37,7 @@ echo ===========================================================================
 echo.
 
 :: 1. Check for Administrator Privileges
-echo [STEP 1/8] Checking for administrator privileges...
+echo [STEP 1/10] Checking for administrator privileges...
 set "STEP_START=%TIME%"
 net session >nul 2>&1
 if %errorlevel% == 0 (
@@ -224,35 +246,9 @@ echo Setup complete! Now launching the study...
 echo ============================================================================
 echo.
 
-:: Create a custom bashrc that sources the normal one and runs the command
-echo Creating custom bashrc for GOLIAT...
-set "CUSTOM_RC=C:\Users\user\goliat\.bashrc_auto"
-(
-    echo # Source the normal bashrc if it exists
-    echo if [ -f ~/.bashrc ]; then
-    echo     source ~/.bashrc
-    echo fi
-    echo.
-    echo # Source the project bashrc if it exists
-    echo if [ -f .bashrc ]; then
-    echo     source .bashrc
-    echo fi
-    echo.
-    echo # Run the study
-    echo echo "============================================"
-    echo echo "Running GOLIAT study..."
-    echo echo "============================================"
-    echo goliat study near_field_config
-    echo.
-    echo # Keep interactive shell after command
-    echo echo ""
-    echo echo "Study completed. Bash shell is ready for use."
-    echo PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
-) > "%CUSTOM_RC%"
-
-:: Launch Git Bash with custom rcfile in the goliat directory
+:: Launch Git Bash in the goliat directory
 cd /d C:\Users\user\goliat
-start "GOLIAT Study" "C:\Program Files\Git\bin\bash.exe" --rcfile ".bashrc_auto" -i
+start "GOLIAT" "C:\Program Files\Git\bin\bash.exe" --login -i
 
 echo Study launched in separate window.
 pause
