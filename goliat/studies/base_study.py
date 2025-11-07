@@ -319,12 +319,29 @@ class BaseStudy(LoggingMixin):
         # Get relative path from results/ root for directory structure
         # Example: results/near_field/thelonious/700MHz/by_belly_up_vertical
         # Should extract: near_field/thelonious/700MHz/by_belly_up_vertical
-        results_root = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(project_dir)))), "results")
-        try:
-            relative_path = os.path.relpath(project_dir, results_root)
-        except ValueError:
-            # Fallback if relpath fails (different drives on Windows)
-            relative_path = project_dir.split("results" + os.sep, 1)[-1] if "results" in project_dir else ""
+        # Find the results/ directory in the path
+        if "results" + os.sep in project_dir or "results" + os.altsep in project_dir:
+            # Extract path after results/
+            parts = project_dir.split("results" + os.sep, 1)
+            if len(parts) > 1:
+                relative_path = parts[1]
+            else:
+                # Try with altsep (Windows)
+                parts = project_dir.split("results" + os.altsep, 1)
+                relative_path = parts[1] if len(parts) > 1 else ""
+        else:
+            # Fallback: try to find results directory by going up
+            results_root = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(project_dir)))), "results")
+            try:
+                relative_path = os.path.relpath(project_dir, results_root)
+                # Remove leading ..\ or ../ if present
+                if relative_path.startswith(".." + os.sep) or relative_path.startswith(".." + os.altsep):
+                    relative_path = relative_path[3:]
+            except ValueError:
+                relative_path = ""
+
+        # Normalize path separators to forward slashes for cross-platform compatibility
+        relative_path = relative_path.replace(os.sep, "/").replace(os.altsep, "/")
 
         # Upload files
         try:
