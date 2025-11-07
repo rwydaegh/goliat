@@ -21,12 +21,27 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://rwydaegh.github.io/goliat/developer_guide/advanced_features/</loc>
+         <loc>https://rwydaegh.github.io/goliat/cloud/cloud_setup/</loc>
          <lastmod>2025-11-07</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://rwydaegh.github.io/goliat/developer_guide/cloud_setup/</loc>
+         <loc>https://rwydaegh.github.io/goliat/cloud/monitoring/</loc>
+         <lastmod>2025-11-07</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://rwydaegh.github.io/goliat/cloud/osparc/</loc>
+         <lastmod>2025-11-07</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://rwydaegh.github.io/goliat/cloud/overview/</loc>
+         <lastmod>2025-11-07</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://rwydaegh.github.io/goliat/developer_guide/advanced_features/</loc>
          <lastmod>2025-11-07</lastmod>
          <changefreq>daily</changefreq>
     </url>
