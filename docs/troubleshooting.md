@@ -109,7 +109,7 @@ This section addresses common issues encountered when using GOLIAT. Issues are g
   - Multiple processes will queue for GPU access, effectively running one at a time
 - **Solution**:
   1. **For true parallel run phases**: Use oSPARC batch execution (`batch_run: true`), where each cloud job gets its own GPU
-  2. **For multiple local machines**: Set up GOLIAT on multiple Windows PCs as described in [Cloud Setup](developer_guide/cloud_setup.md)
+  2. **For multiple local machines**: Set up GOLIAT on multiple Windows PCs as described in [Cloud Setup](cloud/cloud_setup.md)
   3. **Accept limitation**: Understand that local parallel execution only speeds up setup and extract phases, not the run phase
 
 **When parallel execution helps**: Setup and extract phases benefit from parallelization even on single-GPU machines. The run phase will still be sequential, but overall time can be reduced if setup/extract phases are significant.
