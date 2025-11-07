@@ -178,9 +178,76 @@ class SarExtractor(LoggingMixin):
             phantom_groups = material_mapping["_tissue_groups"]
             tissue_groups = {}
 
+            # Create reverse mappings from material names to entity names
+            # Handles normalization for spaces/underscores and case differences
+            material_to_entity = {}
+            normalized_material_to_entity = {}
+            normalized_entity_to_entity = {}
+            # Map cleaned material names to entity names (for cases like "Eye (Cornea)" -> "Eye" -> "Cornea")
+            cleaned_material_to_entities = {}
+
+            for entity_name, material_name in material_mapping.items():
+                if entity_name == "_tissue_groups":
+                    continue
+                material_to_entity[material_name] = entity_name
+                # Normalize: lowercase, replace spaces with underscores
+                normalized_mat = material_name.lower().replace(" ", "_")
+                normalized_ent = entity_name.lower()
+                normalized_material_to_entity[normalized_mat] = entity_name
+                normalized_entity_to_entity[normalized_ent] = entity_name
+
+                # Simulate the cleaning that happens in extract_sar_statistics (line 99)
+                cleaned_mat = re.sub(r"\s*\(.*\)\s*$", "", material_name).strip().replace(")", "")
+                if cleaned_mat not in cleaned_material_to_entities:
+                    cleaned_material_to_entities[cleaned_mat] = []
+                cleaned_material_to_entities[cleaned_mat].append(entity_name)
+
+            # Helper function to find entity names from cleaned tissue name
+            def find_entity_names(cleaned_tissue: str) -> list[str]:
+                entity_names = []
+
+                # First try exact match (for cases where Sim4Life returns entity names directly)
+                if cleaned_tissue in material_mapping:
+                    entity_names.append(cleaned_tissue)
+
+                # Try normalized exact match
+                normalized_cleaned = cleaned_tissue.lower().replace(" ", "_")
+                if normalized_cleaned in normalized_entity_to_entity:
+                    entity_name = normalized_entity_to_entity[normalized_cleaned]
+                    if entity_name not in entity_names:
+                        entity_names.append(entity_name)
+
+                # Try reverse mapping from material name (exact match)
+                if cleaned_tissue in material_to_entity:
+                    entity_name = material_to_entity[cleaned_tissue]
+                    if entity_name not in entity_names:
+                        entity_names.append(entity_name)
+
+                # Try normalized material name mapping
+                if normalized_cleaned in normalized_material_to_entity:
+                    entity_name = normalized_material_to_entity[normalized_cleaned]
+                    if entity_name not in entity_names:
+                        entity_names.append(entity_name)
+
+                # Try cleaned material mapping (handles cases like "Eye" -> ["Cornea", "Eye_lens", ...])
+                if cleaned_tissue in cleaned_material_to_entities:
+                    for entity_name in cleaned_material_to_entities[cleaned_tissue]:
+                        if entity_name not in entity_names:
+                            entity_names.append(entity_name)
+
+                return entity_names
+
             for group_name, tissue_list in phantom_groups.items():
                 s4l_names_in_group = set(tissue_list)
-                tissue_groups[group_name] = [t for t in available_tissues if t in s4l_names_in_group]
+                matched_tissues = []
+
+                for tissue in available_tissues:
+                    entity_names = find_entity_names(tissue)
+                    # If any of the found entity names are in this group, include this tissue
+                    if any(entity_name in s4l_names_in_group for entity_name in entity_names):
+                        matched_tissues.append(tissue)
+
+                tissue_groups[group_name] = matched_tissues
             return tissue_groups
 
         self._log(

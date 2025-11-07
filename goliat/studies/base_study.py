@@ -287,7 +287,7 @@ class BaseStudy(LoggingMixin):
             return
 
         # Get monitoring server URL from environment (set by run_worker.py)
-        server_url = "https://goliat-monitoring.up.railway.app"
+        server_url = "https://goliat.waves-ugent.be"
 
         self._log("Uploading results to web dashboard...", log_type="info")
 
