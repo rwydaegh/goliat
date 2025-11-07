@@ -7,7 +7,7 @@
       "do_run": true,
       "do_extract": true,
       "batch_run": false,
-      "auto_cleanup_previous_results": ["output", "input", "smash"]
+      "auto_cleanup_previous_results": ["output"]
   },
   "phantoms": [
     "thelonious",
