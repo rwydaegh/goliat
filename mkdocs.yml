@@ -93,9 +93,13 @@ nav:
   - Technical Guide: developer_guide/technical_guide.md
   - Advanced Features: developer_guide/advanced_features.md
   - Configuration: developer_guide/configuration.md
-  - Cloud Setup: developer_guide/cloud_setup.md
   - Coloring Rules: developer_guide/coloring_rules.md
   - UML: developer_guide/uml.md
+- Cloud:
+  - Overview: cloud/overview.md
+  - oSPARC: cloud/osparc.md
+  - Monitoring dashboard: cloud/monitoring.md
+  - Cloud setup: cloud/cloud_setup.md
 - Troubleshooting: troubleshooting.md
 - Reference:
   - Full List of Features: reference/full_features_list.md

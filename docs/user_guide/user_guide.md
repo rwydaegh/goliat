@@ -72,7 +72,7 @@ With the scene meticulously set up, GOLIAT proceeds to execute the electromagnet
 **Important limitation**: When running parallel simulations locally on a single machine with one GPU, **iSolve will only execute one simulation at a time**. This means:
 - Setup and extract phases can run in parallel (CPU-based, benefits from parallelization)
 - Run phase (iSolve) cannot run in parallel on a single GPU machine (processes queue sequentially)
-- For true parallel iSolve execution, use oSPARC batch or multiple Windows PCs as described in [Cloud Setup](../developer_guide/cloud_setup.md)
+- For true parallel iSolve execution, use oSPARC batch or multiple Windows PCs as described in [Cloud Setup](../cloud/cloud_setup.md)
 
 ### 5. Extract & analyze results
 

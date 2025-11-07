@@ -54,13 +54,29 @@ GOLIAT is an automated Python framework for near-field and far-field dosimetric 
 
     [:octicons-arrow-right-24: Configure](developer_guide/configuration.md)
 
+-   :material-cloud-upload-outline:{ .lg .middle } **oSPARC**
+
+    ---
+
+    Cloud batch execution via oSPARC platform. Scale to hundreds of simulations with true parallel GPU execution.
+
+    [:octicons-arrow-right-24: oSPARC Guide](cloud/osparc.md)
+
+-   :material-monitor-dashboard-outline:{ .lg .middle } **Monitoring Dashboard**
+
+    ---
+
+    Web-based interface for monitoring distributed studies across multiple workers. Track progress, view logs, coordinate super studies.
+
+    [:octicons-arrow-right-24: Monitoring Guide](cloud/monitoring.md)
+
 -   :material-cloud-outline:{ .lg .middle } **Cloud Setup**
 
     ---
 
     Deploy GPU instances and run simulations in the cloud. Automated setup included.
 
-    [:octicons-arrow-right-24: Cloud Guide](developer_guide/cloud_setup.md)
+    [:octicons-arrow-right-24: Cloud Guide](cloud/cloud_setup.md)
 
 -   :material-palette-outline:{ .lg .middle } **Coloring Rules**
 

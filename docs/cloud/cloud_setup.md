@@ -1,4 +1,4 @@
-# Cloud GPU Setup
+# Cloud GPU setup
 
 Don't have a GPU or sufficient resources on your local machine? For approximately €0.17-1.80 per hour (depending on GPU model), you can rent GPU instances from cloud providers to run GOLIAT simulations. This guide walks you through setting up a cloud Windows VM with GPU support.
 
@@ -68,22 +68,24 @@ The `cloud_setup/` directory contains an automated setup script that installs ev
 
 The `setup_and_run.bat` script automates the following steps:
 
-1. Installs OpenVPN client
-2. Downloads and installs Python 3.11
-3. Installs gdown utility for Google Drive downloads
-4. Downloads and installs Sim4Life
-5. Downloads VPN configuration files (if needed)
-6. Connects to VPN (if required for Sim4Life license access)
-7. Installs Sim4Life license (prompts for manual GUI installation)
-8. Installs Git
-9. Clones the GOLIAT repository
-10. Launches a study automatically
+1. Checks computer name (configurable)
+2. Checks for administrator privileges
+3. Downloads OpenVPN installer
+4. Downloads and installs Python 3.11
+5. Installs gdown utility for Google Drive downloads
+6. Downloads and installs Sim4Life
+7. Downloads VPN configuration files (if needed)
+8. Installs OpenVPN and connects to VPN (if required for Sim4Life license access)
+9. Installs Sim4Life license (prompts for manual GUI installation)
+10. Installs Git and clones the GOLIAT repository
+11. Launches Git Bash in the repository directory
 
-### Running the Script
+### Running the script
 
 1. **Copy the setup script** to your VM (you can use RDP file transfer or download it)
 
 2. **Edit the script** if needed:
+   - Replace `YOUR_COMPUTER_NAME` with the expected computer name (or remove the check if not needed)
    - Replace `YOUR_PRIVATE_GDRIVE_FOLDER_ID` with your Google Drive folder ID which should contain your `.ovpn` and `.crt` files.
    - Replace `YOUR_PRIVATE_GDRIVE_FILE_ID` with your Sim4Life `.exe` installer (for private use *only* with the express intent to *only* transfer this to the remote machine).
    - Replace `YOUR_VPN_USERNAME` and `YOUR_VPN_PASSWORD` if using VPN
@@ -102,9 +104,9 @@ The `setup_and_run.bat` script automates the following steps:
    - Follow the on-screen instructions
    - Press any key to continue after installation
 
-6. **The study will launch automatically** in a Git Bash window
+6. **Git Bash will launch** in the GOLIAT repository directory, ready for you to run your study manually
 
-## VPN Reconnection
+## VPN reconnection
 
 If you need to reconnect to VPN later without rerunning the full setup, use `connect_vpn.bat`:
 
@@ -112,7 +114,7 @@ If you need to reconnect to VPN later without rerunning the full setup, use `con
 Right-click connect_vpn.bat → Run as administrator
 ```
 
-This assumes OpenVPN is already installed.
+**Note**: Before running `connect_vpn.bat`, edit it to replace `YOUR_VPN_USERNAME` and `YOUR_VPN_PASSWORD` with your actual VPN credentials. This script assumes OpenVPN is already installed and that the VPN configuration files exist in the `certs/` directory.
 
 ## File structure
 
@@ -150,3 +152,8 @@ For current pricing and availability, consult TensorDock's dashboard directly.
 ## Alternative providers
 
 While this guide focuses on TensorDock, similar setups work with AWS EC2 (G4/G5 instances with Windows Server), Google Cloud Platform (GPU-enabled Windows VMs), and Azure (NV-series VMs with Windows). The setup script may need minor modifications for different providers (e.g., different default usernames, network configurations).
+
+## Related documentation
+
+- [oSPARC](osparc.md): Cloud batch execution via oSPARC platform (alternative to VM setup)
+- [Monitoring dashboard](monitoring.md): When running studies across multiple cloud VMs, use the monitoring dashboard to track progress, view logs, and coordinate super studies across all workers
