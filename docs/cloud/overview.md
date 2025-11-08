@@ -18,7 +18,9 @@ Split a study into multiple processes that run simultaneously. Setup and extract
 
 Submit simulations to the oSPARC cloud platform. Each job gets its own GPU, enabling true parallel execution. Requires API credentials and platform access.
 
-**Limitation**: Requires Sim4Life licenses for setup phase, ~61 concurrent job limit, costs scale with compute time.
+**How it works**: oSPARC only handles the run phase. Users are responsible for running setup and extraction locally themselves. If you use Sim4Life Python Runner on the oSPARC cloud for setup/extraction, you'll need additional licenses for those phases (beyond your local licenses).
+
+**Limitation**: ~61 concurrent job limit, costs scale with compute time.
 
 ### Distributed cloud VMs
 
@@ -34,7 +36,7 @@ Deploy multiple Windows VMs, each with its own GPU. Coordinate via the monitorin
 | Multiple GPUs | ✗ | ✗ | ✓ | ✓ |
 | Setup cost | Free | Free | API credentials | VM deployment |
 | Run cost | Free | Free | Per job | Per hour |
-| License required | Local | Local | Setup phase | Local (per VM) |
+| License required | Local | Local | Local (setup/extract), cloud (if using Python Runner) | Local (per VM, can use license server) |
 | Scalability | Single machine | Single machine | ~61 jobs | Unlimited |
 | Monitoring | Local GUI | Local GUI | oSPARC dashboard | Monitoring dashboard |
 | Coordination | Manual | Manual | Automatic | Automatic (super studies) |
@@ -53,7 +55,7 @@ The following diagram illustrates the different execution architectures:
 **Key differences**:
 
 - **Local sequential/parallel**: Single machine, single GPU. Parallel only helps setup/extract.
-- **oSPARC**: Cloud platform handles execution, but requires licenses and has job limits.
+- **oSPARC**: Cloud platform handles run phase only. Users handle setup/extract locally. If using Sim4Life Python Runner on oSPARC cloud for setup/extract, additional licenses required. Has ~61 job limit.
 - **Distributed VMs**: Multiple machines, each with dedicated GPU. Monitoring dashboard splits master config into assignments and distributes them to workers. Workers download assignments, run simulations, and report progress back. Scales without platform limits.
 
 ## Choosing a method
@@ -72,4 +74,3 @@ The following diagram illustrates the different execution architectures:
 - [Monitoring dashboard](monitoring.md): Web-based coordination for distributed VMs
 - [Super Studies](super_studies.md): Distributed execution across multiple workers
 - [Cloud setup](cloud_setup.md): Deploying and configuring cloud GPU instances
-
