@@ -73,7 +73,7 @@ Environmental exposure from plane waves. Supports 6 incident directions and mult
 - **Cloud**: oSPARC for large-scale batch processing
 
 ### 🖥️ Real-time Monitoring
-Interactive GUI with progress bars, ETA estimation, and live logs. Optional headless mode for automation.
+Interactive GUI with progress bars, ETA estimation, and live logs. Optional web dashboard for monitoring distributed studies across multiple workers. Optional headless mode for automation.
 
 </td>
 </tr>
@@ -151,7 +151,7 @@ goliat study far_field_config
 goliat study large_study
 ```
 
-Also want to run setup and extract phases in parallel? See the [Cloud Setup Guide](https://rwydaegh.github.io/goliat/developer_guide/cloud_setup/) for deploying GPU instances.
+Also want to run setup and extract phases in parallel? See the [Cloud Setup Guide](https://rwydaegh.github.io/goliat/cloud/cloud_setup/) for deploying GPU instances. For monitoring distributed studies across multiple workers, see the [monitoring dashboard documentation](https://rwydaegh.github.io/goliat/cloud/monitoring/) or the [goliat-monitoring repository](https://github.com/rwydaegh/goliat-monitoring).
 
 ---
 
@@ -214,6 +214,7 @@ Each stage is modular, swap in custom phantoms, antennas, or analysis strategies
 | [Configuration](https://rwydaegh.github.io/goliat/developer_guide/configuration/) | All config options with examples |
 | [API Reference](https://rwydaegh.github.io/goliat/reference/api_reference/) | Class and function details |
 | [Troubleshooting](https://rwydaegh.github.io/goliat/troubleshooting/) | Common issues and solutions |
+| [Cloud & Monitoring](https://rwydaegh.github.io/goliat/cloud/monitoring/) | Web dashboard for distributed execution |
 | [Developer Guide](https://rwydaegh.github.io/goliat/developer_guide/) | Extend GOLIAT or contribute |
 
 ---
