@@ -11,9 +11,9 @@ This section addresses common issues encountered when using GOLIAT. Issues are g
   1. Locate Sim4Life installation (default: C:\Program Files\Sim4Life_8.2.0).
   2. Edit `.bashrc` in project root with your path:
 
-     ```
-     export PATH="/path/to/Sim4Life/Python:$PATH"
-     ```
+        ```
+        export PATH="/path/to/Sim4Life/Python:$PATH"
+        ```
 
   3. Source: `source .bashrc`.
   4. Verify: `python -c "import s4l_v1; print('OK')"` - should print "OK".
@@ -37,20 +37,20 @@ This section addresses common issues encountered when using GOLIAT. Issues are g
 - **Workaround for setup-only runs**:
   For proof-of-concept setup-only runs in Sim4Life Web, use a configuration similar to `configs/far_field_sim4life_web.json`:
 
-  ```json
-  {
-    "extends": "far_field_config.json",
-    "use_gui": false,
-    "execution_control": {
-      "do_setup": true,
-      "do_run": false,
-      "do_extract": false
-    },
-    "phantoms": [
-      "duke_posable"
-    ]
-  }
-  ```
+        ```json
+        {
+          "extends": "far_field_config.json",
+          "use_gui": false,
+          "execution_control": {
+            "do_setup": true,
+            "do_run": false,
+            "do_extract": false
+          },
+          "phantoms": [
+            "duke_posable"
+          ]
+        }
+        ```
 
   This configuration enables scene setup and project file creation without requiring solver execution or result extraction. To run simulations, use a different Sim4Life app (such as the Framework or Python runner app) or process the generated project files through other means.
 
@@ -103,10 +103,11 @@ This section addresses common issues encountered when using GOLIAT. Issues are g
 
 - **Symptom**: Running `goliat parallel` with multiple splits, but simulations take as long as sequential runs.
 - **Cause**: **iSolve can only run one simulation at a time on a single GPU**. When multiple parallel processes try to use iSolve, they queue sequentially.
-- **Explanation**: 
+- **Explanation**:
   - Setup and extract phases can run in parallel (CPU-based)
   - Run phase (iSolve) cannot run in parallel on a single GPU machine
   - Multiple processes will queue for GPU access, effectively running one at a time
+
 - **Solution**:
   1. **For true parallel run phases**: Use oSPARC batch execution (`batch_run: true`), where each cloud job gets its own GPU
   2. **For multiple local machines**: Set up GOLIAT on multiple Windows PCs as described in [Cloud Setup](cloud/cloud_setup.md)
@@ -142,6 +143,7 @@ This section addresses common issues encountered when using GOLIAT. Issues are g
   - Coarser grids lead to poor voxelization quality, affecting simulation accuracy
   - Downstream GOLIAT features like peak SAR cube computation require adequate voxelization resolution
   - Testing with coarse grids can mask issues that appear later in production runs
+
 - **Solution**:
   1. Reduce `manual_fallback_max_step_mm` in your config to 3.0 or smaller
   2. If using per-frequency gridding, ensure all values in `global_gridding_per_frequency` are ≤ 3.0 mm
@@ -183,11 +185,11 @@ This section addresses common issues encountered when using GOLIAT. Issues are g
 - **Solution**:
   1. Enable automatic cleanup for serial workflows:
 
-     ```json
-     "execution_control": {
-       "auto_cleanup_previous_results": ["output"]
-     }
-     ```
+        ```json
+        "execution_control": {
+          "auto_cleanup_previous_results": ["output"]
+        }
+        ```
 
   2. Manually delete old `*_Output.h5`, `*_Input.h5` files from `results/` directories.
   3. Archive completed studies to external storage.

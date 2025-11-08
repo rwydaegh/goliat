@@ -51,8 +51,8 @@ This phase involves GOLIAT automatically constructing the 3D simulation environm
 
 -   **Phantom Loading**: The specified digital phantom model is downloaded (if not already present) and imported into the scene, complete with its detailed tissue segmentation (e.g., skin, brain, muscle).
 -   **Antenna/Source Placement**:
-    -   **Near-Field**: The CAD model of the antenna (e.g., PIFA or IFA type) is imported and precisely positioned relative to the phantom, according to the defined placement scenario (e.g., 8mm gap from the cheek, with a specific tilt).
-    -   **Far-Field**: Instead of an antenna, a plane wave source is configured, specifying its electric field strength (e.g., 1 V/m), incident direction, and polarization.
+  -   **Near-Field**: The CAD model of the antenna (e.g., PIFA or IFA type) is imported and precisely positioned relative to the phantom, according to the defined placement scenario (e.g., 8mm gap from the cheek, with a specific tilt).
+  -   **Far-Field**: Instead of an antenna, a plane wave source is configured, specifying its electric field strength (e.g., 1 V/m), incident direction, and polarization.
 -   **Material Assignment**: Appropriate electromagnetic properties (e.g., conductivity, permittivity) are assigned to all entities in the scene (tissues, antenna components) based on the specified frequency.
 -   **Gridding**: The simulation domain is discretized into a computational grid. GOLIAT intelligently applies gridding rules, using finer cells around critical areas like the antenna or phantom surface, and coarser cells elsewhere. This can be automatic or manually controlled via millimeter steps.
 -   **Scene Optimization**: For `by_cheek` placements, GOLIAT automatically aligns the entire simulation scene (phantom, bounding boxes, sensors) with the phone's upright orientation. This alignment optimizes the computational grid orientation and can reduce simulation time. The alignment occurs after antenna placement and phantom rotation (if enabled), keeping the relative geometry correct throughout the scene.
@@ -79,15 +79,15 @@ With the scene meticulously set up, GOLIAT proceeds to execute the electromagnet
 After the simulation, GOLIAT's `ResultsExtractor` and `Analyzer` components take over to process and interpret the vast amount of raw data.
 
 -   **SAR Extraction**: The extractor pulls various SAR metrics from the simulation output:
-    -   **Whole-Body SAR**: The average SAR over the entire phantom.
-    -   **Localized SAR**: Average SAR in specific regions, such as the head or trunk, relevant for localized exposures.
-    -   **psSAR10g**: Peak spatial-average SAR over a 10-gram tissue cube, typically reported for sensitive organs like the eyes, brain, and skin.
-    -   **Power Balance**: A check to ensure energy conservation within the simulation, ideally close to 100%.
+  -   **Whole-Body SAR**: The average SAR over the entire phantom.
+  -   **Localized SAR**: Average SAR in specific regions, such as the head or trunk, relevant for localized exposures.
+  -   **psSAR10g**: Peak spatial-average SAR over a 10-gram tissue cube, typically reported for sensitive organs like the eyes, brain, and skin.
+  -   **Power Balance**: A check to ensure energy conservation within the simulation, ideally close to 100%.
 -   **Normalization**: All extracted SAR values are normalized to a 1W input power, providing a standardized basis for comparison.
 -   **Output Files** (located in the `results/` folder):
-    -   `sar_results.json`: A JSON file containing the primary normalized SAR values.
-    -   `sar_stats_all_tissues.pkl`: A Python pickle file with detailed, tissue-specific SAR data.
-    -   **Plots**: GOLIAT automatically generates a suite of visualizations, including SAR heatmaps (showing SAR distribution by tissue and frequency), bar charts (comparing SAR in different regions), and boxplots (illustrating SAR distributions).
+  -   `sar_results.json`: A JSON file containing the primary normalized SAR values.
+  -   `sar_stats_all_tissues.pkl`: A Python pickle file with detailed, tissue-specific SAR data.
+  -   **Plots**: GOLIAT automatically generates a suite of visualizations, including SAR heatmaps (showing SAR distribution by tissue and frequency), bar charts (comparing SAR in different regions), and boxplots (illustrating SAR distributions).
 -   **Aggregated Analysis**: You can run the dedicated analysis script (`goliat analyze --config your_config.json`) to aggregate results across multiple simulations and generate CSV reports and additional plots.
 -   **Log Files**: For debugging and detailed tracking, GOLIAT generates two types of log files in the `logs/` directory for each run: a `.progress.log` for high-level updates and a `.log` for verbose, detailed information. The system automatically manages these files, keeping a maximum of 15 pairs to prevent excessive disk usage.
 
@@ -107,10 +107,10 @@ While the core GOLIAT workflow remains consistent, the specifics of scene setup 
 -   **Primary Use Case**: Assessing localized EMF exposure from devices held close to the body, such as mobile phones, wearables, or other devices. The focus is on SAR in specific tissues and organs.
 
 -   **Key Steps**:
-    1.  **Configuration**: Set `"study_type": "near_field"` and define specific `placement_scenarios` (e.g., "by_cheek", "on_wrist").
-    2.  **Scene Setup**: Involves importing a detailed CAD model of the device antenna and precisely positioning it relative to the phantom, often with a small air gap (e.g., 8mm).
-    3.  **Simulation Run**: Typically uses a harmonic excitation (single frequency) to simulate continuous wave exposure.
-    4.  **Results Analysis**: Concentrates on localized SAR values (e.g., head SAR, trunk SAR) and peak spatial-average SAR (psSAR10g) in sensitive tissues like the eyes, brain, and skin.
+  1.  **Configuration**: Set `"study_type": "near_field"` and define specific `placement_scenarios` (e.g., "by_cheek", "on_wrist").
+  2.  **Scene Setup**: Involves importing a detailed CAD model of the device antenna and precisely positioning it relative to the phantom, often with a small air gap (e.g., 8mm).
+  3.  **Simulation Run**: Typically uses a harmonic excitation (single frequency) to simulate continuous wave exposure.
+  4.  **Results Analysis**: Concentrates on localized SAR values (e.g., head SAR, trunk SAR) and peak spatial-average SAR (psSAR10g) in sensitive tissues like the eyes, brain, and skin.
 
 -   **Free-Space Mode**: GOLIAT supports a "freespace" phantom option, allowing you to run simulations of the antenna in isolation (without a body). This is useful for antenna characterization and validation.
 
@@ -119,10 +119,10 @@ While the core GOLIAT workflow remains consistent, the specifics of scene setup 
 -   **Primary Use Case**: Evaluating whole-body EMF exposure from distant sources, such as broadcast antennas, cellular base stations, or industrial equipment. The focus is on whole-body average SAR and overall field distribution. We reduce the complexity of impinging fields to all orthogonal directions and two polarizations, and assume that by normalizing this to 1 W, we can construct a *transfer functions* between measured E-field values and absorption values, especially for channel scenarios where the user is not down- or uploading anything.
 
 -   **Key Steps**:
-    1.  **Configuration**: Set `"study_type": "far_field"` and define `incident_directions` (e.g., `["x_pos", "y_neg"]`) and `polarizations` (e.g., `["theta", "phi"]`).
-    2.  **Scene Setup**: Instead of a device, plane wave sources are configured to illuminate the phantom from multiple directions, covering a full range of exposure angles.
-    3.  **Simulation Run**: Multiple simulations are typically run for each frequency, covering all specified directions and polarizations (e.g., 12 simulations per frequency: 6 directions × 2 polarizations).
-    4.  **Results Analysis**: Focuses on whole-body average SAR and how SAR is distributed across the entire phantom, often aggregated over various exposure scenarios.
+  1.  **Configuration**: Set `"study_type": "far_field"` and define `incident_directions` (e.g., `["x_pos", "y_neg"]`) and `polarizations` (e.g., `["theta", "phi"]`).
+  2.  **Scene Setup**: Instead of a device, plane wave sources are configured to illuminate the phantom from multiple directions, covering a full range of exposure angles.
+  3.  **Simulation Run**: Multiple simulations are typically run for each frequency, covering all specified directions and polarizations (e.g., 12 simulations per frequency: 6 directions × 2 polarizations).
+  4.  **Results Analysis**: Focuses on whole-body average SAR and how SAR is distributed across the entire phantom, often aggregated over various exposure scenarios.
 
 -   **Auto-Induced Mode**: While currently a placeholder, this mode is envisioned for future implementations to simulate EMF exposure induced by body motion or other dynamic scenarios.
 
