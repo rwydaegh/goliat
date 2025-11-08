@@ -99,6 +99,7 @@ nav:
   - Overview: cloud/overview.md
   - oSPARC: cloud/osparc.md
   - Monitoring dashboard: cloud/monitoring.md
+  - Super Studies: cloud/super_studies.md
   - Cloud setup: cloud/cloud_setup.md
 - Troubleshooting: troubleshooting.md
 - Reference:
