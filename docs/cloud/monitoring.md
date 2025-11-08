@@ -196,6 +196,6 @@ Stale workers are automatically resolved when a new worker session starts with t
 ## Related documentation
 
 - [Cloud setup](cloud_setup.md): Instructions for deploying and configuring cloud GPU instances that can serve as monitoring dashboard workers
-- [Super Studies](../SUPER_STUDIES.md): Detailed guide on creating and managing super studies
+- [Super Studies](super_studies.md): Detailed guide on creating and managing super studies
 - [Troubleshooting](../troubleshooting.md): General troubleshooting guide
 
