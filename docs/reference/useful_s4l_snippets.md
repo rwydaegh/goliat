@@ -50,6 +50,8 @@ if application.get_app_safe() is None:
 
 Use `disable_ui_plugins=True` for headless execution. Check if the app is already running before starting it.
 
+Used in: `goliat/utils/core.py` (ensure_s4l_running)
+
 ### How can I suppress Sim4Life logging output?
 
 ```python
@@ -61,6 +63,8 @@ XCore.SetLogLevel(old_log_level)
 ```
 
 Save the old log level to restore it later. Use `XCore.eLogCategory.Error` to suppress most output.
+
+Used in: `goliat/setups/base_setup.py` (_finalize_setup)
 
 ---
 
@@ -76,6 +80,8 @@ s4l_v1.document.New()
 
 Creates an unsaved project in memory. Automatically closes any existing document before creating a new one.
 
+Used in: `goliat/project_manager.py`, `goliat/utils/core.py`
+
 ### How can I open an existing Sim4Life project file?
 
 ```python
@@ -86,6 +92,8 @@ s4l_v1.document.Open(project_path)
 ```
 
 Raises an exception if the file doesn't exist or is corrupted.
+
+Used in: `goliat/project_manager.py`, `goliat/utils/core.py`, `goliat/simulation_runner.py`
 
 ### How can I save a Sim4Life project?
 
@@ -98,6 +106,8 @@ s4l_v1.document.SaveAs(project_path)
 
 Use `SaveAs` even for existing projects (it overwrites). You may want to add retry logic if save operations occasionally fail.
 
+Used in: `goliat/project_manager.py`, `goliat/simulation_runner.py`
+
 ### How can I close a Sim4Life project?
 
 ```python
@@ -109,6 +119,8 @@ if s4l_v1.document.IsOpen():
 
 Check `IsOpen()` before closing to avoid errors. Closing releases file locks on .smash files.
 
+Used in: `goliat/project_manager.py`, `goliat/simulation_runner.py`
+
 ### How can I get the current project file path?
 
 ```python
@@ -118,6 +130,8 @@ project_path = s4l_v1.document.FilePath
 ```
 
 Returns empty string if the project hasn't been saved yet.
+
+Used in: `goliat/project_manager.py`
 
 ### How can I access all simulations in a project?
 
@@ -138,6 +152,8 @@ for sim in list(all_simulations):
 ```
 
 Use `list()` when iterating and modifying to avoid iterator issues.
+
+Used in: `goliat/project_manager.py`
 
 ---
 
@@ -163,6 +179,8 @@ entity = next(
 
 Returns an iterable collection of entity objects. Filter by type or name as needed.
 
+Used in: `goliat/setups/base_setup.py`, `goliat/setups/near_field_setup.py`, `goliat/setups/material_setup.py`
+
 ### How can I get the bounding box of entities?
 
 ```python
@@ -181,6 +199,8 @@ bbox_min, bbox_max = s4l_v1.model.GetBoundingBox(entities, exact=True)
 ```
 
 Returns two Vec3 objects: minimum and maximum corners. Can pass a single entity or a list. The `exact` parameter controls tightness: `exact=True` computes a tighter box but takes longer, `exact=False` is faster but may be looser.
+
+Used in: `goliat/setups/base_setup.py`, `goliat/setups/near_field_setup.py`, `goliat/setups/gridding_setup.py`
 
 ### How can I create geometric entities?
 
@@ -205,6 +225,8 @@ wire_block.Name = "simulation_bbox"
 
 Points are used for point sensors. Wire blocks are typically used for simulation bounding boxes.
 
+Used in: `goliat/setups/base_setup.py` (CreatePoint)
+
 ### How can I import models from files?
 
 ```python
@@ -226,6 +248,8 @@ entity = next(
 
 Returns an iterable of imported entities. Convert to list if you need to iterate multiple times.
 
+Used in: `goliat/setups/phantom_setup.py`, `goliat/scripts/prepare_antennas.py`
+
 ### How can I export entities to files?
 
 ```python
@@ -237,6 +261,8 @@ s4l_v1.model.Export(entities_to_export, export_path)
 ```
 
 Can export single entity or list of entities. Common format: .sab.
+
+Used in: `goliat/scripts/prepare_antennas.py`
 
 ### How can I transform entities (translate, rotate, scale)?
 
@@ -261,6 +287,8 @@ entity.ApplyTransform(final_transform)
 
 Transform multiplication order matters (right-to-left application). Use `np.deg2rad()` to convert degrees to radians.
 
+Used in: `goliat/setups/placement_setup.py`
+
 ### How can I calculate distance between entities?
 
 ```python
@@ -271,6 +299,8 @@ min_distance = distance_result.Distance  # Distance in mm
 ```
 
 Returns a distance result object with `.Distance` property. Distance is typically in millimeters.
+
+Used in: `goliat/setups/placement_setup.py`
 
 ### How can I delete entities?
 
@@ -285,6 +315,8 @@ for entity in entities_to_delete:
 ```
 
 Deletion is immediate and permanent. Make sure entities exist before deleting.
+
+Used in: Various setup modules
 
 ### How can I create Vec3 vectors?
 
@@ -304,6 +336,8 @@ view_dir = QTechVec3(1, 0, 0)
 ```
 
 Different modules have their own Vec3 classes. Use the appropriate one for the API you're calling.
+
+Used in: `goliat/setups/base_setup.py`, `goliat/setups/placement_setup.py`
 
 ### How can I identify and work with entity groups?
 
@@ -334,6 +368,8 @@ antenna_group.Name = "Antenna 700 MHz"
 
 Groups contain multiple entities. Use `isinstance(e, s4l_v1.model.EntityGroup)` to identify them. Groups can be transformed and renamed like other entities.
 
+Used in: `goliat/scripts/prepare_antennas.py`
+
 ### How can I access child entities in a group?
 
 ```python
@@ -350,6 +386,8 @@ if group and hasattr(group, "Entities"):
 ```
 
 `Entities` property is for entity groups. `GetChildren()` is for entities created by boolean operations (Union, etc.).
+
+Used in: `goliat/scripts/prepare_antennas.py`
 
 ### How can I decompose a transform into rotation and translation?
 
@@ -373,6 +411,8 @@ new_transform = Transform(Vec3(1, 1, 1), rotation, translation)
 
 Rotation is Euler angles [rx, ry, rz] in radians. Translation is [tx, ty, tz] in model units.
 
+Used in: `goliat/setups/placement_setup.py`
+
 ---
 
 ## 4. Materials
@@ -387,6 +427,8 @@ material = database["IT'IS 4.2"]["Brain"]
 ```
 
 Common database: "IT'IS 4.2" for tissue properties. Materials are accessed by name as strings. Raises KeyError if material not found.
+
+Used in: `goliat/setups/material_setup.py`
 
 ### How can I link a material from the database to a simulation?
 
@@ -410,6 +452,8 @@ simulation.Add(material_settings, [entity1, entity2])
 
 The `material` parameter can be either a Material object from the database or a string name. Material settings must be linked before adding to simulation. Material properties are frequency-dependent (set simulation frequency first).
 
+Used in: `goliat/setups/material_setup.py`
+
 ### How can I access material properties?
 
 ```python
@@ -425,6 +469,8 @@ for settings in simulation.AllSettings:
 
 Properties are frequency-dependent (based on simulation frequency). Access via `simulation.AllSettings` to iterate all material settings.
 
+Used in: `goliat/setups/material_setup.py`
+
 ### How can I update material properties after frequency changes?
 
 ```python
@@ -437,6 +483,8 @@ XCore.SetLogLevel(old_log_level)
 ```
 
 Must be called after changing simulation frequency. Should be called before voxelization.
+
+Used in: `goliat/setups/base_setup.py` (_finalize_setup)
 
 ---
 
@@ -459,6 +507,8 @@ document.AllSimulations.Add(simulation)
 
 Set frequency before assigning materials (affects material properties). Simulation must be added to document to be saved.
 
+Used in: `goliat/setups/near_field_setup.py`, `goliat/setups/far_field_setup.py`
+
 ### How can I configure solver settings (kernel, etc.)?
 
 ```python
@@ -477,6 +527,8 @@ else:
 ```
 
 Kernel enum values: `AXware`, `Cuda`, `Software`. GPU kernels require compatible hardware.
+
+Used in: `goliat/setups/base_setup.py` (_setup_solver_settings)
 
 ### How can I set simulation time and termination criteria?
 
@@ -502,6 +554,8 @@ if term_level == "GlobalAutoTerminationUserDefined":
 ```
 
 Time is typically set in periods (cycles) of the simulation frequency. Calculate the required number of periods based on your simulation domain size and frequency. Termination options: `GlobalAutoTerminationWeak`, `GlobalAutoTerminationMedium`, `GlobalAutoTerminationStrong`, `GlobalAutoTerminationUserDefined`.
+
+Used in: `goliat/setups/base_setup.py` (_apply_simulation_time_and_termination)
 
 ### How can I add an edge source (antenna excitation)?
 
@@ -529,6 +583,8 @@ simulation.Add(edge_source_settings, [source_entity])
 
 Harmonic for single-frequency simulations. Gaussian for frequency sweeps. Source entity is typically a line/edge in the antenna CAD model.
 
+Used in: `goliat/setups/source_setup.py`
+
 ### How can I add a plane wave source (far-field)?
 
 ```python
@@ -552,6 +608,8 @@ simulation.Add(plane_wave_source, [bbox_entity])
 ```
 
 Theta/Phi define wave propagation direction. Psi=0 for theta polarization, Psi=90 for phi polarization. Applied to simulation bounding box entity.
+
+Used in: `goliat/setups/source_setup.py`
 
 ### How can I add sensors (edge, point, far-field)?
 
@@ -591,6 +649,8 @@ if excitation_type == "gaussian":
 
 Edge sensors monitor power at source edges. Point sensors monitor E-field at specific 3D locations. Far-field sensors extract radiation patterns. Note that far-field sensors use `ExtractedFrequencies` (plural) while sensor extractors use `ExtractedFrequency` (singular).
 
+Used in: `goliat/setups/base_setup.py` (_add_point_sensors), `goliat/setups/source_setup.py`
+
 ### How can I configure automatic gridding?
 
 ```python
@@ -619,6 +679,8 @@ added_grid_settings.AutoRefinement = s4l_refinement
 
 Refinement levels: `AutoRefinementVeryFine`, `AutoRefinementFine`, `AutoRefinementDefault`, `AutoRefinementCoarse`, `AutoRefinementVeryCoarse`. Must set both global and added grid settings.
 
+Used in: `goliat/setups/gridding_setup.py`
+
 ### How can I configure manual gridding?
 
 ```python
@@ -645,6 +707,8 @@ added_manual_grid.MaxStep = max_step_setting
 ```
 
 MaxStep is a 3-element array [x, y, z] in millimeters. Can use different sizes per axis if needed. Must set both global and added grid settings.
+
+Used in: `goliat/setups/gridding_setup.py`
 
 ### How can I configure subgridding?
 
@@ -674,6 +738,8 @@ if automatic_grid_settings:
 
 Subgridding overrides manual gridding for specified components. Common levels: `x9`, `x3` (9x or 3x finer than base grid). When converting strings to enum values, `getattr(enum_class, string_value)` is more flexible than direct enum access.
 
+Used in: `goliat/setups/gridding_setup.py`
+
 ### How can I configure grid padding?
 
 ```python
@@ -694,6 +760,8 @@ global_grid_settings.TopPadding = top_padding, s4l_v1.units.MilliMeters
 ```
 
 Padding is specified per axis [x, y, z] in millimeters. Automatic padding is usually sufficient.
+
+Used in: `goliat/setups/gridding_setup.py`
 
 ### How can I configure boundary conditions (PML)?
 
@@ -719,6 +787,8 @@ if boundary_settings_list:
 
 Boundary types: `UpmlCpml` (most common), although there are others available. PML strength: `Weak`, `Medium`, `Strong`. Boundary settings are created automatically when the simulation is added to the document, so you can access them via `simulation.AllSettings`.
 
+Used in: `goliat/setups/boundary_setup.py`
+
 ### How can I add voxeler settings and create voxels?
 
 ```python
@@ -741,6 +811,8 @@ simulation.CreateVoxels()
 
 Must update materials and grid before creating voxels. Voxelization is computationally expensive.
 
+Used in: `goliat/setups/base_setup.py` (_finalize_setup)
+
 ---
 
 ## 6. Simulation execution
@@ -755,6 +827,8 @@ if hasattr(simulation, "WriteInputFile"):
 ```
 
 Input file is written to project directory. File name can be retrieved with `simulation.GetInputFileName()`. Save project after writing to ensure file is flushed.
+
+Used in: `goliat/simulation_runner.py` (run)
 
 ### How can I run a simulation locally?
 
@@ -776,6 +850,8 @@ if server_id:
 ```
 
 `wait=True` blocks until simulation completes. Server ID can be partial name (searches available servers).
+
+Used in: `goliat/simulation_runner.py` (run)
 
 ### How can I run iSolve.exe manually?
 
@@ -813,6 +889,8 @@ document.Open(project_path)
 ```
 
 iSolve.exe is typically in `{Sim4Life}/Solvers/iSolve.exe`. Must reload project after completion to see results.
+
+Used in: `goliat/simulation_runner.py` (_run_isolve_manual)
 
 ### How can I submit a simulation to oSPARC cloud?
 
@@ -861,6 +939,8 @@ document.Open(project_path)
 
 Requires Sim4Life 8.2.0+ for XOsparcApiClient module. Job states: PENDING, RUNNING, SUCCESS, FAILED, ABORTED. Must poll status until completion. You can also use the [osparc PyPI package](https://pypi.org/project/osparc/) or see the [osparc-simcore-clients repository](https://github.com/ITISFoundation/osparc-simcore-clients) for more information and alternative client implementations.
 
+Used in: `goliat/simulation_runner.py` (_run_osparc_direct)
+
 ### How can I get the input file name from a simulation?
 
 ```python
@@ -873,6 +953,8 @@ input_file_path = os.path.join(project_dir, relative_path)
 ```
 
 Returns relative path (e.g., "EM_FDTD_..._Input.h5"). Must combine with project directory for full path.
+
+Used in: `goliat/simulation_runner.py`
 
 ---
 
@@ -890,6 +972,8 @@ point_sensor = simulation_extractor["Point Sensor Entity 1"]
 ```
 
 Result names depend on what was configured (sources, sensors, etc.). Common names: "Overall Field", "Input Power", "Point Sensor Entity N".
+
+Used in: `goliat/results_extractor.py` (extract)
 
 ### How can I use E-field data as input to analysis algorithms?
 
@@ -917,6 +1001,8 @@ document.AllAlgorithms.Remove(em_sensor_extractor)
 ```
 
 E-field data is typically used as input to analysis algorithms like SAR evaluators. Must add extractor to document before updating. Remove extractor when done to free memory.
+
+Used in: `goliat/extraction/sar_extractor.py`
 
 ### How can I extract SAR statistics?
 
@@ -957,6 +1043,8 @@ document.AllAlgorithms.Remove(sar_stats_evaluator)
 ```
 
 TargetMass typically 10g for IEEE/IEC compliance. Results are in table format with tissues as rows.
+
+Used in: `goliat/extraction/sar_extractor.py` (extract_sar_statistics)
 
 ### How can I extract peak SAR location details?
 
@@ -999,6 +1087,8 @@ document.AllAlgorithms.Remove(em_sensor_extractor)
 
 Provides 3D coordinates, tissue name, mass, etc. for peak SAR. The extractor must be updated first to compute SAR field data. Data collection contains various metadata fields.
 
+Used in: `goliat/extraction/sar_extractor.py` (extract_peak_sar_location)
+
 ### How can I extract input power?
 
 ```python
@@ -1030,6 +1120,8 @@ document.AllAlgorithms.Remove(input_power_extractor)
 
 GetPower() is preferred but not always available. Harmonic data extraction is fallback method.
 
+Used in: `goliat/extraction/power_extractor.py` (extract_input_power)
+
 ### How can I extract power balance?
 
 ```python
@@ -1057,6 +1149,8 @@ balance = 100 * (p_out / pin) if pin > 1e-9 else float("nan")
 ```
 
 Balance should be close to 100% for good energy conservation. Keys: "Pin", "DielLoss", "RadPower", "Balance".
+
+Used in: `goliat/extraction/power_extractor.py` (extract_power_balance)
 
 ### How can I extract point sensor data?
 
@@ -1087,6 +1181,8 @@ document.AllAlgorithms.Remove(em_sensor_extractor)
 
 Sensor name format: "Point Sensor Entity N". Time axis is in seconds. E-field components are in V/m.
 
+Used in: `goliat/extraction/sensor_extractor.py`
+
 ---
 
 ## 8. Data and downloads
@@ -1109,6 +1205,8 @@ phantom_to_download = next(
 
 Returns iterable of download items. Each item has `.Name` property.
 
+Used in: `goliat/setups/phantom_setup.py`
+
 ### How can I download a model?
 
 ```python
@@ -1127,6 +1225,8 @@ s4l_v1.data.DownloadModel(
 
 Email may be required for licensing. Downloads to specified directory. File is saved as .sab format.
 
+Used in: `goliat/setups/phantom_setup.py`
+
 ---
 
 ## 9. Analysis algorithms
@@ -1143,6 +1243,8 @@ algorithm.Update()
 
 Algorithms must be added before updating. Add to document to persist and manage lifecycle.
 
+Used in: `goliat/extraction/sar_extractor.py`, `goliat/extraction/power_extractor.py`
+
 ### How can I remove an algorithm from the document?
 
 ```python
@@ -1153,6 +1255,8 @@ document.AllAlgorithms.Remove(algorithm)
 ```
 
 Always remove algorithms when done to free memory. Should be done in finally blocks for error handling.
+
+Used in: `goliat/extraction/sar_extractor.py`, `goliat/extraction/power_extractor.py`
 
 ### How can I access algorithm outputs?
 
@@ -1184,6 +1288,8 @@ data = [
 
 Output names depend on algorithm type. Common examples: "Peak Spatial SAR (psSAR) Results", "EM E(x,y,z,f0)", "Power Balance". Some outputs need Update() before accessing data. Table data has rows/columns structure. Data collections are key-value structures.
 
+Used in: `goliat/extraction/sar_extractor.py`, `goliat/extraction/power_extractor.py`
+
 ### How can I access all simulation settings?
 
 ```python
@@ -1206,6 +1312,8 @@ for settings in simulation.AllSettings:
 
 Contains materials, grids, boundaries, sources, sensors, etc. Filter by type using `isinstance()`.
 
+Used in: `goliat/setups/gridding_setup.py`, `goliat/setups/boundary_setup.py`
+
 ### How can I set frequency extraction settings?
 
 ```python
@@ -1217,6 +1325,8 @@ extractor.FrequencySettings.ExtractedFrequency = frequency_hz, units.Hz
 ```
 
 Important distinction: sensor extractors use `ExtractedFrequency` (singular), while far-field sensor settings use `ExtractedFrequencies` (plural). Must be set before calling `Update()`. "All" extracts all computed frequencies.
+
+Used in: `goliat/extraction/sar_extractor.py`
 
 ---
 
@@ -1243,6 +1353,8 @@ s4l_v1.renderer.SetViewDirection(views["x_pos"])
 
 Direction is a unit vector (Vec3). Use QTech.Vec3 for renderer API.
 
+Used in: `goliat/analysis/screenshot_analysis/get_screenshot.py`
+
 ### How can I zoom to an entity?
 
 ```python
@@ -1252,6 +1364,8 @@ s4l_v1.renderer.ZoomToEntity(entity)
 ```
 
 Entity must be visible in the model.
+
+Used in: `goliat/analysis/screenshot_analysis/get_screenshot.py`
 
 ### How can I capture a screenshot?
 
@@ -1285,6 +1399,8 @@ s4l_v1.renderer.SaveScreenCapture(
 
 Takes separate folder and prefix (not full path). Saves as PNG format. Force a UI update before capture and optionally hide the grid for cleaner screenshots. A short sleep after the UI update ensures rendering completes.
 
+Used in: `goliat/analysis/screenshot_analysis/get_screenshot.py`
+
 ### How can I change the current UI mode?
 
 ```python
@@ -1294,6 +1410,8 @@ s4l_v1.ui.ChangeCurrentMode("Simulation")
 ```
 
 Mode names: "Simulation", "Modeling", etc. May need to force UI update after mode change.
+
+Used in: `goliat/analysis/screenshot_analysis/get_screenshot.py`
 
 ### How can I control entity visibility?
 
@@ -1310,3 +1428,5 @@ if ui_app and ui_app.MainFrame:
 ```
 
 Visibility changes may require UI update to take effect.
+
+Used in: `goliat/analysis/screenshot_analysis/get_screenshot.py`
