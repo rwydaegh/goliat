@@ -70,5 +70,6 @@ The following diagram illustrates the different execution architectures:
 
 - [oSPARC](osparc.md): Cloud batch execution via oSPARC platform
 - [Monitoring dashboard](monitoring.md): Web-based coordination for distributed VMs
+- [Super Studies](super_studies.md): Distributed execution across multiple workers
 - [Cloud setup](cloud_setup.md): Deploying and configuring cloud GPU instances
 
