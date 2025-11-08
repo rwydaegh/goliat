@@ -18,10 +18,10 @@ For smaller studies (10-50 simulations), local parallel execution is usually fas
 oSPARC batch execution uses a three-phase workflow:
 
 1. Generate input files: Run setup locally to create `.h5` solver input files
-2. Submit to cloud: Upload files and submit jobs to oSPARC compute nodes
-3. Download and extract: Retrieve results when jobs complete, then extract SAR data
+2. Submit to cloud: Upload files and submit jobs to oSPARC compute nodes (oSPARC handles the run phase only)
+3. Download and extract: Retrieve results when jobs complete, then extract SAR data locally
 
-Each simulation runs as an independent job on oSPARC. Jobs get their own GPU, so they execute in parallel (unlike local parallel execution where jobs queue for a single GPU).
+**Important**: oSPARC only handles the run phase. You are responsible for running setup and extraction yourself. Each simulation runs as an independent job on oSPARC. Jobs get their own GPU, so they execute in parallel (unlike local parallel execution where jobs queue for a single GPU). If you use Sim4Life Python Runner on the oSPARC cloud for setup and extraction phases, you'll need licenses for those phases in addition to your local licenses.
 
 ## Setup
 
