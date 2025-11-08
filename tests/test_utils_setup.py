@@ -83,6 +83,7 @@ class TestCheckRepoRoot:
 class TestFindSim4LifePythonExecutables:
     """Tests for find_sim4life_python_executables function."""
 
+    @patch("goliat.utils.setup.sys.platform", "win32")
     @patch("goliat.utils.setup.os.path.exists")
     @patch("glob.glob")
     def test_finds_sim4life_executables(self, mock_glob, mock_exists):
@@ -110,6 +111,7 @@ class TestFindSim4LifePythonExecutables:
             assert any("Sim4Life_8.2" in r for r in results)
             assert any("Sim4Life_9.0" in r for r in results)
 
+    @patch("goliat.utils.setup.sys.platform", "win32")
     @patch("goliat.utils.setup.os.path.exists")
     @patch("glob.glob")
     def test_finds_no_executables(self, mock_glob, mock_exists):
