@@ -8,7 +8,7 @@ GOLIAT's architecture separates concerns:
 
 - **goliat/config.py**: Loads JSON configs with inheritance (e.g., base + study-specific).
 - **goliat/studies/**: Orchestrates workflows (NearFieldStudy, FarFieldStudy inherit from BaseStudy).
-- **goliat/setups/**: Builds Sim4Life scenes (PhantomSetup, PlacementSetup, MaterialSetup, etc.).
+- **goliat/setups/**: Builds Sim4Life scenes (PhantomSetup, PlacementSetup, MaterialSetup, etc.). See [Sim4Life API snippets](../reference/useful_s4l_snippets.md) for API patterns used.
 - **goliat/project_manager.py**: Handles .smash files (create/open/save/close), including a "Verify and Resume" feature to avoid re-running simulations with unchanged configurations.
 - **goliat/simulation_runner.py**: Executes simulations (local iSolve or oSPARC cloud).
 - **goliat/results_extractor.py**: Extracts SAR/power data post-simulation.

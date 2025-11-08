@@ -2,6 +2,8 @@
 
 Complete API documentation for GOLIAT, organized by module category.
 
+For Sim4Life Python API examples and patterns, see [Sim4Life API snippets](useful_s4l_snippets.md).
+
 ## Core Modules
 
 Core functionality for configuration, logging, and utilities.
