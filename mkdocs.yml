@@ -105,6 +105,7 @@ nav:
 - Reference:
   - Full List of Features: reference/full_features_list.md
   - API Reference: reference/api_reference.md
+  - Sim4Life API snippets: reference/useful_s4l_snippets.md
 - Project Info: project_info.md
 
 plugins:

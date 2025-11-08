@@ -118,6 +118,14 @@ GOLIAT is an automated Python framework for near-field and far-field dosimetric 
 
     [:octicons-arrow-right-24: API Docs](reference/api_reference.md)
 
+-   :material-code-tags:{ .lg .middle } **Sim4Life API snippets**
+
+    ---
+
+    Practical code examples for Sim4Life Python API tasks. Extracted from GOLIAT usage patterns.
+
+    [:octicons-arrow-right-24: View snippets](reference/useful_s4l_snippets.md)
+
 -   :material-information-outline:{ .lg .middle } **Project Info**
 
     ---
