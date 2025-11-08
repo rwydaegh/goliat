@@ -34,17 +34,18 @@ except ImportError:
             print("See the documentation for instructions on how to set up your environment.")
         else:
             print("Critical dependencies are missing.")
-            print("This can happen if you haven't installed the project requirements.")
+            print("This can happen if you haven't installed the project dependencies.")
             print("Attempting to install now...")
             print("=" * 80)
             try:
-                # Fallback: Try to import from goliat.utils.setup (only for initial setup phase)
+                # Fallback: Try to install the package (only for initial setup phase)
                 # This is only reached if PySide6 is missing before initial_setup() completes
                 # Get project root (go up from cli to repo root)
                 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-                from goliat.utils.setup import install_requirements
+                import subprocess
 
-                install_requirements(os.path.join(base_dir, "requirements.txt"))
+                print("\nInstalling GOLIAT package and dependencies...")
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "-e", base_dir])
                 print("\nDependencies installed. Restarting the script...")
                 # Restart the script to ensure new packages are loaded
                 executable = f'"{sys.executable}"' if " " in sys.executable else sys.executable

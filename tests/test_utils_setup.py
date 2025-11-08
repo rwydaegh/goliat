@@ -1,8 +1,6 @@
 """Tests for goliat.utils.setup module."""
 
 import json
-import subprocess
-import sys
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -11,7 +9,6 @@ from goliat.utils.setup import (
     check_package_installed,
     check_repo_root,
     find_sim4life_python_executables,
-    install_requirements,
     update_bashrc,
 )
 
@@ -128,45 +125,6 @@ class TestFindSim4LifePythonExecutables:
 
         results = find_sim4life_python_executables()
         assert len(results) == 0
-
-
-class TestInstallRequirements:
-    """Tests for install_requirements function."""
-
-    @patch("os.path.exists")
-    @patch("subprocess.check_call")
-    def test_install_requirements_success(self, mock_check_call, mock_exists):
-        """Test successful installation of requirements."""
-        mock_exists.return_value = True
-
-        install_requirements("requirements.txt")
-
-        mock_check_call.assert_called_once()
-        call_args = mock_check_call.call_args[0][0]
-        assert call_args[0] == sys.executable
-        assert "-m" in call_args
-        assert "pip" in call_args
-        assert "install" in call_args
-        assert "-r" in call_args
-        assert "requirements.txt" in call_args
-
-    @patch("os.path.exists")
-    def test_install_requirements_missing_file(self, mock_exists):
-        """Test when requirements file doesn't exist."""
-        mock_exists.return_value = False
-
-        # Should not raise, just log warning
-        install_requirements("missing_requirements.txt")
-
-    @patch("os.path.exists")
-    @patch("subprocess.check_call")
-    def test_install_requirements_failure(self, mock_check_call, mock_exists):
-        """Test handling of installation failure."""
-        mock_exists.return_value = True
-        mock_check_call.side_effect = subprocess.CalledProcessError(1, "pip")
-
-        with pytest.raises(SystemExit):
-            install_requirements("requirements.txt")
 
 
 class TestUpdateBashrc:

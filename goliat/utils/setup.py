@@ -1,6 +1,6 @@
 """Setup utilities for initializing the GOLIAT environment.
 
-This module provides functions for checking Python interpreter, installing requirements,
+This module provides functions for checking Python interpreter, installing the package,
 and preparing data files needed for studies.
 """
 
@@ -9,24 +9,6 @@ import os
 import platform
 import subprocess
 import sys
-
-
-def install_requirements(requirements_path):
-    """
-    Installs packages from a requirements file using 'python -m pip install'.
-    """
-    if not os.path.exists(requirements_path):
-        logging.warning(f"'{requirements_path}' not found. Skipping installation.")
-        return
-
-    logging.info(f"Installing packages from '{requirements_path}'...")
-    try:
-        # Using '-m pip' ensures we use the pip associated with the current python interpreter
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", requirements_path])
-        logging.info("All required packages are installed.")
-    except subprocess.CalledProcessError as e:
-        logging.error(f"Failed to install packages: {e}")
-        sys.exit(1)
 
 
 def check_package_installed():
@@ -70,7 +52,11 @@ def check_repo_root():
 def find_sim4life_python_executables():
     """
     Scans all drives for Sim4Life Python directories (versions 8.2 and 9.0).
+    Windows-only function - should not be called on Linux/AWS.
     """
+    if sys.platform != "win32":
+        return []  # Not on Windows, return empty list
+
     drive_letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     drives = [f"{d}:\\" for d in drive_letters if os.path.exists(f"{d}:\\")]
 
@@ -94,7 +80,11 @@ def find_sim4life_python_executables():
 
 def update_bashrc(selected_python_path):
     """
-    Overwrites the .bashrc file with PATH entries for Python and Scripts directories.
+    Creates/updates a project-local .bashrc file with PATH entries for Sim4Life Python.
+
+    This creates a .bashrc file in the project directory (non-intrusive).
+    Users can optionally copy this to their home directory (~/.bashrc) during setup
+    to make Sim4Life Python available automatically in all bash sessions.
     """
     bashrc_path = os.path.join(os.getcwd(), ".bashrc")
 
@@ -129,6 +119,88 @@ def update_bashrc(selected_python_path):
         f.write(scripts_line)
 
     logging.info("'.bashrc' has been updated. Please restart your shell or run 'source .bashrc'.")
+
+
+def prompt_copy_bashrc_to_home(base_dir):
+    """
+    Prompts user if they want to copy project .bashrc to their home directory.
+    This makes Sim4Life Python available automatically in all new bash sessions.
+    """
+    project_bashrc = os.path.join(base_dir, ".bashrc")
+    home_bashrc = os.path.join(os.path.expanduser("~"), ".bashrc")
+
+    # Only prompt if project .bashrc exists
+    if not os.path.exists(project_bashrc):
+        return
+
+    print("\n" + "=" * 80)
+    print("Optional: Make Sim4Life Python available automatically")
+    print("=" * 80)
+    print("GOLIAT has created a .bashrc file in the project directory.")
+    print("This file adds Sim4Life Python to your PATH.")
+    print()
+    print("OPTION 1 (Recommended for beginners):")
+    print("  Copy this configuration to your home directory (~/.bashrc)")
+    print("  ✓ Sim4Life Python will be available automatically in ALL new bash windows")
+    print("  ✓ You won't need to remember to run 'source .bashrc' each time")
+    print("  ⚠ This modifies your global bash configuration")
+    print()
+    print("OPTION 2 (Default):")
+    print("  Keep using the project-local .bashrc file")
+    print("  ✓ Non-intrusive - doesn't modify your global bash config")
+    print("  ⚠ You must run 'source .bashrc' each time you open a new bash terminal")
+    print("     (or navigate to the project directory and source it)")
+    print()
+
+    response = input("Copy .bashrc to your home directory? [y/N]: ").strip().lower()
+
+    if response in ["y", "yes"]:
+        # Read project .bashrc content
+        try:
+            with open(project_bashrc, "r", encoding="utf-8") as f:
+                bashrc_content = f.read()
+        except Exception as e:
+            logging.warning(f"Could not read project .bashrc: {e}")
+            return
+
+        # Check if content already exists in home .bashrc
+        existing_content = ""
+        if os.path.exists(home_bashrc):
+            try:
+                with open(home_bashrc, "r", encoding="utf-8") as f:
+                    existing_content = f.read()
+            except Exception as e:
+                logging.warning(f"Could not read existing ~/.bashrc: {e}")
+
+        # Check if Sim4Life paths are already present
+        if "Sim4Life" in existing_content or any(
+            line.strip() in existing_content for line in bashrc_content.split("\n") if line.strip() and not line.strip().startswith("#")
+        ):
+            print("\n⚠ Sim4Life Python paths already found in ~/.bashrc")
+            overwrite = input("  Do you want to update them? [y/N]: ").strip().lower()
+            if overwrite not in ["y", "yes"]:
+                print("  Skipped. Using existing ~/.bashrc configuration.")
+                return
+
+        # Append to home .bashrc (or create if doesn't exist)
+        try:
+            with open(home_bashrc, "a", encoding="utf-8") as f:
+                f.write("\n# GOLIAT: Sim4Life Python PATH (added automatically)\n")
+                f.write(bashrc_content)
+                f.write("\n")
+
+            print("\n✓ Copied .bashrc configuration to ~/.bashrc")
+            print("  New bash windows will automatically have Sim4Life Python in PATH.")
+            print("  You can remove these lines from ~/.bashrc anytime if needed.")
+        except Exception as e:
+            logging.error(f"Failed to write to ~/.bashrc: {e}")
+            print(f"\n⚠ Could not write to ~/.bashrc: {e}")
+            print("  You can manually copy the content from .bashrc to ~/.bashrc if desired.")
+    else:
+        print("\n✓ Keeping project-local .bashrc")
+        print("  Remember to run 'source .bashrc' when opening new bash terminals,")
+        print("  or navigate to the project directory first.")
+        print("  You can manually copy .bashrc to ~/.bashrc later if desired.")
 
 
 def check_python_interpreter():
@@ -242,7 +314,7 @@ def initial_setup():
         print("=" * 80)
         print("GOLIAT needs to be installed as a Python package to work properly.")
         print("This will install:")
-        print("  - Python dependencies from requirements.txt")
+        print("  - Python dependencies from pyproject.toml")
         print("  - GOLIAT package in editable mode (allows code modifications)")
         print()
         print("This is a one-time setup. You can modify the code and changes will")
@@ -254,12 +326,8 @@ def initial_setup():
             print("Installation cancelled. GOLIAT cannot run without installation.")
             sys.exit(1)
 
-        # Install requirements.txt first
-        print("\nInstalling Python dependencies...")
-        install_requirements(os.path.join(base_dir, "requirements.txt"))
-
-        # Install editable package
-        print("\nInstalling GOLIAT package in editable mode...")
+        # Install editable package (this installs dependencies from pyproject.toml automatically)
+        print("\nInstalling GOLIAT package and dependencies in editable mode...")
         try:
             subprocess.check_call([sys.executable, "-m", "pip", "install", "-e", base_dir])
             print("✓ GOLIAT package installed successfully!")
@@ -288,6 +356,8 @@ def initial_setup():
         # Skip interpreter check in CI/test environment
         if not os.environ.get("CI") and not os.environ.get("PYTEST_CURRENT_TEST"):
             check_python_interpreter()  # This function now handles AWS detection internally
+            # Prompt user about copying .bashrc to home directory (optional)
+            prompt_copy_bashrc_to_home(base_dir)
         prepare_data(base_dir)
         with open(lock_file, "w") as f:
             f.write("Setup complete.")

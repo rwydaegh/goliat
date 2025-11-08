@@ -62,6 +62,12 @@ pythonVersion = "3.11"
 reportMissingImports = false
 reportMissingModuleSource = false
 
+[tool.pytest.ini_options]
+markers = [
+  "skip_on_ci: mark a test to be skipped in CI environments (e.g., GitHub Actions)",
+]
+testpaths = ["tests"]
+
 [tool.ruff]
 line-length = 140
 target-version = "py38"
