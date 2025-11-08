@@ -146,6 +146,7 @@ These settings define the spatial discretization of the simulation domain.
 | `solver_settings.boundary_conditions.type` | string | `"UpmlCpml"` | The type of Perfectly Matched Layer (PML) boundary conditions. |
 | `solver_settings.boundary_conditions.strength` | string | `"Medium"` | The strength of the PML boundary conditions. Options: `"Weak"`, `"Medium"`, `"Strong"`. |
 | `manual_isolve` | boolean | `true` | If `true`, runs the `iSolve.exe` solver directly. This is the recommended setting to avoid a known bug with the Ares scheduler. |
+| `save_retry_count` | number | `4` | The number of times to retry saving a project file if Sim4Life randomly errors out. Each retry attempt logs a warning. If all attempts fail, the error is raised. |
 | `export_material_properties` | boolean | `false` | **(Advanced)** If `true`, the framework will extract and save material properties from the simulation to a `.pkl` file. |
 | `line_profiling` | object | See below | **(Advanced)** Enables detailed line-by-line code profiling for specific functions to debug performance. |
 

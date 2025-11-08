@@ -550,15 +550,48 @@ class ProjectManager(LoggingMixin):
     def save(self):
         """Saves the current project to its file path.
 
+        Retries the save operation up to N times (configurable via save_retry_count)
+        if Sim4Life randomly errors out. Logs warnings for each retry attempt.
+
         Raises:
             ValueError: If project_path hasn't been set.
+            Exception: If all retry attempts fail, the last exception is raised.
         """
         if not self.project_path:
             raise ValueError("Project path is not set. Cannot save.")
 
+        retry_count = self.config.get_setting("save_retry_count", 4)
+        if not isinstance(retry_count, int):
+            retry_count = 4
+        last_exception = None
+
         self._log(f"Saving project to {self.project_path}...", log_type="info")
-        self.document.SaveAs(self.project_path)
-        self._log("Project saved.", log_type="success")
+
+        for attempt in range(1, retry_count + 1):
+            try:
+                self.document.SaveAs(self.project_path)
+                if attempt > 1:
+                    self._log(f"Project saved successfully on attempt {attempt}.", log_type="success")
+                else:
+                    self._log("Project saved.", log_type="success")
+                return
+            except Exception as e:
+                last_exception = e
+                if attempt < retry_count:
+                    self._log(
+                        f"WARNING: Save attempt {attempt} failed: {e}. Retrying ({attempt + 1}/{retry_count})...",
+                        log_type="warning",
+                    )
+                else:
+                    self._log(
+                        f"ERROR: All {retry_count} save attempts failed. Last error: {e}",
+                        log_type="error",
+                    )
+
+        # If we get here, all attempts failed
+        if last_exception is not None:
+            raise last_exception
+        raise RuntimeError("Save failed but no exception was captured")
 
     def close(self):
         """Closes the active Sim4Life document."""

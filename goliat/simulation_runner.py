@@ -82,7 +82,31 @@ class SimulationRunner(LoggingMixin):
                 )
                 with self.profiler.subtask("run_write_input_file"):
                     self.simulation.WriteInputFile()
-                    self.document.SaveAs(self.project_path)  # Force a save to flush files
+                    # Force a save to flush files, with retry logic
+                    retry_count = self.config.get_setting("save_retry_count", 4)
+                    if not isinstance(retry_count, int):
+                        retry_count = 4
+                    for attempt in range(1, retry_count + 1):
+                        try:
+                            self.document.SaveAs(self.project_path)
+                            if attempt > 1:
+                                self._log(
+                                    f"WARNING: Save succeeded on retry attempt {attempt}.",
+                                    log_type="warning",
+                                )
+                            break
+                        except Exception as e:
+                            if attempt < retry_count:
+                                self._log(
+                                    f"WARNING: Save attempt {attempt} failed: {e}. Retrying ({attempt + 1}/{retry_count})...",
+                                    log_type="warning",
+                                )
+                            else:
+                                self._log(
+                                    f"ERROR: All {retry_count} save attempts failed. Last error: {e}",
+                                    log_type="error",
+                                )
+                                raise
                 elapsed = self.profiler.subtask_times["run_write_input_file"][-1]
                 self._log(f"      - Subtask 'run_write_input_file' done in {elapsed:.2f}s", log_type="verbose")
                 self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")

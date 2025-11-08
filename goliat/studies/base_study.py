@@ -358,7 +358,7 @@ class BaseStudy(LoggingMixin):
             )
 
             if response.status_code == 200:
-                self._log(f"✓ Results uploaded successfully ({len(files)} files)", log_type="success")
+                self._log(f"Results uploaded successfully ({len(files)} files)", log_type="success")
             else:
                 self._log(f"WARNING: Results upload failed (status {response.status_code}): {response.text[:100]}", log_type="warning")
         except Exception as e:

@@ -119,20 +119,36 @@ class WebBridgeManager:
     def send_finished(self, error: bool = False) -> None:
         """Sends final status update to web before stopping bridge.
 
+        Sends multiple 100% progress updates with delays to ensure the cloud
+        receives them even if it's lagging behind. This prevents tasks from
+        appearing stuck at 99% on the web interface.
+
         Args:
             error: Whether study finished with errors.
         """
         if self.web_bridge is not None:
             try:
-                # Send final 100% progress to web
-                self.web_bridge.enqueue({"type": "overall_progress", "current": 100, "total": 100})
+                import time
+
+                # Send multiple 100% progress updates with delays to ensure cloud receives them
+                # Cloud is often lagging behind, so we send updates multiple times
+                for i in range(5):  # Send 5 times to ensure at least one gets through
+                    self.web_bridge.enqueue({"type": "overall_progress", "current": 100, "total": 100})
+                    # Also send stage progress at 100% if we have a stage name
+                    if hasattr(self.gui, "stage_label"):
+                        stage_name = self.gui.stage_label.text().replace("Current Stage: ", "")
+                        if stage_name and stage_name != "Current Stage:":
+                            self.web_bridge.enqueue({"type": "stage_progress", "name": stage_name, "current": 100, "total": 100})
+                    if i < 4:  # Don't sleep after the last iteration
+                        time.sleep(0.5)  # 500ms delay between updates
+
+                # Send finished message
                 self.web_bridge.enqueue(
                     {"type": "finished", "message": "Study finished successfully" if not error else "Study finished with errors"}
                 )
-                # Wait a moment for final messages to send
-                import time
 
-                time.sleep(1)
+                # Wait longer for final messages to send (cloud might be processing previous updates)
+                time.sleep(3)  # Increased from 1s to 3s to give cloud more time
                 self.web_bridge.stop()
             except Exception as e:
                 if hasattr(self.gui, "verbose_logger"):
