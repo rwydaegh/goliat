@@ -4,6 +4,7 @@ This module provides functions for checking Python interpreter, installing the p
 and preparing data files needed for studies.
 """
 
+import json
 import logging
 import os
 import platform
@@ -78,13 +79,89 @@ def find_sim4life_python_executables():
     return found_python_dirs
 
 
-def update_bashrc(selected_python_path):
+def get_user_preferences(base_dir):
+    """Load user preferences from data/.goliat_preferences.json"""
+    prefs_file = os.path.join(base_dir, "data", ".goliat_preferences.json")
+    if os.path.exists(prefs_file):
+        try:
+            with open(prefs_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+
+def save_user_preferences(base_dir, preferences):
+    """Save user preferences to data/.goliat_preferences.json"""
+    prefs_file = os.path.join(base_dir, "data", ".goliat_preferences.json")
+    data_dir = os.path.dirname(prefs_file)
+    os.makedirs(data_dir, exist_ok=True)
+    try:
+        with open(prefs_file, "w", encoding="utf-8") as f:
+            json.dump(preferences, f, indent=2)
+    except Exception as e:
+        logging.warning(f"Could not save preferences: {e}")
+
+
+def sync_bashrc_to_home(base_dir):
+    """Sync project .bashrc to home directory if preference is enabled."""
+    project_bashrc = os.path.join(base_dir, ".bashrc")
+    home_bashrc = os.path.join(os.path.expanduser("~"), ".bashrc")
+
+    if not os.path.exists(project_bashrc):
+        return
+
+    try:
+        with open(project_bashrc, "r", encoding="utf-8") as f:
+            bashrc_content = f.read()
+
+        # Read existing home .bashrc
+        existing_content = ""
+        if os.path.exists(home_bashrc):
+            with open(home_bashrc, "r", encoding="utf-8") as f:
+                existing_content = f.read()
+
+        # Remove old GOLIAT entries if they exist
+        lines = existing_content.split("\n")
+        new_lines = []
+        in_goliat_section = False
+        for line in lines:
+            if "# GOLIAT: Sim4Life Python PATH" in line:
+                in_goliat_section = True
+                continue
+            if in_goliat_section and (line.startswith("export PATH") and "Sim4Life" in line):
+                continue
+            if in_goliat_section and line.strip() == "" and new_lines and new_lines[-1].strip() == "":
+                in_goliat_section = False
+                continue
+            if not in_goliat_section:
+                new_lines.append(line)
+
+        # Remove trailing empty lines
+        while new_lines and new_lines[-1].strip() == "":
+            new_lines.pop()
+
+        # Append new content
+        new_content = "\n".join(new_lines)
+        if new_content and not new_content.endswith("\n"):
+            new_content += "\n"
+        new_content += "\n# GOLIAT: Sim4Life Python PATH (auto-synced)\n"
+        new_content += bashrc_content
+
+        with open(home_bashrc, "w", encoding="utf-8") as f:
+            f.write(new_content)
+
+        logging.info("Synced .bashrc to ~/.bashrc (preference enabled)")
+    except Exception as e:
+        logging.warning(f"Could not sync .bashrc to home directory: {e}")
+
+
+def update_bashrc(selected_python_path, base_dir=None):
     """
     Creates/updates a project-local .bashrc file with PATH entries for Sim4Life Python.
 
     This creates a .bashrc file in the project directory (non-intrusive).
-    Users can optionally copy this to their home directory (~/.bashrc) during setup
-    to make Sim4Life Python available automatically in all bash sessions.
+    If base_dir is provided and user preference is set, also syncs to ~/.bashrc.
     """
     bashrc_path = os.path.join(os.getcwd(), ".bashrc")
 
@@ -119,6 +196,12 @@ def update_bashrc(selected_python_path):
         f.write(scripts_line)
 
     logging.info("'.bashrc' has been updated. Please restart your shell or run 'source .bashrc'.")
+
+    # Check if user wants to sync to home directory
+    if base_dir:
+        prefs = get_user_preferences(base_dir)
+        if prefs.get("sync_bashrc_to_home", False):
+            sync_bashrc_to_home(base_dir)
 
 
 def prompt_copy_bashrc_to_home(base_dir):
@@ -192,6 +275,12 @@ def prompt_copy_bashrc_to_home(base_dir):
             print("\n✓ Copied .bashrc configuration to ~/.bashrc")
             print("  New bash windows will automatically have Sim4Life Python in PATH.")
             print("  You can remove these lines from ~/.bashrc anytime if needed.")
+            print("  This preference will be remembered - future .bashrc updates will sync automatically.")
+
+            # Save preference
+            prefs = get_user_preferences(base_dir)
+            prefs["sync_bashrc_to_home"] = True
+            save_user_preferences(base_dir, prefs)
         except Exception as e:
             logging.error(f"Failed to write to ~/.bashrc: {e}")
             print(f"\n⚠ Could not write to ~/.bashrc: {e}")
@@ -201,12 +290,22 @@ def prompt_copy_bashrc_to_home(base_dir):
         print("  Remember to run 'source .bashrc' when opening new bash terminals,")
         print("  or navigate to the project directory first.")
         print("  You can manually copy .bashrc to ~/.bashrc later if desired.")
+        print("  You can edit data/.goliat_preferences.json to enable auto-sync later.")
+
+        # Save preference as False
+        prefs = get_user_preferences(base_dir)
+        prefs["sync_bashrc_to_home"] = False
+        save_user_preferences(base_dir, prefs)
 
 
-def check_python_interpreter():
+def check_python_interpreter(base_dir=None):
     """
     Checks if the correct Sim4Life Python interpreter is being used.
     If not, it prompts the user to select a valid one and updates .bashrc.
+
+    Args:
+        base_dir: Optional base directory of the project. If provided, will check
+                  user preferences for auto-syncing .bashrc to home directory.
     """
     # Bypass check if running in the Sim4Life cloud environment
     if "aws" in platform.release():
@@ -249,7 +348,7 @@ def check_python_interpreter():
 
         selected_python = viable_pythons[selected_index]
 
-        update_bashrc(selected_python)
+        update_bashrc(selected_python, base_dir=base_dir)
 
         print(
             "\n .bashrc file updated. Please restart your terminal, run source .bashrc, and run the script again this time with the correct python."
@@ -355,7 +454,7 @@ def initial_setup():
         check_repo_root()
         # Skip interpreter check in CI/test environment
         if not os.environ.get("CI") and not os.environ.get("PYTEST_CURRENT_TEST"):
-            check_python_interpreter()  # This function now handles AWS detection internally
+            check_python_interpreter(base_dir=base_dir)  # This function now handles AWS detection internally
             # Prompt user about copying .bashrc to home directory (optional)
             prompt_copy_bashrc_to_home(base_dir)
         prepare_data(base_dir)
@@ -364,4 +463,4 @@ def initial_setup():
     else:
         # Skip interpreter check in CI/test environment
         if not os.environ.get("CI") and not os.environ.get("PYTEST_CURRENT_TEST"):
-            check_python_interpreter()  # This function now handles AWS detection internally
+            check_python_interpreter(base_dir=base_dir)  # This function now handles AWS detection internally
