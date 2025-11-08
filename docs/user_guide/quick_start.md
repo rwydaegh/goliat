@@ -37,7 +37,9 @@ Next, set up your Sim4Life Python environment:
 source .bashrc
 ```
 
-**Note**: The `.bashrc` file is pre-configured for the default Sim4Life location (`C:/Program Files/Sim4Life_8.2.0/Python`). If Sim4Life is installed elsewhere or you're using a different version, GOLIAT will automatically prompt you to edit `.bashrc` when needed. Most users won't need to edit it manually.
+**Note**: The `.bashrc` file is created in the project directory and adds Sim4Life Python to your PATH. During setup, GOLIAT will prompt you if you want to copy this to your home directory (`~/.bashrc`) to make Sim4Life Python available automatically in all new bash windows. This is optional - you can keep using the project-local `.bashrc` and remember to run `source .bashrc` each time, or copy it to your home directory for convenience.
+
+If Sim4Life is installed elsewhere or you're using a different version, GOLIAT will automatically detect it and update `.bashrc` accordingly.
 
 **Important**: Install the GOLIAT package in editable mode:
 
@@ -69,19 +71,19 @@ GOLIAT uses a flexible JSON-based configuration system located in the `configs/`
 
 2.  **Edit your custom config** (e.g., `configs/my_first_near_field_study.json`):
 
-    ```json
-    {
-      "extends": "base_config.json",
-      "study_type": "near_field",
-      "phantoms": ["thelonious"],
-      "frequencies_mhz": [700],
-      "execution_control": {
-        "do_setup": true,
-        "do_run": true,
-        "do_extract": true
-      }
-    }
-    ```
+        ```json
+        {
+          "extends": "base_config.json",
+          "study_type": "near_field",
+          "phantoms": ["thelonious"],
+          "frequencies_mhz": [700],
+          "execution_control": {
+            "do_setup": true,
+            "do_run": true,
+            "do_extract": true
+          }
+        }
+        ```
     
     **Note**: In this example, we use the "thelonious" child phantom and a single frequency (700 MHz) for a quick test run. GOLIAT's configuration system supports inheritance. Your custom config extends `base_config.json`, allowing you to override only the settings you need. For a deep dive into all available parameters, refer to the [Configuration Guide](../developer_guide/configuration.md).
 
@@ -101,12 +103,12 @@ goliat study my_first_near_field_study
 
 **What happens:**
 
--   GOLIAT GUI opens showing real-time progress and ETA
--   Downloads phantom and antenna models (one-time)
--   Builds simulation scene in Sim4Life (loads phantom, places antenna)
--   Runs FDTD solver via iSolve
--   Extracts SAR metrics (whole-body, head/trunk, peak 10g SAR)
--   Duration: 5-10 minutes depending on hardware
+- GOLIAT GUI opens showing real-time progress and ETA
+- Downloads phantom and antenna models (one-time)
+- Builds simulation scene in Sim4Life (loads phantom, places antenna)
+- Runs FDTD solver via iSolve
+- Extracts SAR metrics (whole-body, head/trunk, peak 10g SAR)
+- Duration: 5-10 minutes depending on hardware
 
 ![GOLIAT GUI during simulation](../img/tutorials/tut1_gui.gif)
 *GOLIAT GUI displaying real-time progress and simulation status.*
@@ -116,9 +118,9 @@ goliat study my_first_near_field_study
 Once the simulation is complete, GOLIAT will save all results in a structured directory within the `results/` folder. For our example, you'll find outputs in `results/near_field/thelonious/700MHz/by_cheek/`.
 
 **Key output files**:
--   `sar_results.json`: Contains normalized SAR values (e.g., mW/kg per 1W input power).
--   `sar_stats_all_tissues.pkl`: A detailed Python pickle file with tissue-specific data.
--   **Plots**: Various plots, such as SAR heatmaps and bar charts, visualizing the results.
+- `sar_results.json`: Contains normalized SAR values (e.g., mW/kg per 1W input power).
+- `sar_stats_all_tissues.pkl`: A detailed Python pickle file with tissue-specific data.
+- **Plots**: Various plots, such as SAR heatmaps and bar charts, visualizing the results.
 
 You can also run the dedicated analysis script to aggregate and further process your results:
 

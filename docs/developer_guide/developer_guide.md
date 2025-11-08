@@ -27,21 +27,24 @@ GOLIAT uses an editable package installation (`python -m pip install -e .`). Thi
 **First-time setup**:
 
 1. Set up Sim4Life Python environment:
-   ```bash
-   source .bashrc
-   ```
+
+        ```bash
+        source .bashrc
+        ```
 
 2. Install GOLIAT package in editable mode:
-   ```bash
-   python -m pip install -e .
-   ```
+
+        ```bash
+        python -m pip install -e .
+        ```
 
    > **Always use `python -m pip`**: Always use `python -m pip` instead of `pip` directly. This ensures you're using the pip associated with Sim4Life's Python interpreter. The same applies to other Python commands: use `python -m <module>` when possible.
 
 3. Run the initialization command:
-   ```bash
-   goliat init
-   ```
+
+        ```bash
+        goliat init
+        ```
 
 This will:
 - Verify Sim4Life Python interpreter is being used
@@ -57,7 +60,6 @@ This will:
 
 **Note**: If you need to reinstall (e.g., after pulling updates), you can manually run:
 ```bash
-python -m pip install -r requirements.txt
 python -m pip install -e .
 ```
 
@@ -91,10 +93,11 @@ With the interpreter set, run the full test suite from the terminal.
 
 1.  **First-time Setup**: Run `goliat init` to install dependencies and set up the environment. Alternatively, run any command (e.g., `goliat --help`) and accept the dependency installation prompt when asked.
 2.  **Run Pytest**:
-    ```bash
-    # This executes all tests, including those skipped by CI
-    pytest tests/ -v
-    ```
+
+        ```bash
+        # This executes all tests, including those skipped by CI
+        pytest tests/ -v
+        ```
 
 ### Adding new tests
 
@@ -156,7 +159,7 @@ To build the documentation, you first need to install the documentation-specific
 
 ```bash
 # Install docs dependencies
-python -m pip install -r requirements-docs.txt
+python -m pip install -e .[docs]
 ```
 
 Then, you can use MkDocs to serve the documentation locally or build the static site.
@@ -199,7 +202,7 @@ Run: `pre-commit run`.
 
 ## Other notes
 
-- Dependencies: requirements.txt (no Poetry).
+- Dependencies: Defined in `pyproject.toml` (PEP 621 standard).
 - Gitignore: Ignore logs/, results/, .env.
 - License: Apache-2.0 - see LICENSE.
 - Changelog: Update CHANGELOG.md for releases.
