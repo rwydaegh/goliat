@@ -31,7 +31,7 @@ class TestResultsExtractor:
         """Test ResultsExtractor initialization."""
         from goliat.results_extractor import ResultsExtractor
 
-        extractor = ResultsExtractor(
+        extractor = ResultsExtractor.from_params(
             config=mock_config,
             simulation=mock_simulation,
             phantom_name="thelonious",
@@ -70,7 +70,7 @@ class TestResultsExtractor:
         """Test extract() when simulation is None."""
         from goliat.results_extractor import ResultsExtractor
 
-        extractor = ResultsExtractor(
+        extractor = ResultsExtractor.from_params(
             config=mock_config,
             simulation=None,
             phantom_name="thelonious",
@@ -93,7 +93,7 @@ class TestResultsExtractor:
         """Test extract() behavior for free space simulations."""
         from goliat.results_extractor import ResultsExtractor
 
-        extractor = ResultsExtractor(
+        extractor = ResultsExtractor.from_params(
             config=mock_config,
             simulation=mock_simulation,
             phantom_name="thelonious",
@@ -125,7 +125,7 @@ class TestResultsExtractor:
 
         mock_config.get_setting.return_value = 5  # 5 point sensors
 
-        extractor = ResultsExtractor(
+        extractor = ResultsExtractor.from_params(
             config=mock_config,
             simulation=mock_simulation,
             phantom_name="thelonious",
@@ -165,7 +165,7 @@ class TestResultsExtractor:
 
         mock_config.base_dir = str(tmp_path)
 
-        extractor = ResultsExtractor(
+        extractor = ResultsExtractor.from_params(
             config=mock_config,
             simulation=mock_simulation,
             phantom_name="thelonious",

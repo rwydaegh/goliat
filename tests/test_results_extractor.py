@@ -38,7 +38,7 @@ def mock_study():
 def test_results_extractor_initialization(mock_config, mock_study):
     # This test only checks if the extractor can be initialized without errors.
     try:
-        extractor = ResultsExtractor(
+        extractor = ResultsExtractor.from_params(
             config=mock_config,
             simulation=MagicMock(),
             phantom_name="test_phantom",
@@ -59,7 +59,7 @@ def test_results_extractor_initialization(mock_config, mock_study):
 
 def test_extract_no_simulation(mock_config, mock_study):
     # Test the case where the simulation object is None
-    extractor = ResultsExtractor(
+    extractor = ResultsExtractor.from_params(
         config=mock_config,
         simulation=None,
         phantom_name="test_phantom",

@@ -254,7 +254,7 @@ class FarFieldStudy(BaseStudy):
                         raise RuntimeError(f"Could not find simulation '{sim_name}' after reloading.")
 
                     with self.subtask("extract_results_total"):
-                        extractor = ResultsExtractor(
+                        extractor = ResultsExtractor.from_params(
                             config=self.config,
                             simulation=reloaded_simulation,  # type: ignore
                             phantom_name=phantom_name,
