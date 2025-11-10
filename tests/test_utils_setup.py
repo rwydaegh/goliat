@@ -54,8 +54,15 @@ class TestCheckPackageInstalled:
 
     def test_package_not_importable(self, monkeypatch):
         """Test when package cannot be imported."""
-        with patch("builtins.__import__", side_effect=ImportError("No module named goliat")):
-            assert check_package_installed() is False
+        # Mock importlib.util.find_spec to return None (package not found)
+        # Also mock pip list to return empty and egg-info to not exist
+        with patch("importlib.util.find_spec", return_value=None):
+            mock_result = MagicMock()
+            mock_result.stdout = json.dumps([])
+            mock_result.returncode = 0
+            with patch("subprocess.run", return_value=mock_result):
+                with patch("goliat.utils.package.os.path.exists", return_value=False):
+                    assert check_package_installed() is False
 
 
 class TestCheckRepoRoot:
