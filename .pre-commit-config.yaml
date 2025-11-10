@@ -3,13 +3,13 @@ repos:
   rev: v6.0.0
   hooks:
   - id: trailing-whitespace
-    exclude: ^(docs/|archive/|analysis/)
+    exclude: ^(docs/|analysis/)
   - id: end-of-file-fixer
-    exclude: ^(docs/|archive/|analysis/)
+    exclude: ^(docs/|analysis/)
   - id: check-yaml
     exclude: ^mkdocs\.yml$
   - id: check-added-large-files
-    args: [--maxkb=10000]
+    args: [--maxkb=1000]
   - id: check-json
     exclude: ^(\.vscode/)
 
@@ -25,10 +25,10 @@ repos:
   rev: v0.14.4
   hooks:
   - id: ruff-format
-    exclude: ^(analysis/|osparc_api_example/)
+    exclude: ^(analysis/)
   - id: ruff
     args: [--fix]
-    exclude: ^(analysis/|osparc_api_example/|docs/)
+    exclude: ^(analysis/|docs/)
 
 - repo: https://github.com/RobertCraigie/pyright-python
   rev: v1.1.407

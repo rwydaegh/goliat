@@ -370,7 +370,7 @@ class NearFieldSetup(BaseSetup):
         self._log("Setting up bounding boxes...", log_type="progress")
         all_entities = self.model.AllEntities()
 
-        phantom_config = self.config.get_phantom_definition(self.phantom_name.lower())
+        phantom_config = (self.config["phantom_definitions"] or {}).get(self.phantom_name.lower(), {})
         if not phantom_config:
             raise ValueError(f"Configuration for '{self.phantom_name.lower()}' not found.")
 
@@ -426,7 +426,7 @@ class NearFieldSetup(BaseSetup):
                 None,
             )
             antenna_bbox_min, antenna_bbox_max = self.model.GetBoundingBox([antenna_bbox_entity])
-            expansion = self.config.get_freespace_expansion()
+            expansion = self.config["simulation_parameters.freespace_antenna_bbox_expansion_mm"] or [10, 10, 10]
             sim_bbox_min = np.array(antenna_bbox_min) - np.array(expansion)
             sim_bbox_max = np.array(antenna_bbox_max) + np.array(expansion)
             sim_bbox = self.XCoreModeling.CreateWireBlock(self.model.Vec3(sim_bbox_min), self.model.Vec3(sim_bbox_max))
@@ -437,7 +437,7 @@ class NearFieldSetup(BaseSetup):
                 (e for e in self.model.AllEntities() if hasattr(e, "Name") and "Antenna bounding box" in e.Name),
                 None,
             )
-            placement_scenario_config = self.config.get_placement_scenario(self.base_placement_name)
+            placement_scenario_config = (self.config["placement_scenarios"] or {}).get(self.base_placement_name) or {}
             bounding_box_setting = placement_scenario_config.get("bounding_box", "default")
 
             self._log(f"  - Bounding box setting: '{bounding_box_setting}'", log_type="info")
@@ -548,8 +548,8 @@ class NearFieldSetup(BaseSetup):
         if self.base_placement_name != "by_cheek":
             return
 
-        scenario = self.config.get_placement_scenario(self.base_placement_name)
-        orientation_config = scenario["orientations"].get(self.orientation_name)
+        scenario = (self.config["placement_scenarios"] or {}).get(self.base_placement_name) or {}
+        orientation_config = scenario.get("orientations", {}).get(self.orientation_name)
 
         # Find the phantom rotation dictionary in the list
         phantom_rot_config = next(

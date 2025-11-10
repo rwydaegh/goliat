@@ -111,16 +111,8 @@ class PowerExtractor(LoggingMixin):
             return
         # sim_bbox is a list of two points: [min_corner, max_corner]
         sim_min, sim_max = np.array(sim_bbox[0]), np.array(sim_bbox[1])
-        padding_bottom = np.array(
-            self.config.get_setting(
-                "gridding_parameters.padding.manual_bottom_padding_mm",
-            )
-        )
-        padding_top = np.array(
-            self.config.get_setting(
-                "gridding_parameters.padding.manual_top_padding_mm",
-            )
-        )
+        padding_bottom = np.array(self.config["gridding_parameters.padding.manual_bottom_padding_mm"] or [0, 0, 0])
+        padding_top = np.array(self.config["gridding_parameters.padding.manual_top_padding_mm"] or [0, 0, 0])
         total_min = sim_min - padding_bottom
         total_max = sim_max + padding_top
 

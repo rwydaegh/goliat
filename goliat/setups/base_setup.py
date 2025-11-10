@@ -66,7 +66,7 @@ class BaseSetup(LoggingMixin):
             sim_bbox_entity: Bounding box entity for size calculation.
             frequency_mhz: Simulation frequency in MHz.
         """
-        sim_params = self.config.get_simulation_parameters()
+        sim_params = self.config["simulation_parameters"] or {}
 
         # Time Calculation
         time_multiplier = sim_params.get("simulation_time_multiplier", 5)
@@ -109,7 +109,7 @@ class BaseSetup(LoggingMixin):
     def _setup_solver_settings(self, simulation: "emfdtd.Simulation"):
         """Configures solver kernel (Software/CUDA/Acceleware) from config."""
         self._log("  - Configuring solver settings...", log_type="progress")
-        solver_settings = self.config.get_solver_settings()
+        solver_settings = self.config["solver_settings"] or {}
         if not solver_settings:
             return
 
@@ -149,7 +149,7 @@ class BaseSetup(LoggingMixin):
             simulation: Simulation to add sensors to.
             sim_bbox_entity_name: Name of simulation bbox entity.
         """
-        num_points = self.config.get_setting("simulation_parameters.number_of_point_sensors", 0)
+        num_points = self.config["simulation_parameters.number_of_point_sensors"] or 0
         if num_points == 0:
             self._log(
                 "  - Skipping point sensor creation (0 points requested).",
@@ -186,7 +186,7 @@ class BaseSetup(LoggingMixin):
             "top_right_up": (bbox_max, bbox_max, bbox_max),
         }
 
-        point_source_order = self.config.get_setting("simulation_parameters.point_source_order", list(corner_map.keys()))
+        point_source_order = self.config["simulation_parameters.point_source_order"] or list(corner_map.keys())
 
         for i in range(int(num_points)):  # type: ignore
             if point_source_order is None:
@@ -281,7 +281,7 @@ class BaseSetup(LoggingMixin):
         simulation.UpdateAllMaterials()
         XCore.SetLogLevel(old_log_level)
 
-        if self.config.get_setting("export_material_properties"):
+        if self.config["export_material_properties"]:
             self._log(
                 "--- Extracting Material Properties ---",
                 level="progress",

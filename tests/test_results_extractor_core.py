@@ -22,7 +22,7 @@ class TestResultsExtractor:
     def mock_config(self):
         """Create a mock config object."""
         config = MagicMock()
-        config.get_setting.return_value = 0  # No point sensors by default
+        config.__getitem__.side_effect = lambda key: 0 if "number_of_point_sensors" in key else None
         config.get_auto_cleanup_previous_results.return_value = False
         config.base_dir = "/tmp"
         return config
@@ -123,7 +123,7 @@ class TestResultsExtractor:
         """Test extract() with point sensors configured."""
         from goliat.results_extractor import ResultsExtractor
 
-        mock_config.get_setting.return_value = 5  # 5 point sensors
+        mock_config.__getitem__.side_effect = lambda key: 5 if "number_of_point_sensors" in key else None
 
         extractor = ResultsExtractor.from_params(
             config=mock_config,

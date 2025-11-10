@@ -18,7 +18,7 @@ with patch.dict("sys.modules", mocks):
 @pytest.fixture
 def mock_config():
     config = MagicMock()
-    config.get_setting.return_value = "environmental"
+    config.__getitem__.side_effect = lambda key: "environmental" if "far_field_setup.type" in key else None
     return config
 
 

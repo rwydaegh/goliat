@@ -16,7 +16,9 @@ def test_base_study_initialization(tmp_path, monkeypatch):
     ) as _mock_profiler_class, patch("goliat.studies.base_study.ProjectManager") as _mock_pm_class:
         mock_config = MagicMock()
         mock_config.get_profiling_config.return_value = {}
-        mock_config.get_setting.return_value = {"do_setup": True, "do_run": True, "do_extract": True}
+        mock_config.__getitem__.side_effect = lambda key: {"execution_control": {"do_setup": True, "do_run": True, "do_extract": True}}.get(
+            key
+        )
         mock_config.profiling_config_path = str(tmp_path / "profiling_config.json")
         mock_config_class.return_value = mock_config
 
@@ -38,7 +40,7 @@ def test_base_study_check_for_stop_signal():
     ) as _mock_profiler_class, patch("goliat.studies.base_study.ProjectManager") as _mock_pm_class:
         mock_config = MagicMock()
         mock_config.get_profiling_config.return_value = {}
-        mock_config.get_setting.return_value = {}
+        mock_config.__getitem__.return_value = {}
         mock_config.profiling_config_path = "dummy.json"
         mock_config_class.return_value = mock_config
 
@@ -66,7 +68,7 @@ def test_base_study_subtask_context_manager():
     ) as _mock_profiler_class, patch("goliat.studies.base_study.ProjectManager") as _mock_pm_class:
         mock_config = MagicMock()
         mock_config.get_profiling_config.return_value = {}
-        mock_config.get_setting.return_value = {}
+        mock_config.__getitem__.return_value = {}
         mock_config.profiling_config_path = "dummy.json"
         mock_config_class.return_value = mock_config
 

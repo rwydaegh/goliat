@@ -140,11 +140,11 @@ class TestValidateConfig:
         # Mock Config to avoid needing full setup
         with patch("goliat.config.Config") as mock_config_class:
             mock_config = MagicMock()
-            mock_config.get_setting.side_effect = lambda key, default=None: {
+            mock_config.__getitem__.side_effect = lambda key: {
                 "study_type": "near_field",
                 "phantoms": ["thelonious"],
                 "antenna_config": {"700": {"model_type": "test"}},
-            }.get(key, default)
+            }.get(key)
             mock_config_class.return_value = mock_config
 
             validate_config(str(config_path), str(tmp_project_dir))
@@ -158,11 +158,11 @@ class TestValidateConfig:
 
         with patch("goliat.config.Config") as mock_config_class:
             mock_config = MagicMock()
-            mock_config.get_setting.side_effect = lambda key, default=None: {
+            mock_config.__getitem__.side_effect = lambda key: {
                 "study_type": "far_field",
                 "phantoms": ["thelonious"],
                 "frequencies_mhz": [700],
-            }.get(key, default)
+            }.get(key)
             mock_config_class.return_value = mock_config
 
             validate_config(str(config_path), str(tmp_project_dir))
@@ -176,7 +176,7 @@ class TestValidateConfig:
 
         with patch("goliat.config.Config") as mock_config_class:
             mock_config = MagicMock()
-            mock_config.get_setting.return_value = None
+            mock_config.__getitem__.return_value = None
             mock_config_class.return_value = mock_config
 
             with pytest.raises(SystemExit):
@@ -191,10 +191,10 @@ class TestValidateConfig:
 
         with patch("goliat.config.Config") as mock_config_class:
             mock_config = MagicMock()
-            mock_config.get_setting.side_effect = lambda key, default=None: {
+            mock_config.__getitem__.side_effect = lambda key: {
                 "study_type": "near_field",
                 "phantoms": [],
-            }.get(key, default)
+            }.get(key)
             mock_config_class.return_value = mock_config
 
             with pytest.raises(SystemExit):

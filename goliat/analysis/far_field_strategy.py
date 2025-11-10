@@ -28,8 +28,8 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
 
     def load_and_process_results(self, analyzer: "Analyzer"):
         """Iterates through far-field results and processes each one."""
-        frequencies = self.config.get_setting("frequencies_mhz")
-        far_field_params = self.config.get_setting("far_field_setup/environmental")
+        frequencies = self.config["frequencies_mhz"]
+        far_field_params = self.config["far_field_setup.environmental"]
         if not far_field_params:
             return
         incident_directions = far_field_params.get("incident_directions", [])

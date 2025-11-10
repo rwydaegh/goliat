@@ -1,7 +1,5 @@
 """Tests for goliat.studies.near_field_study module."""
 
-from unittest.mock import patch
-
 import pytest
 
 from goliat.config import Config
@@ -107,27 +105,26 @@ class TestNearFieldStudy:
         }
 
         # Mock phantom definition
-        with patch.object(study.config, "get_phantom_definition") as mock_get_phantom:
-            mock_get_phantom.return_value = {"placements": {"do_by_cheek": True}}
+        study.config.config["phantom_definitions"] = {"test_phantom": {"placements": {"do_by_cheek": True}}}
 
-            # Count simulations: 2 frequencies * 2 positions * 2 orientations = 8
-            total = 0
-            phantoms = study.config.get_setting("phantoms", [])
-            frequencies = study.config.get_setting("antenna_config", {}).keys()
-            all_scenarios = study.config.get_setting("placement_scenarios", {})
+        # Count simulations: 2 frequencies * 2 positions * 2 orientations = 8
+        total = 0
+        phantoms = study.config["phantoms"] or []
+        frequencies = (study.config["antenna_config"] or {}).keys()
+        all_scenarios = study.config["placement_scenarios"] or {}
 
-            for phantom_name in phantoms:
-                phantom_definition = study.config.get_phantom_definition(phantom_name)
-                placements_config = phantom_definition.get("placements", {})
-                if not placements_config:
-                    continue
-                for scenario_name, scenario_details in all_scenarios.items():
-                    if placements_config.get(f"do_{scenario_name}"):
-                        positions = scenario_details.get("positions", {})
-                        orientations = scenario_details.get("orientations", {})
-                        total += len(list(frequencies)) * len(positions) * len(orientations)
+        for phantom_name in phantoms:
+            phantom_definition = (study.config["phantom_definitions"] or {}).get(phantom_name, {})
+            placements_config = phantom_definition.get("placements", {})
+            if not placements_config:
+                continue
+            for scenario_name, scenario_details in all_scenarios.items():
+                if placements_config.get(f"do_{scenario_name}"):
+                    positions = scenario_details.get("positions", {})
+                    orientations = scenario_details.get("orientations", {})
+                    total += len(list(frequencies)) * len(positions) * len(orientations)
 
-            assert total == 8  # 2 frequencies * 2 positions * 2 orientations
+        assert total == 8  # 2 frequencies * 2 positions * 2 orientations
 
     def test_near_field_study_all_phases_disabled(self, tmp_path):
         """Test behavior when all execution phases are disabled."""
@@ -172,9 +169,9 @@ class TestNearFieldStudy:
 
         # Should not crash when all phases disabled
         # The actual run would return early, but we can test the check
-        do_setup = study.config.get_setting("execution_control.do_setup", True)
-        do_run = study.config.get_setting("execution_control.do_run", True)
-        do_extract = study.config.get_setting("execution_control.do_extract", True)
+        do_setup = study.config["execution_control.do_setup"] or True
+        do_run = study.config["execution_control.do_run"] or True
+        do_extract = study.config["execution_control.do_extract"] or True
 
         assert not do_setup and not do_run and not do_extract
 
@@ -224,6 +221,6 @@ class TestNearFieldStudy:
         # Check the condition that triggers the warning
         # get_only_write_input_file has a default of False, so we need to check the config directly
         only_write = study.config.config.get("only_write_input_file", False)
-        do_run = study.config.get_setting("execution_control.do_run", True)
+        do_run = study.config["execution_control.do_run"] or True
 
         assert only_write and not do_run  # This would trigger the warning

@@ -72,11 +72,11 @@ def test_config_load_and_inheritance(dummy_configs):
 
     config_instance = Config(dummy_configs["base_dir"], "configs/near_field_config.json")
 
-    assert config_instance.get_setting("study_type") == "near_field"
+    assert config_instance["study_type"] == "near_field"
     assert config_instance.get_download_email() == "test@example.com"
-    assert config_instance.get_setting("simulation_parameters.convergence_level_dB") == -15
-    assert config_instance.get_setting("phantoms") == ["thelonious"]
-    assert config_instance.get_setting("frequencies_mhz") == [700]
+    assert config_instance["simulation_parameters.convergence_level_dB"] == -15
+    assert config_instance["phantoms"] == ["thelonious"]
+    assert config_instance["frequencies_mhz"] == [700]
 
     # Test material mapping
     material_map = config_instance.get_material_mapping("thelonious")
@@ -101,20 +101,20 @@ def test_config_load_and_inheritance(dummy_configs):
     del os.environ["DOWNLOAD_EMAIL"]
 
 
-def test_get_setting_non_existent(dummy_configs):
+def test_getitem_non_existent(dummy_configs):
     config_instance = Config(dummy_configs["base_dir"], "configs/near_field_config.json")
-    assert config_instance.get_setting("non_existent.path", "default_value") == "default_value"
-    assert config_instance.get_setting("simulation_parameters.non_existent_param") is None
+    assert (config_instance["non_existent.path"] or "default_value") == "default_value"
+    assert config_instance["simulation_parameters.non_existent_param"] is None
 
 
 def test_config_path_resolution(dummy_configs):
     # Test with full path
     full_path_config = Config(dummy_configs["base_dir"], str(dummy_configs["near_field_config_path"]))
-    assert full_path_config.get_setting("study_type") == "near_field"
+    assert full_path_config["study_type"] == "near_field"
 
     # Test with just filename (assumes in 'configs' dir)
     filename_only_config = Config(dummy_configs["base_dir"], "near_field_config")
-    assert filename_only_config.get_setting("study_type") == "near_field"
+    assert filename_only_config["study_type"] == "near_field"
 
 
 def test_osparc_credentials_missing(dummy_configs):

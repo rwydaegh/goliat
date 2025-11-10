@@ -16,7 +16,7 @@ with patch.dict("sys.modules", mocks):
 @pytest.fixture
 def mock_config():
     config = MagicMock()
-    config.get_solver_settings.return_value = {}
+    config.__getitem__.side_effect = lambda key: {} if key == "solver_settings" else None
     return config
 
 
