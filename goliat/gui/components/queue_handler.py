@@ -34,6 +34,58 @@ class QueueHandler:
             gui_instance: ProgressGUI instance to update with messages.
         """
         self.gui: "ProgressGUI" = gui_instance
+        self._MESSAGE_HANDLERS = {
+            "status": self._handle_status,
+            "overall_progress": self._handle_overall_progress,
+            "stage_progress": self._handle_stage_progress,
+            "start_animation": self._handle_start_animation,
+            "end_animation": self._handle_end_animation,
+            "profiler_update": self._handle_profiler_update,
+            "sim_details": self._handle_sim_details,
+            "finished": self._handle_finished,
+            "fatal_error": self._handle_fatal_error,
+        }
+
+    def _handle_status(self, msg: Dict[str, Any]) -> None:
+        """Handles status message type."""
+        self.gui.update_status(msg["message"], msg.get("log_type", "default"))
+
+    def _handle_overall_progress(self, msg: Dict[str, Any]) -> None:
+        """Handles overall progress message type."""
+        self.gui.update_overall_progress(msg["current"], msg["total"])
+
+    def _handle_stage_progress(self, msg: Dict[str, Any]) -> None:
+        """Handles stage progress message type."""
+        self.gui.update_stage_progress(msg["name"], msg["current"], msg["total"], msg.get("sub_stage", ""))
+
+    def _handle_start_animation(self, msg: Dict[str, Any]) -> None:
+        """Handles start animation message type."""
+        self.gui.start_stage_animation(msg["estimate"], msg["end_value"])
+
+    def _handle_end_animation(self, msg: Dict[str, Any]) -> None:
+        """Handles end animation message type."""
+        self.gui.end_stage_animation()
+
+    def _handle_profiler_update(self, msg: Dict[str, Any]) -> None:
+        """Handles profiler update message type."""
+        self.gui.profiler = msg.get("profiler")
+        if self.gui.profiler:
+            self.gui.profiler_phase = self.gui.profiler.current_phase
+            self.gui.timings_table.update(self.gui.profiler)
+            self.gui.piecharts_manager.update(self.gui.profiler)
+
+    def _handle_sim_details(self, msg: Dict[str, Any]) -> None:
+        """Handles simulation details message type."""
+        self.gui.update_simulation_details(msg["count"], msg["total"], msg["details"])
+
+    def _handle_finished(self, msg: Dict[str, Any]) -> None:
+        """Handles finished message type."""
+        self.gui.study_finished()
+
+    def _handle_fatal_error(self, msg: Dict[str, Any]) -> None:
+        """Handles fatal error message type."""
+        self.gui.update_status(f"FATAL ERROR: {msg['message']}", log_type="fatal")
+        self.gui.study_finished(error=True)
 
     def process_queue(self) -> None:
         """Processes messages from worker process queue and updates UI accordingly.
@@ -52,29 +104,11 @@ class QueueHandler:
                 msg: Dict[str, Any] = self.gui.queue.get_nowait()
                 msg_type: Optional[str] = msg.get("type")
 
-                if msg_type == "status":
-                    self.gui.update_status(msg["message"], msg.get("log_type", "default"))
-                elif msg_type == "overall_progress":
-                    self.gui.update_overall_progress(msg["current"], msg["total"])
-                elif msg_type == "stage_progress":
-                    self.gui.update_stage_progress(msg["name"], msg["current"], msg["total"], msg.get("sub_stage", ""))
-                elif msg_type == "start_animation":
-                    self.gui.start_stage_animation(msg["estimate"], msg["end_value"])
-                elif msg_type == "end_animation":
-                    self.gui.end_stage_animation()
-                elif msg_type == "profiler_update":
-                    self.gui.profiler = msg.get("profiler")
-                    if self.gui.profiler:
-                        self.gui.profiler_phase = self.gui.profiler.current_phase
-                        self.gui.timings_table.update(self.gui.profiler)
-                        self.gui.piecharts_manager.update(self.gui.profiler)
-                elif msg_type == "sim_details":
-                    self.gui.update_simulation_details(msg["count"], msg["total"], msg["details"])
-                elif msg_type == "finished":
-                    self.gui.study_finished()
-                elif msg_type == "fatal_error":
-                    self.gui.update_status(f"FATAL ERROR: {msg['message']}", log_type="fatal")
-                    self.gui.study_finished(error=True)
+                # Dispatch message to appropriate handler
+                if msg_type:
+                    handler = self._MESSAGE_HANDLERS.get(msg_type)
+                    if handler:
+                        handler(msg)
 
                 # Forward message to web bridge if enabled
                 if hasattr(self.gui, "web_bridge_manager") and self.gui.web_bridge_manager.web_bridge is not None:

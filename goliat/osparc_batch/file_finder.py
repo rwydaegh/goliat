@@ -12,6 +12,37 @@ if TYPE_CHECKING:
 main_logger = setup_console_logging()
 
 
+def _select_input_file(found_files: list[Path], results_folder: Path) -> Path:
+    """Selects the most recent input file from multiple candidates and cleans up older files.
+
+    Args:
+        found_files: List of candidate input files found in the results folder.
+        results_folder: Path to the results folder (for logging).
+
+    Returns:
+        The selected input file (most recent by modification time).
+    """
+    if len(found_files) > 1:
+        main_logger.warning(
+            f"{colorama.Fore.YELLOW}WARNING: Found {len(found_files)} input files in {results_folder}, expected 1. Using the most recent."
+        )
+        # Sort by modification time and take the most recent
+        found_files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
+        selected_file = found_files[0]
+
+        # Delete older files
+        for old_file in found_files[1:]:
+            try:
+                old_file.unlink()
+                main_logger.info(f"Deleted older file: {old_file.name}")
+            except OSError as e:
+                main_logger.error(f"Error deleting file {old_file}: {e}")
+    else:
+        selected_file = found_files[0]
+
+    return selected_file
+
+
 def find_input_files(config: "Config") -> list[Path]:
     """Finds solver input files (.h5) and cleans up older files.
 
@@ -105,24 +136,7 @@ def _find_far_field_input_files(config: "Config", results_base_dir: Path, phanto
                 continue
 
             # For far-field, we expect exactly one input file per direction/polarization
-            if len(found_files) > 1:
-                main_logger.warning(
-                    f"{colorama.Fore.YELLOW}WARNING: Found {len(found_files)} input files in {results_folder}, "
-                    f"expected 1. Using the most recent."
-                )
-                # Sort by modification time and take the most recent
-                found_files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
-                selected_file = found_files[0]
-
-                # Delete older files
-                for old_file in found_files[1:]:
-                    try:
-                        old_file.unlink()
-                        main_logger.info(f"Deleted older file: {old_file.name}")
-                    except OSError as e:
-                        main_logger.error(f"Error deleting file {old_file}: {e}")
-            else:
-                selected_file = found_files[0]
+            selected_file = _select_input_file(found_files, results_folder)
 
             main_logger.info(f"{colorama.Fore.CYAN}Found input file: {selected_file.name} ({placement_name})")
             input_files.append(selected_file)
@@ -180,24 +194,7 @@ def _find_near_field_input_files(config: "Config", results_base_dir: Path, phant
             continue
 
         # For near-field, we expect exactly one input file per placement
-        if len(found_files) > 1:
-            main_logger.warning(
-                f"{colorama.Fore.YELLOW}WARNING: Found {len(found_files)} input files in {results_folder}, "
-                f"expected 1. Using the most recent."
-            )
-            # Sort by modification time and take the most recent
-            found_files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
-            selected_file = found_files[0]
-
-            # Delete older files
-            for old_file in found_files[1:]:
-                try:
-                    old_file.unlink()
-                    main_logger.info(f"Deleted older file: {old_file.name}")
-                except OSError as e:
-                    main_logger.error(f"Error deleting file {old_file}: {e}")
-        else:
-            selected_file = found_files[0]
+        selected_file = _select_input_file(found_files, results_folder)
 
         main_logger.info(f"{colorama.Fore.CYAN}Found input file: {selected_file.name} ({placement_name})")
         input_files.append(selected_file)

@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 import pandas as pd
 
 from ..logging_manager import LoggingMixin
+from .tissue_grouping import TissueGrouper
 
 if TYPE_CHECKING:
     import s4l_v1.analysis as analysis
@@ -45,6 +46,8 @@ class SarExtractor(LoggingMixin):
         self.document = s4l_v1.document
         self.units = units
 
+        self.tissue_grouper = TissueGrouper(self.config, self.phantom_name, self)
+
     def extract_sar_statistics(self, simulation_extractor: "analysis.Extractor"):  # type: ignore
         """Extracts comprehensive SAR statistics for all tissues.
 
@@ -73,67 +76,20 @@ class SarExtractor(LoggingMixin):
             elapsed = 0.0
             if self.parent.study:
                 with self.parent.study.profiler.subtask("extract_sar_statistics"):  # type: ignore
-                    em_sensor_extractor = simulation_extractor["Overall Field"]
-                    em_sensor_extractor.FrequencySettings.ExtractedFrequency = "All"
-                    self.document.AllAlgorithms.Add(em_sensor_extractor)
-                    em_sensor_extractor.Update()
+                    em_sensor_extractor = self._setup_em_sensor_extractor(simulation_extractor)
+                    results = self._evaluate_sar_statistics(em_sensor_extractor)
 
-                    inputs = [em_sensor_extractor.Outputs["EM E(x,y,z,f0)"]]
-                    sar_stats_evaluator = self.analysis.em_evaluators.SarStatisticsEvaluator(inputs=inputs)
-                    sar_stats_evaluator.PeakSpatialAverageSAR = True
-                    sar_stats_evaluator.PeakSAR.TargetMass = 10.0, self.units.Unit("g")
-                    sar_stats_evaluator.UpdateAttributes()
-                    self.document.AllAlgorithms.Add(sar_stats_evaluator)
-                    sar_stats_evaluator.Update()
-
-                    stats_output = sar_stats_evaluator.Outputs
-                    results = stats_output.item_at(0).Data if len(stats_output) > 0 and hasattr(stats_output.item_at(0), "Data") else None
-                    self.document.AllAlgorithms.Remove(sar_stats_evaluator)
-
-                    if not (results and hasattr(results, "NumberOfRows") and results.NumberOfRows() > 0):
-                        self._log("  - WARNING: No SAR statistics data found.", log_type="warning")
+                    if not results:
                         return
 
-                    columns = ["Tissue"] + [cap for cap in results.ColumnMainCaptions]  # type: ignore
-                    data = [
-                        [re.sub(r"\s*\(.*\)\s*$", "", results.RowCaptions[i]).strip().replace(")", "")]
-                        + [results.Value(i, j) for j in range(results.NumberOfColumns())]
-                        for i in range(results.NumberOfRows())
-                    ]
-
-                    df = pd.DataFrame(data)
-                    df.columns = columns
-                    numeric_cols = [col for col in df.columns if col != "Tissue"]
-                    df[numeric_cols] = df[numeric_cols].apply(pd.to_numeric, errors="coerce").fillna(0)
-
-                    tissue_groups = self._define_tissue_groups(df["Tissue"].tolist())
+                    df = self._create_sar_dataframe(results)
+                    tissue_groups = self.tissue_grouper.group_tissues(df["Tissue"].tolist())
                     group_sar_stats = self._calculate_group_sar(df, tissue_groups)
 
-                    for group, data in group_sar_stats.items():
-                        self.results_data[f"{group}_weighted_avg_sar"] = data["weighted_avg_sar"]
-                        self.results_data[f"{group}_peak_sar"] = data["peak_sar"]
-
-                    all_regions_row = df[df["Tissue"] == "All Regions"]
-                    if not all_regions_row.empty:
-                        mass_averaged_sar = all_regions_row["Mass-Averaged SAR"].iloc[0]  # type: ignore
-                        if self.parent.study_type == "near_field":
-                            sar_key = "head_SAR" if self.placement_name.lower() in ["front_of_eyes", "by_cheek"] else "trunk_SAR"
-                            self.results_data[sar_key] = float(mass_averaged_sar)
-                        else:
-                            self.results_data["whole_body_sar"] = float(mass_averaged_sar)
-
-                        peak_sar_col_name = "Peak Spatial-Average SAR[IEEE/IEC62704-1] (10g)"
-                        if peak_sar_col_name in all_regions_row.columns:
-                            self.results_data["peak_sar_10g_W_kg"] = float(all_regions_row[peak_sar_col_name].iloc[0])  # type: ignore
-
+                    self._store_group_sar_results(group_sar_stats)
+                    self._store_all_regions_sar(df)
                     self.extract_peak_sar_details(em_sensor_extractor)
-                    self.results_data.update(
-                        {
-                            "_temp_sar_df": df,
-                            "_temp_tissue_groups": tissue_groups,
-                            "_temp_group_sar_stats": group_sar_stats,
-                        }
-                    )
+                    self._store_temporary_data(df, tissue_groups, group_sar_stats)
 
                 elapsed = self.parent.study.profiler.subtask_times["extract_sar_statistics"][-1]
             self._log(f"      - Subtask 'extract_sar_statistics' done in {elapsed:.2f}s", log_type="verbose")
@@ -147,130 +103,115 @@ class SarExtractor(LoggingMixin):
             )
             self.verbose_logger.error(traceback.format_exc())
 
-    def _define_tissue_groups(self, available_tissues: list) -> dict:
-        """Groups tissues into logical categories (eyes, skin, brain).
-
-        Tries two approaches in order:
-        1. Explicit mapping: Uses tissue group definitions from material_name_mapping.json
-           if available. This is preferred as it's explicit and configurable.
-
-        2. Keyword matching: Falls back to matching tissue names against known keywords.
-           For example, tissues containing 'eye', 'cornea', 'sclera' go into eyes_group.
-
-        This grouping is used later to calculate aggregated SAR metrics (weighted average
-        and peak SAR) for each anatomical region, which is more meaningful than individual
-        tissue values for safety assessment.
+    def _setup_em_sensor_extractor(self, simulation_extractor: "analysis.Extractor") -> "analysis.Extractor":  # type: ignore
+        """Sets up and updates the EM sensor extractor for SAR analysis.
 
         Args:
-            available_tissues: List of tissue names found in the simulation results.
+            simulation_extractor: Results extractor from the simulation object.
 
         Returns:
-            Dict mapping group names to lists of tissue names that belong to that group.
-            Empty groups are still included but with empty lists.
+            Configured EM sensor extractor.
         """
-        material_mapping = self.config.get_material_mapping(self.phantom_name)
+        em_sensor_extractor = simulation_extractor["Overall Field"]
+        em_sensor_extractor.FrequencySettings.ExtractedFrequency = "All"
+        self.document.AllAlgorithms.Add(em_sensor_extractor)
+        em_sensor_extractor.Update()
+        return em_sensor_extractor
 
-        if "_tissue_groups" in material_mapping:
-            self._log(
-                f"  - Loading tissue groups for '{self.phantom_name}' from material_name_mapping.json",
-                log_type="info",
-            )
-            phantom_groups = material_mapping["_tissue_groups"]
-            tissue_groups = {}
+    def _evaluate_sar_statistics(self, em_sensor_extractor: "analysis.Extractor") -> object | None:  # type: ignore
+        """Evaluates SAR statistics using Sim4Life's SarStatisticsEvaluator.
 
-            # Create reverse mappings from material names to entity names
-            # Handles normalization for spaces/underscores and case differences
-            material_to_entity = {}
-            normalized_material_to_entity = {}
-            normalized_entity_to_entity = {}
-            # Map cleaned material names to entity names (for cases like "Eye (Cornea)" -> "Eye" -> "Cornea")
-            cleaned_material_to_entities = {}
+        Args:
+            em_sensor_extractor: Configured EM sensor extractor.
 
-            for entity_name, material_name in material_mapping.items():
-                if entity_name == "_tissue_groups":
-                    continue
-                material_to_entity[material_name] = entity_name
-                # Normalize: lowercase, replace spaces with underscores
-                normalized_mat = material_name.lower().replace(" ", "_")
-                normalized_ent = entity_name.lower()
-                normalized_material_to_entity[normalized_mat] = entity_name
-                normalized_entity_to_entity[normalized_ent] = entity_name
+        Returns:
+            Results data object if available, None otherwise.
+        """
+        inputs = [em_sensor_extractor.Outputs["EM E(x,y,z,f0)"]]
+        sar_stats_evaluator = self.analysis.em_evaluators.SarStatisticsEvaluator(inputs=inputs)
+        sar_stats_evaluator.PeakSpatialAverageSAR = True
+        sar_stats_evaluator.PeakSAR.TargetMass = 10.0, self.units.Unit("g")
+        sar_stats_evaluator.UpdateAttributes()
+        self.document.AllAlgorithms.Add(sar_stats_evaluator)
+        sar_stats_evaluator.Update()
 
-                # Simulate the cleaning that happens in extract_sar_statistics (line 99)
-                cleaned_mat = re.sub(r"\s*\(.*\)\s*$", "", material_name).strip().replace(")", "")
-                if cleaned_mat not in cleaned_material_to_entities:
-                    cleaned_material_to_entities[cleaned_mat] = []
-                cleaned_material_to_entities[cleaned_mat].append(entity_name)
+        stats_output = sar_stats_evaluator.Outputs
+        results = stats_output.item_at(0).Data if len(stats_output) > 0 and hasattr(stats_output.item_at(0), "Data") else None
+        self.document.AllAlgorithms.Remove(sar_stats_evaluator)
 
-            # Helper function to find entity names from cleaned tissue name
-            def find_entity_names(cleaned_tissue: str) -> list[str]:
-                entity_names = []
+        if not (results and hasattr(results, "NumberOfRows") and results.NumberOfRows() > 0):
+            self._log("  - WARNING: No SAR statistics data found.", log_type="warning")
+            return None
 
-                # First try exact match (for cases where Sim4Life returns entity names directly)
-                if cleaned_tissue in material_mapping:
-                    entity_names.append(cleaned_tissue)
+        return results
 
-                # Try normalized exact match
-                normalized_cleaned = cleaned_tissue.lower().replace(" ", "_")
-                if normalized_cleaned in normalized_entity_to_entity:
-                    entity_name = normalized_entity_to_entity[normalized_cleaned]
-                    if entity_name not in entity_names:
-                        entity_names.append(entity_name)
+    def _create_sar_dataframe(self, results: object) -> pd.DataFrame:
+        """Creates a pandas DataFrame from SAR statistics results.
 
-                # Try reverse mapping from material name (exact match)
-                if cleaned_tissue in material_to_entity:
-                    entity_name = material_to_entity[cleaned_tissue]
-                    if entity_name not in entity_names:
-                        entity_names.append(entity_name)
+        Args:
+            results: Results data object from SarStatisticsEvaluator.
 
-                # Try normalized material name mapping
-                if normalized_cleaned in normalized_material_to_entity:
-                    entity_name = normalized_material_to_entity[normalized_cleaned]
-                    if entity_name not in entity_names:
-                        entity_names.append(entity_name)
+        Returns:
+            DataFrame with SAR statistics per tissue.
+        """
+        # Type ignore needed because Sim4Life API types are not fully typed
+        columns = ["Tissue"] + [cap for cap in results.ColumnMainCaptions]  # type: ignore
+        data = [
+            [re.sub(r"\s*\(.*\)\s*$", "", results.RowCaptions[i]).strip().replace(")", "")]  # type: ignore
+            + [results.Value(i, j) for j in range(results.NumberOfColumns())]  # type: ignore
+            for i in range(results.NumberOfRows())  # type: ignore
+        ]
 
-                # Try cleaned material mapping (handles cases like "Eye" -> ["Cornea", "Eye_lens", ...])
-                if cleaned_tissue in cleaned_material_to_entities:
-                    for entity_name in cleaned_material_to_entities[cleaned_tissue]:
-                        if entity_name not in entity_names:
-                            entity_names.append(entity_name)
+        df = pd.DataFrame(data)
+        df.columns = columns
+        numeric_cols = [col for col in df.columns if col != "Tissue"]
+        df[numeric_cols] = df[numeric_cols].apply(pd.to_numeric, errors="coerce").fillna(0)
+        return df
 
-                return entity_names
+    def _store_group_sar_results(self, group_sar_stats: dict) -> None:
+        """Stores group-level SAR results in results_data.
 
-            for group_name, tissue_list in phantom_groups.items():
-                s4l_names_in_group = set(tissue_list)
-                matched_tissues = []
+        Args:
+            group_sar_stats: Dict mapping group names to SAR statistics.
+        """
+        for group, data in group_sar_stats.items():
+            self.results_data[f"{group}_weighted_avg_sar"] = data["weighted_avg_sar"]
+            self.results_data[f"{group}_peak_sar"] = data["peak_sar"]
 
-                for tissue in available_tissues:
-                    entity_names = find_entity_names(tissue)
-                    # If any of the found entity names are in this group, include this tissue
-                    if any(entity_name in s4l_names_in_group for entity_name in entity_names):
-                        matched_tissues.append(tissue)
+    def _store_all_regions_sar(self, df: pd.DataFrame) -> None:
+        """Stores all-regions SAR results (head/trunk/whole-body and peak SAR).
 
-                tissue_groups[group_name] = matched_tissues
-            return tissue_groups
+        Args:
+            df: DataFrame with SAR statistics per tissue.
+        """
+        all_regions_row = df[df["Tissue"] == "All Regions"]
+        if not all_regions_row.empty:
+            mass_averaged_sar = all_regions_row["Mass-Averaged SAR"].iloc[0]  # type: ignore
+            if self.parent.study_type == "near_field":
+                sar_key = "head_SAR" if self.placement_name.lower() in ["front_of_eyes", "by_cheek"] else "trunk_SAR"
+                self.results_data[sar_key] = float(mass_averaged_sar)
+            else:
+                self.results_data["whole_body_sar"] = float(mass_averaged_sar)
 
-        self._log(
-            "  - WARNING: '_tissue_groups' not found in material mapping. Falling back to keyword-based tissue grouping.",
-            log_type="warning",
+            peak_sar_col_name = "Peak Spatial-Average SAR[IEEE/IEC62704-1] (10g)"
+            if peak_sar_col_name in all_regions_row.columns:
+                self.results_data["peak_sar_10g_W_kg"] = float(all_regions_row[peak_sar_col_name].iloc[0])  # type: ignore
+
+    def _store_temporary_data(self, df: pd.DataFrame, tissue_groups: dict, group_sar_stats: dict) -> None:
+        """Stores temporary data structures for later use.
+
+        Args:
+            df: DataFrame with SAR statistics.
+            tissue_groups: Dict mapping group names to tissue lists.
+            group_sar_stats: Dict mapping group names to SAR statistics.
+        """
+        self.results_data.update(
+            {
+                "_temp_sar_df": df,
+                "_temp_tissue_groups": tissue_groups,
+                "_temp_group_sar_stats": group_sar_stats,
+            }
         )
-        groups = {
-            "eyes_group": ["eye", "cornea", "sclera", "lens", "vitreous"],
-            "skin_group": ["skin"],
-            "brain_group": [
-                "brain",
-                "commissura",
-                "midbrain",
-                "pineal",
-                "hypophysis",
-                "medulla_oblongata",
-                "pons",
-                "thalamus",
-                "hippocampus",
-                "cerebellum",
-            ],
-        }
-        return {group: [t for t in available_tissues if any(k in t.lower() for k in keywords)] for group, keywords in groups.items()}
 
     def _calculate_group_sar(self, df: pd.DataFrame, tissue_groups: dict) -> dict:
         """Calculates weighted average and peak SAR for tissue groups.

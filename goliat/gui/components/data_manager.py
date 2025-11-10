@@ -48,6 +48,22 @@ class DataManager:
             writer = csv.writer(f)
             writer.writerow(["timestamp", "progress_percent"])
 
+    def _write_csv_row(self, file_path: str, value: float, value_name: str) -> None:
+        """Appends a timestamped data point to a CSV file.
+
+        Args:
+            file_path: Path to the CSV file.
+            value: The numeric value to write.
+            value_name: Name of the value for error messages.
+        """
+        try:
+            current_time = datetime.now()
+            with open(file_path, "a", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow([current_time.isoformat(), value])
+        except Exception as e:
+            self.verbose_logger.error(f"Failed to write {value_name} data: {e}")
+
     def write_time_remaining(self, hours_remaining: float) -> None:
         """Appends a time remaining data point to CSV.
 
@@ -57,13 +73,7 @@ class DataManager:
         Args:
             hours_remaining: Estimated hours remaining as float.
         """
-        try:
-            current_time = datetime.now()
-            with open(self.time_remaining_file, "a", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow([current_time.isoformat(), hours_remaining])
-        except Exception as e:
-            self.verbose_logger.error(f"Failed to write time remaining data: {e}")
+        self._write_csv_row(self.time_remaining_file, hours_remaining, "time remaining")
 
     def write_overall_progress(self, progress_percent: float) -> None:
         """Appends an overall progress data point to CSV.
@@ -74,13 +84,7 @@ class DataManager:
         Args:
             progress_percent: Overall progress percentage (0-100).
         """
-        try:
-            current_time = datetime.now()
-            with open(self.overall_progress_file, "a", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow([current_time.isoformat(), progress_percent])
-        except Exception as e:
-            self.verbose_logger.error(f"Failed to write overall progress data: {e}")
+        self._write_csv_row(self.overall_progress_file, progress_percent, "overall progress")
 
     def _cleanup_old_data_files(self) -> None:
         """Removes old CSV and JSON files when more than 50 exist.

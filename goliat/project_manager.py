@@ -335,6 +335,77 @@ class ProjectManager(LoggingMixin):
             self._log(f"  - HDF5 format error in {self.project_path}: {e}", log_type="error")
             return False
 
+    def _validate_placement_params(
+        self,
+        study_type: str,
+        phantom_name: str,
+        frequency_mhz: int,
+        scenario_name: Optional[str],
+        position_name: Optional[str],
+        orientation_name: Optional[str],
+    ) -> None:
+        """Validates placement parameters for the given study type.
+
+        Args:
+            study_type: The type of study ('near_field' or 'far_field').
+            phantom_name: The name of the phantom model.
+            frequency_mhz: The simulation frequency in MHz.
+            scenario_name: The base name of the placement scenario.
+            position_name: The name of the position within the scenario.
+            orientation_name: The name of the orientation within the scenario.
+
+        Raises:
+            ValueError: If required parameters are missing.
+        """
+        if not all([phantom_name, frequency_mhz, scenario_name, position_name, orientation_name]):
+            raise ValueError(f"For {study_type} studies, all placement parameters are required.")
+
+    def _build_project_path(
+        self,
+        study_type: str,
+        phantom_name: str,
+        frequency_mhz: int,
+        placement_name: str,
+    ) -> tuple[str, str]:
+        """Builds project directory and filename paths for the given study type.
+
+        Args:
+            study_type: The type of study ('near_field' or 'far_field').
+            phantom_name: The name of the phantom model.
+            frequency_mhz: The simulation frequency in MHz.
+            placement_name: The placement name (scenario_position_orientation).
+
+        Returns:
+            Tuple of (project_dir, project_filename).
+
+        Raises:
+            ValueError: If study_type is unknown.
+        """
+        if study_type == "near_field":
+            project_dir = os.path.join(
+                self.config.base_dir,
+                "results",
+                "near_field",
+                phantom_name.lower(),
+                f"{frequency_mhz}MHz",
+                placement_name,
+            )
+            project_filename = f"near_field_{phantom_name.lower()}_{frequency_mhz}MHz_{placement_name}.smash"
+        elif study_type == "far_field":
+            project_dir = os.path.join(
+                self.config.base_dir,
+                "results",
+                "far_field",
+                phantom_name.lower(),
+                f"{frequency_mhz}MHz",
+                placement_name,
+            )
+            project_filename = f"far_field_{phantom_name.lower()}_{frequency_mhz}MHz_{placement_name}.smash"
+        else:
+            raise ValueError(f"Unknown study_type '{study_type}' in config.")
+
+        return project_dir, project_filename
+
     def create_or_open_project(
         self,
         phantom_name: str,
@@ -359,55 +430,15 @@ class ProjectManager(LoggingMixin):
             ProjectCorruptionError: If the project file is corrupted.
         """
         study_type = self.config.get_setting("study_type")
-        if not study_type:
+        if not study_type or not isinstance(study_type, str):
             raise ValueError("'study_type' not found in the configuration file.")
 
-        if study_type == "near_field":
-            if not all(
-                [
-                    phantom_name,
-                    frequency_mhz,
-                    scenario_name,
-                    position_name,
-                    orientation_name,
-                ]
-            ):
-                raise ValueError("For near-field studies, all placement parameters are required.")
-            placement_name = f"{scenario_name}_{position_name}_{orientation_name}"
-            project_dir = os.path.join(
-                self.config.base_dir,
-                "results",
-                "near_field",
-                phantom_name.lower(),
-                f"{frequency_mhz}MHz",
-                placement_name,
-            )
-            project_filename = f"near_field_{phantom_name.lower()}_{frequency_mhz}MHz_{placement_name}.smash"
+        # Validate placement parameters
+        self._validate_placement_params(study_type, phantom_name, frequency_mhz, scenario_name, position_name, orientation_name)
 
-        elif study_type == "far_field":
-            if not all(
-                [
-                    phantom_name,
-                    frequency_mhz,
-                    scenario_name,
-                    position_name,
-                    orientation_name,
-                ]
-            ):
-                raise ValueError("For far-field studies, all placement parameters are required.")
-
-            placement_name = f"{scenario_name}_{position_name}_{orientation_name}"
-            project_dir = os.path.join(
-                self.config.base_dir,
-                "results",
-                "far_field",
-                phantom_name.lower(),
-                f"{frequency_mhz}MHz",
-                placement_name,
-            )
-            project_filename = f"far_field_{phantom_name.lower()}_{frequency_mhz}MHz_{placement_name}.smash"
-        else:
-            raise ValueError(f"Unknown study_type '{study_type}' in config.")
+        # Build placement name and project paths
+        placement_name = f"{scenario_name}_{position_name}_{orientation_name}"
+        project_dir, project_filename = self._build_project_path(study_type, phantom_name, frequency_mhz, placement_name)
 
         os.makedirs(project_dir, exist_ok=True)
         self.project_path = os.path.join(project_dir, project_filename).replace("\\", "/")

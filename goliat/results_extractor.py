@@ -1,5 +1,6 @@
 import json
 import os
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional
 
 from .extraction.cleaner import Cleaner
@@ -20,6 +21,28 @@ if TYPE_CHECKING:
     from .studies.base_study import BaseStudy
 
 
+@dataclass
+class ExtractionContext:
+    """Context object containing all parameters needed for result extraction.
+
+    Groups related parameters together to reduce the parameter count of ResultsExtractor.__init__.
+    """
+
+    config: "Config"
+    simulation: "s4l_v1.simulation.emfdtd.Simulation"
+    phantom_name: str
+    frequency_mhz: int
+    scenario_name: str
+    position_name: str
+    orientation_name: str
+    study_type: str
+    verbose_logger: "Logger"
+    progress_logger: "Logger"
+    free_space: bool = False
+    gui: "Optional[QueueGUI]" = None
+    study: "Optional[BaseStudy]" = None
+
+
 class ResultsExtractor(LoggingMixin):
     """Orchestrates post-processing and data extraction from simulation results.
 
@@ -27,8 +50,36 @@ class ResultsExtractor(LoggingMixin):
     Sim4Life simulation, then manages report generation and cleanup.
     """
 
-    def __init__(
-        self,
+    def __init__(self, context: ExtractionContext):
+        """Initializes the ResultsExtractor.
+
+        Args:
+            context: ExtractionContext containing all extraction parameters.
+        """
+        self.config = context.config
+        self.simulation = context.simulation
+        self.phantom_name = context.phantom_name
+        self.frequency_mhz = context.frequency_mhz
+        self.placement_name = f"{context.scenario_name}_{context.position_name}_{context.orientation_name}"
+        self.orientation_name = context.orientation_name
+        self.study_type = context.study_type
+        self.verbose_logger = context.verbose_logger
+        self.progress_logger = context.progress_logger
+        self.free_space = context.free_space
+        self.gui = context.gui
+        self.study = context.study
+
+        import s4l_v1.analysis
+        import s4l_v1.document
+        import s4l_v1.units as units
+
+        self.document = s4l_v1.document
+        self.analysis = s4l_v1.analysis
+        self.units = units
+
+    @classmethod
+    def from_params(
+        cls,
         config: "Config",
         simulation: "s4l_v1.simulation.emfdtd.Simulation",
         phantom_name: str,
@@ -42,8 +93,11 @@ class ResultsExtractor(LoggingMixin):
         free_space: bool = False,
         gui: "Optional[QueueGUI]" = None,
         study: "Optional[BaseStudy]" = None,
-    ):
-        """Initializes the ResultsExtractor.
+    ) -> "ResultsExtractor":
+        """Creates a ResultsExtractor from individual parameters.
+
+        Factory method for backward compatibility. Creates an ExtractionContext
+        and initializes the extractor with it.
 
         Args:
             config: The configuration object for the study.
@@ -59,27 +113,26 @@ class ResultsExtractor(LoggingMixin):
             free_space: Flag indicating if the simulation was run in free space.
             gui: The GUI proxy for updates.
             study: The parent study object.
+
+        Returns:
+            A new ResultsExtractor instance.
         """
-        self.config = config
-        self.simulation = simulation
-        self.phantom_name = phantom_name
-        self.frequency_mhz = frequency_mhz
-        self.placement_name = f"{scenario_name}_{position_name}_{orientation_name}"
-        self.orientation_name = orientation_name
-        self.study_type = study_type
-        self.verbose_logger = verbose_logger
-        self.progress_logger = progress_logger
-        self.free_space = free_space
-        self.gui = gui
-        self.study = study
-
-        import s4l_v1.analysis
-        import s4l_v1.document
-        import s4l_v1.units as units
-
-        self.document = s4l_v1.document
-        self.analysis = s4l_v1.analysis
-        self.units = units
+        context = ExtractionContext(
+            config=config,
+            simulation=simulation,
+            phantom_name=phantom_name,
+            frequency_mhz=frequency_mhz,
+            scenario_name=scenario_name,
+            position_name=position_name,
+            orientation_name=orientation_name,
+            study_type=study_type,
+            verbose_logger=verbose_logger,
+            progress_logger=progress_logger,
+            free_space=free_space,
+            gui=gui,
+            study=study,
+        )
+        return cls(context)
 
     @staticmethod
     def get_deliverable_filenames() -> dict:
