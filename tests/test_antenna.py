@@ -22,7 +22,7 @@ def mock_config():
             "source_name": "Source_900MHz",
         },
     }
-    config.get_antenna_config.return_value = antenna_config
+    config.__getitem__.side_effect = lambda key: antenna_config if key == "antenna_config" else None
     return config
 
 

@@ -69,7 +69,7 @@ class GriddingSetup(BaseSetup):
 
     def _setup_main_grid(self):
         """Configures main grid mode, resolution, and padding."""
-        gridding_params = self.config.get_gridding_parameters()
+        gridding_params = self.config["gridding_parameters"] or {}
         global_gridding_params = gridding_params.get("global_gridding", {})
         gridding_mode = global_gridding_params.get("grid_mode", "automatic")
 

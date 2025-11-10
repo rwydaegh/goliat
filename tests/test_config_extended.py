@@ -95,7 +95,7 @@ def test_config_get_simulation_parameters(dummy_configs):
     """Test get_simulation_parameters method."""
     config = Config(dummy_configs["base_dir"], "configs/near_field_config.json")
 
-    params = config.get_simulation_parameters()
+    params = config["simulation_parameters"] or {}
     assert isinstance(params, dict)
 
 
@@ -103,7 +103,7 @@ def test_config_get_antenna_config(dummy_configs):
     """Test get_antenna_config method."""
     config = Config(dummy_configs["base_dir"], "configs/near_field_config.json")
 
-    antenna_config = config.get_antenna_config()
+    antenna_config = config["antenna_config"] or {}
     assert isinstance(antenna_config, dict)
 
 
@@ -111,7 +111,7 @@ def test_config_get_gridding_parameters(dummy_configs):
     """Test get_gridding_parameters method."""
     config = Config(dummy_configs["base_dir"], "configs/near_field_config.json")
 
-    gridding_params = config.get_gridding_parameters()
+    gridding_params = config["gridding_parameters"] or {}
     assert isinstance(gridding_params, dict)
 
 
@@ -122,7 +122,7 @@ def test_config_get_phantom_definition(dummy_configs):
     # Add phantom definition to config
     config.config["phantom_definitions"] = {"thelonious": {"path": "test.sab", "scale": 1.0}}
 
-    phantom_def = config.get_phantom_definition("thelonious")
+    phantom_def = (config["phantom_definitions"] or {}).get("thelonious", {})
     assert isinstance(phantom_def, dict)
     assert phantom_def["path"] == "test.sab"
 
@@ -131,7 +131,7 @@ def test_config_get_solver_settings(dummy_configs):
     """Test get_solver_settings method."""
     config = Config(dummy_configs["base_dir"], "configs/near_field_config.json")
 
-    solver_settings = config.get_solver_settings()
+    solver_settings = config["solver_settings"] or {}
     assert isinstance(solver_settings, dict)
 
 
@@ -142,7 +142,7 @@ def test_config_get_antenna_component_names(dummy_configs):
     # Add antenna component definitions - correct structure
     config.config["antenna_config"] = {"components": {"test_model": ["component1", "component2"]}}
 
-    components = config.get_antenna_component_names("test_model")
+    components = (config["antenna_config.components"] or {}).get("test_model")
     assert isinstance(components, list)
     assert "component1" in components
 
@@ -152,19 +152,19 @@ def test_config_get_manual_isolve(dummy_configs):
     config = Config(dummy_configs["base_dir"], "configs/near_field_config.json")
 
     # Test default
-    result = config.get_manual_isolve()
+    result = config["manual_isolve"] or False
     assert isinstance(result, bool)
 
     # Test with config value
     config.config["manual_isolve"] = True
-    assert config.get_manual_isolve() is True
+    assert (config["manual_isolve"] or False) is True
 
 
 def test_config_get_freespace_expansion(dummy_configs):
     """Test get_freespace_expansion method."""
     config = Config(dummy_configs["base_dir"], "configs/near_field_config.json")
 
-    expansion = config.get_freespace_expansion()
+    expansion = config["simulation_parameters.freespace_antenna_bbox_expansion_mm"] or [10, 10, 10]
     assert isinstance(expansion, list)
 
 
@@ -172,7 +172,7 @@ def test_config_get_excitation_type(dummy_configs):
     """Test get_excitation_type method."""
     config = Config(dummy_configs["base_dir"], "configs/near_field_config.json")
 
-    excitation_type = config.get_excitation_type()
+    excitation_type = config["simulation_parameters.excitation_type"] or "Harmonic"
     assert isinstance(excitation_type, str)
 
 
@@ -180,7 +180,7 @@ def test_config_get_bandwidth(dummy_configs):
     """Test get_bandwidth method."""
     config = Config(dummy_configs["base_dir"], "configs/near_field_config.json")
 
-    bandwidth = config.get_bandwidth()
+    bandwidth = config["simulation_parameters.bandwidth_mhz"] or 50.0
     assert isinstance(bandwidth, (float, int))
 
 
@@ -191,7 +191,7 @@ def test_config_get_placement_scenario(dummy_configs):
     # Add placement scenarios
     config.config["placement_scenarios"] = {"by_cheek": {"positions": {"center": {"orientations": ["vertical"]}}}}
 
-    scenario = config.get_placement_scenario("by_cheek")
+    scenario = (config["placement_scenarios"] or {}).get("by_cheek")
     assert isinstance(scenario, dict)
     assert "positions" in scenario
 
@@ -200,7 +200,7 @@ def test_config_get_line_profiling_config(dummy_configs):
     """Test get_line_profiling_config method."""
     config = Config(dummy_configs["base_dir"], "configs/near_field_config.json")
 
-    line_profiling_config = config.get_line_profiling_config()
+    line_profiling_config = config["line_profiling"] or {}
     assert isinstance(line_profiling_config, dict)
 
 

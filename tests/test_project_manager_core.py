@@ -16,7 +16,7 @@ class TestProjectManager:
         """Create a temporary config."""
         config = MagicMock()
         config.base_dir = str(tmp_path)
-        config.get_setting.return_value = {"do_setup": True, "do_run": True, "do_extract": True}
+        config.__getitem__.side_effect = lambda key: {"execution_control": {"do_setup": True, "do_run": True, "do_extract": True}}.get(key)
         return config
 
     def test_project_manager_initialization(self, dummy_config):

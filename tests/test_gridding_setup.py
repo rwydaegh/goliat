@@ -17,10 +17,11 @@ with patch.dict("sys.modules", mocks):
 @pytest.fixture
 def mock_config():
     config = MagicMock()
-    config.get_gridding_parameters.return_value = {
+    gridding_params = {
         "global_gridding": {"grid_mode": "automatic"},
         "padding": {"padding_mode": "automatic"},
     }
+    config.__getitem__.side_effect = lambda key: gridding_params if key == "gridding_parameters" else None
     return config
 
 

@@ -147,8 +147,8 @@ class MaterialSetup(BaseSetup):
                 entity = antenna_components[comp_name]
                 material_settings = self.emfdtd.MaterialSettings()
 
-                excitation_type = self.config.get_excitation_type()
-                if "Copper" in mat_name and self.free_space and excitation_type.lower() == "gaussian":
+                excitation_type = self.config["simulation_parameters.excitation_type"] or "Harmonic"
+                if "Copper" in mat_name and self.free_space and isinstance(excitation_type, str) and excitation_type.lower() == "gaussian":
                     material_settings.Type = "PEC"
                     self.simulation.Add(material_settings, [entity])
                     self._log("\n" + "=" * 80, log_type="warning")

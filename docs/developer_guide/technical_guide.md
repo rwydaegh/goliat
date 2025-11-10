@@ -103,10 +103,13 @@ This section details GOLIAT's core classes and their roles within the framework.
 - **Function**: Loads and manages hierarchical JSON configurations. A study-specific config (e.g., `near_field_config.json`) extends a `base_config.json`, allowing for a clean override system. This design minimizes duplication and makes it easy to manage different simulation scenarios. The `Config` class is responsible for loading the `base_config.json` and then recursively merging the study-specific configuration over it.
 - **Some interesting methods**:
 
-    - `get_setting(path, default)`: Retrieves nested settings using a dot-separated path.
-    - `get_antenna_config()`: Returns antenna-specific settings.
-    - `get_phantom_config(phantom_name)`: Returns settings for a specific phantom.
+    - `__getitem__(path)`: Dictionary-style access with dot-notation support. Returns `None` if key doesn't exist, enabling pythonic fallback patterns: `config["simulation_parameters"] or {}`
+    - `get_material_mapping(phantom_name)`: Returns material name mapping for a specific phantom.
+    - `get_profiling_config(study_type)`: Returns profiling configuration for a study type.
     - `_load_config_with_inheritance(path)`: The core method that handles the hierarchical loading of configuration files.
+
+**Access Pattern**: The Config class uses dictionary-style access with fallback:
+- `config["simulation_parameters.excitation_type"] or "Harmonic"` (pythonic fallback pattern)
 
 - **API Reference**: [goliat.config.Config](../reference/api_reference.md#goliat.config.Config)
 

@@ -122,14 +122,14 @@ def validate_config(config_path: str, base_dir: str = None):
         config = Config(base_dir, config_path)
 
         # Basic checks
-        study_type = config.get_setting("study_type")
+        study_type = config["study_type"]
         if not study_type:
             print("  ✗ Missing 'study_type'")
             sys.exit(1)
         else:
             print(f"  ✓ Study type: {study_type}")
 
-        phantoms = config.get_setting("phantoms", [])
+        phantoms = config["phantoms"] or []
         if not phantoms:
             print("  ✗ No phantoms specified")
             sys.exit(1)
@@ -141,14 +141,14 @@ def validate_config(config_path: str, base_dir: str = None):
             print(f"  ✓ Phantoms: {', '.join(phantom_list)}")
 
         if study_type == "near_field":
-            antenna_config = config.get_setting("antenna_config", {})
+            antenna_config = config["antenna_config"] or {}
             if not antenna_config:
                 print("  ✗ Missing 'antenna_config'")
                 sys.exit(1)
             else:
                 print(f"  ✓ Frequencies: {', '.join(antenna_config.keys())} MHz")
         elif study_type == "far_field":
-            frequencies = config.get_setting("frequencies_mhz", [])
+            frequencies = config["frequencies_mhz"] or []
             if not frequencies:
                 print("  ✗ Missing 'frequencies_mhz'")
                 sys.exit(1)

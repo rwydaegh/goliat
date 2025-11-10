@@ -294,4 +294,40 @@ Some phantom models require an email address for download, which can also be set
 DOWNLOAD_EMAIL=your_email@example.com
 ```
 
+---
+
+## **9. Accessing Configuration in Code**
+
+The `Config` class supports dictionary-style access with dot-notation for nested paths:
+
+```python
+# Simple top-level access
+sim_params = config["simulation_parameters"] or {}
+antenna_config = config["antenna_config"] or {}
+
+# Nested path access
+excitation_type = config["simulation_parameters.excitation_type"] or "Harmonic"
+gridding_params = config["gridding_parameters"] or {}
+
+# With fallback values
+expansion = config["simulation_parameters.freespace_antenna_bbox_expansion_mm"] or [10, 10, 10]
+```
+
+**Note**: The `or` operator provides a fallback when a key doesn't exist (returns `None`). This is the standard pythonic pattern.
+
+### Accessing Complex Structures
+
+For accessing nested dictionaries within config values:
+
+```python
+# Get a top-level dict, then access nested keys
+placement_scenarios = config["placement_scenarios"] or {}
+scenario = placement_scenarios.get("by_cheek") if isinstance(placement_scenarios, dict) else None
+
+# Or use dot notation directly
+scenario = config["placement_scenarios.by_cheek"]
+```
+
+---
+
 This structure makes every aspect of a GOLIAT simulation controllable, reproducible, and easy to manage. For more workflow-oriented information, please see the [User Guide](../user_guide/user_guide.md). For a complete list of all GOLIAT features, see the [Full List of Features](../reference/full_features_list.md).

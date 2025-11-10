@@ -16,7 +16,11 @@ with patch.dict("sys.modules", mocks):
 def mock_config():
     config = MagicMock()
     config.get_server.return_value = "localhost"
-    config.get_manual_isolve.return_value = False
+    config.__getitem__.side_effect = lambda key: {
+        "manual_isolve": False,
+        "execution_control.only_write_input_file": False,
+    }.get(key)
+    config.get_manual_isolve = lambda: False
     config.get_only_write_input_file.return_value = False
     return config
 

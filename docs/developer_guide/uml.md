@@ -129,31 +129,19 @@ class "Config" as goliat.config.Config {
   profiling_config
   profiling_config_path
   __init__(base_dir: str, config_filename: str, no_cache: bool)
+  __getitem__(path: str)
   _cleanup_old_data_files(data_dir: str)
   _load_config_with_inheritance(path: str) -> dict
   _load_json(path: str) -> dict
   _load_or_create_profiling_config() -> dict
   _resolve_config_path(config_filename: str, base_path: str) -> str
   build_simulation_config(phantom_name: str, frequency_mhz: int, scenario_name: Optional[str], position_name: Optional[str], orientation_name: Optional[str], direction_name: Optional[str], polarization_name: Optional[str]) -> dict
-  get_antenna_component_names(antenna_model_type: str) -> list
-  get_antenna_config() -> dict
   get_auto_cleanup_previous_results() -> list
-  get_bandwidth() -> float
   get_download_email() -> str
-  get_excitation_type() -> str
-  get_freespace_expansion() -> list
-  get_gridding_parameters() -> dict
-  get_line_profiling_config() -> dict
-  get_manual_isolve() -> bool
   get_material_mapping(phantom_name: str) -> dict
   get_only_write_input_file() -> bool
   get_osparc_credentials() -> dict
-  get_phantom_definition(phantom_name: str) -> dict
-  get_placement_scenario(scenario_name: str) -> dict
   get_profiling_config(study_type: str) -> dict
-  get_setting(path: str, default)
-  get_simulation_parameters() -> dict
-  get_solver_settings() -> dict
 }
 class "CustomFormatter" as goliat.logging_manager.CustomFormatter {
   format(record: logging.LogRecord) -> str

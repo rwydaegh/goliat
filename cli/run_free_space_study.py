@@ -59,7 +59,7 @@ def create_temp_config(base_config, frequency_mhz):
 
     # Override for a single free-space simulation
     config_data["phantoms"] = {"freespace": {"do_front_of_eyes_center_vertical": True}}
-    config_data["antenna_config"] = {str(frequency_mhz): base_config.get_antenna_config().get(str(frequency_mhz))}
+    config_data["antenna_config"] = {str(frequency_mhz): (base_config["antenna_config"] or {}).get(str(frequency_mhz))}
     config_data["placement_scenarios"] = {
         "front_of_eyes_center_vertical": {
             "positions": {"center": [0, 0, 0]},
@@ -90,7 +90,7 @@ def main():
     try:
         # Load the base near-field config to get all frequencies
         base_config = Config(base_dir, "configs/near_field_config.json")
-        frequency_bands = base_config.get_antenna_config().keys()
+        frequency_bands = (base_config["antenna_config"] or {}).keys()
         sorted_frequencies = sorted([int(f) for f in frequency_bands])
 
         console_logger = ConsoleLogger(progress_logger, verbose_logger)

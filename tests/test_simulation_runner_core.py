@@ -21,9 +21,13 @@ class TestSimulationRunner:
     def mock_config(self):
         """Create a mock config object."""
         config = MagicMock()
-        config.get_solver_settings.return_value = {"server": "localhost"}
+        config.__getitem__.side_effect = lambda key: {
+            "solver_settings": {"server": "localhost"},
+            "execution_control.only_write_input_file": False,
+            "manual_isolve": False,
+        }.get(key)
         config.get_only_write_input_file.return_value = False
-        config.get_manual_isolve.return_value = False
+        config.get_manual_isolve = lambda: False
         return config
 
     @pytest.fixture
@@ -126,7 +130,12 @@ class TestSimulationRunner:
         """Test manual iSolve execution path."""
         from goliat.simulation_runner import SimulationRunner
 
-        mock_config.get_manual_isolve.return_value = True
+        mock_config.__getitem__.side_effect = lambda key: {
+            "solver_settings": {"server": "localhost"},
+            "execution_control.only_write_input_file": False,
+            "manual_isolve": True,
+        }.get(key)
+        mock_config.get_manual_isolve = lambda: True
         mock_config.get_only_write_input_file.return_value = False
 
         runner = SimulationRunner(

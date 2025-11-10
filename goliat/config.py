@@ -86,26 +86,31 @@ class Config:
 
         return os.path.join(self.base_dir, "configs", config_filename)
 
-    def get_setting(self, path: str, default=None):
-        """Retrieves a nested setting using a dot-separated path.
+    def __getitem__(self, path: str):
+        """Allows dictionary-style access to config settings with dot-notation support.
 
-        Example:
-            `get_setting("simulation_parameters.number_of_point_sensors")`
+        Returns None if the key/path doesn't exist, allowing for fallback patterns:
+        - `config["simulation_parameters"] or {}`
+        - `config["simulation_parameters.excitation_type"] or "Harmonic"`
 
         Args:
-            path: The dot-separated path to the setting.
-            default: The default value to return if the setting is not found.
+            path: The dot-separated path to the setting (e.g., "simulation_parameters" or "simulation_parameters.excitation_type").
 
         Returns:
-            The value of the setting, or the default value.
+            The value of the setting, or None if not found.
+
+        Raises:
+            KeyError: If the path is empty or invalid.
         """
+        if not path:
+            raise KeyError("Empty path")
         keys = path.split(".")
         current_config = self.config
         for key in keys:
             if isinstance(current_config, dict) and key in current_config:
                 current_config = current_config[key]
             else:
-                return default
+                return None
         return current_config
 
     def _load_config_with_inheritance(self, path: str) -> dict:
@@ -208,29 +213,6 @@ class Config:
 
         return profiling_config
 
-    def get_simulation_parameters(self) -> dict:
-        """Returns the simulation_parameters config section."""
-        return self.config.get("simulation_parameters", {})
-
-    def get_antenna_config(self) -> dict:
-        """Returns the antenna_config section."""
-        return self.config.get("antenna_config", {})
-
-    def get_gridding_parameters(self) -> dict:
-        """Returns the gridding_parameters config section."""
-        return self.config.get("gridding_parameters", {})
-
-    def get_phantom_definition(self, phantom_name: str) -> dict:
-        """Gets the configuration for a specific phantom.
-
-        Args:
-            phantom_name: The name of the phantom.
-
-        Returns:
-            The configuration for the specified phantom, or an empty dict if not found.
-        """
-        return self.config.get("phantom_definitions", {}).get(phantom_name, {})
-
     def get_material_mapping(self, phantom_name: str) -> dict:
         """Gets the material name mapping for a specific phantom.
 
@@ -244,48 +226,6 @@ class Config:
             return self.material_mapping[phantom_name]
         else:
             return self.material_mapping
-
-    def get_solver_settings(self) -> dict:
-        """Returns the solver_settings config section."""
-        return self.config.get("solver_settings", {})
-
-    def get_antenna_component_names(self, antenna_model_type: str) -> list:
-        """Gets component names for a specific antenna model type.
-
-        Args:
-            antenna_model_type: The type of the antenna model (e.g., 'PIFA').
-
-        Returns:
-            A list of component names.
-        """
-        return self.config.get("antenna_config", {}).get("components", {}).get(antenna_model_type)
-
-    def get_manual_isolve(self) -> bool:
-        """Returns whether manual iSolve execution is enabled."""
-        return self.config.get("manual_isolve", False)
-
-    def get_freespace_expansion(self) -> list:
-        """Returns the freespace antenna bbox expansion in mm [x, y, z]."""
-        return self.get_simulation_parameters().get("freespace_antenna_bbox_expansion_mm", [10, 10, 10])
-
-    def get_excitation_type(self) -> str:
-        """Returns the excitation type string, defaults to 'Harmonic'."""
-        return self.get_simulation_parameters().get("excitation_type", "Harmonic")
-
-    def get_bandwidth(self) -> float:
-        """Returns the bandwidth in MHz for Gaussian excitation."""
-        return self.get_simulation_parameters().get("bandwidth_mhz", 50.0)
-
-    def get_placement_scenario(self, scenario_name: str) -> dict:
-        """Gets the definition for a specific placement scenario.
-
-        Args:
-            scenario_name: The name of the placement scenario.
-
-        Returns:
-            The configuration for the placement scenario.
-        """
-        return self.config.get("placement_scenarios", {}).get(scenario_name)
 
     def get_profiling_config(self, study_type: str) -> dict:
         """Gets the profiling configuration for a given study type.
@@ -302,10 +242,6 @@ class Config:
             logging.warning(f"Profiling configuration not defined for study type: {study_type}. Returning empty configuration.")
             return {}
         return self.profiling_config[study_type]
-
-    def get_line_profiling_config(self) -> dict:
-        """Returns the line_profiling config section."""
-        return self.get_setting("line_profiling", {}) or {}
 
     def get_download_email(self) -> str:
         """Returns the download email from environment variables.
@@ -346,7 +282,7 @@ class Config:
 
     def get_only_write_input_file(self) -> bool:
         """Returns whether to only write input files without running simulations."""
-        result = self.get_setting("execution_control.only_write_input_file", False)
+        result = self["execution_control.only_write_input_file"] or False
         assert isinstance(result, bool)
         return result
 
@@ -359,7 +295,7 @@ class Config:
         Returns:
             A list of file types to clean up (e.g., ["output", "input"]).
         """
-        cleanup_setting = self.get_setting("execution_control.auto_cleanup_previous_results", [])
+        cleanup_setting = self["execution_control.auto_cleanup_previous_results"] or []
 
         # Handle legacy boolean format for backwards compatibility
         if isinstance(cleanup_setting, bool):
@@ -434,10 +370,10 @@ class Config:
         ]
         for key in global_keys:
             if key in self.config:
-                surgical_config[key] = self.config[key]
+                surgical_config[key] = self[key]
 
         # 4. Surgically handle gridding parameters
-        gridding_params = self.get_gridding_parameters()
+        gridding_params = self["gridding_parameters"] or {}
         surgical_gridding = {}
         # Copy non-frequency specific gridding params
         for key, value in gridding_params.items():
@@ -457,14 +393,15 @@ class Config:
         surgical_config["frequency_mhz"] = frequency_mhz
 
         # 3. Surgically select study-specific parameters
-        study_type = self.get_setting("study_type")
+        study_type = self["study_type"]
         if study_type == "near_field":
             # Select the specific antenna config for the given frequency
-            surgical_config["antenna_config"] = self.get_setting(f"antenna_config.{frequency_mhz}")
+            surgical_config["antenna_config"] = self[f"antenna_config.{frequency_mhz}"]
 
             # Reconstruct placement_scenarios for the specific placement
             if scenario_name:
-                original_scenario = self.get_placement_scenario(scenario_name)
+                placement_scenarios = self["placement_scenarios"] or {}
+                original_scenario = placement_scenarios.get(scenario_name) if isinstance(placement_scenarios, dict) else None
                 if original_scenario and position_name and orientation_name:
                     surgical_config["placement_scenarios"] = {
                         scenario_name: {
@@ -475,11 +412,14 @@ class Config:
                     }
 
             # Select the specific phantom definition
-            surgical_config["phantom_definitions"] = {phantom_name: self.get_phantom_definition(phantom_name)}
+            phantom_definitions = self["phantom_definitions"] or {}
+            surgical_config["phantom_definitions"] = {
+                phantom_name: phantom_definitions.get(phantom_name, {}) if isinstance(phantom_definitions, dict) else {}
+            }
 
         elif study_type == "far_field":
             # Surgically build the far_field_setup to be robust against future changes
-            original_ff_setup = self.get_setting("far_field_setup", {})
+            original_ff_setup = self["far_field_setup"] or {}
             if original_ff_setup:
                 surgical_config["far_field_setup"] = {
                     "type": original_ff_setup.get("type"),
@@ -489,7 +429,8 @@ class Config:
                     },
                 }
             # Also include the specific phantom definition, if it's not empty
-            phantom_def = self.get_phantom_definition(phantom_name)
+            phantom_definitions = self["phantom_definitions"] or {}
+            phantom_def = phantom_definitions.get(phantom_name, {}) if isinstance(phantom_definitions, dict) else {}
             if phantom_def:
                 surgical_config["phantom_definitions"] = {phantom_name: phantom_def}
 

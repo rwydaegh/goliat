@@ -50,17 +50,17 @@ def find_input_files(config: "Config") -> list[Path]:
     """
     main_logger.info(f"{colorama.Fore.MAGENTA}--- Searching for input files based on configuration ---")
     results_base_dir = Path(config.base_dir) / "results"
-    study_type = config.get_setting("study_type")
-    phantoms = config.get_setting("phantoms", [])
+    study_type = config["study_type"]
+    phantoms = config["phantoms"] or []
 
     # Get frequencies based on study type
     if study_type == "far_field":
-        frequencies = config.get_setting("frequencies_mhz", [])
+        frequencies = config["frequencies_mhz"] or []
         if not frequencies:
             raise ValueError("Far-field config must specify 'frequencies_mhz'.")
     elif study_type == "near_field":
         # Near-field uses antenna_config keys as frequencies
-        antenna_config = config.get_setting("antenna_config", {})
+        antenna_config = config["antenna_config"] or {}
         if not antenna_config:
             raise ValueError("Near-field config must specify 'antenna_config'.")
         frequencies = [int(freq_str) for freq_str in antenna_config.keys()]
@@ -96,7 +96,7 @@ def _find_far_field_input_files(config: "Config", results_base_dir: Path, phanto
     input_files: list[Path] = []
 
     # Get far-field setup configuration
-    far_field_setup_config = config.get_setting("far_field_setup", {})
+    far_field_setup_config = config["far_field_setup"] or {}
     if not far_field_setup_config:
         main_logger.warning(f"{colorama.Fore.YELLOW}WARNING: No 'far_field_setup' in config.")
         return []
@@ -152,8 +152,8 @@ def _find_near_field_input_files(config: "Config", results_base_dir: Path, phant
     input_files: list[Path] = []
 
     # Get placement scenarios from config
-    all_scenarios = config.get_setting("placement_scenarios", {})
-    phantom_definition = config.get_phantom_definition(phantom)
+    all_scenarios = config["placement_scenarios"] or {}
+    phantom_definition = (config["phantom_definitions"] or {}).get(phantom, {})
     placements_config = phantom_definition.get("placements", {}) if phantom_definition else {}
 
     if not placements_config:

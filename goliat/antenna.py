@@ -17,7 +17,7 @@ class Antenna:
         """
         self.config = config
         self.frequency_mhz = frequency_mhz
-        self.antenna_config = self.config.get_antenna_config()
+        self.antenna_config = self.config["antenna_config"] or {}
 
     def get_config_for_frequency(self) -> dict:
         """Gets the antenna configuration for the current frequency.

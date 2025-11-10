@@ -17,7 +17,7 @@ with patch.dict("sys.modules", mocks):
 @pytest.fixture
 def mock_config():
     config = MagicMock()
-    config.get_setting.return_value = "near_field"
+    config.__getitem__.side_effect = lambda key: "near_field" if key == "study_type" else None
     config.base_dir = "/tmp"
     return config
 

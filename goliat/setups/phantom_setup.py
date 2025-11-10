@@ -66,7 +66,7 @@ class PhantomSetup(BaseSetup):
                 log_type="warning",
             )
 
-        study_type = self.config.get_setting("study_type")
+        study_type = self.config["study_type"]
         if study_type == "near_field" or study_type == "far_field":
             sab_path = os.path.join(self.config.base_dir, "data", "phantoms", f"{self.phantom_name}.sab")
             if os.path.exists(sab_path):
@@ -92,7 +92,7 @@ class PhantomSetup(BaseSetup):
                 raise FileNotFoundError(f"Phantom '{self.phantom_name}' not found for download or in local files.")
 
             self._log(f"Found '{phantom_to_download.Name}'. Downloading...", log_type="info")
-            download_email = self.config.get_setting("download_email", "example@example.com")
+            download_email = self.config["download_email"] or "example@example.com"
             self.data.DownloadModel(
                 phantom_to_download,
                 email=download_email,  # type: ignore

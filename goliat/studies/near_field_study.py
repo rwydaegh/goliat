@@ -35,9 +35,9 @@ class NearFieldStudy(BaseStudy):
             log_type="header",
         )
 
-        do_setup = self.config.get_setting("execution_control.do_setup", True)
-        do_run = self.config.get_setting("execution_control.do_run", True)
-        do_extract = self.config.get_setting("execution_control.do_extract", True)
+        do_setup = self.config["execution_control.do_setup"] or True
+        do_run = self.config["execution_control.do_run"] or True
+        do_extract = self.config["execution_control.do_extract"] or True
         auto_cleanup = self.config.get_auto_cleanup_previous_results()
 
         # Warn about common misconfiguration
@@ -60,16 +60,16 @@ class NearFieldStudy(BaseStudy):
         # Sanity check for auto_cleanup_previous_results
         self._validate_auto_cleanup_config(do_setup, do_run, do_extract, auto_cleanup)  # type: ignore
 
-        phantoms = self.config.get_setting("phantoms", [])
+        phantoms = self.config["phantoms"] or []
         if not isinstance(phantoms, list):
             phantoms = [phantoms]
-        frequencies = self.config.get_setting("antenna_config", {}).keys()  # type: ignore
-        all_scenarios = self.config.get_setting("placement_scenarios", {})
+        frequencies = (self.config["antenna_config"] or {}).keys()  # type: ignore
+        all_scenarios = self.config["placement_scenarios"] or {}
 
         # Calculate total number of simulations for the profiler
         total_simulations = 0
         for phantom_name in phantoms:
-            phantom_definition = self.config.get_phantom_definition(phantom_name)  # type: ignore
+            phantom_definition = (self.config["phantom_definitions"] or {}).get(phantom_name, {})  # type: ignore
             placements_config = phantom_definition.get("placements", {})
             if not placements_config:
                 continue
@@ -89,7 +89,7 @@ class NearFieldStudy(BaseStudy):
 
         simulation_count = 0
         for phantom_name in phantoms:
-            phantom_definition = self.config.get_phantom_definition(phantom_name)  # type: ignore
+            phantom_definition = (self.config["phantom_definitions"] or {}).get(phantom_name, {})  # type: ignore
             placements_config = phantom_definition.get("placements", {})
             if not placements_config:
                 continue
@@ -160,7 +160,7 @@ class NearFieldStudy(BaseStudy):
             )
 
         # Check for batch/parallel run mode
-        batch_run = self.config.get_setting("execution_control.batch_run", False)
+        batch_run = self.config["execution_control.batch_run"] or False
         if batch_run:
             self._log(
                 "ERROR: 'auto_cleanup_previous_results' is enabled alongside 'batch_run'. "

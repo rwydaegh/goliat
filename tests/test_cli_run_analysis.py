@@ -23,10 +23,10 @@ class TestRunAnalysis:
         """Test main function with near-field study."""
         # Setup mocks
         mock_config = MagicMock()
-        mock_config.get_setting.side_effect = lambda key, default=None: {
+        mock_config.__getitem__.side_effect = lambda key: {
             "phantoms": ["thelonious"],
             "study_type": "near_field",
-        }.get(key, default)
+        }.get(key)
 
         # Mock the strategy and analyzer imports
         with patch("cli.run_analysis.initial_setup"), patch("cli.run_analysis.setup_loggers"), patch(
@@ -44,10 +44,10 @@ class TestRunAnalysis:
     def test_main_far_field(self, cli_run_analysis_module):
         """Test main function with far-field study."""
         mock_config = MagicMock()
-        mock_config.get_setting.side_effect = lambda key, default=None: {
+        mock_config.__getitem__.side_effect = lambda key: {
             "phantoms": ["thelonious"],
             "study_type": "far_field",
-        }.get(key, default)
+        }.get(key)
 
         with patch("cli.run_analysis.initial_setup"), patch("cli.run_analysis.setup_loggers"), patch(
             "cli.run_analysis.Config", return_value=mock_config
@@ -63,10 +63,10 @@ class TestRunAnalysis:
     def test_main_no_phantoms(self, cli_run_analysis_module):
         """Test main function with no phantoms."""
         mock_config = MagicMock()
-        mock_config.get_setting.side_effect = lambda key, default=None: {
+        mock_config.__getitem__.side_effect = lambda key: {
             "phantoms": [],
             "study_type": "near_field",
-        }.get(key, default)
+        }.get(key)
 
         mock_logger = MagicMock()
 
@@ -84,10 +84,10 @@ class TestRunAnalysis:
     def test_main_no_study_type(self, cli_run_analysis_module):
         """Test main function with no study_type."""
         mock_config = MagicMock()
-        mock_config.get_setting.side_effect = lambda key, default=None: {
+        mock_config.__getitem__.side_effect = lambda key: {
             "phantoms": ["thelonious"],
             "study_type": None,
-        }.get(key, default)
+        }.get(key)
 
         mock_logger = MagicMock()
 

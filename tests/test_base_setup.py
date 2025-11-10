@@ -17,7 +17,7 @@ with patch.dict("sys.modules", mocks):
 @pytest.fixture
 def mock_config():
     config = MagicMock()
-    config.get_setting.return_value = {}
+    config.__getitem__.return_value = {}
     return config
 
 

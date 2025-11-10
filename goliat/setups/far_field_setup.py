@@ -43,7 +43,7 @@ class FarFieldSetup(BaseSetup):
         self.project_manager = project_manager
         self.profiler = profiler
         self.gui = gui
-        self.simulation_type = self.config.get_setting("far_field_setup/type", "environmental")
+        self.simulation_type = self.config["far_field_setup.type"] or "environmental"
         self.document = self.s4l_v1.document
 
     def run_full_setup(self, project_manager: "ProjectManager") -> "emfdtd.Simulation":
@@ -209,7 +209,7 @@ class FarFieldSetup(BaseSetup):
 
         bbox_min, bbox_max = self.model.GetBoundingBox(phantom_entities)
 
-        padding_mm = self.config.get_setting("simulation_parameters.bbox_padding_mm", 50)
+        padding_mm = self.config["simulation_parameters.bbox_padding_mm"] or 50
 
         sim_bbox_min = np.array(bbox_min) - padding_mm
         sim_bbox_max = np.array(bbox_max) + padding_mm

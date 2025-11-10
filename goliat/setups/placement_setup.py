@@ -91,7 +91,7 @@ class PlacementSetup(BaseSetup):
             log_type="header",
         )
 
-        phantom_definition = self.config.get_phantom_definition(self.phantom_name.lower())
+        phantom_definition = (self.config["phantom_definitions"] or {}).get(self.phantom_name.lower(), {})
         if not self.free_space and not phantom_definition.get("placements", {}).get(f"do_{self.base_placement_name}"):
             self._log(
                 f"Placement '{self.base_placement_name}' is disabled in the configuration.",
@@ -200,7 +200,7 @@ class PlacementSetup(BaseSetup):
         if self.free_space:
             return self.model.Vec3(0, 0, 0), [0, 0, 0]
 
-        scenario = self.config.get_placement_scenario(self.base_placement_name)
+        scenario = (self.config["placement_scenarios"] or {}).get(self.base_placement_name)
         if not scenario:
             raise ValueError(f"Placement scenario '{self.base_placement_name}' not defined.")
 
@@ -218,7 +218,7 @@ class PlacementSetup(BaseSetup):
             ]
 
         all_entities = self.model.AllEntities()
-        phantom_definition = self.config.get_phantom_definition(self.phantom_name.lower())
+        phantom_definition = (self.config["phantom_definitions"] or {}).get(self.phantom_name.lower(), {})
         placements_config = phantom_definition.get("placements", {})
         base_target_point = self.model.Vec3(0, 0, 0)
 
@@ -340,8 +340,8 @@ class PlacementSetup(BaseSetup):
         ground_bbox_min, ground_bbox_max = self.model.GetBoundingBox(ground_entities, transform=upright_transform)
 
         # Find the speaker reference point
-        scenario = self.config.get_placement_scenario(self.base_placement_name)
-        distance_from_top = scenario["antenna_reference"].get("distance_from_top", 10)  # speaker at 10 mm from top by default
+        scenario = (self.config["placement_scenarios"] or {}).get(self.base_placement_name) or {}
+        distance_from_top = scenario.get("antenna_reference", {}).get("distance_from_top", 10)  # speaker at 10 mm from top by default
         reference_target_point = self.model.Vec3(
             (ground_bbox_min[0] + ground_bbox_max[0]) / 2.0,  # horizontal center of the phone
             (ground_bbox_min[1] + ground_bbox_max[1]) / 2.0,  # depth center of the phone

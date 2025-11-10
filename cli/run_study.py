@@ -229,11 +229,11 @@ def study_process_wrapper(queue, stop_event, config_filename, process_id, no_cac
         from goliat.studies.near_field_study import NearFieldStudy
 
         config = Config(base_dir, config_filename, no_cache=no_cache)
-        study_type = config.get_setting("study_type")
+        study_type = config["study_type"]
 
         profiling_config_data = config.get_profiling_config(study_type)
         profiler = Profiler(
-            execution_control=config.get_setting("execution_control"),
+            execution_control=config["execution_control"] or {},
             profiling_config=profiling_config_data,
             study_type=study_type,
             config_path=config.profiling_config_path,
@@ -319,8 +319,8 @@ def main():
     progress_logger, verbose_logger, _ = setup_loggers(process_id=process_id)
 
     config = Config(base_dir, config_filename)
-    execution_control = config.get_setting("execution_control", {})
-    use_gui = config.get_setting("use_gui", True)
+    execution_control = config["execution_control"] or {}
+    use_gui = config["use_gui"] or True
 
     if execution_control.get("batch_run"):
         run_osparc_batch(config_filename)
@@ -360,11 +360,11 @@ def main():
             from goliat.studies.far_field_study import FarFieldStudy
             from goliat.studies.near_field_study import NearFieldStudy
 
-            study_type = config.get_setting("study_type")
+            study_type = config["study_type"]
 
             profiling_config_data = config.get_profiling_config(study_type)
             profiler = Profiler(
-                execution_control=config.get_setting("execution_control"),
+                execution_control=config["execution_control"] or {},
                 profiling_config=profiling_config_data,
                 study_type=study_type,
                 config_path=config.profiling_config_path,

@@ -46,7 +46,7 @@ class SensorExtractor:
             elapsed = 0.0
             if self.parent.study:
                 with self.parent.study.profiler.subtask("extract_point_sensor_data"):  # type: ignore
-                    num_sensors = self.parent.config.get_setting("simulation_parameters.number_of_point_sensors", 0)
+                    num_sensors = self.parent.config["simulation_parameters.number_of_point_sensors"] or 0
                     if num_sensors == 0:
                         return
 
@@ -55,7 +55,7 @@ class SensorExtractor:
                     fig, ax = plt.subplots()
                     ax.grid(True, which="major", axis="y", linestyle="--")
 
-                    point_source_order = self.parent.config.get_setting("simulation_parameters.point_source_order", [])
+                    point_source_order = self.parent.config["simulation_parameters.point_source_order"] or []
                     point_sensor_results = {}
 
                     for i in range(num_sensors):  # type: ignore
