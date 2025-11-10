@@ -22,7 +22,7 @@ repos:
     args: [--autofix, --trailing-commas]
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.14.3
+  rev: v0.14.4
   hooks:
   - id: ruff-format
     exclude: ^(analysis/|osparc_api_example/)
@@ -43,6 +43,6 @@ repos:
     - tomli
 
 - repo: https://github.com/astral-sh/uv-pre-commit
-  rev: 0.9.7
+  rev: 0.9.8
   hooks:
   - id: uv-lock
