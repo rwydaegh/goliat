@@ -28,11 +28,11 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
 
     def load_and_process_results(self, analyzer: "Analyzer"):
         """Iterates through near-field results and processes each one."""
-        antenna_config = self.config.get_antenna_config()
+        antenna_config = self.config["antenna_config"] or {}
         if not antenna_config:
             return
         frequencies = antenna_config.keys()
-        placement_scenarios = self.config.get_setting("placement_scenarios")
+        placement_scenarios = self.config["placement_scenarios"]
         if not placement_scenarios:
             return
 
@@ -59,7 +59,7 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
         Returns:
             The calculated normalization factor, or 1.0 if not possible.
         """
-        antenna_configs = self.config.get_antenna_config()
+        antenna_configs = self.config["antenna_config"] or {}
         freq_config = antenna_configs.get(str(frequency_mhz), {})
         target_power_mw = freq_config.get("target_power_mW")
         if target_power_mw is not None and pd.notna(simulated_power_w) and simulated_power_w > 0:
@@ -148,7 +148,7 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
         Returns:
             A DataFrame with mean SAR values and a 'progress' column.
         """
-        placement_scenarios = self.config.get_setting("placement_scenarios")
+        placement_scenarios = self.config["placement_scenarios"]
         placements_per_scenario = {}
         logging.getLogger("progress").info(
             "\n--- Calculating Total Possible Placements per Scenario ---",

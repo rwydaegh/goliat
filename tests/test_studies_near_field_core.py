@@ -236,27 +236,26 @@ class TestNearFieldStudyCoreWorkflow:
         }
 
         # Mock phantom definition
-        with patch.object(study.config, "get_phantom_definition") as mock_get_phantom:
-            mock_get_phantom.return_value = {"placements": {"do_by_cheek": True}}
+        study.config.config["phantom_definitions"] = {"test_phantom": {"placements": {"do_by_cheek": True}}}
 
-            # Count: 3 frequencies * 3 positions * 2 orientations = 18
-            total = 0
-            phantoms = study.config.get_setting("phantoms", [])
-            frequencies = study.config.get_setting("antenna_config", {}).keys()
-            all_scenarios = study.config.get_setting("placement_scenarios", {})
+        # Count: 3 frequencies * 3 positions * 2 orientations = 18
+        total = 0
+        phantoms = study.config["phantoms"] or []
+        frequencies = (study.config["antenna_config"] or {}).keys()
+        all_scenarios = study.config["placement_scenarios"] or {}
 
-            for phantom_name in phantoms:
-                phantom_definition = study.config.get_phantom_definition(phantom_name)
-                placements_config = phantom_definition.get("placements", {})
-                if not placements_config:
-                    continue
-                for scenario_name, scenario_details in all_scenarios.items():
-                    if placements_config.get(f"do_{scenario_name}"):
-                        positions = scenario_details.get("positions", {})
-                        orientations = scenario_details.get("orientations", {})
-                        total += len(list(frequencies)) * len(positions) * len(orientations)
+        for phantom_name in phantoms:
+            phantom_definition = (study.config["phantom_definitions"] or {}).get(phantom_name, {})
+            placements_config = phantom_definition.get("placements", {})
+            if not placements_config:
+                continue
+            for scenario_name, scenario_details in all_scenarios.items():
+                if placements_config.get(f"do_{scenario_name}"):
+                    positions = scenario_details.get("positions", {})
+                    orientations = scenario_details.get("orientations", {})
+                    total += len(list(frequencies)) * len(positions) * len(orientations)
 
-            assert total == 18
+        assert total == 18
 
     def test_near_field_study_phases_disabled_early_return(self, dummy_config):
         """Test early return when all phases are disabled."""

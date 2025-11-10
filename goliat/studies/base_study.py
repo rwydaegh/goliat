@@ -57,7 +57,7 @@ class BaseStudy(LoggingMixin):
 
         # Get study-specific profiling config
         profiling_config = self.config.get_profiling_config(self.study_type)
-        execution_control = self.config.get_setting("execution_control", {"do_setup": True, "do_run": True, "do_extract": True})
+        execution_control = self.config["execution_control"] or {"do_setup": True, "do_run": True, "do_extract": True}
 
         self.profiler = Profiler(
             execution_control,  # type: ignore
@@ -377,7 +377,7 @@ class BaseStudy(LoggingMixin):
         Returns:
             Tuple of (LineProfiler instance, wrapper function) or (None, None).
         """
-        line_profiling_config = self.config.get_line_profiling_config()
+        line_profiling_config = self.config["line_profiling"] or {}
         if not (instance and line_profiling_config.get("enabled", False) and subtask_name in line_profiling_config.get("subtasks", {})):
             return None, None
 

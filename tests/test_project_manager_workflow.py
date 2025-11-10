@@ -17,17 +17,17 @@ class TestProjectManagerCoreWorkflow:
         """Create a temporary config."""
         config = MagicMock()
         config.base_dir = str(tmp_path)
-        config.get_setting.return_value = {"do_setup": True, "do_run": True, "do_extract": True}
+        config.__getitem__.side_effect = lambda key: {"execution_control": {"do_setup": True, "do_run": True, "do_extract": True}}.get(key)
         return config
 
     def test_project_manager_create_or_open_project(self, dummy_config, tmp_path):
         """Test create_or_open_project method."""
         from goliat.project_manager import ProjectManager
 
-        dummy_config.get_setting.side_effect = lambda key, default=None: {
+        dummy_config.__getitem__.side_effect = lambda key: {
             "study_type": "near_field",
             "execution_control.do_setup": True,
-        }.get(key, default)
+        }.get(key)
 
         manager = ProjectManager(
             config=dummy_config,

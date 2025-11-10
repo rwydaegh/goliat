@@ -30,7 +30,7 @@ class BoundarySetup(BaseSetup):
         (Low/Medium/High) based on the config.
         """
         self._log("Setting up boundary conditions...", log_type="progress")
-        solver_settings = self.config.get_solver_settings()
+        solver_settings = self.config["solver_settings"] or {}
         boundary_config = solver_settings.get("boundary_conditions", {})
 
         # Set Boundary Type (e.g., UpmlCpml)

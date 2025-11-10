@@ -21,7 +21,7 @@ with patch.dict("sys.modules", mocks):
 @pytest.fixture
 def mock_config():
     config = MagicMock()
-    config.get_setting.return_value = 0  # for number_of_point_sensors
+    config.__getitem__.side_effect = lambda key: 0 if "number_of_point_sensors" in key else None
     config.base_dir = "/tmp"
     return config
 

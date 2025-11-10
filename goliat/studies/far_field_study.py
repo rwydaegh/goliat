@@ -33,9 +33,9 @@ class FarFieldStudy(BaseStudy):
             log_type="header",
         )
 
-        do_setup = self.config.get_setting("execution_control.do_setup", True)
-        do_run = self.config.get_setting("execution_control.do_run", True)
-        do_extract = self.config.get_setting("execution_control.do_extract", True)
+        do_setup = self.config["execution_control.do_setup"] or True
+        do_run = self.config["execution_control.do_run"] or True
+        do_extract = self.config["execution_control.do_extract"] or True
         auto_cleanup = self.config.get_auto_cleanup_previous_results()
 
         # Warn about common misconfiguration
@@ -64,9 +64,9 @@ class FarFieldStudy(BaseStudy):
         # Sanity check for auto_cleanup_previous_results
         self._validate_auto_cleanup_config(do_setup, do_run, do_extract, auto_cleanup)  # type: ignore
 
-        phantoms = self.config.get_setting("phantoms", []) or []
-        frequencies = self.config.get_setting("frequencies_mhz", []) or []
-        far_field_params = self.config.get_setting("far_field_setup.environmental", {})
+        phantoms = self.config["phantoms"] or []
+        frequencies = self.config["frequencies_mhz"] or []
+        far_field_params = self.config["far_field_setup.environmental"] or {}
         incident_directions = far_field_params.get("incident_directions", []) if far_field_params else []
         polarizations = far_field_params.get("polarizations", []) if far_field_params else []
 
@@ -295,7 +295,7 @@ class FarFieldStudy(BaseStudy):
                 log_type="warning",
             )
 
-        batch_run = self.config.get_setting("execution_control.batch_run", False)
+        batch_run = self.config["execution_control.batch_run"] or False
         if batch_run:
             self._log(
                 "ERROR: 'auto_cleanup_previous_results' is not compatible with 'batch_run'. Disabling.",

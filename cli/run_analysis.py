@@ -37,12 +37,12 @@ def main():
 
     config = Config(base_dir, config_filename=args.config)
 
-    phantoms = config.get_setting("phantoms", [])
+    phantoms = config["phantoms"] or []
     if not phantoms:
         logging.getLogger("progress").error("No phantoms found in the configuration file.")
         return
 
-    study_type = config.get_setting("study_type")
+    study_type = config["study_type"]
     if not study_type:
         logging.getLogger("progress").error("'study_type' not found in the configuration file.")
         return

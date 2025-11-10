@@ -54,7 +54,7 @@ class ProjectManager(LoggingMixin):
 
         self.document = s4l_v1.document
         self.project_path: Optional[str] = None
-        self.execution_control = self.config.get_setting("execution_control", {"do_setup": True, "do_run": True, "do_extract": True})
+        self.execution_control = self.config["execution_control"] or {"do_setup": True, "do_run": True, "do_extract": True}
 
     def _generate_config_hash(self, config_dict: dict) -> str:
         """Creates a SHA256 hash from a config dict for verification."""
@@ -429,7 +429,7 @@ class ProjectManager(LoggingMixin):
             FileNotFoundError: If `do_setup` is false and the project file does not exist.
             ProjectCorruptionError: If the project file is corrupted.
         """
-        study_type = self.config.get_setting("study_type")
+        study_type = self.config["study_type"]
         if not study_type or not isinstance(study_type, str):
             raise ValueError("'study_type' not found in the configuration file.")
 
@@ -591,7 +591,7 @@ class ProjectManager(LoggingMixin):
         if not self.project_path:
             raise ValueError("Project path is not set. Cannot save.")
 
-        retry_count = self.config.get_setting("save_retry_count", 4)
+        retry_count = self.config["save_retry_count"] or 4
         if not isinstance(retry_count, int):
             retry_count = 4
         last_exception = None

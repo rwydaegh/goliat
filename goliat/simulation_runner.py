@@ -71,7 +71,7 @@ class SimulationRunner(LoggingMixin):
             return
         self._log(f"Running simulation: {self.simulation.Name}", log_type="verbose")
 
-        server_name = self.config.get_solver_settings().get("server")
+        server_name = (self.config["solver_settings"] or {}).get("server")
 
         try:
             if hasattr(self.simulation, "WriteInputFile"):
@@ -83,7 +83,7 @@ class SimulationRunner(LoggingMixin):
                 with self.profiler.subtask("run_write_input_file"):
                     self.simulation.WriteInputFile()
                     # Force a save to flush files, with retry logic
-                    retry_count = self.config.get_setting("save_retry_count", 4)
+                    retry_count = self.config["save_retry_count"] or 4
                     if not isinstance(retry_count, int):
                         retry_count = 4
                     for attempt in range(1, retry_count + 1):
@@ -120,7 +120,7 @@ class SimulationRunner(LoggingMixin):
                 )
                 return
 
-            if self.config.get_manual_isolve():
+            if self.config["manual_isolve"] or False:
                 self._run_isolve_manual(self.simulation)
             elif server_name and "osparc" in server_name.lower():
                 self._run_osparc_direct(self.simulation, server_name)
@@ -137,7 +137,7 @@ class SimulationRunner(LoggingMixin):
                 log_type="error",
             )
             # Check if a cloud server was intended for the run
-            server_name = self.config.get_solver_settings().get("server")
+            server_name = (self.config["solver_settings"] or {}).get("server")
             if server_name and server_name != "localhost":
                 self._log(
                     "If you are running on the cloud, please ensure you are logged into Sim4Life "
@@ -248,7 +248,7 @@ class SimulationRunner(LoggingMixin):
         if not os.path.exists(input_file_path):
             raise FileNotFoundError(f"Solver input file not found at: {input_file_path}")
 
-        solver_kernel = self.config.get_solver_settings().get("kernel", "Software")
+        solver_kernel = (self.config["solver_settings"] or {}).get("kernel", "Software")
         log_msg = f"Running iSolve with {solver_kernel} on {os.path.basename(input_file_path)}"
         self._log(log_msg, log_type="info")  # verbose only
 
