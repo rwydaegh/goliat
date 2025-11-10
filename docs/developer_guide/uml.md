@@ -522,14 +522,28 @@ class "SarExtractor" as goliat.extraction.sar_extractor.SarExtractor {
   progress_logger
   results_data : dict
   simulation
+  tissue_grouper : TissueGrouper
   units
   verbose_logger
   __init__(parent: 'ResultsExtractor', results_data: dict)
   _calculate_group_sar(df: pd.DataFrame, tissue_groups: dict) -> dict
-  _define_tissue_groups(available_tissues: list) -> dict
+  _create_sar_dataframe(results: object) -> pd.DataFrame
+  _evaluate_sar_statistics(em_sensor_extractor: 'analysis.Extractor') -> object
+  _setup_em_sensor_extractor(simulation_extractor: 'analysis.Extractor') -> 'analysis.Extractor'
+  _store_all_regions_sar(df: pd.DataFrame)
+  _store_group_sar_results(group_sar_stats: dict)
+  _store_temporary_data(df: pd.DataFrame, tissue_groups: dict, group_sar_stats: dict)
   extract_peak_sar_details(em_sensor_extractor: 'analysis.Extractor')
   extract_sar_statistics(simulation_extractor: 'analysis.Extractor')
 }
+class "TissueGrouper" as goliat.extraction.tissue_grouping.TissueGrouper {
+  config : Config
+  logger : LoggingMixin
+  phantom_name : str
+  __init__(config: 'Config', phantom_name: str, logger: 'LoggingMixin')
+  group_tissues(available_tissues: list[str]) -> dict[str, list[str]]
+}
+goliat.extraction.sar_extractor.SarExtractor *-- goliat.extraction.tissue_grouping.TissueGrouper
 class "SensorExtractor" as goliat.extraction.sensor_extractor.SensorExtractor {
   parent : str
   progress_logger
