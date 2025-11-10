@@ -117,7 +117,13 @@
 </span><span id=__span-0-41><a id=__codelineno-0-41 name=__codelineno-0-41></a><span class=sd>    &quot;&quot;&quot;</span>
 </span><span id=__span-0-42><a id=__codelineno-0-42 name=__codelineno-0-42></a>    <span class=k>return</span> <span class=n>COLOR_MAP</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=n>log_type</span><span class=p>,</span> <span class=n>Fore</span><span class=o>.</span><span class=n>WHITE</span><span class=p>)</span>
 </span></code></pre></div></td></tr></table></div> </details> </div> </div> </div> </div> </div><h3 id=configuration>Configuration<a class=headerlink href=#configuration title="Permanent link">&para;</a></h3> <div class="doc doc-object doc-class"> <h2 id=goliat.config.Config class="doc doc-heading"> <code class="doc-symbol doc-symbol-heading doc-symbol-class"></code> <span class="doc doc-object-name doc-class-name">goliat.config.Config</span> <a href=#goliat.config.Config class=headerlink title="Permanent link">&para;</a></h2> <div class="language-python doc-signature highlight"><pre><span></span><code><span id=__span-0-1><a id=__codelineno-0-1 name=__codelineno-0-1 href=#__codelineno-0-1></a><span class=nf>Config</span><span class=p>(</span><span class=n>base_dir</span><span class=p>:</span> <span class=nb>str</span><span class=p>,</span> <span class=n>config_filename</span><span class=p>:</span> <span class=nb>str</span> <span class=o>=</span> <span class=s1>&#39;near_field_config.json&#39;</span><span class=p>,</span> <span class=n>no_cache</span><span class=p>:</span> <span class=nb>bool</span> <span class=o>=</span> <span class=kc>False</span><span class=p>)</span>
-</span></code></pre></div> <div class="doc doc-contents first"> <p>Manages loading and access of hierarchical <abbr title="JavaScript Object Notation">JSON</abbr> configurations.</p> <p><span class=doc-section-title>Parameters:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> <th>Default</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code>base_dir</code> </td> <td> <code><span title=str>str</span></code> </td> <td> <div class=doc-md-description> <p>The base directory of the project.</p> </div> </td> <td> <em>required</em> </td> </tr> <tr class=doc-section-item> <td> <code>config_filename</code> </td> <td> <code><span title=str>str</span></code> </td> <td> <div class=doc-md-description> <p>The name of the main configuration file to load.</p> </div> </td> <td> <code>&#39;near_field_config.json&#39;</code> </td> </tr> <tr class=doc-section-item> <td> <code>no_cache</code> </td> <td> <code><span title=bool>bool</span></code> </td> <td> <div class=doc-md-description> <p>This parameter is accepted but not used directly by the Config class. It's used by other managers to control caching behavior.</p> </div> </td> <td> <code>False</code> </td> </tr> </tbody> </table> <details class=quote> <summary>Source code in <code>goliat/config.py</code></summary> <div class="language-python highlight"><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal><a href=#__codelineno-0-36>36</a></span>
+</span></code></pre></div> <div class="doc doc-contents first"> <p>Manages loading and access of hierarchical <abbr title="JavaScript Object Notation">JSON</abbr> configurations.</p> <p><span class=doc-section-title>Parameters:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> <th>Default</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code>base_dir</code> </td> <td> <code><span title=str>str</span></code> </td> <td> <div class=doc-md-description> <p>The base directory of the project.</p> </div> </td> <td> <em>required</em> </td> </tr> <tr class=doc-section-item> <td> <code>config_filename</code> </td> <td> <code><span title=str>str</span></code> </td> <td> <div class=doc-md-description> <p>The name of the main configuration file to load.</p> </div> </td> <td> <code>&#39;near_field_config.json&#39;</code> </td> </tr> <tr class=doc-section-item> <td> <code>no_cache</code> </td> <td> <code><span title=bool>bool</span></code> </td> <td> <div class=doc-md-description> <p>This parameter is accepted but not used directly by the Config class. It's used by other managers to control caching behavior.</p> </div> </td> <td> <code>False</code> </td> </tr> </tbody> </table> <details class=quote> <summary>Source code in <code>goliat/config/core.py</code></summary> <div class="language-python highlight"><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal><a href=#__codelineno-0-30>30</a></span>
+<span class=normal><a href=#__codelineno-0-31>31</a></span>
+<span class=normal><a href=#__codelineno-0-32>32</a></span>
+<span class=normal><a href=#__codelineno-0-33>33</a></span>
+<span class=normal><a href=#__codelineno-0-34>34</a></span>
+<span class=normal><a href=#__codelineno-0-35>35</a></span>
+<span class=normal><a href=#__codelineno-0-36>36</a></span>
 <span class=normal><a href=#__codelineno-0-37>37</a></span>
 <span class=normal><a href=#__codelineno-0-38>38</a></span>
 <span class=normal><a href=#__codelineno-0-39>39</a></span>
@@ -141,45 +147,150 @@
 <span class=normal><a href=#__codelineno-0-57>57</a></span>
 <span class=normal><a href=#__codelineno-0-58>58</a></span>
 <span class=normal><a href=#__codelineno-0-59>59</a></span>
-<span class=normal><a href=#__codelineno-0-60>60</a></span>
-<span class=normal><a href=#__codelineno-0-61>61</a></span>
-<span class=normal><a href=#__codelineno-0-62>62</a></span>
-<span class=normal><a href=#__codelineno-0-63>63</a></span>
-<span class=normal><a href=#__codelineno-0-64>64</a></span>
-<span class=normal><a href=#__codelineno-0-65>65</a></span>
-<span class=normal><a href=#__codelineno-0-66>66</a></span></pre></div></td><td class=code><div><pre><span></span><code><span id=__span-0-36><a id=__codelineno-0-36 name=__codelineno-0-36></a><span class=k>def</span><span class=w> </span><span class=fm>__init__</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>base_dir</span><span class=p>:</span> <span class=nb>str</span><span class=p>,</span> <span class=n>config_filename</span><span class=p>:</span> <span class=nb>str</span> <span class=o>=</span> <span class=s2>&quot;near_field_config.json&quot;</span><span class=p>,</span> <span class=n>no_cache</span><span class=p>:</span> <span class=nb>bool</span> <span class=o>=</span> <span class=kc>False</span><span class=p>):</span>
-</span><span id=__span-0-37><a id=__codelineno-0-37 name=__codelineno-0-37></a><span class=w>    </span><span class=sd>&quot;&quot;&quot;Initializes the Config object by loading all relevant configuration files.</span>
-</span><span id=__span-0-38><a id=__codelineno-0-38 name=__codelineno-0-38></a>
-</span><span id=__span-0-39><a id=__codelineno-0-39 name=__codelineno-0-39></a><span class=sd>    Args:</span>
-</span><span id=__span-0-40><a id=__codelineno-0-40 name=__codelineno-0-40></a><span class=sd>        base_dir: The base directory of the project.</span>
-</span><span id=__span-0-41><a id=__codelineno-0-41 name=__codelineno-0-41></a><span class=sd>        config_filename: The name of the main configuration file to load.</span>
-</span><span id=__span-0-42><a id=__codelineno-0-42 name=__codelineno-0-42></a><span class=sd>        no_cache: This parameter is accepted but not used directly by the Config class.</span>
-</span><span id=__span-0-43><a id=__codelineno-0-43 name=__codelineno-0-43></a><span class=sd>                  It&#39;s used by other managers to control caching behavior.</span>
-</span><span id=__span-0-44><a id=__codelineno-0-44 name=__codelineno-0-44></a><span class=sd>    &quot;&quot;&quot;</span>
-</span><span id=__span-0-45><a id=__codelineno-0-45 name=__codelineno-0-45></a>    <span class=bp>self</span><span class=o>.</span><span class=n>base_dir</span> <span class=o>=</span> <span class=n>base_dir</span>
-</span><span id=__span-0-46><a id=__codelineno-0-46 name=__codelineno-0-46></a>    <span class=bp>self</span><span class=o>.</span><span class=n>config_path</span> <span class=o>=</span> <span class=bp>self</span><span class=o>.</span><span class=n>_resolve_config_path</span><span class=p>(</span><span class=n>config_filename</span><span class=p>,</span> <span class=bp>self</span><span class=o>.</span><span class=n>base_dir</span><span class=p>)</span>
-</span><span id=__span-0-47><a id=__codelineno-0-47 name=__codelineno-0-47></a>    <span class=bp>self</span><span class=o>.</span><span class=n>material_mapping_path</span> <span class=o>=</span> <span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>join</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>base_dir</span><span class=p>,</span> <span class=s2>&quot;data&quot;</span><span class=p>,</span> <span class=s2>&quot;material_name_mapping.json&quot;</span><span class=p>)</span>
-</span><span id=__span-0-48><a id=__codelineno-0-48 name=__codelineno-0-48></a>
-</span><span id=__span-0-49><a id=__codelineno-0-49 name=__codelineno-0-49></a>    <span class=c1># Generate session hash for profiling config (similar to GUI session tracking)</span>
-</span><span id=__span-0-50><a id=__codelineno-0-50 name=__codelineno-0-50></a>    <span class=n>session_hash</span> <span class=o>=</span> <span class=n>hashlib</span><span class=o>.</span><span class=n>md5</span><span class=p>(</span><span class=sa>f</span><span class=s2>&quot;</span><span class=si>{</span><span class=n>time</span><span class=o>.</span><span class=n>time</span><span class=p>()</span><span class=si>}</span><span class=s2>_</span><span class=si>{</span><span class=n>os</span><span class=o>.</span><span class=n>getpid</span><span class=p>()</span><span class=si>}</span><span class=s2>&quot;</span><span class=o>.</span><span class=n>encode</span><span class=p>())</span><span class=o>.</span><span class=n>hexdigest</span><span class=p>()[:</span><span class=mi>8</span><span class=p>]</span>
-</span><span id=__span-0-51><a id=__codelineno-0-51 name=__codelineno-0-51></a>    <span class=n>data_dir</span> <span class=o>=</span> <span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>join</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>base_dir</span><span class=p>,</span> <span class=s2>&quot;data&quot;</span><span class=p>)</span>
-</span><span id=__span-0-52><a id=__codelineno-0-52 name=__codelineno-0-52></a>    <span class=n>os</span><span class=o>.</span><span class=n>makedirs</span><span class=p>(</span><span class=n>data_dir</span><span class=p>,</span> <span class=n>exist_ok</span><span class=o>=</span><span class=kc>True</span><span class=p>)</span>
+<span class=normal><a href=#__codelineno-0-60>60</a></span></pre></div></td><td class=code><div><pre><span></span><code><span id=__span-0-30><a id=__codelineno-0-30 name=__codelineno-0-30></a><span class=k>def</span><span class=w> </span><span class=fm>__init__</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>base_dir</span><span class=p>:</span> <span class=nb>str</span><span class=p>,</span> <span class=n>config_filename</span><span class=p>:</span> <span class=nb>str</span> <span class=o>=</span> <span class=s2>&quot;near_field_config.json&quot;</span><span class=p>,</span> <span class=n>no_cache</span><span class=p>:</span> <span class=nb>bool</span> <span class=o>=</span> <span class=kc>False</span><span class=p>):</span>
+</span><span id=__span-0-31><a id=__codelineno-0-31 name=__codelineno-0-31></a><span class=w>    </span><span class=sd>&quot;&quot;&quot;Initializes the Config object by loading all relevant configuration files.</span>
+</span><span id=__span-0-32><a id=__codelineno-0-32 name=__codelineno-0-32></a>
+</span><span id=__span-0-33><a id=__codelineno-0-33 name=__codelineno-0-33></a><span class=sd>    Args:</span>
+</span><span id=__span-0-34><a id=__codelineno-0-34 name=__codelineno-0-34></a><span class=sd>        base_dir: The base directory of the project.</span>
+</span><span id=__span-0-35><a id=__codelineno-0-35 name=__codelineno-0-35></a><span class=sd>        config_filename: The name of the main configuration file to load.</span>
+</span><span id=__span-0-36><a id=__codelineno-0-36 name=__codelineno-0-36></a><span class=sd>        no_cache: This parameter is accepted but not used directly by the Config class.</span>
+</span><span id=__span-0-37><a id=__codelineno-0-37 name=__codelineno-0-37></a><span class=sd>                  It&#39;s used by other managers to control caching behavior.</span>
+</span><span id=__span-0-38><a id=__codelineno-0-38 name=__codelineno-0-38></a><span class=sd>    &quot;&quot;&quot;</span>
+</span><span id=__span-0-39><a id=__codelineno-0-39 name=__codelineno-0-39></a>    <span class=bp>self</span><span class=o>.</span><span class=n>base_dir</span> <span class=o>=</span> <span class=n>base_dir</span>
+</span><span id=__span-0-40><a id=__codelineno-0-40 name=__codelineno-0-40></a>    <span class=bp>self</span><span class=o>.</span><span class=n>config_path</span> <span class=o>=</span> <span class=bp>self</span><span class=o>.</span><span class=n>_resolve_config_path</span><span class=p>(</span><span class=n>config_filename</span><span class=p>,</span> <span class=bp>self</span><span class=o>.</span><span class=n>base_dir</span><span class=p>)</span>
+</span><span id=__span-0-41><a id=__codelineno-0-41 name=__codelineno-0-41></a>    <span class=bp>self</span><span class=o>.</span><span class=n>material_mapping_path</span> <span class=o>=</span> <span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>join</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>base_dir</span><span class=p>,</span> <span class=s2>&quot;data&quot;</span><span class=p>,</span> <span class=s2>&quot;material_name_mapping.json&quot;</span><span class=p>)</span>
+</span><span id=__span-0-42><a id=__codelineno-0-42 name=__codelineno-0-42></a>
+</span><span id=__span-0-43><a id=__codelineno-0-43 name=__codelineno-0-43></a>    <span class=c1># Generate session hash for profiling config (similar to GUI session tracking)</span>
+</span><span id=__span-0-44><a id=__codelineno-0-44 name=__codelineno-0-44></a>    <span class=n>session_hash</span> <span class=o>=</span> <span class=n>hashlib</span><span class=o>.</span><span class=n>md5</span><span class=p>(</span><span class=sa>f</span><span class=s2>&quot;</span><span class=si>{</span><span class=n>time</span><span class=o>.</span><span class=n>time</span><span class=p>()</span><span class=si>}</span><span class=s2>_</span><span class=si>{</span><span class=n>os</span><span class=o>.</span><span class=n>getpid</span><span class=p>()</span><span class=si>}</span><span class=s2>&quot;</span><span class=o>.</span><span class=n>encode</span><span class=p>())</span><span class=o>.</span><span class=n>hexdigest</span><span class=p>()[:</span><span class=mi>8</span><span class=p>]</span>
+</span><span id=__span-0-45><a id=__codelineno-0-45 name=__codelineno-0-45></a>    <span class=n>data_dir</span> <span class=o>=</span> <span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>join</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>base_dir</span><span class=p>,</span> <span class=s2>&quot;data&quot;</span><span class=p>)</span>
+</span><span id=__span-0-46><a id=__codelineno-0-46 name=__codelineno-0-46></a>    <span class=n>os</span><span class=o>.</span><span class=n>makedirs</span><span class=p>(</span><span class=n>data_dir</span><span class=p>,</span> <span class=n>exist_ok</span><span class=o>=</span><span class=kc>True</span><span class=p>)</span>
+</span><span id=__span-0-47><a id=__codelineno-0-47 name=__codelineno-0-47></a>
+</span><span id=__span-0-48><a id=__codelineno-0-48 name=__codelineno-0-48></a>    <span class=c1># Generate timestamp for filename</span>
+</span><span id=__span-0-49><a id=__codelineno-0-49 name=__codelineno-0-49></a>    <span class=n>session_timestamp</span> <span class=o>=</span> <span class=n>datetime</span><span class=o>.</span><span class=n>now</span><span class=p>()</span><span class=o>.</span><span class=n>strftime</span><span class=p>(</span><span class=s2>&quot;</span><span class=si>%d</span><span class=s2>-%m_%H-%M-%S&quot;</span><span class=p>)</span>
+</span><span id=__span-0-50><a id=__codelineno-0-50 name=__codelineno-0-50></a>
+</span><span id=__span-0-51><a id=__codelineno-0-51 name=__codelineno-0-51></a>    <span class=c1># Cleanup old JSON files before creating new one</span>
+</span><span id=__span-0-52><a id=__codelineno-0-52 name=__codelineno-0-52></a>    <span class=n>cleanup_old_data_files</span><span class=p>(</span><span class=n>data_dir</span><span class=p>)</span>
 </span><span id=__span-0-53><a id=__codelineno-0-53 name=__codelineno-0-53></a>
-</span><span id=__span-0-54><a id=__codelineno-0-54 name=__codelineno-0-54></a>    <span class=c1># Generate timestamp for filename</span>
-</span><span id=__span-0-55><a id=__codelineno-0-55 name=__codelineno-0-55></a>    <span class=n>session_timestamp</span> <span class=o>=</span> <span class=n>datetime</span><span class=o>.</span><span class=n>now</span><span class=p>()</span><span class=o>.</span><span class=n>strftime</span><span class=p>(</span><span class=s2>&quot;</span><span class=si>%d</span><span class=s2>-%m_%H-%M-%S&quot;</span><span class=p>)</span>
-</span><span id=__span-0-56><a id=__codelineno-0-56 name=__codelineno-0-56></a>
-</span><span id=__span-0-57><a id=__codelineno-0-57 name=__codelineno-0-57></a>    <span class=c1># Cleanup old JSON files before creating new one</span>
-</span><span id=__span-0-58><a id=__codelineno-0-58 name=__codelineno-0-58></a>    <span class=bp>self</span><span class=o>.</span><span class=n>_cleanup_old_data_files</span><span class=p>(</span><span class=n>data_dir</span><span class=p>)</span>
-</span><span id=__span-0-59><a id=__codelineno-0-59 name=__codelineno-0-59></a>
-</span><span id=__span-0-60><a id=__codelineno-0-60 name=__codelineno-0-60></a>    <span class=bp>self</span><span class=o>.</span><span class=n>profiling_config_path</span> <span class=o>=</span> <span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>join</span><span class=p>(</span><span class=n>data_dir</span><span class=p>,</span> <span class=sa>f</span><span class=s2>&quot;profiling_config_</span><span class=si>{</span><span class=n>session_timestamp</span><span class=si>}</span><span class=s2>_</span><span class=si>{</span><span class=n>session_hash</span><span class=si>}</span><span class=s2>.json&quot;</span><span class=p>)</span>
-</span><span id=__span-0-61><a id=__codelineno-0-61 name=__codelineno-0-61></a>
-</span><span id=__span-0-62><a id=__codelineno-0-62 name=__codelineno-0-62></a>    <span class=bp>self</span><span class=o>.</span><span class=n>config</span> <span class=o>=</span> <span class=bp>self</span><span class=o>.</span><span class=n>_load_config_with_inheritance</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>config_path</span><span class=p>)</span>
-</span><span id=__span-0-63><a id=__codelineno-0-63 name=__codelineno-0-63></a>    <span class=bp>self</span><span class=o>.</span><span class=n>material_mapping</span> <span class=o>=</span> <span class=bp>self</span><span class=o>.</span><span class=n>_load_json</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>material_mapping_path</span><span class=p>)</span>
-</span><span id=__span-0-64><a id=__codelineno-0-64 name=__codelineno-0-64></a>
-</span><span id=__span-0-65><a id=__codelineno-0-65 name=__codelineno-0-65></a>    <span class=c1># Load or initialize profiling config</span>
-</span><span id=__span-0-66><a id=__codelineno-0-66 name=__codelineno-0-66></a>    <span class=bp>self</span><span class=o>.</span><span class=n>profiling_config</span> <span class=o>=</span> <span class=bp>self</span><span class=o>.</span><span class=n>_load_or_create_profiling_config</span><span class=p>()</span>
+</span><span id=__span-0-54><a id=__codelineno-0-54 name=__codelineno-0-54></a>    <span class=bp>self</span><span class=o>.</span><span class=n>profiling_config_path</span> <span class=o>=</span> <span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>join</span><span class=p>(</span><span class=n>data_dir</span><span class=p>,</span> <span class=sa>f</span><span class=s2>&quot;profiling_config_</span><span class=si>{</span><span class=n>session_timestamp</span><span class=si>}</span><span class=s2>_</span><span class=si>{</span><span class=n>session_hash</span><span class=si>}</span><span class=s2>.json&quot;</span><span class=p>)</span>
+</span><span id=__span-0-55><a id=__codelineno-0-55 name=__codelineno-0-55></a>
+</span><span id=__span-0-56><a id=__codelineno-0-56 name=__codelineno-0-56></a>    <span class=bp>self</span><span class=o>.</span><span class=n>config</span> <span class=o>=</span> <span class=bp>self</span><span class=o>.</span><span class=n>_load_config_with_inheritance</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>config_path</span><span class=p>)</span>
+</span><span id=__span-0-57><a id=__codelineno-0-57 name=__codelineno-0-57></a>    <span class=bp>self</span><span class=o>.</span><span class=n>material_mapping</span> <span class=o>=</span> <span class=bp>self</span><span class=o>.</span><span class=n>_load_json</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>material_mapping_path</span><span class=p>)</span>
+</span><span id=__span-0-58><a id=__codelineno-0-58 name=__codelineno-0-58></a>
+</span><span id=__span-0-59><a id=__codelineno-0-59 name=__codelineno-0-59></a>    <span class=c1># Load or initialize profiling config</span>
+</span><span id=__span-0-60><a id=__codelineno-0-60 name=__codelineno-0-60></a>    <span class=bp>self</span><span class=o>.</span><span class=n>profiling_config</span> <span class=o>=</span> <span class=n>load_or_create_profiling_config</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>profiling_config_path</span><span class=p>)</span>
 </span></code></pre></div></td></tr></table></div> </details> <div class="doc doc-children"> <h3 id=goliat.config.Config-functions>Functions<a href=#goliat.config.Config-functions class=headerlink title="Permanent link">&para;</a></h3> <div class="doc doc-object doc-function"> <h4 id=goliat.config.Config.get_material_mapping class="doc doc-heading"> <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code> <span class="doc doc-object-name doc-function-name">get_material_mapping</span> <a href=#goliat.config.Config.get_material_mapping class=headerlink title="Permanent link">&para;</a></h4> <div class="language-python doc-signature highlight"><pre><span></span><code><span id=__span-0-1><a id=__codelineno-0-1 name=__codelineno-0-1 href=#__codelineno-0-1></a><span class=nf>get_material_mapping</span><span class=p>(</span><span class=n>phantom_name</span><span class=p>:</span> <span class=nb>str</span><span class=p>)</span> <span class=o>-&gt;</span> <span class=nb>dict</span>
-</span></code></pre></div> <div class="doc doc-contents "> <p>Gets the material name mapping for a specific phantom.</p> <p><span class=doc-section-title>Parameters:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> <th>Default</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code>phantom_name</code> </td> <td> <code><span title=str>str</span></code> </td> <td> <div class=doc-md-description> <p>The name of the phantom.</p> </div> </td> <td> <em>required</em> </td> </tr> </tbody> </table> <p><span class=doc-section-title>Returns:</span></p> <table> <thead> <tr> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code><span title=dict>dict</span></code> </td> <td> <div class=doc-md-description> <p>The material mapping dictionary.</p> </div> </td> </tr> </tbody> </table> <details class=quote> <summary>Source code in <code>goliat/config.py</code></summary> <div class="language-python highlight"><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal><a href=#__codelineno-0-216>216</a></span>
+</span></code></pre></div> <div class="doc doc-contents "> <p>Gets the material name mapping for a specific phantom.</p> <p><span class=doc-section-title>Parameters:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> <th>Default</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code>phantom_name</code> </td> <td> <code><span title=str>str</span></code> </td> <td> <div class=doc-md-description> <p>The name of the phantom.</p> </div> </td> <td> <em>required</em> </td> </tr> </tbody> </table> <p><span class=doc-section-title>Returns:</span></p> <table> <thead> <tr> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code><span title=dict>dict</span></code> </td> <td> <div class=doc-md-description> <p>The material mapping dictionary.</p> </div> </td> </tr> </tbody> </table> <details class=quote> <summary>Source code in <code>goliat/config/core.py</code></summary> <div class="language-python highlight"><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal><a href=#__codelineno-0-145>145</a></span>
+<span class=normal><a href=#__codelineno-0-146>146</a></span>
+<span class=normal><a href=#__codelineno-0-147>147</a></span>
+<span class=normal><a href=#__codelineno-0-148>148</a></span>
+<span class=normal><a href=#__codelineno-0-149>149</a></span>
+<span class=normal><a href=#__codelineno-0-150>150</a></span>
+<span class=normal><a href=#__codelineno-0-151>151</a></span>
+<span class=normal><a href=#__codelineno-0-152>152</a></span>
+<span class=normal><a href=#__codelineno-0-153>153</a></span>
+<span class=normal><a href=#__codelineno-0-154>154</a></span>
+<span class=normal><a href=#__codelineno-0-155>155</a></span>
+<span class=normal><a href=#__codelineno-0-156>156</a></span>
+<span class=normal><a href=#__codelineno-0-157>157</a></span></pre></div></td><td class=code><div><pre><span></span><code><span id=__span-0-145><a id=__codelineno-0-145 name=__codelineno-0-145></a><span class=k>def</span><span class=w> </span><span class=nf>get_material_mapping</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>phantom_name</span><span class=p>:</span> <span class=nb>str</span><span class=p>)</span> <span class=o>-&gt;</span> <span class=nb>dict</span><span class=p>:</span>
+</span><span id=__span-0-146><a id=__codelineno-0-146 name=__codelineno-0-146></a><span class=w>    </span><span class=sd>&quot;&quot;&quot;Gets the material name mapping for a specific phantom.</span>
+</span><span id=__span-0-147><a id=__codelineno-0-147 name=__codelineno-0-147></a>
+</span><span id=__span-0-148><a id=__codelineno-0-148 name=__codelineno-0-148></a><span class=sd>    Args:</span>
+</span><span id=__span-0-149><a id=__codelineno-0-149 name=__codelineno-0-149></a><span class=sd>        phantom_name: The name of the phantom.</span>
+</span><span id=__span-0-150><a id=__codelineno-0-150 name=__codelineno-0-150></a>
+</span><span id=__span-0-151><a id=__codelineno-0-151 name=__codelineno-0-151></a><span class=sd>    Returns:</span>
+</span><span id=__span-0-152><a id=__codelineno-0-152 name=__codelineno-0-152></a><span class=sd>        The material mapping dictionary.</span>
+</span><span id=__span-0-153><a id=__codelineno-0-153 name=__codelineno-0-153></a><span class=sd>    &quot;&quot;&quot;</span>
+</span><span id=__span-0-154><a id=__codelineno-0-154 name=__codelineno-0-154></a>    <span class=k>if</span> <span class=n>phantom_name</span> <span class=ow>in</span> <span class=bp>self</span><span class=o>.</span><span class=n>material_mapping</span><span class=p>:</span>
+</span><span id=__span-0-155><a id=__codelineno-0-155 name=__codelineno-0-155></a>        <span class=k>return</span> <span class=bp>self</span><span class=o>.</span><span class=n>material_mapping</span><span class=p>[</span><span class=n>phantom_name</span><span class=p>]</span>
+</span><span id=__span-0-156><a id=__codelineno-0-156 name=__codelineno-0-156></a>    <span class=k>else</span><span class=p>:</span>
+</span><span id=__span-0-157><a id=__codelineno-0-157 name=__codelineno-0-157></a>        <span class=k>return</span> <span class=bp>self</span><span class=o>.</span><span class=n>material_mapping</span>
+</span></code></pre></div></td></tr></table></div> </details> </div> </div> <div class="doc doc-object doc-function"> <h4 id=goliat.config.Config.get_profiling_config class="doc doc-heading"> <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code> <span class="doc doc-object-name doc-function-name">get_profiling_config</span> <a href=#goliat.config.Config.get_profiling_config class=headerlink title="Permanent link">&para;</a></h4> <div class="language-python doc-signature highlight"><pre><span></span><code><span id=__span-0-1><a id=__codelineno-0-1 name=__codelineno-0-1 href=#__codelineno-0-1></a><span class=nf>get_profiling_config</span><span class=p>(</span><span class=n>study_type</span><span class=p>:</span> <span class=nb>str</span><span class=p>)</span> <span class=o>-&gt;</span> <span class=nb>dict</span>
+</span></code></pre></div> <div class="doc doc-contents "> <p>Gets the profiling configuration for a given study type.</p> <p><span class=doc-section-title>Parameters:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> <th>Default</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code>study_type</code> </td> <td> <code><span title=str>str</span></code> </td> <td> <div class=doc-md-description> <p>The type of the study (e.g., 'near_field').</p> </div> </td> <td> <em>required</em> </td> </tr> </tbody> </table> <p><span class=doc-section-title>Returns:</span></p> <table> <thead> <tr> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code><span title=dict>dict</span></code> </td> <td> <div class=doc-md-description> <p>The profiling configuration for the study type.</p> </div> </td> </tr> </tbody> </table> <details class=quote> <summary>Source code in <code>goliat/config/core.py</code></summary> <div class="language-python highlight"><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal><a href=#__codelineno-0-159>159</a></span>
+<span class=normal><a href=#__codelineno-0-160>160</a></span>
+<span class=normal><a href=#__codelineno-0-161>161</a></span>
+<span class=normal><a href=#__codelineno-0-162>162</a></span>
+<span class=normal><a href=#__codelineno-0-163>163</a></span>
+<span class=normal><a href=#__codelineno-0-164>164</a></span>
+<span class=normal><a href=#__codelineno-0-165>165</a></span>
+<span class=normal><a href=#__codelineno-0-166>166</a></span>
+<span class=normal><a href=#__codelineno-0-167>167</a></span>
+<span class=normal><a href=#__codelineno-0-168>168</a></span></pre></div></td><td class=code><div><pre><span></span><code><span id=__span-0-159><a id=__codelineno-0-159 name=__codelineno-0-159></a><span class=k>def</span><span class=w> </span><span class=nf>get_profiling_config</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>study_type</span><span class=p>:</span> <span class=nb>str</span><span class=p>)</span> <span class=o>-&gt;</span> <span class=nb>dict</span><span class=p>:</span>
+</span><span id=__span-0-160><a id=__codelineno-0-160 name=__codelineno-0-160></a><span class=w>    </span><span class=sd>&quot;&quot;&quot;Gets the profiling configuration for a given study type.</span>
+</span><span id=__span-0-161><a id=__codelineno-0-161 name=__codelineno-0-161></a>
+</span><span id=__span-0-162><a id=__codelineno-0-162 name=__codelineno-0-162></a><span class=sd>    Args:</span>
+</span><span id=__span-0-163><a id=__codelineno-0-163 name=__codelineno-0-163></a><span class=sd>        study_type: The type of the study (e.g., &#39;near_field&#39;).</span>
+</span><span id=__span-0-164><a id=__codelineno-0-164 name=__codelineno-0-164></a>
+</span><span id=__span-0-165><a id=__codelineno-0-165 name=__codelineno-0-165></a><span class=sd>    Returns:</span>
+</span><span id=__span-0-166><a id=__codelineno-0-166 name=__codelineno-0-166></a><span class=sd>        The profiling configuration for the study type.</span>
+</span><span id=__span-0-167><a id=__codelineno-0-167 name=__codelineno-0-167></a><span class=sd>    &quot;&quot;&quot;</span>
+</span><span id=__span-0-168><a id=__codelineno-0-168 name=__codelineno-0-168></a>    <span class=k>return</span> <span class=n>get_profiling_config</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>profiling_config</span><span class=p>,</span> <span class=n>study_type</span><span class=p>)</span>
+</span></code></pre></div></td></tr></table></div> </details> </div> </div> <div class="doc doc-object doc-function"> <h4 id=goliat.config.Config.get_download_email class="doc doc-heading"> <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code> <span class="doc doc-object-name doc-function-name">get_download_email</span> <a href=#goliat.config.Config.get_download_email class=headerlink title="Permanent link">&para;</a></h4> <div class="language-python doc-signature highlight"><pre><span></span><code><span id=__span-0-1><a id=__codelineno-0-1 name=__codelineno-0-1 href=#__codelineno-0-1></a><span class=nf>get_download_email</span><span class=p>()</span> <span class=o>-&gt;</span> <span class=nb>str</span>
+</span></code></pre></div> <div class="doc doc-contents "> <p>Returns the download email from environment variables.</p> <p><span class=doc-section-title>Raises:</span></p> <table> <thead> <tr> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code><span title=ValueError>ValueError</span></code> </td> <td> <div class=doc-md-description> <p>If DOWNLOAD_EMAIL is not set in the environment.</p> </div> </td> </tr> </tbody> </table> <details class=quote> <summary>Source code in <code>goliat/config/core.py</code></summary> <div class="language-python highlight"><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal><a href=#__codelineno-0-170>170</a></span>
+<span class=normal><a href=#__codelineno-0-171>171</a></span>
+<span class=normal><a href=#__codelineno-0-172>172</a></span>
+<span class=normal><a href=#__codelineno-0-173>173</a></span>
+<span class=normal><a href=#__codelineno-0-174>174</a></span>
+<span class=normal><a href=#__codelineno-0-175>175</a></span>
+<span class=normal><a href=#__codelineno-0-176>176</a></span></pre></div></td><td class=code><div><pre><span></span><code><span id=__span-0-170><a id=__codelineno-0-170 name=__codelineno-0-170></a><span class=k>def</span><span class=w> </span><span class=nf>get_download_email</span><span class=p>(</span><span class=bp>self</span><span class=p>)</span> <span class=o>-&gt;</span> <span class=nb>str</span><span class=p>:</span>
+</span><span id=__span-0-171><a id=__codelineno-0-171 name=__codelineno-0-171></a><span class=w>    </span><span class=sd>&quot;&quot;&quot;Returns the download email from environment variables.</span>
+</span><span id=__span-0-172><a id=__codelineno-0-172 name=__codelineno-0-172></a>
+</span><span id=__span-0-173><a id=__codelineno-0-173 name=__codelineno-0-173></a><span class=sd>    Raises:</span>
+</span><span id=__span-0-174><a id=__codelineno-0-174 name=__codelineno-0-174></a><span class=sd>        ValueError: If DOWNLOAD_EMAIL is not set in the environment.</span>
+</span><span id=__span-0-175><a id=__codelineno-0-175 name=__codelineno-0-175></a><span class=sd>    &quot;&quot;&quot;</span>
+</span><span id=__span-0-176><a id=__codelineno-0-176 name=__codelineno-0-176></a>    <span class=k>return</span> <span class=n>get_download_email</span><span class=p>()</span>
+</span></code></pre></div></td></tr></table></div> </details> </div> </div> <div class="doc doc-object doc-function"> <h4 id=goliat.config.Config.get_osparc_credentials class="doc doc-heading"> <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code> <span class="doc doc-object-name doc-function-name">get_osparc_credentials</span> <a href=#goliat.config.Config.get_osparc_credentials class=headerlink title="Permanent link">&para;</a></h4> <div class="language-python doc-signature highlight"><pre><span></span><code><span id=__span-0-1><a id=__codelineno-0-1 name=__codelineno-0-1 href=#__codelineno-0-1></a><span class=nf>get_osparc_credentials</span><span class=p>()</span> <span class=o>-&gt;</span> <span class=nb>dict</span>
+</span></code></pre></div> <div class="doc doc-contents "> <p>Gets <abbr title="Open Simulation Platform for Advanced Research and Computing">oSPARC</abbr> credentials from environment variables.</p> <p><span class=doc-section-title>Raises:</span></p> <table> <thead> <tr> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code><span title=ValueError>ValueError</span></code> </td> <td> <div class=doc-md-description> <p>If required <abbr title="Open Simulation Platform for Advanced Research and Computing">oSPARC</abbr> credentials are not set.</p> </div> </td> </tr> </tbody> </table> <p><span class=doc-section-title>Returns:</span></p> <table> <thead> <tr> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code><span title=dict>dict</span></code> </td> <td> <div class=doc-md-description> <p>A dictionary containing <abbr title="Open Simulation Platform for Advanced Research and Computing">oSPARC</abbr> <abbr title="Application Programming Interface">API</abbr> credentials.</p> </div> </td> </tr> </tbody> </table> <details class=quote> <summary>Source code in <code>goliat/config/core.py</code></summary> <div class="language-python highlight"><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal><a href=#__codelineno-0-178>178</a></span>
+<span class=normal><a href=#__codelineno-0-179>179</a></span>
+<span class=normal><a href=#__codelineno-0-180>180</a></span>
+<span class=normal><a href=#__codelineno-0-181>181</a></span>
+<span class=normal><a href=#__codelineno-0-182>182</a></span>
+<span class=normal><a href=#__codelineno-0-183>183</a></span>
+<span class=normal><a href=#__codelineno-0-184>184</a></span>
+<span class=normal><a href=#__codelineno-0-185>185</a></span>
+<span class=normal><a href=#__codelineno-0-186>186</a></span>
+<span class=normal><a href=#__codelineno-0-187>187</a></span></pre></div></td><td class=code><div><pre><span></span><code><span id=__span-0-178><a id=__codelineno-0-178 name=__codelineno-0-178></a><span class=k>def</span><span class=w> </span><span class=nf>get_osparc_credentials</span><span class=p>(</span><span class=bp>self</span><span class=p>)</span> <span class=o>-&gt;</span> <span class=nb>dict</span><span class=p>:</span>
+</span><span id=__span-0-179><a id=__codelineno-0-179 name=__codelineno-0-179></a><span class=w>    </span><span class=sd>&quot;&quot;&quot;Gets oSPARC credentials from environment variables.</span>
+</span><span id=__span-0-180><a id=__codelineno-0-180 name=__codelineno-0-180></a>
+</span><span id=__span-0-181><a id=__codelineno-0-181 name=__codelineno-0-181></a><span class=sd>    Raises:</span>
+</span><span id=__span-0-182><a id=__codelineno-0-182 name=__codelineno-0-182></a><span class=sd>        ValueError: If required oSPARC credentials are not set.</span>
+</span><span id=__span-0-183><a id=__codelineno-0-183 name=__codelineno-0-183></a>
+</span><span id=__span-0-184><a id=__codelineno-0-184 name=__codelineno-0-184></a><span class=sd>    Returns:</span>
+</span><span id=__span-0-185><a id=__codelineno-0-185 name=__codelineno-0-185></a><span class=sd>        A dictionary containing oSPARC API credentials.</span>
+</span><span id=__span-0-186><a id=__codelineno-0-186 name=__codelineno-0-186></a><span class=sd>    &quot;&quot;&quot;</span>
+</span><span id=__span-0-187><a id=__codelineno-0-187 name=__codelineno-0-187></a>    <span class=k>return</span> <span class=n>get_osparc_credentials</span><span class=p>()</span>
+</span></code></pre></div></td></tr></table></div> </details> </div> </div> <div class="doc doc-object doc-function"> <h4 id=goliat.config.Config.get_only_write_input_file class="doc doc-heading"> <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code> <span class="doc doc-object-name doc-function-name">get_only_write_input_file</span> <a href=#goliat.config.Config.get_only_write_input_file class=headerlink title="Permanent link">&para;</a></h4> <div class="language-python doc-signature highlight"><pre><span></span><code><span id=__span-0-1><a id=__codelineno-0-1 name=__codelineno-0-1 href=#__codelineno-0-1></a><span class=nf>get_only_write_input_file</span><span class=p>()</span> <span class=o>-&gt;</span> <span class=nb>bool</span>
+</span></code></pre></div> <div class="doc doc-contents "> <p>Returns whether to only write input files without running simulations.</p> <details class=quote> <summary>Source code in <code>goliat/config/core.py</code></summary> <div class="language-python highlight"><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal><a href=#__codelineno-0-189>189</a></span>
+<span class=normal><a href=#__codelineno-0-190>190</a></span>
+<span class=normal><a href=#__codelineno-0-191>191</a></span>
+<span class=normal><a href=#__codelineno-0-192>192</a></span>
+<span class=normal><a href=#__codelineno-0-193>193</a></span></pre></div></td><td class=code><div><pre><span></span><code><span id=__span-0-189><a id=__codelineno-0-189 name=__codelineno-0-189></a><span class=k>def</span><span class=w> </span><span class=nf>get_only_write_input_file</span><span class=p>(</span><span class=bp>self</span><span class=p>)</span> <span class=o>-&gt;</span> <span class=nb>bool</span><span class=p>:</span>
+</span><span id=__span-0-190><a id=__codelineno-0-190 name=__codelineno-0-190></a><span class=w>    </span><span class=sd>&quot;&quot;&quot;Returns whether to only write input files without running simulations.&quot;&quot;&quot;</span>
+</span><span id=__span-0-191><a id=__codelineno-0-191 name=__codelineno-0-191></a>    <span class=n>result</span> <span class=o>=</span> <span class=bp>self</span><span class=p>[</span><span class=s2>&quot;execution_control.only_write_input_file&quot;</span><span class=p>]</span> <span class=ow>or</span> <span class=kc>False</span>
+</span><span id=__span-0-192><a id=__codelineno-0-192 name=__codelineno-0-192></a>    <span class=k>assert</span> <span class=nb>isinstance</span><span class=p>(</span><span class=n>result</span><span class=p>,</span> <span class=nb>bool</span><span class=p>)</span>
+</span><span id=__span-0-193><a id=__codelineno-0-193 name=__codelineno-0-193></a>    <span class=k>return</span> <span class=n>result</span>
+</span></code></pre></div></td></tr></table></div> </details> </div> </div> <div class="doc doc-object doc-function"> <h4 id=goliat.config.Config.get_auto_cleanup_previous_results class="doc doc-heading"> <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code> <span class="doc doc-object-name doc-function-name">get_auto_cleanup_previous_results</span> <a href=#goliat.config.Config.get_auto_cleanup_previous_results class=headerlink title="Permanent link">&para;</a></h4> <div class="language-python doc-signature highlight"><pre><span></span><code><span id=__span-0-1><a id=__codelineno-0-1 name=__codelineno-0-1 href=#__codelineno-0-1></a><span class=nf>get_auto_cleanup_previous_results</span><span class=p>()</span> <span class=o>-&gt;</span> <span class=nb>list</span>
+</span></code></pre></div> <div class="doc doc-contents "> <p>Gets the 'auto_cleanup_previous_results' setting from 'execution_control'.</p> <p>This setting determines which previous simulation files to automatically delete to preserve disk space. It should only be used in serial workflows.</p> <p><span class=doc-section-title>Returns:</span></p> <table> <thead> <tr> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code><span title=list>list</span></code> </td> <td> <div class=doc-md-description> <p>A list of file types to clean up (e.g., ["output", "input"]).</p> </div> </td> </tr> </tbody> </table> <details class=quote> <summary>Source code in <code>goliat/config/core.py</code></summary> <div class="language-python highlight"><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal><a href=#__codelineno-0-195>195</a></span>
+<span class=normal><a href=#__codelineno-0-196>196</a></span>
+<span class=normal><a href=#__codelineno-0-197>197</a></span>
+<span class=normal><a href=#__codelineno-0-198>198</a></span>
+<span class=normal><a href=#__codelineno-0-199>199</a></span>
+<span class=normal><a href=#__codelineno-0-200>200</a></span>
+<span class=normal><a href=#__codelineno-0-201>201</a></span>
+<span class=normal><a href=#__codelineno-0-202>202</a></span>
+<span class=normal><a href=#__codelineno-0-203>203</a></span>
+<span class=normal><a href=#__codelineno-0-204>204</a></span>
+<span class=normal><a href=#__codelineno-0-205>205</a></span>
+<span class=normal><a href=#__codelineno-0-206>206</a></span>
+<span class=normal><a href=#__codelineno-0-207>207</a></span>
+<span class=normal><a href=#__codelineno-0-208>208</a></span>
+<span class=normal><a href=#__codelineno-0-209>209</a></span>
+<span class=normal><a href=#__codelineno-0-210>210</a></span>
+<span class=normal><a href=#__codelineno-0-211>211</a></span>
+<span class=normal><a href=#__codelineno-0-212>212</a></span>
+<span class=normal><a href=#__codelineno-0-213>213</a></span>
+<span class=normal><a href=#__codelineno-0-214>214</a></span>
+<span class=normal><a href=#__codelineno-0-215>215</a></span>
+<span class=normal><a href=#__codelineno-0-216>216</a></span>
 <span class=normal><a href=#__codelineno-0-217>217</a></span>
 <span class=normal><a href=#__codelineno-0-218>218</a></span>
 <span class=normal><a href=#__codelineno-0-219>219</a></span>
@@ -191,22 +302,44 @@
 <span class=normal><a href=#__codelineno-0-225>225</a></span>
 <span class=normal><a href=#__codelineno-0-226>226</a></span>
 <span class=normal><a href=#__codelineno-0-227>227</a></span>
-<span class=normal><a href=#__codelineno-0-228>228</a></span></pre></div></td><td class=code><div><pre><span></span><code><span id=__span-0-216><a id=__codelineno-0-216 name=__codelineno-0-216></a><span class=k>def</span><span class=w> </span><span class=nf>get_material_mapping</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>phantom_name</span><span class=p>:</span> <span class=nb>str</span><span class=p>)</span> <span class=o>-&gt;</span> <span class=nb>dict</span><span class=p>:</span>
-</span><span id=__span-0-217><a id=__codelineno-0-217 name=__codelineno-0-217></a><span class=w>    </span><span class=sd>&quot;&quot;&quot;Gets the material name mapping for a specific phantom.</span>
-</span><span id=__span-0-218><a id=__codelineno-0-218 name=__codelineno-0-218></a>
-</span><span id=__span-0-219><a id=__codelineno-0-219 name=__codelineno-0-219></a><span class=sd>    Args:</span>
-</span><span id=__span-0-220><a id=__codelineno-0-220 name=__codelineno-0-220></a><span class=sd>        phantom_name: The name of the phantom.</span>
-</span><span id=__span-0-221><a id=__codelineno-0-221 name=__codelineno-0-221></a>
-</span><span id=__span-0-222><a id=__codelineno-0-222 name=__codelineno-0-222></a><span class=sd>    Returns:</span>
-</span><span id=__span-0-223><a id=__codelineno-0-223 name=__codelineno-0-223></a><span class=sd>        The material mapping dictionary.</span>
-</span><span id=__span-0-224><a id=__codelineno-0-224 name=__codelineno-0-224></a><span class=sd>    &quot;&quot;&quot;</span>
-</span><span id=__span-0-225><a id=__codelineno-0-225 name=__codelineno-0-225></a>    <span class=k>if</span> <span class=n>phantom_name</span> <span class=ow>in</span> <span class=bp>self</span><span class=o>.</span><span class=n>material_mapping</span><span class=p>:</span>
-</span><span id=__span-0-226><a id=__codelineno-0-226 name=__codelineno-0-226></a>        <span class=k>return</span> <span class=bp>self</span><span class=o>.</span><span class=n>material_mapping</span><span class=p>[</span><span class=n>phantom_name</span><span class=p>]</span>
-</span><span id=__span-0-227><a id=__codelineno-0-227 name=__codelineno-0-227></a>    <span class=k>else</span><span class=p>:</span>
-</span><span id=__span-0-228><a id=__codelineno-0-228 name=__codelineno-0-228></a>        <span class=k>return</span> <span class=bp>self</span><span class=o>.</span><span class=n>material_mapping</span>
-</span></code></pre></div></td></tr></table></div> </details> </div> </div> <div class="doc doc-object doc-function"> <h4 id=goliat.config.Config.get_profiling_config class="doc doc-heading"> <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code> <span class="doc doc-object-name doc-function-name">get_profiling_config</span> <a href=#goliat.config.Config.get_profiling_config class=headerlink title="Permanent link">&para;</a></h4> <div class="language-python doc-signature highlight"><pre><span></span><code><span id=__span-0-1><a id=__codelineno-0-1 name=__codelineno-0-1 href=#__codelineno-0-1></a><span class=nf>get_profiling_config</span><span class=p>(</span><span class=n>study_type</span><span class=p>:</span> <span class=nb>str</span><span class=p>)</span> <span class=o>-&gt;</span> <span class=nb>dict</span>
-</span></code></pre></div> <div class="doc doc-contents "> <p>Gets the profiling configuration for a given study type.</p> <p><span class=doc-section-title>Parameters:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> <th>Default</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code>study_type</code> </td> <td> <code><span title=str>str</span></code> </td> <td> <div class=doc-md-description> <p>The type of the study (e.g., 'near_field').</p> </div> </td> <td> <em>required</em> </td> </tr> </tbody> </table> <p><span class=doc-section-title>Returns:</span></p> <table> <thead> <tr> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code><span title=dict>dict</span></code> </td> <td> <div class=doc-md-description> <p>The profiling configuration for the study type.</p> </div> </td> </tr> </tbody> </table> <details class=quote> <summary>Source code in <code>goliat/config.py</code></summary> <div class="language-python highlight"><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal><a href=#__codelineno-0-230>230</a></span>
-<span class=normal><a href=#__codelineno-0-231>231</a></span>
+<span class=normal><a href=#__codelineno-0-228>228</a></span>
+<span class=normal><a href=#__codelineno-0-229>229</a></span></pre></div></td><td class=code><div><pre><span></span><code><span id=__span-0-195><a id=__codelineno-0-195 name=__codelineno-0-195></a><span class=k>def</span><span class=w> </span><span class=nf>get_auto_cleanup_previous_results</span><span class=p>(</span><span class=bp>self</span><span class=p>)</span> <span class=o>-&gt;</span> <span class=nb>list</span><span class=p>:</span>
+</span><span id=__span-0-196><a id=__codelineno-0-196 name=__codelineno-0-196></a><span class=w>    </span><span class=sd>&quot;&quot;&quot;Gets the &#39;auto_cleanup_previous_results&#39; setting from &#39;execution_control&#39;.</span>
+</span><span id=__span-0-197><a id=__codelineno-0-197 name=__codelineno-0-197></a>
+</span><span id=__span-0-198><a id=__codelineno-0-198 name=__codelineno-0-198></a><span class=sd>    This setting determines which previous simulation files to automatically delete</span>
+</span><span id=__span-0-199><a id=__codelineno-0-199 name=__codelineno-0-199></a><span class=sd>    to preserve disk space. It should only be used in serial workflows.</span>
+</span><span id=__span-0-200><a id=__codelineno-0-200 name=__codelineno-0-200></a>
+</span><span id=__span-0-201><a id=__codelineno-0-201 name=__codelineno-0-201></a><span class=sd>    Returns:</span>
+</span><span id=__span-0-202><a id=__codelineno-0-202 name=__codelineno-0-202></a><span class=sd>        A list of file types to clean up (e.g., [&quot;output&quot;, &quot;input&quot;]).</span>
+</span><span id=__span-0-203><a id=__codelineno-0-203 name=__codelineno-0-203></a><span class=sd>    &quot;&quot;&quot;</span>
+</span><span id=__span-0-204><a id=__codelineno-0-204 name=__codelineno-0-204></a>    <span class=n>cleanup_setting</span> <span class=o>=</span> <span class=bp>self</span><span class=p>[</span><span class=s2>&quot;execution_control.auto_cleanup_previous_results&quot;</span><span class=p>]</span> <span class=ow>or</span> <span class=p>[]</span>
+</span><span id=__span-0-205><a id=__codelineno-0-205 name=__codelineno-0-205></a>
+</span><span id=__span-0-206><a id=__codelineno-0-206 name=__codelineno-0-206></a>    <span class=c1># Handle legacy boolean format for backwards compatibility</span>
+</span><span id=__span-0-207><a id=__codelineno-0-207 name=__codelineno-0-207></a>    <span class=k>if</span> <span class=nb>isinstance</span><span class=p>(</span><span class=n>cleanup_setting</span><span class=p>,</span> <span class=nb>bool</span><span class=p>):</span>
+</span><span id=__span-0-208><a id=__codelineno-0-208 name=__codelineno-0-208></a>        <span class=k>if</span> <span class=n>cleanup_setting</span><span class=p>:</span>
+</span><span id=__span-0-209><a id=__codelineno-0-209 name=__codelineno-0-209></a>            <span class=c1># Legacy behavior: only clean output files</span>
+</span><span id=__span-0-210><a id=__codelineno-0-210 name=__codelineno-0-210></a>            <span class=k>return</span> <span class=p>[</span><span class=s2>&quot;output&quot;</span><span class=p>]</span>
+</span><span id=__span-0-211><a id=__codelineno-0-211 name=__codelineno-0-211></a>        <span class=k>else</span><span class=p>:</span>
+</span><span id=__span-0-212><a id=__codelineno-0-212 name=__codelineno-0-212></a>            <span class=k>return</span> <span class=p>[]</span>
+</span><span id=__span-0-213><a id=__codelineno-0-213 name=__codelineno-0-213></a>
+</span><span id=__span-0-214><a id=__codelineno-0-214 name=__codelineno-0-214></a>    <span class=c1># Validate that it&#39;s a list</span>
+</span><span id=__span-0-215><a id=__codelineno-0-215 name=__codelineno-0-215></a>    <span class=k>if</span> <span class=ow>not</span> <span class=nb>isinstance</span><span class=p>(</span><span class=n>cleanup_setting</span><span class=p>,</span> <span class=nb>list</span><span class=p>):</span>
+</span><span id=__span-0-216><a id=__codelineno-0-216 name=__codelineno-0-216></a>        <span class=kn>import</span><span class=w> </span><span class=nn>logging</span>
+</span><span id=__span-0-217><a id=__codelineno-0-217 name=__codelineno-0-217></a>
+</span><span id=__span-0-218><a id=__codelineno-0-218 name=__codelineno-0-218></a>        <span class=n>logging</span><span class=o>.</span><span class=n>warning</span><span class=p>(</span><span class=sa>f</span><span class=s2>&quot;&#39;auto_cleanup_previous_results&#39; should be a list, got </span><span class=si>{</span><span class=nb>type</span><span class=p>(</span><span class=n>cleanup_setting</span><span class=p>)</span><span class=si>}</span><span class=s2>. Disabling cleanup for safety.&quot;</span><span class=p>)</span>
+</span><span id=__span-0-219><a id=__codelineno-0-219 name=__codelineno-0-219></a>        <span class=k>return</span> <span class=p>[]</span>
+</span><span id=__span-0-220><a id=__codelineno-0-220 name=__codelineno-0-220></a>
+</span><span id=__span-0-221><a id=__codelineno-0-221 name=__codelineno-0-221></a>    <span class=c1># Validate file types</span>
+</span><span id=__span-0-222><a id=__codelineno-0-222 name=__codelineno-0-222></a>    <span class=n>valid_types</span> <span class=o>=</span> <span class=p>{</span><span class=s2>&quot;output&quot;</span><span class=p>,</span> <span class=s2>&quot;input&quot;</span><span class=p>,</span> <span class=s2>&quot;smash&quot;</span><span class=p>}</span>
+</span><span id=__span-0-223><a id=__codelineno-0-223 name=__codelineno-0-223></a>    <span class=n>invalid_types</span> <span class=o>=</span> <span class=p>[</span><span class=n>t</span> <span class=k>for</span> <span class=n>t</span> <span class=ow>in</span> <span class=n>cleanup_setting</span> <span class=k>if</span> <span class=n>t</span> <span class=ow>not</span> <span class=ow>in</span> <span class=n>valid_types</span><span class=p>]</span>
+</span><span id=__span-0-224><a id=__codelineno-0-224 name=__codelineno-0-224></a>    <span class=k>if</span> <span class=n>invalid_types</span><span class=p>:</span>
+</span><span id=__span-0-225><a id=__codelineno-0-225 name=__codelineno-0-225></a>        <span class=kn>import</span><span class=w> </span><span class=nn>logging</span>
+</span><span id=__span-0-226><a id=__codelineno-0-226 name=__codelineno-0-226></a>
+</span><span id=__span-0-227><a id=__codelineno-0-227 name=__codelineno-0-227></a>        <span class=n>logging</span><span class=o>.</span><span class=n>warning</span><span class=p>(</span><span class=sa>f</span><span class=s2>&quot;Invalid file types in &#39;auto_cleanup_previous_results&#39;: </span><span class=si>{</span><span class=n>invalid_types</span><span class=si>}</span><span class=s2>. Valid types are: </span><span class=si>{</span><span class=n>valid_types</span><span class=si>}</span><span class=s2>&quot;</span><span class=p>)</span>
+</span><span id=__span-0-228><a id=__codelineno-0-228 name=__codelineno-0-228></a>
+</span><span id=__span-0-229><a id=__codelineno-0-229 name=__codelineno-0-229></a>    <span class=k>return</span> <span class=p>[</span><span class=n>t</span> <span class=k>for</span> <span class=n>t</span> <span class=ow>in</span> <span class=n>cleanup_setting</span> <span class=k>if</span> <span class=n>t</span> <span class=ow>in</span> <span class=n>valid_types</span><span class=p>]</span>
+</span></code></pre></div></td></tr></table></div> </details> </div> </div> <div class="doc doc-object doc-function"> <h4 id=goliat.config.Config.build_simulation_config class="doc doc-heading"> <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code> <span class="doc doc-object-name doc-function-name">build_simulation_config</span> <a href=#goliat.config.Config.build_simulation_config class=headerlink title="Permanent link">&para;</a></h4> <div class="language-python doc-signature highlight"><pre><span></span><code><span id=__span-0-1><a id=__codelineno-0-1 name=__codelineno-0-1 href=#__codelineno-0-1></a><span class=nf>build_simulation_config</span><span class=p>(</span><span class=n>phantom_name</span><span class=p>:</span> <span class=nb>str</span><span class=p>,</span> <span class=n>frequency_mhz</span><span class=p>:</span> <span class=nb>int</span><span class=p>,</span> <span class=n>scenario_name</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=nb>str</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span> <span class=n>position_name</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=nb>str</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span> <span class=n>orientation_name</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=nb>str</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span> <span class=n>direction_name</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=nb>str</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span> <span class=n>polarization_name</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=nb>str</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>)</span> <span class=o>-&gt;</span> <span class=nb>dict</span>
+</span></code></pre></div> <div class="doc doc-contents "> <p>Constructs a minimal, simulation-specific configuration dictionary.</p> <p>This method is the core of the "Verify and Resume" feature. It creates a "surgical" snapshot of the configuration that is unique to a single simulation run. This snapshot is then hashed to determine if a valid, reusable simulation already exists.</p> <p>The key principle is to only include parameters that directly affect the outcome of the specific simulation. For example, instead of including the entire 'gridding_parameters' block, it surgically extracts only the gridding value for the specific 'frequency_mhz' being used. This ensures that a change to one frequency's gridding in the main config does not invalidate the hashes for other, unaffected frequencies.</p> <p><span class=doc-section-title>Parameters:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> <th>Default</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code>phantom_name</code> </td> <td> <code><span title=str>str</span></code> </td> <td> <div class=doc-md-description> <p>The name of the phantom model.</p> </div> </td> <td> <em>required</em> </td> </tr> <tr class=doc-section-item> <td> <code>frequency_mhz</code> </td> <td> <code><span title=int>int</span></code> </td> <td> <div class=doc-md-description> <p>The simulation frequency in <abbr title=Megahertz>MHz</abbr>.</p> </div> </td> <td> <em>required</em> </td> </tr> <tr class=doc-section-item> <td> <code>scenario_name</code> </td> <td> <code><span title=typing.Optional>Optional</span>[<span title=str>str</span>]</code> </td> <td> <div class=doc-md-description> <p>(Near-Field) The base name of the placement scenario.</p> </div> </td> <td> <code>None</code> </td> </tr> <tr class=doc-section-item> <td> <code>position_name</code> </td> <td> <code><span title=typing.Optional>Optional</span>[<span title=str>str</span>]</code> </td> <td> <div class=doc-md-description> <p>(Near-Field) The name of the position within the scenario.</p> </div> </td> <td> <code>None</code> </td> </tr> <tr class=doc-section-item> <td> <code>orientation_name</code> </td> <td> <code><span title=typing.Optional>Optional</span>[<span title=str>str</span>]</code> </td> <td> <div class=doc-md-description> <p>(Near-Field) The name of the orientation.</p> </div> </td> <td> <code>None</code> </td> </tr> <tr class=doc-section-item> <td> <code>direction_name</code> </td> <td> <code><span title=typing.Optional>Optional</span>[<span title=str>str</span>]</code> </td> <td> <div class=doc-md-description> <p>(Far-Field) The incident direction of the plane wave.</p> </div> </td> <td> <code>None</code> </td> </tr> <tr class=doc-section-item> <td> <code>polarization_name</code> </td> <td> <code><span title=typing.Optional>Optional</span>[<span title=str>str</span>]</code> </td> <td> <div class=doc-md-description> <p>(Far-Field) The polarization of the plane wave.</p> </div> </td> <td> <code>None</code> </td> </tr> </tbody> </table> <p><span class=doc-section-title>Returns:</span></p> <table> <thead> <tr> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code><span title=dict>dict</span></code> </td> <td> <div class=doc-md-description> <p>A dictionary containing the minimal, surgical configuration snapshot.</p> </div> </td> </tr> </tbody> </table> <details class=quote> <summary>Source code in <code>goliat/config/core.py</code></summary> <div class="language-python highlight"><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal><a href=#__codelineno-0-231>231</a></span>
 <span class=normal><a href=#__codelineno-0-232>232</a></span>
 <span class=normal><a href=#__codelineno-0-233>233</a></span>
 <span class=normal><a href=#__codelineno-0-234>234</a></span>
@@ -219,23 +352,9 @@
 <span class=normal><a href=#__codelineno-0-241>241</a></span>
 <span class=normal><a href=#__codelineno-0-242>242</a></span>
 <span class=normal><a href=#__codelineno-0-243>243</a></span>
-<span class=normal><a href=#__codelineno-0-244>244</a></span></pre></div></td><td class=code><div><pre><span></span><code><span id=__span-0-230><a id=__codelineno-0-230 name=__codelineno-0-230></a><span class=k>def</span><span class=w> </span><span class=nf>get_profiling_config</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>study_type</span><span class=p>:</span> <span class=nb>str</span><span class=p>)</span> <span class=o>-&gt;</span> <span class=nb>dict</span><span class=p>:</span>
-</span><span id=__span-0-231><a id=__codelineno-0-231 name=__codelineno-0-231></a><span class=w>    </span><span class=sd>&quot;&quot;&quot;Gets the profiling configuration for a given study type.</span>
-</span><span id=__span-0-232><a id=__codelineno-0-232 name=__codelineno-0-232></a>
-</span><span id=__span-0-233><a id=__codelineno-0-233 name=__codelineno-0-233></a><span class=sd>    Args:</span>
-</span><span id=__span-0-234><a id=__codelineno-0-234 name=__codelineno-0-234></a><span class=sd>        study_type: The type of the study (e.g., &#39;near_field&#39;).</span>
-</span><span id=__span-0-235><a id=__codelineno-0-235 name=__codelineno-0-235></a>
-</span><span id=__span-0-236><a id=__codelineno-0-236 name=__codelineno-0-236></a><span class=sd>    Returns:</span>
-</span><span id=__span-0-237><a id=__codelineno-0-237 name=__codelineno-0-237></a><span class=sd>        The profiling configuration for the study type.</span>
-</span><span id=__span-0-238><a id=__codelineno-0-238 name=__codelineno-0-238></a><span class=sd>    &quot;&quot;&quot;</span>
-</span><span id=__span-0-239><a id=__codelineno-0-239 name=__codelineno-0-239></a>    <span class=k>if</span> <span class=n>study_type</span> <span class=ow>not</span> <span class=ow>in</span> <span class=bp>self</span><span class=o>.</span><span class=n>profiling_config</span><span class=p>:</span>
-</span><span id=__span-0-240><a id=__codelineno-0-240 name=__codelineno-0-240></a>        <span class=kn>import</span><span class=w> </span><span class=nn>logging</span>
-</span><span id=__span-0-241><a id=__codelineno-0-241 name=__codelineno-0-241></a>
-</span><span id=__span-0-242><a id=__codelineno-0-242 name=__codelineno-0-242></a>        <span class=n>logging</span><span class=o>.</span><span class=n>warning</span><span class=p>(</span><span class=sa>f</span><span class=s2>&quot;Profiling configuration not defined for study type: </span><span class=si>{</span><span class=n>study_type</span><span class=si>}</span><span class=s2>. Returning empty configuration.&quot;</span><span class=p>)</span>
-</span><span id=__span-0-243><a id=__codelineno-0-243 name=__codelineno-0-243></a>        <span class=k>return</span> <span class=p>{}</span>
-</span><span id=__span-0-244><a id=__codelineno-0-244 name=__codelineno-0-244></a>    <span class=k>return</span> <span class=bp>self</span><span class=o>.</span><span class=n>profiling_config</span><span class=p>[</span><span class=n>study_type</span><span class=p>]</span>
-</span></code></pre></div></td></tr></table></div> </details> </div> </div> <div class="doc doc-object doc-function"> <h4 id=goliat.config.Config.get_download_email class="doc doc-heading"> <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code> <span class="doc doc-object-name doc-function-name">get_download_email</span> <a href=#goliat.config.Config.get_download_email class=headerlink title="Permanent link">&para;</a></h4> <div class="language-python doc-signature highlight"><pre><span></span><code><span id=__span-0-1><a id=__codelineno-0-1 name=__codelineno-0-1 href=#__codelineno-0-1></a><span class=nf>get_download_email</span><span class=p>()</span> <span class=o>-&gt;</span> <span class=nb>str</span>
-</span></code></pre></div> <div class="doc doc-contents "> <p>Returns the download email from environment variables.</p> <p><span class=doc-section-title>Raises:</span></p> <table> <thead> <tr> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code><span title=ValueError>ValueError</span></code> </td> <td> <div class=doc-md-description> <p>If DOWNLOAD_EMAIL is not set in the environment.</p> </div> </td> </tr> </tbody> </table> <details class=quote> <summary>Source code in <code>goliat/config.py</code></summary> <div class="language-python highlight"><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal><a href=#__codelineno-0-246>246</a></span>
+<span class=normal><a href=#__codelineno-0-244>244</a></span>
+<span class=normal><a href=#__codelineno-0-245>245</a></span>
+<span class=normal><a href=#__codelineno-0-246>246</a></span>
 <span class=normal><a href=#__codelineno-0-247>247</a></span>
 <span class=normal><a href=#__codelineno-0-248>248</a></span>
 <span class=normal><a href=#__codelineno-0-249>249</a></span>
@@ -244,18 +363,9 @@
 <span class=normal><a href=#__codelineno-0-252>252</a></span>
 <span class=normal><a href=#__codelineno-0-253>253</a></span>
 <span class=normal><a href=#__codelineno-0-254>254</a></span>
-<span class=normal><a href=#__codelineno-0-255>255</a></span></pre></div></td><td class=code><div><pre><span></span><code><span id=__span-0-246><a id=__codelineno-0-246 name=__codelineno-0-246></a><span class=k>def</span><span class=w> </span><span class=nf>get_download_email</span><span class=p>(</span><span class=bp>self</span><span class=p>)</span> <span class=o>-&gt;</span> <span class=nb>str</span><span class=p>:</span>
-</span><span id=__span-0-247><a id=__codelineno-0-247 name=__codelineno-0-247></a><span class=w>    </span><span class=sd>&quot;&quot;&quot;Returns the download email from environment variables.</span>
-</span><span id=__span-0-248><a id=__codelineno-0-248 name=__codelineno-0-248></a>
-</span><span id=__span-0-249><a id=__codelineno-0-249 name=__codelineno-0-249></a><span class=sd>    Raises:</span>
-</span><span id=__span-0-250><a id=__codelineno-0-250 name=__codelineno-0-250></a><span class=sd>        ValueError: If DOWNLOAD_EMAIL is not set in the environment.</span>
-</span><span id=__span-0-251><a id=__codelineno-0-251 name=__codelineno-0-251></a><span class=sd>    &quot;&quot;&quot;</span>
-</span><span id=__span-0-252><a id=__codelineno-0-252 name=__codelineno-0-252></a>    <span class=n>email</span> <span class=o>=</span> <span class=n>os</span><span class=o>.</span><span class=n>getenv</span><span class=p>(</span><span class=s2>&quot;DOWNLOAD_EMAIL&quot;</span><span class=p>)</span>
-</span><span id=__span-0-253><a id=__codelineno-0-253 name=__codelineno-0-253></a>    <span class=k>if</span> <span class=ow>not</span> <span class=n>email</span><span class=p>:</span>
-</span><span id=__span-0-254><a id=__codelineno-0-254 name=__codelineno-0-254></a>        <span class=k>raise</span> <span class=ne>ValueError</span><span class=p>(</span><span class=s2>&quot;Missing DOWNLOAD_EMAIL. Please set this in your .env file.&quot;</span><span class=p>)</span>
-</span><span id=__span-0-255><a id=__codelineno-0-255 name=__codelineno-0-255></a>    <span class=k>return</span> <span class=n>email</span>
-</span></code></pre></div></td></tr></table></div> </details> </div> </div> <div class="doc doc-object doc-function"> <h4 id=goliat.config.Config.get_osparc_credentials class="doc doc-heading"> <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code> <span class="doc doc-object-name doc-function-name">get_osparc_credentials</span> <a href=#goliat.config.Config.get_osparc_credentials class=headerlink title="Permanent link">&para;</a></h4> <div class="language-python doc-signature highlight"><pre><span></span><code><span id=__span-0-1><a id=__codelineno-0-1 name=__codelineno-0-1 href=#__codelineno-0-1></a><span class=nf>get_osparc_credentials</span><span class=p>()</span> <span class=o>-&gt;</span> <span class=nb>dict</span>
-</span></code></pre></div> <div class="doc doc-contents "> <p>Gets <abbr title="Open Simulation Platform for Advanced Research and Computing">oSPARC</abbr> credentials from environment variables.</p> <p><span class=doc-section-title>Raises:</span></p> <table> <thead> <tr> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code><span title=ValueError>ValueError</span></code> </td> <td> <div class=doc-md-description> <p>If required <abbr title="Open Simulation Platform for Advanced Research and Computing">oSPARC</abbr> credentials are not set.</p> </div> </td> </tr> </tbody> </table> <p><span class=doc-section-title>Returns:</span></p> <table> <thead> <tr> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code><span title=dict>dict</span></code> </td> <td> <div class=doc-md-description> <p>A dictionary containing <abbr title="Open Simulation Platform for Advanced Research and Computing">oSPARC</abbr> <abbr title="Application Programming Interface">API</abbr> credentials.</p> </div> </td> </tr> </tbody> </table> <details class=quote> <summary>Source code in <code>goliat/config.py</code></summary> <div class="language-python highlight"><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal><a href=#__codelineno-0-257>257</a></span>
+<span class=normal><a href=#__codelineno-0-255>255</a></span>
+<span class=normal><a href=#__codelineno-0-256>256</a></span>
+<span class=normal><a href=#__codelineno-0-257>257</a></span>
 <span class=normal><a href=#__codelineno-0-258>258</a></span>
 <span class=normal><a href=#__codelineno-0-259>259</a></span>
 <span class=normal><a href=#__codelineno-0-260>260</a></span>
@@ -279,43 +389,15 @@
 <span class=normal><a href=#__codelineno-0-278>278</a></span>
 <span class=normal><a href=#__codelineno-0-279>279</a></span>
 <span class=normal><a href=#__codelineno-0-280>280</a></span>
-<span class=normal><a href=#__codelineno-0-281>281</a></span></pre></div></td><td class=code><div><pre><span></span><code><span id=__span-0-257><a id=__codelineno-0-257 name=__codelineno-0-257></a><span class=k>def</span><span class=w> </span><span class=nf>get_osparc_credentials</span><span class=p>(</span><span class=bp>self</span><span class=p>)</span> <span class=o>-&gt;</span> <span class=nb>dict</span><span class=p>:</span>
-</span><span id=__span-0-258><a id=__codelineno-0-258 name=__codelineno-0-258></a><span class=w>    </span><span class=sd>&quot;&quot;&quot;Gets oSPARC credentials from environment variables.</span>
-</span><span id=__span-0-259><a id=__codelineno-0-259 name=__codelineno-0-259></a>
-</span><span id=__span-0-260><a id=__codelineno-0-260 name=__codelineno-0-260></a><span class=sd>    Raises:</span>
-</span><span id=__span-0-261><a id=__codelineno-0-261 name=__codelineno-0-261></a><span class=sd>        ValueError: If required oSPARC credentials are not set.</span>
-</span><span id=__span-0-262><a id=__codelineno-0-262 name=__codelineno-0-262></a>
-</span><span id=__span-0-263><a id=__codelineno-0-263 name=__codelineno-0-263></a><span class=sd>    Returns:</span>
-</span><span id=__span-0-264><a id=__codelineno-0-264 name=__codelineno-0-264></a><span class=sd>        A dictionary containing oSPARC API credentials.</span>
-</span><span id=__span-0-265><a id=__codelineno-0-265 name=__codelineno-0-265></a><span class=sd>    &quot;&quot;&quot;</span>
-</span><span id=__span-0-266><a id=__codelineno-0-266 name=__codelineno-0-266></a>    <span class=n>credentials</span> <span class=o>=</span> <span class=p>{</span>
-</span><span id=__span-0-267><a id=__codelineno-0-267 name=__codelineno-0-267></a>        <span class=s2>&quot;api_key&quot;</span><span class=p>:</span> <span class=n>os</span><span class=o>.</span><span class=n>getenv</span><span class=p>(</span><span class=s2>&quot;OSPARC_API_KEY&quot;</span><span class=p>),</span>
-</span><span id=__span-0-268><a id=__codelineno-0-268 name=__codelineno-0-268></a>        <span class=s2>&quot;api_secret&quot;</span><span class=p>:</span> <span class=n>os</span><span class=o>.</span><span class=n>getenv</span><span class=p>(</span><span class=s2>&quot;OSPARC_API_SECRET&quot;</span><span class=p>),</span>
-</span><span id=__span-0-269><a id=__codelineno-0-269 name=__codelineno-0-269></a>        <span class=s2>&quot;api_server&quot;</span><span class=p>:</span> <span class=s2>&quot;https://api.sim4life.science&quot;</span><span class=p>,</span>
-</span><span id=__span-0-270><a id=__codelineno-0-270 name=__codelineno-0-270></a>        <span class=s2>&quot;api_version&quot;</span><span class=p>:</span> <span class=s2>&quot;v0&quot;</span><span class=p>,</span>
-</span><span id=__span-0-271><a id=__codelineno-0-271 name=__codelineno-0-271></a>    <span class=p>}</span>
-</span><span id=__span-0-272><a id=__codelineno-0-272 name=__codelineno-0-272></a>
-</span><span id=__span-0-273><a id=__codelineno-0-273 name=__codelineno-0-273></a>    <span class=n>missing</span> <span class=o>=</span> <span class=p>[</span><span class=n>key</span> <span class=k>for</span> <span class=n>key</span><span class=p>,</span> <span class=n>value</span> <span class=ow>in</span> <span class=n>credentials</span><span class=o>.</span><span class=n>items</span><span class=p>()</span> <span class=k>if</span> <span class=n>value</span> <span class=ow>is</span> <span class=kc>None</span> <span class=ow>and</span> <span class=n>key</span> <span class=o>!=</span> <span class=s2>&quot;api_version&quot;</span><span class=p>]</span>
-</span><span id=__span-0-274><a id=__codelineno-0-274 name=__codelineno-0-274></a>    <span class=k>if</span> <span class=n>missing</span><span class=p>:</span>
-</span><span id=__span-0-275><a id=__codelineno-0-275 name=__codelineno-0-275></a>        <span class=k>raise</span> <span class=ne>ValueError</span><span class=p>(</span>
-</span><span id=__span-0-276><a id=__codelineno-0-276 name=__codelineno-0-276></a>            <span class=sa>f</span><span class=s2>&quot;Missing oSPARC credentials: </span><span class=si>{</span><span class=s1>&#39;, &#39;</span><span class=o>.</span><span class=n>join</span><span class=p>(</span><span class=n>missing</span><span class=p>)</span><span class=si>}</span><span class=s2>. &quot;</span>
-</span><span id=__span-0-277><a id=__codelineno-0-277 name=__codelineno-0-277></a>            <span class=s2>&quot;Please create a .env file in the project root with your oSPARC API credentials. &quot;</span>
-</span><span id=__span-0-278><a id=__codelineno-0-278 name=__codelineno-0-278></a>            <span class=s2>&quot;See README.md for setup instructions.&quot;</span>
-</span><span id=__span-0-279><a id=__codelineno-0-279 name=__codelineno-0-279></a>        <span class=p>)</span>
-</span><span id=__span-0-280><a id=__codelineno-0-280 name=__codelineno-0-280></a>
-</span><span id=__span-0-281><a id=__codelineno-0-281 name=__codelineno-0-281></a>    <span class=k>return</span> <span class=n>credentials</span>
-</span></code></pre></div></td></tr></table></div> </details> </div> </div> <div class="doc doc-object doc-function"> <h4 id=goliat.config.Config.get_only_write_input_file class="doc doc-heading"> <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code> <span class="doc doc-object-name doc-function-name">get_only_write_input_file</span> <a href=#goliat.config.Config.get_only_write_input_file class=headerlink title="Permanent link">&para;</a></h4> <div class="language-python doc-signature highlight"><pre><span></span><code><span id=__span-0-1><a id=__codelineno-0-1 name=__codelineno-0-1 href=#__codelineno-0-1></a><span class=nf>get_only_write_input_file</span><span class=p>()</span> <span class=o>-&gt;</span> <span class=nb>bool</span>
-</span></code></pre></div> <div class="doc doc-contents "> <p>Returns whether to only write input files without running simulations.</p> <details class=quote> <summary>Source code in <code>goliat/config.py</code></summary> <div class="language-python highlight"><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal><a href=#__codelineno-0-283>283</a></span>
+<span class=normal><a href=#__codelineno-0-281>281</a></span>
+<span class=normal><a href=#__codelineno-0-282>282</a></span>
+<span class=normal><a href=#__codelineno-0-283>283</a></span>
 <span class=normal><a href=#__codelineno-0-284>284</a></span>
 <span class=normal><a href=#__codelineno-0-285>285</a></span>
 <span class=normal><a href=#__codelineno-0-286>286</a></span>
-<span class=normal><a href=#__codelineno-0-287>287</a></span></pre></div></td><td class=code><div><pre><span></span><code><span id=__span-0-283><a id=__codelineno-0-283 name=__codelineno-0-283></a><span class=k>def</span><span class=w> </span><span class=nf>get_only_write_input_file</span><span class=p>(</span><span class=bp>self</span><span class=p>)</span> <span class=o>-&gt;</span> <span class=nb>bool</span><span class=p>:</span>
-</span><span id=__span-0-284><a id=__codelineno-0-284 name=__codelineno-0-284></a><span class=w>    </span><span class=sd>&quot;&quot;&quot;Returns whether to only write input files without running simulations.&quot;&quot;&quot;</span>
-</span><span id=__span-0-285><a id=__codelineno-0-285 name=__codelineno-0-285></a>    <span class=n>result</span> <span class=o>=</span> <span class=bp>self</span><span class=p>[</span><span class=s2>&quot;execution_control.only_write_input_file&quot;</span><span class=p>]</span> <span class=ow>or</span> <span class=kc>False</span>
-</span><span id=__span-0-286><a id=__codelineno-0-286 name=__codelineno-0-286></a>    <span class=k>assert</span> <span class=nb>isinstance</span><span class=p>(</span><span class=n>result</span><span class=p>,</span> <span class=nb>bool</span><span class=p>)</span>
-</span><span id=__span-0-287><a id=__codelineno-0-287 name=__codelineno-0-287></a>    <span class=k>return</span> <span class=n>result</span>
-</span></code></pre></div></td></tr></table></div> </details> </div> </div> <div class="doc doc-object doc-function"> <h4 id=goliat.config.Config.get_auto_cleanup_previous_results class="doc doc-heading"> <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code> <span class="doc doc-object-name doc-function-name">get_auto_cleanup_previous_results</span> <a href=#goliat.config.Config.get_auto_cleanup_previous_results class=headerlink title="Permanent link">&para;</a></h4> <div class="language-python doc-signature highlight"><pre><span></span><code><span id=__span-0-1><a id=__codelineno-0-1 name=__codelineno-0-1 href=#__codelineno-0-1></a><span class=nf>get_auto_cleanup_previous_results</span><span class=p>()</span> <span class=o>-&gt;</span> <span class=nb>list</span>
-</span></code></pre></div> <div class="doc doc-contents "> <p>Gets the 'auto_cleanup_previous_results' setting from 'execution_control'.</p> <p>This setting determines which previous simulation files to automatically delete to preserve disk space. It should only be used in serial workflows.</p> <p><span class=doc-section-title>Returns:</span></p> <table> <thead> <tr> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code><span title=list>list</span></code> </td> <td> <div class=doc-md-description> <p>A list of file types to clean up (e.g., ["output", "input"]).</p> </div> </td> </tr> </tbody> </table> <details class=quote> <summary>Source code in <code>goliat/config.py</code></summary> <div class="language-python highlight"><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal><a href=#__codelineno-0-289>289</a></span>
+<span class=normal><a href=#__codelineno-0-287>287</a></span>
+<span class=normal><a href=#__codelineno-0-288>288</a></span>
+<span class=normal><a href=#__codelineno-0-289>289</a></span>
 <span class=normal><a href=#__codelineno-0-290>290</a></span>
 <span class=normal><a href=#__codelineno-0-291>291</a></span>
 <span class=normal><a href=#__codelineno-0-292>292</a></span>
@@ -324,292 +406,74 @@
 <span class=normal><a href=#__codelineno-0-295>295</a></span>
 <span class=normal><a href=#__codelineno-0-296>296</a></span>
 <span class=normal><a href=#__codelineno-0-297>297</a></span>
-<span class=normal><a href=#__codelineno-0-298>298</a></span>
-<span class=normal><a href=#__codelineno-0-299>299</a></span>
-<span class=normal><a href=#__codelineno-0-300>300</a></span>
-<span class=normal><a href=#__codelineno-0-301>301</a></span>
-<span class=normal><a href=#__codelineno-0-302>302</a></span>
-<span class=normal><a href=#__codelineno-0-303>303</a></span>
-<span class=normal><a href=#__codelineno-0-304>304</a></span>
-<span class=normal><a href=#__codelineno-0-305>305</a></span>
-<span class=normal><a href=#__codelineno-0-306>306</a></span>
-<span class=normal><a href=#__codelineno-0-307>307</a></span>
-<span class=normal><a href=#__codelineno-0-308>308</a></span>
-<span class=normal><a href=#__codelineno-0-309>309</a></span>
-<span class=normal><a href=#__codelineno-0-310>310</a></span>
-<span class=normal><a href=#__codelineno-0-311>311</a></span>
-<span class=normal><a href=#__codelineno-0-312>312</a></span>
-<span class=normal><a href=#__codelineno-0-313>313</a></span>
-<span class=normal><a href=#__codelineno-0-314>314</a></span>
-<span class=normal><a href=#__codelineno-0-315>315</a></span>
-<span class=normal><a href=#__codelineno-0-316>316</a></span>
-<span class=normal><a href=#__codelineno-0-317>317</a></span>
-<span class=normal><a href=#__codelineno-0-318>318</a></span>
-<span class=normal><a href=#__codelineno-0-319>319</a></span>
-<span class=normal><a href=#__codelineno-0-320>320</a></span>
-<span class=normal><a href=#__codelineno-0-321>321</a></span>
-<span class=normal><a href=#__codelineno-0-322>322</a></span>
-<span class=normal><a href=#__codelineno-0-323>323</a></span></pre></div></td><td class=code><div><pre><span></span><code><span id=__span-0-289><a id=__codelineno-0-289 name=__codelineno-0-289></a><span class=k>def</span><span class=w> </span><span class=nf>get_auto_cleanup_previous_results</span><span class=p>(</span><span class=bp>self</span><span class=p>)</span> <span class=o>-&gt;</span> <span class=nb>list</span><span class=p>:</span>
-</span><span id=__span-0-290><a id=__codelineno-0-290 name=__codelineno-0-290></a><span class=w>    </span><span class=sd>&quot;&quot;&quot;Gets the &#39;auto_cleanup_previous_results&#39; setting from &#39;execution_control&#39;.</span>
-</span><span id=__span-0-291><a id=__codelineno-0-291 name=__codelineno-0-291></a>
-</span><span id=__span-0-292><a id=__codelineno-0-292 name=__codelineno-0-292></a><span class=sd>    This setting determines which previous simulation files to automatically delete</span>
-</span><span id=__span-0-293><a id=__codelineno-0-293 name=__codelineno-0-293></a><span class=sd>    to preserve disk space. It should only be used in serial workflows.</span>
-</span><span id=__span-0-294><a id=__codelineno-0-294 name=__codelineno-0-294></a>
-</span><span id=__span-0-295><a id=__codelineno-0-295 name=__codelineno-0-295></a><span class=sd>    Returns:</span>
-</span><span id=__span-0-296><a id=__codelineno-0-296 name=__codelineno-0-296></a><span class=sd>        A list of file types to clean up (e.g., [&quot;output&quot;, &quot;input&quot;]).</span>
-</span><span id=__span-0-297><a id=__codelineno-0-297 name=__codelineno-0-297></a><span class=sd>    &quot;&quot;&quot;</span>
-</span><span id=__span-0-298><a id=__codelineno-0-298 name=__codelineno-0-298></a>    <span class=n>cleanup_setting</span> <span class=o>=</span> <span class=bp>self</span><span class=p>[</span><span class=s2>&quot;execution_control.auto_cleanup_previous_results&quot;</span><span class=p>]</span> <span class=ow>or</span> <span class=p>[]</span>
-</span><span id=__span-0-299><a id=__codelineno-0-299 name=__codelineno-0-299></a>
-</span><span id=__span-0-300><a id=__codelineno-0-300 name=__codelineno-0-300></a>    <span class=c1># Handle legacy boolean format for backwards compatibility</span>
-</span><span id=__span-0-301><a id=__codelineno-0-301 name=__codelineno-0-301></a>    <span class=k>if</span> <span class=nb>isinstance</span><span class=p>(</span><span class=n>cleanup_setting</span><span class=p>,</span> <span class=nb>bool</span><span class=p>):</span>
-</span><span id=__span-0-302><a id=__codelineno-0-302 name=__codelineno-0-302></a>        <span class=k>if</span> <span class=n>cleanup_setting</span><span class=p>:</span>
-</span><span id=__span-0-303><a id=__codelineno-0-303 name=__codelineno-0-303></a>            <span class=c1># Legacy behavior: only clean output files</span>
-</span><span id=__span-0-304><a id=__codelineno-0-304 name=__codelineno-0-304></a>            <span class=k>return</span> <span class=p>[</span><span class=s2>&quot;output&quot;</span><span class=p>]</span>
-</span><span id=__span-0-305><a id=__codelineno-0-305 name=__codelineno-0-305></a>        <span class=k>else</span><span class=p>:</span>
-</span><span id=__span-0-306><a id=__codelineno-0-306 name=__codelineno-0-306></a>            <span class=k>return</span> <span class=p>[]</span>
-</span><span id=__span-0-307><a id=__codelineno-0-307 name=__codelineno-0-307></a>
-</span><span id=__span-0-308><a id=__codelineno-0-308 name=__codelineno-0-308></a>    <span class=c1># Validate that it&#39;s a list</span>
-</span><span id=__span-0-309><a id=__codelineno-0-309 name=__codelineno-0-309></a>    <span class=k>if</span> <span class=ow>not</span> <span class=nb>isinstance</span><span class=p>(</span><span class=n>cleanup_setting</span><span class=p>,</span> <span class=nb>list</span><span class=p>):</span>
-</span><span id=__span-0-310><a id=__codelineno-0-310 name=__codelineno-0-310></a>        <span class=kn>import</span><span class=w> </span><span class=nn>logging</span>
-</span><span id=__span-0-311><a id=__codelineno-0-311 name=__codelineno-0-311></a>
-</span><span id=__span-0-312><a id=__codelineno-0-312 name=__codelineno-0-312></a>        <span class=n>logging</span><span class=o>.</span><span class=n>warning</span><span class=p>(</span><span class=sa>f</span><span class=s2>&quot;&#39;auto_cleanup_previous_results&#39; should be a list, got </span><span class=si>{</span><span class=nb>type</span><span class=p>(</span><span class=n>cleanup_setting</span><span class=p>)</span><span class=si>}</span><span class=s2>. Disabling cleanup for safety.&quot;</span><span class=p>)</span>
-</span><span id=__span-0-313><a id=__codelineno-0-313 name=__codelineno-0-313></a>        <span class=k>return</span> <span class=p>[]</span>
-</span><span id=__span-0-314><a id=__codelineno-0-314 name=__codelineno-0-314></a>
-</span><span id=__span-0-315><a id=__codelineno-0-315 name=__codelineno-0-315></a>    <span class=c1># Validate file types</span>
-</span><span id=__span-0-316><a id=__codelineno-0-316 name=__codelineno-0-316></a>    <span class=n>valid_types</span> <span class=o>=</span> <span class=p>{</span><span class=s2>&quot;output&quot;</span><span class=p>,</span> <span class=s2>&quot;input&quot;</span><span class=p>,</span> <span class=s2>&quot;smash&quot;</span><span class=p>}</span>
-</span><span id=__span-0-317><a id=__codelineno-0-317 name=__codelineno-0-317></a>    <span class=n>invalid_types</span> <span class=o>=</span> <span class=p>[</span><span class=n>t</span> <span class=k>for</span> <span class=n>t</span> <span class=ow>in</span> <span class=n>cleanup_setting</span> <span class=k>if</span> <span class=n>t</span> <span class=ow>not</span> <span class=ow>in</span> <span class=n>valid_types</span><span class=p>]</span>
-</span><span id=__span-0-318><a id=__codelineno-0-318 name=__codelineno-0-318></a>    <span class=k>if</span> <span class=n>invalid_types</span><span class=p>:</span>
-</span><span id=__span-0-319><a id=__codelineno-0-319 name=__codelineno-0-319></a>        <span class=kn>import</span><span class=w> </span><span class=nn>logging</span>
-</span><span id=__span-0-320><a id=__codelineno-0-320 name=__codelineno-0-320></a>
-</span><span id=__span-0-321><a id=__codelineno-0-321 name=__codelineno-0-321></a>        <span class=n>logging</span><span class=o>.</span><span class=n>warning</span><span class=p>(</span><span class=sa>f</span><span class=s2>&quot;Invalid file types in &#39;auto_cleanup_previous_results&#39;: </span><span class=si>{</span><span class=n>invalid_types</span><span class=si>}</span><span class=s2>. Valid types are: </span><span class=si>{</span><span class=n>valid_types</span><span class=si>}</span><span class=s2>&quot;</span><span class=p>)</span>
-</span><span id=__span-0-322><a id=__codelineno-0-322 name=__codelineno-0-322></a>
-</span><span id=__span-0-323><a id=__codelineno-0-323 name=__codelineno-0-323></a>    <span class=k>return</span> <span class=p>[</span><span class=n>t</span> <span class=k>for</span> <span class=n>t</span> <span class=ow>in</span> <span class=n>cleanup_setting</span> <span class=k>if</span> <span class=n>t</span> <span class=ow>in</span> <span class=n>valid_types</span><span class=p>]</span>
-</span></code></pre></div></td></tr></table></div> </details> </div> </div> <div class="doc doc-object doc-function"> <h4 id=goliat.config.Config.build_simulation_config class="doc doc-heading"> <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code> <span class="doc doc-object-name doc-function-name">build_simulation_config</span> <a href=#goliat.config.Config.build_simulation_config class=headerlink title="Permanent link">&para;</a></h4> <div class="language-python doc-signature highlight"><pre><span></span><code><span id=__span-0-1><a id=__codelineno-0-1 name=__codelineno-0-1 href=#__codelineno-0-1></a><span class=nf>build_simulation_config</span><span class=p>(</span><span class=n>phantom_name</span><span class=p>:</span> <span class=nb>str</span><span class=p>,</span> <span class=n>frequency_mhz</span><span class=p>:</span> <span class=nb>int</span><span class=p>,</span> <span class=n>scenario_name</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=nb>str</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span> <span class=n>position_name</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=nb>str</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span> <span class=n>orientation_name</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=nb>str</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span> <span class=n>direction_name</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=nb>str</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span> <span class=n>polarization_name</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=nb>str</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>)</span> <span class=o>-&gt;</span> <span class=nb>dict</span>
-</span></code></pre></div> <div class="doc doc-contents "> <p>Constructs a minimal, simulation-specific configuration dictionary.</p> <p>This method is the core of the "Verify and Resume" feature. It creates a "surgical" snapshot of the configuration that is unique to a single simulation run. This snapshot is then hashed to determine if a valid, reusable simulation already exists.</p> <p>The key principle is to only include parameters that directly affect the outcome of the specific simulation. For example, instead of including the entire 'gridding_parameters' block, it surgically extracts only the gridding value for the specific 'frequency_mhz' being used. This ensures that a change to one frequency's gridding in the main config does not invalidate the hashes for other, unaffected frequencies.</p> <p><span class=doc-section-title>Parameters:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> <th>Default</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code>phantom_name</code> </td> <td> <code><span title=str>str</span></code> </td> <td> <div class=doc-md-description> <p>The name of the phantom model.</p> </div> </td> <td> <em>required</em> </td> </tr> <tr class=doc-section-item> <td> <code>frequency_mhz</code> </td> <td> <code><span title=int>int</span></code> </td> <td> <div class=doc-md-description> <p>The simulation frequency in <abbr title=Megahertz>MHz</abbr>.</p> </div> </td> <td> <em>required</em> </td> </tr> <tr class=doc-section-item> <td> <code>scenario_name</code> </td> <td> <code><span title=typing.Optional>Optional</span>[<span title=str>str</span>]</code> </td> <td> <div class=doc-md-description> <p>(Near-Field) The base name of the placement scenario.</p> </div> </td> <td> <code>None</code> </td> </tr> <tr class=doc-section-item> <td> <code>position_name</code> </td> <td> <code><span title=typing.Optional>Optional</span>[<span title=str>str</span>]</code> </td> <td> <div class=doc-md-description> <p>(Near-Field) The name of the position within the scenario.</p> </div> </td> <td> <code>None</code> </td> </tr> <tr class=doc-section-item> <td> <code>orientation_name</code> </td> <td> <code><span title=typing.Optional>Optional</span>[<span title=str>str</span>]</code> </td> <td> <div class=doc-md-description> <p>(Near-Field) The name of the orientation.</p> </div> </td> <td> <code>None</code> </td> </tr> <tr class=doc-section-item> <td> <code>direction_name</code> </td> <td> <code><span title=typing.Optional>Optional</span>[<span title=str>str</span>]</code> </td> <td> <div class=doc-md-description> <p>(Far-Field) The incident direction of the plane wave.</p> </div> </td> <td> <code>None</code> </td> </tr> <tr class=doc-section-item> <td> <code>polarization_name</code> </td> <td> <code><span title=typing.Optional>Optional</span>[<span title=str>str</span>]</code> </td> <td> <div class=doc-md-description> <p>(Far-Field) The polarization of the plane wave.</p> </div> </td> <td> <code>None</code> </td> </tr> </tbody> </table> <p><span class=doc-section-title>Returns:</span></p> <table> <thead> <tr> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code><span title=dict>dict</span></code> </td> <td> <div class=doc-md-description> <p>A dictionary containing the minimal, surgical configuration snapshot.</p> </div> </td> </tr> </tbody> </table> <details class=quote> <summary>Source code in <code>goliat/config.py</code></summary> <div class="language-python highlight"><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal><a href=#__codelineno-0-325>325</a></span>
-<span class=normal><a href=#__codelineno-0-326>326</a></span>
-<span class=normal><a href=#__codelineno-0-327>327</a></span>
-<span class=normal><a href=#__codelineno-0-328>328</a></span>
-<span class=normal><a href=#__codelineno-0-329>329</a></span>
-<span class=normal><a href=#__codelineno-0-330>330</a></span>
-<span class=normal><a href=#__codelineno-0-331>331</a></span>
-<span class=normal><a href=#__codelineno-0-332>332</a></span>
-<span class=normal><a href=#__codelineno-0-333>333</a></span>
-<span class=normal><a href=#__codelineno-0-334>334</a></span>
-<span class=normal><a href=#__codelineno-0-335>335</a></span>
-<span class=normal><a href=#__codelineno-0-336>336</a></span>
-<span class=normal><a href=#__codelineno-0-337>337</a></span>
-<span class=normal><a href=#__codelineno-0-338>338</a></span>
-<span class=normal><a href=#__codelineno-0-339>339</a></span>
-<span class=normal><a href=#__codelineno-0-340>340</a></span>
-<span class=normal><a href=#__codelineno-0-341>341</a></span>
-<span class=normal><a href=#__codelineno-0-342>342</a></span>
-<span class=normal><a href=#__codelineno-0-343>343</a></span>
-<span class=normal><a href=#__codelineno-0-344>344</a></span>
-<span class=normal><a href=#__codelineno-0-345>345</a></span>
-<span class=normal><a href=#__codelineno-0-346>346</a></span>
-<span class=normal><a href=#__codelineno-0-347>347</a></span>
-<span class=normal><a href=#__codelineno-0-348>348</a></span>
-<span class=normal><a href=#__codelineno-0-349>349</a></span>
-<span class=normal><a href=#__codelineno-0-350>350</a></span>
-<span class=normal><a href=#__codelineno-0-351>351</a></span>
-<span class=normal><a href=#__codelineno-0-352>352</a></span>
-<span class=normal><a href=#__codelineno-0-353>353</a></span>
-<span class=normal><a href=#__codelineno-0-354>354</a></span>
-<span class=normal><a href=#__codelineno-0-355>355</a></span>
-<span class=normal><a href=#__codelineno-0-356>356</a></span>
-<span class=normal><a href=#__codelineno-0-357>357</a></span>
-<span class=normal><a href=#__codelineno-0-358>358</a></span>
-<span class=normal><a href=#__codelineno-0-359>359</a></span>
-<span class=normal><a href=#__codelineno-0-360>360</a></span>
-<span class=normal><a href=#__codelineno-0-361>361</a></span>
-<span class=normal><a href=#__codelineno-0-362>362</a></span>
-<span class=normal><a href=#__codelineno-0-363>363</a></span>
-<span class=normal><a href=#__codelineno-0-364>364</a></span>
-<span class=normal><a href=#__codelineno-0-365>365</a></span>
-<span class=normal><a href=#__codelineno-0-366>366</a></span>
-<span class=normal><a href=#__codelineno-0-367>367</a></span>
-<span class=normal><a href=#__codelineno-0-368>368</a></span>
-<span class=normal><a href=#__codelineno-0-369>369</a></span>
-<span class=normal><a href=#__codelineno-0-370>370</a></span>
-<span class=normal><a href=#__codelineno-0-371>371</a></span>
-<span class=normal><a href=#__codelineno-0-372>372</a></span>
-<span class=normal><a href=#__codelineno-0-373>373</a></span>
-<span class=normal><a href=#__codelineno-0-374>374</a></span>
-<span class=normal><a href=#__codelineno-0-375>375</a></span>
-<span class=normal><a href=#__codelineno-0-376>376</a></span>
-<span class=normal><a href=#__codelineno-0-377>377</a></span>
-<span class=normal><a href=#__codelineno-0-378>378</a></span>
-<span class=normal><a href=#__codelineno-0-379>379</a></span>
-<span class=normal><a href=#__codelineno-0-380>380</a></span>
-<span class=normal><a href=#__codelineno-0-381>381</a></span>
-<span class=normal><a href=#__codelineno-0-382>382</a></span>
-<span class=normal><a href=#__codelineno-0-383>383</a></span>
-<span class=normal><a href=#__codelineno-0-384>384</a></span>
-<span class=normal><a href=#__codelineno-0-385>385</a></span>
-<span class=normal><a href=#__codelineno-0-386>386</a></span>
-<span class=normal><a href=#__codelineno-0-387>387</a></span>
-<span class=normal><a href=#__codelineno-0-388>388</a></span>
-<span class=normal><a href=#__codelineno-0-389>389</a></span>
-<span class=normal><a href=#__codelineno-0-390>390</a></span>
-<span class=normal><a href=#__codelineno-0-391>391</a></span>
-<span class=normal><a href=#__codelineno-0-392>392</a></span>
-<span class=normal><a href=#__codelineno-0-393>393</a></span>
-<span class=normal><a href=#__codelineno-0-394>394</a></span>
-<span class=normal><a href=#__codelineno-0-395>395</a></span>
-<span class=normal><a href=#__codelineno-0-396>396</a></span>
-<span class=normal><a href=#__codelineno-0-397>397</a></span>
-<span class=normal><a href=#__codelineno-0-398>398</a></span>
-<span class=normal><a href=#__codelineno-0-399>399</a></span>
-<span class=normal><a href=#__codelineno-0-400>400</a></span>
-<span class=normal><a href=#__codelineno-0-401>401</a></span>
-<span class=normal><a href=#__codelineno-0-402>402</a></span>
-<span class=normal><a href=#__codelineno-0-403>403</a></span>
-<span class=normal><a href=#__codelineno-0-404>404</a></span>
-<span class=normal><a href=#__codelineno-0-405>405</a></span>
-<span class=normal><a href=#__codelineno-0-406>406</a></span>
-<span class=normal><a href=#__codelineno-0-407>407</a></span>
-<span class=normal><a href=#__codelineno-0-408>408</a></span>
-<span class=normal><a href=#__codelineno-0-409>409</a></span>
-<span class=normal><a href=#__codelineno-0-410>410</a></span>
-<span class=normal><a href=#__codelineno-0-411>411</a></span>
-<span class=normal><a href=#__codelineno-0-412>412</a></span>
-<span class=normal><a href=#__codelineno-0-413>413</a></span>
-<span class=normal><a href=#__codelineno-0-414>414</a></span>
-<span class=normal><a href=#__codelineno-0-415>415</a></span>
-<span class=normal><a href=#__codelineno-0-416>416</a></span>
-<span class=normal><a href=#__codelineno-0-417>417</a></span>
-<span class=normal><a href=#__codelineno-0-418>418</a></span>
-<span class=normal><a href=#__codelineno-0-419>419</a></span>
-<span class=normal><a href=#__codelineno-0-420>420</a></span>
-<span class=normal><a href=#__codelineno-0-421>421</a></span>
-<span class=normal><a href=#__codelineno-0-422>422</a></span>
-<span class=normal><a href=#__codelineno-0-423>423</a></span>
-<span class=normal><a href=#__codelineno-0-424>424</a></span>
-<span class=normal><a href=#__codelineno-0-425>425</a></span>
-<span class=normal><a href=#__codelineno-0-426>426</a></span>
-<span class=normal><a href=#__codelineno-0-427>427</a></span>
-<span class=normal><a href=#__codelineno-0-428>428</a></span>
-<span class=normal><a href=#__codelineno-0-429>429</a></span>
-<span class=normal><a href=#__codelineno-0-430>430</a></span>
-<span class=normal><a href=#__codelineno-0-431>431</a></span>
-<span class=normal><a href=#__codelineno-0-432>432</a></span>
-<span class=normal><a href=#__codelineno-0-433>433</a></span>
-<span class=normal><a href=#__codelineno-0-434>434</a></span>
-<span class=normal><a href=#__codelineno-0-435>435</a></span>
-<span class=normal><a href=#__codelineno-0-436>436</a></span>
-<span class=normal><a href=#__codelineno-0-437>437</a></span></pre></div></td><td class=code><div><pre><span></span><code><span id=__span-0-325><a id=__codelineno-0-325 name=__codelineno-0-325></a><span class=k>def</span><span class=w> </span><span class=nf>build_simulation_config</span><span class=p>(</span>
-</span><span id=__span-0-326><a id=__codelineno-0-326 name=__codelineno-0-326></a>    <span class=bp>self</span><span class=p>,</span>
-</span><span id=__span-0-327><a id=__codelineno-0-327 name=__codelineno-0-327></a>    <span class=n>phantom_name</span><span class=p>:</span> <span class=nb>str</span><span class=p>,</span>
-</span><span id=__span-0-328><a id=__codelineno-0-328 name=__codelineno-0-328></a>    <span class=n>frequency_mhz</span><span class=p>:</span> <span class=nb>int</span><span class=p>,</span>
-</span><span id=__span-0-329><a id=__codelineno-0-329 name=__codelineno-0-329></a>    <span class=n>scenario_name</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=nb>str</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span>
-</span><span id=__span-0-330><a id=__codelineno-0-330 name=__codelineno-0-330></a>    <span class=n>position_name</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=nb>str</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span>
-</span><span id=__span-0-331><a id=__codelineno-0-331 name=__codelineno-0-331></a>    <span class=n>orientation_name</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=nb>str</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span>
-</span><span id=__span-0-332><a id=__codelineno-0-332 name=__codelineno-0-332></a>    <span class=n>direction_name</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=nb>str</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span>
-</span><span id=__span-0-333><a id=__codelineno-0-333 name=__codelineno-0-333></a>    <span class=n>polarization_name</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=nb>str</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span>
-</span><span id=__span-0-334><a id=__codelineno-0-334 name=__codelineno-0-334></a><span class=p>)</span> <span class=o>-&gt;</span> <span class=nb>dict</span><span class=p>:</span>
-</span><span id=__span-0-335><a id=__codelineno-0-335 name=__codelineno-0-335></a><span class=w>    </span><span class=sd>&quot;&quot;&quot;Constructs a minimal, simulation-specific configuration dictionary.</span>
-</span><span id=__span-0-336><a id=__codelineno-0-336 name=__codelineno-0-336></a>
-</span><span id=__span-0-337><a id=__codelineno-0-337 name=__codelineno-0-337></a><span class=sd>    This method is the core of the &quot;Verify and Resume&quot; feature. It creates a</span>
-</span><span id=__span-0-338><a id=__codelineno-0-338 name=__codelineno-0-338></a><span class=sd>    &quot;surgical&quot; snapshot of the configuration that is unique to a single</span>
-</span><span id=__span-0-339><a id=__codelineno-0-339 name=__codelineno-0-339></a><span class=sd>    simulation run. This snapshot is then hashed to determine if a valid,</span>
-</span><span id=__span-0-340><a id=__codelineno-0-340 name=__codelineno-0-340></a><span class=sd>    reusable simulation already exists.</span>
-</span><span id=__span-0-341><a id=__codelineno-0-341 name=__codelineno-0-341></a>
-</span><span id=__span-0-342><a id=__codelineno-0-342 name=__codelineno-0-342></a><span class=sd>    The key principle is to only include parameters that directly affect the</span>
-</span><span id=__span-0-343><a id=__codelineno-0-343 name=__codelineno-0-343></a><span class=sd>    outcome of the specific simulation. For example, instead of including the</span>
-</span><span id=__span-0-344><a id=__codelineno-0-344 name=__codelineno-0-344></a><span class=sd>    entire &#39;gridding_parameters&#39; block, it surgically extracts only the</span>
-</span><span id=__span-0-345><a id=__codelineno-0-345 name=__codelineno-0-345></a><span class=sd>    gridding value for the specific &#39;frequency_mhz&#39; being used. This ensures</span>
-</span><span id=__span-0-346><a id=__codelineno-0-346 name=__codelineno-0-346></a><span class=sd>    that a change to one frequency&#39;s gridding in the main config does not</span>
-</span><span id=__span-0-347><a id=__codelineno-0-347 name=__codelineno-0-347></a><span class=sd>    invalidate the hashes for other, unaffected frequencies.</span>
-</span><span id=__span-0-348><a id=__codelineno-0-348 name=__codelineno-0-348></a>
-</span><span id=__span-0-349><a id=__codelineno-0-349 name=__codelineno-0-349></a><span class=sd>    Args:</span>
-</span><span id=__span-0-350><a id=__codelineno-0-350 name=__codelineno-0-350></a><span class=sd>        phantom_name: The name of the phantom model.</span>
-</span><span id=__span-0-351><a id=__codelineno-0-351 name=__codelineno-0-351></a><span class=sd>        frequency_mhz: The simulation frequency in MHz.</span>
-</span><span id=__span-0-352><a id=__codelineno-0-352 name=__codelineno-0-352></a><span class=sd>        scenario_name: (Near-Field) The base name of the placement scenario.</span>
-</span><span id=__span-0-353><a id=__codelineno-0-353 name=__codelineno-0-353></a><span class=sd>        position_name: (Near-Field) The name of the position within the scenario.</span>
-</span><span id=__span-0-354><a id=__codelineno-0-354 name=__codelineno-0-354></a><span class=sd>        orientation_name: (Near-Field) The name of the orientation.</span>
-</span><span id=__span-0-355><a id=__codelineno-0-355 name=__codelineno-0-355></a><span class=sd>        direction_name: (Far-Field) The incident direction of the plane wave.</span>
-</span><span id=__span-0-356><a id=__codelineno-0-356 name=__codelineno-0-356></a><span class=sd>        polarization_name: (Far-Field) The polarization of the plane wave.</span>
-</span><span id=__span-0-357><a id=__codelineno-0-357 name=__codelineno-0-357></a>
-</span><span id=__span-0-358><a id=__codelineno-0-358 name=__codelineno-0-358></a><span class=sd>    Returns:</span>
-</span><span id=__span-0-359><a id=__codelineno-0-359 name=__codelineno-0-359></a><span class=sd>        A dictionary containing the minimal, surgical configuration snapshot.</span>
-</span><span id=__span-0-360><a id=__codelineno-0-360 name=__codelineno-0-360></a><span class=sd>    &quot;&quot;&quot;</span>
-</span><span id=__span-0-361><a id=__codelineno-0-361 name=__codelineno-0-361></a>    <span class=n>surgical_config</span> <span class=o>=</span> <span class=p>{}</span>
-</span><span id=__span-0-362><a id=__codelineno-0-362 name=__codelineno-0-362></a>
-</span><span id=__span-0-363><a id=__codelineno-0-363 name=__codelineno-0-363></a>    <span class=c1># 1. Copy global parameters</span>
-</span><span id=__span-0-364><a id=__codelineno-0-364 name=__codelineno-0-364></a>    <span class=n>global_keys</span> <span class=o>=</span> <span class=p>[</span>
-</span><span id=__span-0-365><a id=__codelineno-0-365 name=__codelineno-0-365></a>        <span class=s2>&quot;study_type&quot;</span><span class=p>,</span>
-</span><span id=__span-0-366><a id=__codelineno-0-366 name=__codelineno-0-366></a>        <span class=s2>&quot;simulation_parameters&quot;</span><span class=p>,</span>
-</span><span id=__span-0-367><a id=__codelineno-0-367 name=__codelineno-0-367></a>        <span class=s2>&quot;solver_settings&quot;</span><span class=p>,</span>
-</span><span id=__span-0-368><a id=__codelineno-0-368 name=__codelineno-0-368></a>        <span class=s2>&quot;manual_isolve&quot;</span><span class=p>,</span>
-</span><span id=__span-0-369><a id=__codelineno-0-369 name=__codelineno-0-369></a>        <span class=s2>&quot;export_material_properties&quot;</span><span class=p>,</span>
-</span><span id=__span-0-370><a id=__codelineno-0-370 name=__codelineno-0-370></a>    <span class=p>]</span>
-</span><span id=__span-0-371><a id=__codelineno-0-371 name=__codelineno-0-371></a>    <span class=k>for</span> <span class=n>key</span> <span class=ow>in</span> <span class=n>global_keys</span><span class=p>:</span>
-</span><span id=__span-0-372><a id=__codelineno-0-372 name=__codelineno-0-372></a>        <span class=k>if</span> <span class=n>key</span> <span class=ow>in</span> <span class=bp>self</span><span class=o>.</span><span class=n>config</span><span class=p>:</span>
-</span><span id=__span-0-373><a id=__codelineno-0-373 name=__codelineno-0-373></a>            <span class=n>surgical_config</span><span class=p>[</span><span class=n>key</span><span class=p>]</span> <span class=o>=</span> <span class=bp>self</span><span class=p>[</span><span class=n>key</span><span class=p>]</span>
-</span><span id=__span-0-374><a id=__codelineno-0-374 name=__codelineno-0-374></a>
-</span><span id=__span-0-375><a id=__codelineno-0-375 name=__codelineno-0-375></a>    <span class=c1># 4. Surgically handle gridding parameters</span>
-</span><span id=__span-0-376><a id=__codelineno-0-376 name=__codelineno-0-376></a>    <span class=n>gridding_params</span> <span class=o>=</span> <span class=bp>self</span><span class=p>[</span><span class=s2>&quot;gridding_parameters&quot;</span><span class=p>]</span> <span class=ow>or</span> <span class=p>{}</span>
-</span><span id=__span-0-377><a id=__codelineno-0-377 name=__codelineno-0-377></a>    <span class=n>surgical_gridding</span> <span class=o>=</span> <span class=p>{}</span>
-</span><span id=__span-0-378><a id=__codelineno-0-378 name=__codelineno-0-378></a>    <span class=c1># Copy non-frequency specific gridding params</span>
-</span><span id=__span-0-379><a id=__codelineno-0-379 name=__codelineno-0-379></a>    <span class=k>for</span> <span class=n>key</span><span class=p>,</span> <span class=n>value</span> <span class=ow>in</span> <span class=n>gridding_params</span><span class=o>.</span><span class=n>items</span><span class=p>():</span>
-</span><span id=__span-0-380><a id=__codelineno-0-380 name=__codelineno-0-380></a>        <span class=k>if</span> <span class=n>key</span> <span class=o>!=</span> <span class=s2>&quot;global_gridding_per_frequency&quot;</span><span class=p>:</span>
-</span><span id=__span-0-381><a id=__codelineno-0-381 name=__codelineno-0-381></a>            <span class=n>surgical_gridding</span><span class=p>[</span><span class=n>key</span><span class=p>]</span> <span class=o>=</span> <span class=n>value</span>
-</span><span id=__span-0-382><a id=__codelineno-0-382 name=__codelineno-0-382></a>
-</span><span id=__span-0-383><a id=__codelineno-0-383 name=__codelineno-0-383></a>    <span class=c1># Extract only the relevant frequency&#39;s gridding value</span>
-</span><span id=__span-0-384><a id=__codelineno-0-384 name=__codelineno-0-384></a>    <span class=k>if</span> <span class=s2>&quot;global_gridding_per_frequency&quot;</span> <span class=ow>in</span> <span class=n>gridding_params</span><span class=p>:</span>
-</span><span id=__span-0-385><a id=__codelineno-0-385 name=__codelineno-0-385></a>        <span class=n>freq_str</span> <span class=o>=</span> <span class=nb>str</span><span class=p>(</span><span class=n>frequency_mhz</span><span class=p>)</span>
-</span><span id=__span-0-386><a id=__codelineno-0-386 name=__codelineno-0-386></a>        <span class=k>if</span> <span class=n>freq_str</span> <span class=ow>in</span> <span class=n>gridding_params</span><span class=p>[</span><span class=s2>&quot;global_gridding_per_frequency&quot;</span><span class=p>]:</span>
-</span><span id=__span-0-387><a id=__codelineno-0-387 name=__codelineno-0-387></a>            <span class=n>surgical_gridding</span><span class=p>[</span><span class=s2>&quot;global_gridding_per_frequency&quot;</span><span class=p>]</span> <span class=o>=</span> <span class=p>{</span><span class=n>freq_str</span><span class=p>:</span> <span class=n>gridding_params</span><span class=p>[</span><span class=s2>&quot;global_gridding_per_frequency&quot;</span><span class=p>][</span><span class=n>freq_str</span><span class=p>]}</span>
-</span><span id=__span-0-388><a id=__codelineno-0-388 name=__codelineno-0-388></a>
-</span><span id=__span-0-389><a id=__codelineno-0-389 name=__codelineno-0-389></a>    <span class=n>surgical_config</span><span class=p>[</span><span class=s2>&quot;gridding_parameters&quot;</span><span class=p>]</span> <span class=o>=</span> <span class=n>surgical_gridding</span>
-</span><span id=__span-0-390><a id=__codelineno-0-390 name=__codelineno-0-390></a>
-</span><span id=__span-0-391><a id=__codelineno-0-391 name=__codelineno-0-391></a>    <span class=c1># 2. Add simulation-specific identifiers</span>
-</span><span id=__span-0-392><a id=__codelineno-0-392 name=__codelineno-0-392></a>    <span class=n>surgical_config</span><span class=p>[</span><span class=s2>&quot;phantom&quot;</span><span class=p>]</span> <span class=o>=</span> <span class=n>phantom_name</span>
-</span><span id=__span-0-393><a id=__codelineno-0-393 name=__codelineno-0-393></a>    <span class=n>surgical_config</span><span class=p>[</span><span class=s2>&quot;frequency_mhz&quot;</span><span class=p>]</span> <span class=o>=</span> <span class=n>frequency_mhz</span>
-</span><span id=__span-0-394><a id=__codelineno-0-394 name=__codelineno-0-394></a>
-</span><span id=__span-0-395><a id=__codelineno-0-395 name=__codelineno-0-395></a>    <span class=c1># 3. Surgically select study-specific parameters</span>
-</span><span id=__span-0-396><a id=__codelineno-0-396 name=__codelineno-0-396></a>    <span class=n>study_type</span> <span class=o>=</span> <span class=bp>self</span><span class=p>[</span><span class=s2>&quot;study_type&quot;</span><span class=p>]</span>
-</span><span id=__span-0-397><a id=__codelineno-0-397 name=__codelineno-0-397></a>    <span class=k>if</span> <span class=n>study_type</span> <span class=o>==</span> <span class=s2>&quot;near_field&quot;</span><span class=p>:</span>
-</span><span id=__span-0-398><a id=__codelineno-0-398 name=__codelineno-0-398></a>        <span class=c1># Select the specific antenna config for the given frequency</span>
-</span><span id=__span-0-399><a id=__codelineno-0-399 name=__codelineno-0-399></a>        <span class=n>surgical_config</span><span class=p>[</span><span class=s2>&quot;antenna_config&quot;</span><span class=p>]</span> <span class=o>=</span> <span class=bp>self</span><span class=p>[</span><span class=sa>f</span><span class=s2>&quot;antenna_config.</span><span class=si>{</span><span class=n>frequency_mhz</span><span class=si>}</span><span class=s2>&quot;</span><span class=p>]</span>
-</span><span id=__span-0-400><a id=__codelineno-0-400 name=__codelineno-0-400></a>
-</span><span id=__span-0-401><a id=__codelineno-0-401 name=__codelineno-0-401></a>        <span class=c1># Reconstruct placement_scenarios for the specific placement</span>
-</span><span id=__span-0-402><a id=__codelineno-0-402 name=__codelineno-0-402></a>        <span class=k>if</span> <span class=n>scenario_name</span><span class=p>:</span>
-</span><span id=__span-0-403><a id=__codelineno-0-403 name=__codelineno-0-403></a>            <span class=n>placement_scenarios</span> <span class=o>=</span> <span class=bp>self</span><span class=p>[</span><span class=s2>&quot;placement_scenarios&quot;</span><span class=p>]</span> <span class=ow>or</span> <span class=p>{}</span>
-</span><span id=__span-0-404><a id=__codelineno-0-404 name=__codelineno-0-404></a>            <span class=n>original_scenario</span> <span class=o>=</span> <span class=n>placement_scenarios</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=n>scenario_name</span><span class=p>)</span> <span class=k>if</span> <span class=nb>isinstance</span><span class=p>(</span><span class=n>placement_scenarios</span><span class=p>,</span> <span class=nb>dict</span><span class=p>)</span> <span class=k>else</span> <span class=kc>None</span>
-</span><span id=__span-0-405><a id=__codelineno-0-405 name=__codelineno-0-405></a>            <span class=k>if</span> <span class=n>original_scenario</span> <span class=ow>and</span> <span class=n>position_name</span> <span class=ow>and</span> <span class=n>orientation_name</span><span class=p>:</span>
-</span><span id=__span-0-406><a id=__codelineno-0-406 name=__codelineno-0-406></a>                <span class=n>surgical_config</span><span class=p>[</span><span class=s2>&quot;placement_scenarios&quot;</span><span class=p>]</span> <span class=o>=</span> <span class=p>{</span>
-</span><span id=__span-0-407><a id=__codelineno-0-407 name=__codelineno-0-407></a>                    <span class=n>scenario_name</span><span class=p>:</span> <span class=p>{</span>
-</span><span id=__span-0-408><a id=__codelineno-0-408 name=__codelineno-0-408></a>                        <span class=s2>&quot;positions&quot;</span><span class=p>:</span> <span class=p>{</span><span class=n>position_name</span><span class=p>:</span> <span class=n>original_scenario</span><span class=p>[</span><span class=s2>&quot;positions&quot;</span><span class=p>][</span><span class=n>position_name</span><span class=p>]},</span>
-</span><span id=__span-0-409><a id=__codelineno-0-409 name=__codelineno-0-409></a>                        <span class=s2>&quot;orientations&quot;</span><span class=p>:</span> <span class=p>{</span><span class=n>orientation_name</span><span class=p>:</span> <span class=n>original_scenario</span><span class=p>[</span><span class=s2>&quot;orientations&quot;</span><span class=p>][</span><span class=n>orientation_name</span><span class=p>]},</span>
-</span><span id=__span-0-410><a id=__codelineno-0-410 name=__codelineno-0-410></a>                        <span class=s2>&quot;bounding_box&quot;</span><span class=p>:</span> <span class=n>original_scenario</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=s2>&quot;bounding_box&quot;</span><span class=p>,</span> <span class=s2>&quot;default&quot;</span><span class=p>),</span>
-</span><span id=__span-0-411><a id=__codelineno-0-411 name=__codelineno-0-411></a>                    <span class=p>}</span>
-</span><span id=__span-0-412><a id=__codelineno-0-412 name=__codelineno-0-412></a>                <span class=p>}</span>
-</span><span id=__span-0-413><a id=__codelineno-0-413 name=__codelineno-0-413></a>
-</span><span id=__span-0-414><a id=__codelineno-0-414 name=__codelineno-0-414></a>        <span class=c1># Select the specific phantom definition</span>
-</span><span id=__span-0-415><a id=__codelineno-0-415 name=__codelineno-0-415></a>        <span class=n>phantom_definitions</span> <span class=o>=</span> <span class=bp>self</span><span class=p>[</span><span class=s2>&quot;phantom_definitions&quot;</span><span class=p>]</span> <span class=ow>or</span> <span class=p>{}</span>
-</span><span id=__span-0-416><a id=__codelineno-0-416 name=__codelineno-0-416></a>        <span class=n>surgical_config</span><span class=p>[</span><span class=s2>&quot;phantom_definitions&quot;</span><span class=p>]</span> <span class=o>=</span> <span class=p>{</span>
-</span><span id=__span-0-417><a id=__codelineno-0-417 name=__codelineno-0-417></a>            <span class=n>phantom_name</span><span class=p>:</span> <span class=n>phantom_definitions</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=n>phantom_name</span><span class=p>,</span> <span class=p>{})</span> <span class=k>if</span> <span class=nb>isinstance</span><span class=p>(</span><span class=n>phantom_definitions</span><span class=p>,</span> <span class=nb>dict</span><span class=p>)</span> <span class=k>else</span> <span class=p>{}</span>
-</span><span id=__span-0-418><a id=__codelineno-0-418 name=__codelineno-0-418></a>        <span class=p>}</span>
-</span><span id=__span-0-419><a id=__codelineno-0-419 name=__codelineno-0-419></a>
-</span><span id=__span-0-420><a id=__codelineno-0-420 name=__codelineno-0-420></a>    <span class=k>elif</span> <span class=n>study_type</span> <span class=o>==</span> <span class=s2>&quot;far_field&quot;</span><span class=p>:</span>
-</span><span id=__span-0-421><a id=__codelineno-0-421 name=__codelineno-0-421></a>        <span class=c1># Surgically build the far_field_setup to be robust against future changes</span>
-</span><span id=__span-0-422><a id=__codelineno-0-422 name=__codelineno-0-422></a>        <span class=n>original_ff_setup</span> <span class=o>=</span> <span class=bp>self</span><span class=p>[</span><span class=s2>&quot;far_field_setup&quot;</span><span class=p>]</span> <span class=ow>or</span> <span class=p>{}</span>
-</span><span id=__span-0-423><a id=__codelineno-0-423 name=__codelineno-0-423></a>        <span class=k>if</span> <span class=n>original_ff_setup</span><span class=p>:</span>
-</span><span id=__span-0-424><a id=__codelineno-0-424 name=__codelineno-0-424></a>            <span class=n>surgical_config</span><span class=p>[</span><span class=s2>&quot;far_field_setup&quot;</span><span class=p>]</span> <span class=o>=</span> <span class=p>{</span>
-</span><span id=__span-0-425><a id=__codelineno-0-425 name=__codelineno-0-425></a>                <span class=s2>&quot;type&quot;</span><span class=p>:</span> <span class=n>original_ff_setup</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=s2>&quot;type&quot;</span><span class=p>),</span>
-</span><span id=__span-0-426><a id=__codelineno-0-426 name=__codelineno-0-426></a>                <span class=s2>&quot;environmental&quot;</span><span class=p>:</span> <span class=p>{</span>
-</span><span id=__span-0-427><a id=__codelineno-0-427 name=__codelineno-0-427></a>                    <span class=s2>&quot;incident_directions&quot;</span><span class=p>:</span> <span class=p>[</span><span class=n>direction_name</span><span class=p>],</span>
-</span><span id=__span-0-428><a id=__codelineno-0-428 name=__codelineno-0-428></a>                    <span class=s2>&quot;polarizations&quot;</span><span class=p>:</span> <span class=p>[</span><span class=n>polarization_name</span><span class=p>],</span>
-</span><span id=__span-0-429><a id=__codelineno-0-429 name=__codelineno-0-429></a>                <span class=p>},</span>
-</span><span id=__span-0-430><a id=__codelineno-0-430 name=__codelineno-0-430></a>            <span class=p>}</span>
-</span><span id=__span-0-431><a id=__codelineno-0-431 name=__codelineno-0-431></a>        <span class=c1># Also include the specific phantom definition, if it&#39;s not empty</span>
-</span><span id=__span-0-432><a id=__codelineno-0-432 name=__codelineno-0-432></a>        <span class=n>phantom_definitions</span> <span class=o>=</span> <span class=bp>self</span><span class=p>[</span><span class=s2>&quot;phantom_definitions&quot;</span><span class=p>]</span> <span class=ow>or</span> <span class=p>{}</span>
-</span><span id=__span-0-433><a id=__codelineno-0-433 name=__codelineno-0-433></a>        <span class=n>phantom_def</span> <span class=o>=</span> <span class=n>phantom_definitions</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=n>phantom_name</span><span class=p>,</span> <span class=p>{})</span> <span class=k>if</span> <span class=nb>isinstance</span><span class=p>(</span><span class=n>phantom_definitions</span><span class=p>,</span> <span class=nb>dict</span><span class=p>)</span> <span class=k>else</span> <span class=p>{}</span>
-</span><span id=__span-0-434><a id=__codelineno-0-434 name=__codelineno-0-434></a>        <span class=k>if</span> <span class=n>phantom_def</span><span class=p>:</span>
-</span><span id=__span-0-435><a id=__codelineno-0-435 name=__codelineno-0-435></a>            <span class=n>surgical_config</span><span class=p>[</span><span class=s2>&quot;phantom_definitions&quot;</span><span class=p>]</span> <span class=o>=</span> <span class=p>{</span><span class=n>phantom_name</span><span class=p>:</span> <span class=n>phantom_def</span><span class=p>}</span>
-</span><span id=__span-0-436><a id=__codelineno-0-436 name=__codelineno-0-436></a>
-</span><span id=__span-0-437><a id=__codelineno-0-437 name=__codelineno-0-437></a>    <span class=k>return</span> <span class=n>surgical_config</span>
+<span class=normal><a href=#__codelineno-0-298>298</a></span></pre></div></td><td class=code><div><pre><span></span><code><span id=__span-0-231><a id=__codelineno-0-231 name=__codelineno-0-231></a><span class=k>def</span><span class=w> </span><span class=nf>build_simulation_config</span><span class=p>(</span>
+</span><span id=__span-0-232><a id=__codelineno-0-232 name=__codelineno-0-232></a>    <span class=bp>self</span><span class=p>,</span>
+</span><span id=__span-0-233><a id=__codelineno-0-233 name=__codelineno-0-233></a>    <span class=n>phantom_name</span><span class=p>:</span> <span class=nb>str</span><span class=p>,</span>
+</span><span id=__span-0-234><a id=__codelineno-0-234 name=__codelineno-0-234></a>    <span class=n>frequency_mhz</span><span class=p>:</span> <span class=nb>int</span><span class=p>,</span>
+</span><span id=__span-0-235><a id=__codelineno-0-235 name=__codelineno-0-235></a>    <span class=n>scenario_name</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=nb>str</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span>
+</span><span id=__span-0-236><a id=__codelineno-0-236 name=__codelineno-0-236></a>    <span class=n>position_name</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=nb>str</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span>
+</span><span id=__span-0-237><a id=__codelineno-0-237 name=__codelineno-0-237></a>    <span class=n>orientation_name</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=nb>str</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span>
+</span><span id=__span-0-238><a id=__codelineno-0-238 name=__codelineno-0-238></a>    <span class=n>direction_name</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=nb>str</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span>
+</span><span id=__span-0-239><a id=__codelineno-0-239 name=__codelineno-0-239></a>    <span class=n>polarization_name</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=nb>str</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span>
+</span><span id=__span-0-240><a id=__codelineno-0-240 name=__codelineno-0-240></a><span class=p>)</span> <span class=o>-&gt;</span> <span class=nb>dict</span><span class=p>:</span>
+</span><span id=__span-0-241><a id=__codelineno-0-241 name=__codelineno-0-241></a><span class=w>    </span><span class=sd>&quot;&quot;&quot;Constructs a minimal, simulation-specific configuration dictionary.</span>
+</span><span id=__span-0-242><a id=__codelineno-0-242 name=__codelineno-0-242></a>
+</span><span id=__span-0-243><a id=__codelineno-0-243 name=__codelineno-0-243></a><span class=sd>    This method is the core of the &quot;Verify and Resume&quot; feature. It creates a</span>
+</span><span id=__span-0-244><a id=__codelineno-0-244 name=__codelineno-0-244></a><span class=sd>    &quot;surgical&quot; snapshot of the configuration that is unique to a single</span>
+</span><span id=__span-0-245><a id=__codelineno-0-245 name=__codelineno-0-245></a><span class=sd>    simulation run. This snapshot is then hashed to determine if a valid,</span>
+</span><span id=__span-0-246><a id=__codelineno-0-246 name=__codelineno-0-246></a><span class=sd>    reusable simulation already exists.</span>
+</span><span id=__span-0-247><a id=__codelineno-0-247 name=__codelineno-0-247></a>
+</span><span id=__span-0-248><a id=__codelineno-0-248 name=__codelineno-0-248></a><span class=sd>    The key principle is to only include parameters that directly affect the</span>
+</span><span id=__span-0-249><a id=__codelineno-0-249 name=__codelineno-0-249></a><span class=sd>    outcome of the specific simulation. For example, instead of including the</span>
+</span><span id=__span-0-250><a id=__codelineno-0-250 name=__codelineno-0-250></a><span class=sd>    entire &#39;gridding_parameters&#39; block, it surgically extracts only the</span>
+</span><span id=__span-0-251><a id=__codelineno-0-251 name=__codelineno-0-251></a><span class=sd>    gridding value for the specific &#39;frequency_mhz&#39; being used. This ensures</span>
+</span><span id=__span-0-252><a id=__codelineno-0-252 name=__codelineno-0-252></a><span class=sd>    that a change to one frequency&#39;s gridding in the main config does not</span>
+</span><span id=__span-0-253><a id=__codelineno-0-253 name=__codelineno-0-253></a><span class=sd>    invalidate the hashes for other, unaffected frequencies.</span>
+</span><span id=__span-0-254><a id=__codelineno-0-254 name=__codelineno-0-254></a>
+</span><span id=__span-0-255><a id=__codelineno-0-255 name=__codelineno-0-255></a><span class=sd>    Args:</span>
+</span><span id=__span-0-256><a id=__codelineno-0-256 name=__codelineno-0-256></a><span class=sd>        phantom_name: The name of the phantom model.</span>
+</span><span id=__span-0-257><a id=__codelineno-0-257 name=__codelineno-0-257></a><span class=sd>        frequency_mhz: The simulation frequency in MHz.</span>
+</span><span id=__span-0-258><a id=__codelineno-0-258 name=__codelineno-0-258></a><span class=sd>        scenario_name: (Near-Field) The base name of the placement scenario.</span>
+</span><span id=__span-0-259><a id=__codelineno-0-259 name=__codelineno-0-259></a><span class=sd>        position_name: (Near-Field) The name of the position within the scenario.</span>
+</span><span id=__span-0-260><a id=__codelineno-0-260 name=__codelineno-0-260></a><span class=sd>        orientation_name: (Near-Field) The name of the orientation.</span>
+</span><span id=__span-0-261><a id=__codelineno-0-261 name=__codelineno-0-261></a><span class=sd>        direction_name: (Far-Field) The incident direction of the plane wave.</span>
+</span><span id=__span-0-262><a id=__codelineno-0-262 name=__codelineno-0-262></a><span class=sd>        polarization_name: (Far-Field) The polarization of the plane wave.</span>
+</span><span id=__span-0-263><a id=__codelineno-0-263 name=__codelineno-0-263></a>
+</span><span id=__span-0-264><a id=__codelineno-0-264 name=__codelineno-0-264></a><span class=sd>    Returns:</span>
+</span><span id=__span-0-265><a id=__codelineno-0-265 name=__codelineno-0-265></a><span class=sd>        A dictionary containing the minimal, surgical configuration snapshot.</span>
+</span><span id=__span-0-266><a id=__codelineno-0-266 name=__codelineno-0-266></a><span class=sd>    &quot;&quot;&quot;</span>
+</span><span id=__span-0-267><a id=__codelineno-0-267 name=__codelineno-0-267></a>    <span class=n>surgical_config</span> <span class=o>=</span> <span class=p>{}</span>
+</span><span id=__span-0-268><a id=__codelineno-0-268 name=__codelineno-0-268></a>
+</span><span id=__span-0-269><a id=__codelineno-0-269 name=__codelineno-0-269></a>    <span class=c1># 1. Copy global parameters</span>
+</span><span id=__span-0-270><a id=__codelineno-0-270 name=__codelineno-0-270></a>    <span class=n>global_keys</span> <span class=o>=</span> <span class=p>[</span>
+</span><span id=__span-0-271><a id=__codelineno-0-271 name=__codelineno-0-271></a>        <span class=s2>&quot;study_type&quot;</span><span class=p>,</span>
+</span><span id=__span-0-272><a id=__codelineno-0-272 name=__codelineno-0-272></a>        <span class=s2>&quot;simulation_parameters&quot;</span><span class=p>,</span>
+</span><span id=__span-0-273><a id=__codelineno-0-273 name=__codelineno-0-273></a>        <span class=s2>&quot;solver_settings&quot;</span><span class=p>,</span>
+</span><span id=__span-0-274><a id=__codelineno-0-274 name=__codelineno-0-274></a>        <span class=s2>&quot;manual_isolve&quot;</span><span class=p>,</span>
+</span><span id=__span-0-275><a id=__codelineno-0-275 name=__codelineno-0-275></a>        <span class=s2>&quot;export_material_properties&quot;</span><span class=p>,</span>
+</span><span id=__span-0-276><a id=__codelineno-0-276 name=__codelineno-0-276></a>    <span class=p>]</span>
+</span><span id=__span-0-277><a id=__codelineno-0-277 name=__codelineno-0-277></a>    <span class=k>for</span> <span class=n>key</span> <span class=ow>in</span> <span class=n>global_keys</span><span class=p>:</span>
+</span><span id=__span-0-278><a id=__codelineno-0-278 name=__codelineno-0-278></a>        <span class=k>if</span> <span class=n>key</span> <span class=ow>in</span> <span class=bp>self</span><span class=o>.</span><span class=n>config</span><span class=p>:</span>
+</span><span id=__span-0-279><a id=__codelineno-0-279 name=__codelineno-0-279></a>            <span class=n>surgical_config</span><span class=p>[</span><span class=n>key</span><span class=p>]</span> <span class=o>=</span> <span class=bp>self</span><span class=p>[</span><span class=n>key</span><span class=p>]</span>
+</span><span id=__span-0-280><a id=__codelineno-0-280 name=__codelineno-0-280></a>
+</span><span id=__span-0-281><a id=__codelineno-0-281 name=__codelineno-0-281></a>    <span class=c1># 2. Surgically handle gridding parameters</span>
+</span><span id=__span-0-282><a id=__codelineno-0-282 name=__codelineno-0-282></a>    <span class=n>gridding_params</span> <span class=o>=</span> <span class=bp>self</span><span class=p>[</span><span class=s2>&quot;gridding_parameters&quot;</span><span class=p>]</span> <span class=ow>or</span> <span class=p>{}</span>
+</span><span id=__span-0-283><a id=__codelineno-0-283 name=__codelineno-0-283></a>    <span class=n>surgical_config</span><span class=p>[</span><span class=s2>&quot;gridding_parameters&quot;</span><span class=p>]</span> <span class=o>=</span> <span class=n>build_surgical_gridding</span><span class=p>(</span><span class=n>gridding_params</span><span class=p>,</span> <span class=n>frequency_mhz</span><span class=p>)</span>
+</span><span id=__span-0-284><a id=__codelineno-0-284 name=__codelineno-0-284></a>
+</span><span id=__span-0-285><a id=__codelineno-0-285 name=__codelineno-0-285></a>    <span class=c1># 3. Add simulation-specific identifiers</span>
+</span><span id=__span-0-286><a id=__codelineno-0-286 name=__codelineno-0-286></a>    <span class=n>surgical_config</span><span class=p>[</span><span class=s2>&quot;phantom&quot;</span><span class=p>]</span> <span class=o>=</span> <span class=n>phantom_name</span>
+</span><span id=__span-0-287><a id=__codelineno-0-287 name=__codelineno-0-287></a>    <span class=n>surgical_config</span><span class=p>[</span><span class=s2>&quot;frequency_mhz&quot;</span><span class=p>]</span> <span class=o>=</span> <span class=n>frequency_mhz</span>
+</span><span id=__span-0-288><a id=__codelineno-0-288 name=__codelineno-0-288></a>
+</span><span id=__span-0-289><a id=__codelineno-0-289 name=__codelineno-0-289></a>    <span class=c1># 4. Surgically select study-specific parameters</span>
+</span><span id=__span-0-290><a id=__codelineno-0-290 name=__codelineno-0-290></a>    <span class=n>study_type</span> <span class=o>=</span> <span class=bp>self</span><span class=p>[</span><span class=s2>&quot;study_type&quot;</span><span class=p>]</span>
+</span><span id=__span-0-291><a id=__codelineno-0-291 name=__codelineno-0-291></a>    <span class=k>if</span> <span class=n>study_type</span> <span class=o>==</span> <span class=s2>&quot;near_field&quot;</span><span class=p>:</span>
+</span><span id=__span-0-292><a id=__codelineno-0-292 name=__codelineno-0-292></a>        <span class=n>build_near_field_simulation_config</span><span class=p>(</span>
+</span><span id=__span-0-293><a id=__codelineno-0-293 name=__codelineno-0-293></a>            <span class=bp>self</span><span class=p>,</span> <span class=n>surgical_config</span><span class=p>,</span> <span class=n>phantom_name</span><span class=p>,</span> <span class=n>frequency_mhz</span><span class=p>,</span> <span class=n>scenario_name</span><span class=p>,</span> <span class=n>position_name</span><span class=p>,</span> <span class=n>orientation_name</span>
+</span><span id=__span-0-294><a id=__codelineno-0-294 name=__codelineno-0-294></a>        <span class=p>)</span>
+</span><span id=__span-0-295><a id=__codelineno-0-295 name=__codelineno-0-295></a>    <span class=k>elif</span> <span class=n>study_type</span> <span class=o>==</span> <span class=s2>&quot;far_field&quot;</span><span class=p>:</span>
+</span><span id=__span-0-296><a id=__codelineno-0-296 name=__codelineno-0-296></a>        <span class=n>build_far_field_simulation_config</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>surgical_config</span><span class=p>,</span> <span class=n>phantom_name</span><span class=p>,</span> <span class=n>direction_name</span><span class=p>,</span> <span class=n>polarization_name</span><span class=p>)</span>
+</span><span id=__span-0-297><a id=__codelineno-0-297 name=__codelineno-0-297></a>
+</span><span id=__span-0-298><a id=__codelineno-0-298 name=__codelineno-0-298></a>    <span class=k>return</span> <span class=n>surgical_config</span>
 </span></code></pre></div></td></tr></table></div> </details> </div> </div> </div> </div> </div><h3 id=data-management>Data Management<a class=headerlink href=#data-management title="Permanent link">&para;</a></h3> <div class="doc doc-object doc-module"> <h2 id=goliat.data_extractor class="doc doc-heading"> <code class="doc-symbol doc-symbol-heading doc-symbol-module"></code> <span class="doc doc-object-name doc-module-name">goliat.data_extractor</span> <a href=#goliat.data_extractor class=headerlink title="Permanent link">&para;</a></h2> <div class="doc doc-contents first"> <div class="doc doc-children"> <h3 id=goliat.data_extractor-functions>Functions<a href=#goliat.data_extractor-functions class=headerlink title="Permanent link">&para;</a></h3> <div class="doc doc-object doc-function"> <h4 id=goliat.data_extractor.get_parameter_from_json class="doc doc-heading"> <code class="doc-symbol doc-symbol-heading doc-symbol-function"></code> <span class="doc doc-object-name doc-function-name">get_parameter_from_json</span> <a href=#goliat.data_extractor.get_parameter_from_json class=headerlink title="Permanent link">&para;</a></h4> <div class="language-python doc-signature highlight"><pre><span></span><code><span id=__span-0-1><a id=__codelineno-0-1 name=__codelineno-0-1 href=#__codelineno-0-1></a><span class=nf>get_parameter_from_json</span><span class=p>(</span><span class=n>file_path</span><span class=p>:</span> <span class=nb>str</span><span class=p>,</span> <span class=n>json_path</span><span class=p>:</span> <span class=nb>str</span><span class=p>)</span> <span class=o>-&gt;</span> <span class=n>Any</span>
 </span></code></pre></div> <div class="doc doc-contents "> <p>Extracts a nested value from a <abbr title="JavaScript Object Notation">JSON</abbr> file using dot notation.</p> <p><span class=doc-section-title>Parameters:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> <th>Default</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code>file_path</code> </td> <td> <code><span title=str>str</span></code> </td> <td> <div class=doc-md-description> <p>Path to the <abbr title="JavaScript Object Notation">JSON</abbr> file.</p> </div> </td> <td> <em>required</em> </td> </tr> <tr class=doc-section-item> <td> <code>json_path</code> </td> <td> <code><span title=str>str</span></code> </td> <td> <div class=doc-md-description> <p>Dot-separated path like 'section.subsection.key'.</p> </div> </td> <td> <em>required</em> </td> </tr> </tbody> </table> <p><span class=doc-section-title>Returns:</span></p> <table> <thead> <tr> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code><span title=typing.Any>Any</span></code> </td> <td> <div class=doc-md-description> <p>The value at the path, or None if not found.</p> </div> </td> </tr> </tbody> </table> <details class=quote> <summary>Source code in <code>goliat/data_extractor.py</code></summary> <div class="language-python highlight"><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal><a href=#__codelineno-0-6> 6</a></span>
 <span class=normal><a href=#__codelineno-0-7> 7</a></span>
@@ -2761,155 +2625,155 @@
 </span><span id=__span-0-218><a id=__codelineno-0-218 name=__codelineno-0-218></a>        <span class=k>finally</span><span class=p>:</span>
 </span><span id=__span-0-219><a id=__codelineno-0-219 name=__codelineno-0-219></a>            <span class=n>sys</span><span class=o>.</span><span class=n>stdout</span><span class=p>,</span> <span class=n>sys</span><span class=o>.</span><span class=n>stderr</span> <span class=o>=</span> <span class=n>saved_stdout</span><span class=p>,</span> <span class=n>saved_stderr</span>
 </span></code></pre></div></td></tr></table></div> </details> </div> </div> <div class="doc doc-object doc-function"> <h4 id=goliat.utils.initial_setup class="doc doc-heading"> <code class="doc-symbol doc-symbol-heading doc-symbol-function"></code> <span class="doc doc-object-name doc-function-name">initial_setup</span> <a href=#goliat.utils.initial_setup class=headerlink title="Permanent link">&para;</a></h4> <div class="language-python doc-signature highlight"><pre><span></span><code><span id=__span-0-1><a id=__codelineno-0-1 name=__codelineno-0-1 href=#__codelineno-0-1></a><span class=nf>initial_setup</span><span class=p>()</span>
-</span></code></pre></div> <div class="doc doc-contents "> <p>Performs all initial checks and setup procedures. - Ensures correct python interpreter is used. - Prompts user before installing dependencies. - Installs package in editable mode if not already installed. - Prepares data files.</p> <details class=quote> <summary>Source code in <code>goliat/utils/setup.py</code></summary> <div class="language-python highlight"><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal><a href=#__codelineno-0-392>392</a></span>
-<span class=normal><a href=#__codelineno-0-393>393</a></span>
-<span class=normal><a href=#__codelineno-0-394>394</a></span>
-<span class=normal><a href=#__codelineno-0-395>395</a></span>
-<span class=normal><a href=#__codelineno-0-396>396</a></span>
-<span class=normal><a href=#__codelineno-0-397>397</a></span>
-<span class=normal><a href=#__codelineno-0-398>398</a></span>
-<span class=normal><a href=#__codelineno-0-399>399</a></span>
-<span class=normal><a href=#__codelineno-0-400>400</a></span>
-<span class=normal><a href=#__codelineno-0-401>401</a></span>
-<span class=normal><a href=#__codelineno-0-402>402</a></span>
-<span class=normal><a href=#__codelineno-0-403>403</a></span>
-<span class=normal><a href=#__codelineno-0-404>404</a></span>
-<span class=normal><a href=#__codelineno-0-405>405</a></span>
-<span class=normal><a href=#__codelineno-0-406>406</a></span>
-<span class=normal><a href=#__codelineno-0-407>407</a></span>
-<span class=normal><a href=#__codelineno-0-408>408</a></span>
-<span class=normal><a href=#__codelineno-0-409>409</a></span>
-<span class=normal><a href=#__codelineno-0-410>410</a></span>
-<span class=normal><a href=#__codelineno-0-411>411</a></span>
-<span class=normal><a href=#__codelineno-0-412>412</a></span>
-<span class=normal><a href=#__codelineno-0-413>413</a></span>
-<span class=normal><a href=#__codelineno-0-414>414</a></span>
-<span class=normal><a href=#__codelineno-0-415>415</a></span>
-<span class=normal><a href=#__codelineno-0-416>416</a></span>
-<span class=normal><a href=#__codelineno-0-417>417</a></span>
-<span class=normal><a href=#__codelineno-0-418>418</a></span>
-<span class=normal><a href=#__codelineno-0-419>419</a></span>
-<span class=normal><a href=#__codelineno-0-420>420</a></span>
-<span class=normal><a href=#__codelineno-0-421>421</a></span>
-<span class=normal><a href=#__codelineno-0-422>422</a></span>
-<span class=normal><a href=#__codelineno-0-423>423</a></span>
-<span class=normal><a href=#__codelineno-0-424>424</a></span>
-<span class=normal><a href=#__codelineno-0-425>425</a></span>
-<span class=normal><a href=#__codelineno-0-426>426</a></span>
-<span class=normal><a href=#__codelineno-0-427>427</a></span>
-<span class=normal><a href=#__codelineno-0-428>428</a></span>
-<span class=normal><a href=#__codelineno-0-429>429</a></span>
-<span class=normal><a href=#__codelineno-0-430>430</a></span>
-<span class=normal><a href=#__codelineno-0-431>431</a></span>
-<span class=normal><a href=#__codelineno-0-432>432</a></span>
-<span class=normal><a href=#__codelineno-0-433>433</a></span>
-<span class=normal><a href=#__codelineno-0-434>434</a></span>
-<span class=normal><a href=#__codelineno-0-435>435</a></span>
-<span class=normal><a href=#__codelineno-0-436>436</a></span>
-<span class=normal><a href=#__codelineno-0-437>437</a></span>
-<span class=normal><a href=#__codelineno-0-438>438</a></span>
-<span class=normal><a href=#__codelineno-0-439>439</a></span>
-<span class=normal><a href=#__codelineno-0-440>440</a></span>
-<span class=normal><a href=#__codelineno-0-441>441</a></span>
-<span class=normal><a href=#__codelineno-0-442>442</a></span>
-<span class=normal><a href=#__codelineno-0-443>443</a></span>
-<span class=normal><a href=#__codelineno-0-444>444</a></span>
-<span class=normal><a href=#__codelineno-0-445>445</a></span>
-<span class=normal><a href=#__codelineno-0-446>446</a></span>
-<span class=normal><a href=#__codelineno-0-447>447</a></span>
-<span class=normal><a href=#__codelineno-0-448>448</a></span>
-<span class=normal><a href=#__codelineno-0-449>449</a></span>
-<span class=normal><a href=#__codelineno-0-450>450</a></span>
-<span class=normal><a href=#__codelineno-0-451>451</a></span>
-<span class=normal><a href=#__codelineno-0-452>452</a></span>
-<span class=normal><a href=#__codelineno-0-453>453</a></span>
-<span class=normal><a href=#__codelineno-0-454>454</a></span>
-<span class=normal><a href=#__codelineno-0-455>455</a></span>
-<span class=normal><a href=#__codelineno-0-456>456</a></span>
-<span class=normal><a href=#__codelineno-0-457>457</a></span>
-<span class=normal><a href=#__codelineno-0-458>458</a></span>
-<span class=normal><a href=#__codelineno-0-459>459</a></span>
-<span class=normal><a href=#__codelineno-0-460>460</a></span>
-<span class=normal><a href=#__codelineno-0-461>461</a></span>
-<span class=normal><a href=#__codelineno-0-462>462</a></span>
-<span class=normal><a href=#__codelineno-0-463>463</a></span>
-<span class=normal><a href=#__codelineno-0-464>464</a></span>
-<span class=normal><a href=#__codelineno-0-465>465</a></span>
-<span class=normal><a href=#__codelineno-0-466>466</a></span></pre></div></td><td class=code><div><pre><span></span><code><span id=__span-0-392><a id=__codelineno-0-392 name=__codelineno-0-392></a><span class=k>def</span><span class=w> </span><span class=nf>initial_setup</span><span class=p>():</span>
-</span><span id=__span-0-393><a id=__codelineno-0-393 name=__codelineno-0-393></a><span class=w>    </span><span class=sd>&quot;&quot;&quot;</span>
-</span><span id=__span-0-394><a id=__codelineno-0-394 name=__codelineno-0-394></a><span class=sd>    Performs all initial checks and setup procedures.</span>
-</span><span id=__span-0-395><a id=__codelineno-0-395 name=__codelineno-0-395></a><span class=sd>    - Ensures correct python interpreter is used.</span>
-</span><span id=__span-0-396><a id=__codelineno-0-396 name=__codelineno-0-396></a><span class=sd>    - Prompts user before installing dependencies.</span>
-</span><span id=__span-0-397><a id=__codelineno-0-397 name=__codelineno-0-397></a><span class=sd>    - Installs package in editable mode if not already installed.</span>
-</span><span id=__span-0-398><a id=__codelineno-0-398 name=__codelineno-0-398></a><span class=sd>    - Prepares data files.</span>
-</span><span id=__span-0-399><a id=__codelineno-0-399 name=__codelineno-0-399></a><span class=sd>    &quot;&quot;&quot;</span>
-</span><span id=__span-0-400><a id=__codelineno-0-400 name=__codelineno-0-400></a>    <span class=c1># Skip everything in CI/test environment</span>
-</span><span id=__span-0-401><a id=__codelineno-0-401 name=__codelineno-0-401></a>    <span class=k>if</span> <span class=n>os</span><span class=o>.</span><span class=n>environ</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=s2>&quot;CI&quot;</span><span class=p>)</span> <span class=ow>or</span> <span class=n>os</span><span class=o>.</span><span class=n>environ</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=s2>&quot;PYTEST_CURRENT_TEST&quot;</span><span class=p>):</span>
-</span><span id=__span-0-402><a id=__codelineno-0-402 name=__codelineno-0-402></a>        <span class=k>return</span>
-</span><span id=__span-0-403><a id=__codelineno-0-403 name=__codelineno-0-403></a>
-</span><span id=__span-0-404><a id=__codelineno-0-404 name=__codelineno-0-404></a>    <span class=n>base_dir</span> <span class=o>=</span> <span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>abspath</span><span class=p>(</span><span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>join</span><span class=p>(</span><span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>dirname</span><span class=p>(</span><span class=vm>__file__</span><span class=p>),</span> <span class=s2>&quot;../..&quot;</span><span class=p>))</span>
-</span><span id=__span-0-405><a id=__codelineno-0-405 name=__codelineno-0-405></a>
-</span><span id=__span-0-406><a id=__codelineno-0-406 name=__codelineno-0-406></a>    <span class=c1># Check if goliat is installed as a package</span>
-</span><span id=__span-0-407><a id=__codelineno-0-407 name=__codelineno-0-407></a>    <span class=n>package_installed</span> <span class=o>=</span> <span class=n>check_package_installed</span><span class=p>()</span>
-</span><span id=__span-0-408><a id=__codelineno-0-408 name=__codelineno-0-408></a>
-</span><span id=__span-0-409><a id=__codelineno-0-409 name=__codelineno-0-409></a>    <span class=k>if</span> <span class=ow>not</span> <span class=n>package_installed</span><span class=p>:</span>
-</span><span id=__span-0-410><a id=__codelineno-0-410 name=__codelineno-0-410></a>        <span class=c1># Prompt user for permission to install</span>
-</span><span id=__span-0-411><a id=__codelineno-0-411 name=__codelineno-0-411></a>        <span class=nb>print</span><span class=p>(</span><span class=s2>&quot;=&quot;</span> <span class=o>*</span> <span class=mi>80</span><span class=p>)</span>
-</span><span id=__span-0-412><a id=__codelineno-0-412 name=__codelineno-0-412></a>        <span class=nb>print</span><span class=p>(</span><span class=s2>&quot;GOLIAT Package Installation&quot;</span><span class=p>)</span>
-</span><span id=__span-0-413><a id=__codelineno-0-413 name=__codelineno-0-413></a>        <span class=nb>print</span><span class=p>(</span><span class=s2>&quot;=&quot;</span> <span class=o>*</span> <span class=mi>80</span><span class=p>)</span>
-</span><span id=__span-0-414><a id=__codelineno-0-414 name=__codelineno-0-414></a>        <span class=nb>print</span><span class=p>(</span><span class=s2>&quot;GOLIAT needs to be installed as a Python package to work properly.&quot;</span><span class=p>)</span>
-</span><span id=__span-0-415><a id=__codelineno-0-415 name=__codelineno-0-415></a>        <span class=nb>print</span><span class=p>(</span><span class=s2>&quot;This will install:&quot;</span><span class=p>)</span>
-</span><span id=__span-0-416><a id=__codelineno-0-416 name=__codelineno-0-416></a>        <span class=nb>print</span><span class=p>(</span><span class=s2>&quot;  - Python dependencies from pyproject.toml&quot;</span><span class=p>)</span>
-</span><span id=__span-0-417><a id=__codelineno-0-417 name=__codelineno-0-417></a>        <span class=nb>print</span><span class=p>(</span><span class=s2>&quot;  - GOLIAT package in editable mode (allows code modifications)&quot;</span><span class=p>)</span>
-</span><span id=__span-0-418><a id=__codelineno-0-418 name=__codelineno-0-418></a>        <span class=nb>print</span><span class=p>()</span>
-</span><span id=__span-0-419><a id=__codelineno-0-419 name=__codelineno-0-419></a>        <span class=nb>print</span><span class=p>(</span><span class=s2>&quot;This is a one-time setup. You can modify the code and changes will&quot;</span><span class=p>)</span>
-</span><span id=__span-0-420><a id=__codelineno-0-420 name=__codelineno-0-420></a>        <span class=nb>print</span><span class=p>(</span><span class=s2>&quot;be reflected immediately without reinstalling.&quot;</span><span class=p>)</span>
-</span><span id=__span-0-421><a id=__codelineno-0-421 name=__codelineno-0-421></a>        <span class=nb>print</span><span class=p>()</span>
-</span><span id=__span-0-422><a id=__codelineno-0-422 name=__codelineno-0-422></a>        <span class=n>response</span> <span class=o>=</span> <span class=nb>input</span><span class=p>(</span><span class=s2>&quot;Do you want to install dependencies and GOLIAT package? [Y/n]: &quot;</span><span class=p>)</span><span class=o>.</span><span class=n>strip</span><span class=p>()</span><span class=o>.</span><span class=n>lower</span><span class=p>()</span>
-</span><span id=__span-0-423><a id=__codelineno-0-423 name=__codelineno-0-423></a>
-</span><span id=__span-0-424><a id=__codelineno-0-424 name=__codelineno-0-424></a>        <span class=k>if</span> <span class=n>response</span> <span class=ow>and</span> <span class=n>response</span> <span class=o>!=</span> <span class=s2>&quot;y&quot;</span> <span class=ow>and</span> <span class=n>response</span> <span class=o>!=</span> <span class=s2>&quot;yes&quot;</span><span class=p>:</span>
-</span><span id=__span-0-425><a id=__codelineno-0-425 name=__codelineno-0-425></a>            <span class=nb>print</span><span class=p>(</span><span class=s2>&quot;Installation cancelled. GOLIAT cannot run without installation.&quot;</span><span class=p>)</span>
-</span><span id=__span-0-426><a id=__codelineno-0-426 name=__codelineno-0-426></a>            <span class=n>sys</span><span class=o>.</span><span class=n>exit</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span>
-</span><span id=__span-0-427><a id=__codelineno-0-427 name=__codelineno-0-427></a>
-</span><span id=__span-0-428><a id=__codelineno-0-428 name=__codelineno-0-428></a>        <span class=c1># Install editable package (this installs dependencies from pyproject.toml automatically)</span>
-</span><span id=__span-0-429><a id=__codelineno-0-429 name=__codelineno-0-429></a>        <span class=nb>print</span><span class=p>(</span><span class=s2>&quot;</span><span class=se>\n</span><span class=s2>Installing GOLIAT package and dependencies in editable mode...&quot;</span><span class=p>)</span>
-</span><span id=__span-0-430><a id=__codelineno-0-430 name=__codelineno-0-430></a>        <span class=k>try</span><span class=p>:</span>
-</span><span id=__span-0-431><a id=__codelineno-0-431 name=__codelineno-0-431></a>            <span class=n>subprocess</span><span class=o>.</span><span class=n>check_call</span><span class=p>([</span><span class=n>sys</span><span class=o>.</span><span class=n>executable</span><span class=p>,</span> <span class=s2>&quot;-m&quot;</span><span class=p>,</span> <span class=s2>&quot;pip&quot;</span><span class=p>,</span> <span class=s2>&quot;install&quot;</span><span class=p>,</span> <span class=s2>&quot;-e&quot;</span><span class=p>,</span> <span class=n>base_dir</span><span class=p>])</span>
-</span><span id=__span-0-432><a id=__codelineno-0-432 name=__codelineno-0-432></a>            <span class=nb>print</span><span class=p>(</span><span class=s2>&quot;✓ GOLIAT package installed successfully!&quot;</span><span class=p>)</span>
-</span><span id=__span-0-433><a id=__codelineno-0-433 name=__codelineno-0-433></a>        <span class=k>except</span> <span class=n>subprocess</span><span class=o>.</span><span class=n>CalledProcessError</span> <span class=k>as</span> <span class=n>e</span><span class=p>:</span>
-</span><span id=__span-0-434><a id=__codelineno-0-434 name=__codelineno-0-434></a>            <span class=n>logging</span><span class=o>.</span><span class=n>error</span><span class=p>(</span><span class=sa>f</span><span class=s2>&quot;Failed to install GOLIAT package: </span><span class=si>{</span><span class=n>e</span><span class=si>}</span><span class=s2>&quot;</span><span class=p>)</span>
-</span><span id=__span-0-435><a id=__codelineno-0-435 name=__codelineno-0-435></a>            <span class=n>sys</span><span class=o>.</span><span class=n>exit</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span>
-</span><span id=__span-0-436><a id=__codelineno-0-436 name=__codelineno-0-436></a>
-</span><span id=__span-0-437><a id=__codelineno-0-437 name=__codelineno-0-437></a>    <span class=c1># Verify package is importable</span>
-</span><span id=__span-0-438><a id=__codelineno-0-438 name=__codelineno-0-438></a>    <span class=k>try</span><span class=p>:</span>
-</span><span id=__span-0-439><a id=__codelineno-0-439 name=__codelineno-0-439></a>        <span class=kn>import</span><span class=w> </span><span class=nn>importlib.util</span>
-</span><span id=__span-0-440><a id=__codelineno-0-440 name=__codelineno-0-440></a>
-</span><span id=__span-0-441><a id=__codelineno-0-441 name=__codelineno-0-441></a>        <span class=n>spec</span> <span class=o>=</span> <span class=n>importlib</span><span class=o>.</span><span class=n>util</span><span class=o>.</span><span class=n>find_spec</span><span class=p>(</span><span class=s2>&quot;goliat&quot;</span><span class=p>)</span>
-</span><span id=__span-0-442><a id=__codelineno-0-442 name=__codelineno-0-442></a>        <span class=k>if</span> <span class=n>spec</span> <span class=ow>is</span> <span class=kc>None</span><span class=p>:</span>
-</span><span id=__span-0-443><a id=__codelineno-0-443 name=__codelineno-0-443></a>            <span class=k>raise</span> <span class=ne>ImportError</span><span class=p>(</span><span class=s2>&quot;goliat module not found&quot;</span><span class=p>)</span>
-</span><span id=__span-0-444><a id=__codelineno-0-444 name=__codelineno-0-444></a>    <span class=k>except</span> <span class=ne>ImportError</span><span class=p>:</span>
-</span><span id=__span-0-445><a id=__codelineno-0-445 name=__codelineno-0-445></a>        <span class=n>logging</span><span class=o>.</span><span class=n>error</span><span class=p>(</span><span class=s2>&quot;GOLIAT package could not be imported. Please ensure installation completed successfully.&quot;</span><span class=p>)</span>
-</span><span id=__span-0-446><a id=__codelineno-0-446 name=__codelineno-0-446></a>        <span class=n>sys</span><span class=o>.</span><span class=n>exit</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span>
-</span><span id=__span-0-447><a id=__codelineno-0-447 name=__codelineno-0-447></a>
-</span><span id=__span-0-448><a id=__codelineno-0-448 name=__codelineno-0-448></a>    <span class=c1># Rest of setup (data preparation, etc.)</span>
-</span><span id=__span-0-449><a id=__codelineno-0-449 name=__codelineno-0-449></a>    <span class=n>data_dir</span> <span class=o>=</span> <span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>join</span><span class=p>(</span><span class=n>base_dir</span><span class=p>,</span> <span class=s2>&quot;data&quot;</span><span class=p>)</span>
-</span><span id=__span-0-450><a id=__codelineno-0-450 name=__codelineno-0-450></a>    <span class=n>os</span><span class=o>.</span><span class=n>makedirs</span><span class=p>(</span><span class=n>data_dir</span><span class=p>,</span> <span class=n>exist_ok</span><span class=o>=</span><span class=kc>True</span><span class=p>)</span>
-</span><span id=__span-0-451><a id=__codelineno-0-451 name=__codelineno-0-451></a>    <span class=n>lock_file</span> <span class=o>=</span> <span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>join</span><span class=p>(</span><span class=n>data_dir</span><span class=p>,</span> <span class=s2>&quot;.setup_done&quot;</span><span class=p>)</span>
-</span><span id=__span-0-452><a id=__codelineno-0-452 name=__codelineno-0-452></a>
-</span><span id=__span-0-453><a id=__codelineno-0-453 name=__codelineno-0-453></a>    <span class=k>if</span> <span class=ow>not</span> <span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>exists</span><span class=p>(</span><span class=n>lock_file</span><span class=p>):</span>
-</span><span id=__span-0-454><a id=__codelineno-0-454 name=__codelineno-0-454></a>        <span class=n>check_repo_root</span><span class=p>()</span>
-</span><span id=__span-0-455><a id=__codelineno-0-455 name=__codelineno-0-455></a>        <span class=c1># Skip interpreter check in CI/test environment</span>
-</span><span id=__span-0-456><a id=__codelineno-0-456 name=__codelineno-0-456></a>        <span class=k>if</span> <span class=ow>not</span> <span class=n>os</span><span class=o>.</span><span class=n>environ</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=s2>&quot;CI&quot;</span><span class=p>)</span> <span class=ow>and</span> <span class=ow>not</span> <span class=n>os</span><span class=o>.</span><span class=n>environ</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=s2>&quot;PYTEST_CURRENT_TEST&quot;</span><span class=p>):</span>
-</span><span id=__span-0-457><a id=__codelineno-0-457 name=__codelineno-0-457></a>            <span class=n>check_python_interpreter</span><span class=p>(</span><span class=n>base_dir</span><span class=o>=</span><span class=n>base_dir</span><span class=p>)</span>  <span class=c1># This function now handles AWS detection internally</span>
-</span><span id=__span-0-458><a id=__codelineno-0-458 name=__codelineno-0-458></a>            <span class=c1># Prompt user about copying .bashrc to home directory (optional)</span>
-</span><span id=__span-0-459><a id=__codelineno-0-459 name=__codelineno-0-459></a>            <span class=n>prompt_copy_bashrc_to_home</span><span class=p>(</span><span class=n>base_dir</span><span class=p>)</span>
-</span><span id=__span-0-460><a id=__codelineno-0-460 name=__codelineno-0-460></a>        <span class=n>prepare_data</span><span class=p>(</span><span class=n>base_dir</span><span class=p>)</span>
-</span><span id=__span-0-461><a id=__codelineno-0-461 name=__codelineno-0-461></a>        <span class=k>with</span> <span class=nb>open</span><span class=p>(</span><span class=n>lock_file</span><span class=p>,</span> <span class=s2>&quot;w&quot;</span><span class=p>)</span> <span class=k>as</span> <span class=n>f</span><span class=p>:</span>
-</span><span id=__span-0-462><a id=__codelineno-0-462 name=__codelineno-0-462></a>            <span class=n>f</span><span class=o>.</span><span class=n>write</span><span class=p>(</span><span class=s2>&quot;Setup complete.&quot;</span><span class=p>)</span>
-</span><span id=__span-0-463><a id=__codelineno-0-463 name=__codelineno-0-463></a>    <span class=k>else</span><span class=p>:</span>
-</span><span id=__span-0-464><a id=__codelineno-0-464 name=__codelineno-0-464></a>        <span class=c1># Skip interpreter check in CI/test environment</span>
-</span><span id=__span-0-465><a id=__codelineno-0-465 name=__codelineno-0-465></a>        <span class=k>if</span> <span class=ow>not</span> <span class=n>os</span><span class=o>.</span><span class=n>environ</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=s2>&quot;CI&quot;</span><span class=p>)</span> <span class=ow>and</span> <span class=ow>not</span> <span class=n>os</span><span class=o>.</span><span class=n>environ</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=s2>&quot;PYTEST_CURRENT_TEST&quot;</span><span class=p>):</span>
-</span><span id=__span-0-466><a id=__codelineno-0-466 name=__codelineno-0-466></a>            <span class=n>check_python_interpreter</span><span class=p>(</span><span class=n>base_dir</span><span class=o>=</span><span class=n>base_dir</span><span class=p>)</span>  <span class=c1># This function now handles AWS detection internally</span>
+</span></code></pre></div> <div class="doc doc-contents "> <p>Performs all initial checks and setup procedures. - Ensures correct python interpreter is used. - Prompts user before installing dependencies. - Installs package in editable mode if not already installed. - Prepares data files.</p> <details class=quote> <summary>Source code in <code>goliat/utils/setup.py</code></summary> <div class="language-python highlight"><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal><a href=#__codelineno-0-26> 26</a></span>
+<span class=normal><a href=#__codelineno-0-27> 27</a></span>
+<span class=normal><a href=#__codelineno-0-28> 28</a></span>
+<span class=normal><a href=#__codelineno-0-29> 29</a></span>
+<span class=normal><a href=#__codelineno-0-30> 30</a></span>
+<span class=normal><a href=#__codelineno-0-31> 31</a></span>
+<span class=normal><a href=#__codelineno-0-32> 32</a></span>
+<span class=normal><a href=#__codelineno-0-33> 33</a></span>
+<span class=normal><a href=#__codelineno-0-34> 34</a></span>
+<span class=normal><a href=#__codelineno-0-35> 35</a></span>
+<span class=normal><a href=#__codelineno-0-36> 36</a></span>
+<span class=normal><a href=#__codelineno-0-37> 37</a></span>
+<span class=normal><a href=#__codelineno-0-38> 38</a></span>
+<span class=normal><a href=#__codelineno-0-39> 39</a></span>
+<span class=normal><a href=#__codelineno-0-40> 40</a></span>
+<span class=normal><a href=#__codelineno-0-41> 41</a></span>
+<span class=normal><a href=#__codelineno-0-42> 42</a></span>
+<span class=normal><a href=#__codelineno-0-43> 43</a></span>
+<span class=normal><a href=#__codelineno-0-44> 44</a></span>
+<span class=normal><a href=#__codelineno-0-45> 45</a></span>
+<span class=normal><a href=#__codelineno-0-46> 46</a></span>
+<span class=normal><a href=#__codelineno-0-47> 47</a></span>
+<span class=normal><a href=#__codelineno-0-48> 48</a></span>
+<span class=normal><a href=#__codelineno-0-49> 49</a></span>
+<span class=normal><a href=#__codelineno-0-50> 50</a></span>
+<span class=normal><a href=#__codelineno-0-51> 51</a></span>
+<span class=normal><a href=#__codelineno-0-52> 52</a></span>
+<span class=normal><a href=#__codelineno-0-53> 53</a></span>
+<span class=normal><a href=#__codelineno-0-54> 54</a></span>
+<span class=normal><a href=#__codelineno-0-55> 55</a></span>
+<span class=normal><a href=#__codelineno-0-56> 56</a></span>
+<span class=normal><a href=#__codelineno-0-57> 57</a></span>
+<span class=normal><a href=#__codelineno-0-58> 58</a></span>
+<span class=normal><a href=#__codelineno-0-59> 59</a></span>
+<span class=normal><a href=#__codelineno-0-60> 60</a></span>
+<span class=normal><a href=#__codelineno-0-61> 61</a></span>
+<span class=normal><a href=#__codelineno-0-62> 62</a></span>
+<span class=normal><a href=#__codelineno-0-63> 63</a></span>
+<span class=normal><a href=#__codelineno-0-64> 64</a></span>
+<span class=normal><a href=#__codelineno-0-65> 65</a></span>
+<span class=normal><a href=#__codelineno-0-66> 66</a></span>
+<span class=normal><a href=#__codelineno-0-67> 67</a></span>
+<span class=normal><a href=#__codelineno-0-68> 68</a></span>
+<span class=normal><a href=#__codelineno-0-69> 69</a></span>
+<span class=normal><a href=#__codelineno-0-70> 70</a></span>
+<span class=normal><a href=#__codelineno-0-71> 71</a></span>
+<span class=normal><a href=#__codelineno-0-72> 72</a></span>
+<span class=normal><a href=#__codelineno-0-73> 73</a></span>
+<span class=normal><a href=#__codelineno-0-74> 74</a></span>
+<span class=normal><a href=#__codelineno-0-75> 75</a></span>
+<span class=normal><a href=#__codelineno-0-76> 76</a></span>
+<span class=normal><a href=#__codelineno-0-77> 77</a></span>
+<span class=normal><a href=#__codelineno-0-78> 78</a></span>
+<span class=normal><a href=#__codelineno-0-79> 79</a></span>
+<span class=normal><a href=#__codelineno-0-80> 80</a></span>
+<span class=normal><a href=#__codelineno-0-81> 81</a></span>
+<span class=normal><a href=#__codelineno-0-82> 82</a></span>
+<span class=normal><a href=#__codelineno-0-83> 83</a></span>
+<span class=normal><a href=#__codelineno-0-84> 84</a></span>
+<span class=normal><a href=#__codelineno-0-85> 85</a></span>
+<span class=normal><a href=#__codelineno-0-86> 86</a></span>
+<span class=normal><a href=#__codelineno-0-87> 87</a></span>
+<span class=normal><a href=#__codelineno-0-88> 88</a></span>
+<span class=normal><a href=#__codelineno-0-89> 89</a></span>
+<span class=normal><a href=#__codelineno-0-90> 90</a></span>
+<span class=normal><a href=#__codelineno-0-91> 91</a></span>
+<span class=normal><a href=#__codelineno-0-92> 92</a></span>
+<span class=normal><a href=#__codelineno-0-93> 93</a></span>
+<span class=normal><a href=#__codelineno-0-94> 94</a></span>
+<span class=normal><a href=#__codelineno-0-95> 95</a></span>
+<span class=normal><a href=#__codelineno-0-96> 96</a></span>
+<span class=normal><a href=#__codelineno-0-97> 97</a></span>
+<span class=normal><a href=#__codelineno-0-98> 98</a></span>
+<span class=normal><a href=#__codelineno-0-99> 99</a></span>
+<span class=normal><a href=#__codelineno-0-100>100</a></span></pre></div></td><td class=code><div><pre><span></span><code><span id=__span-0-26><a id=__codelineno-0-26 name=__codelineno-0-26></a><span class=k>def</span><span class=w> </span><span class=nf>initial_setup</span><span class=p>():</span>
+</span><span id=__span-0-27><a id=__codelineno-0-27 name=__codelineno-0-27></a><span class=w>    </span><span class=sd>&quot;&quot;&quot;</span>
+</span><span id=__span-0-28><a id=__codelineno-0-28 name=__codelineno-0-28></a><span class=sd>    Performs all initial checks and setup procedures.</span>
+</span><span id=__span-0-29><a id=__codelineno-0-29 name=__codelineno-0-29></a><span class=sd>    - Ensures correct python interpreter is used.</span>
+</span><span id=__span-0-30><a id=__codelineno-0-30 name=__codelineno-0-30></a><span class=sd>    - Prompts user before installing dependencies.</span>
+</span><span id=__span-0-31><a id=__codelineno-0-31 name=__codelineno-0-31></a><span class=sd>    - Installs package in editable mode if not already installed.</span>
+</span><span id=__span-0-32><a id=__codelineno-0-32 name=__codelineno-0-32></a><span class=sd>    - Prepares data files.</span>
+</span><span id=__span-0-33><a id=__codelineno-0-33 name=__codelineno-0-33></a><span class=sd>    &quot;&quot;&quot;</span>
+</span><span id=__span-0-34><a id=__codelineno-0-34 name=__codelineno-0-34></a>    <span class=c1># Skip everything in CI/test environment</span>
+</span><span id=__span-0-35><a id=__codelineno-0-35 name=__codelineno-0-35></a>    <span class=k>if</span> <span class=n>os</span><span class=o>.</span><span class=n>environ</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=s2>&quot;CI&quot;</span><span class=p>)</span> <span class=ow>or</span> <span class=n>os</span><span class=o>.</span><span class=n>environ</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=s2>&quot;PYTEST_CURRENT_TEST&quot;</span><span class=p>):</span>
+</span><span id=__span-0-36><a id=__codelineno-0-36 name=__codelineno-0-36></a>        <span class=k>return</span>
+</span><span id=__span-0-37><a id=__codelineno-0-37 name=__codelineno-0-37></a>
+</span><span id=__span-0-38><a id=__codelineno-0-38 name=__codelineno-0-38></a>    <span class=n>base_dir</span> <span class=o>=</span> <span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>abspath</span><span class=p>(</span><span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>join</span><span class=p>(</span><span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>dirname</span><span class=p>(</span><span class=vm>__file__</span><span class=p>),</span> <span class=s2>&quot;../..&quot;</span><span class=p>))</span>
+</span><span id=__span-0-39><a id=__codelineno-0-39 name=__codelineno-0-39></a>
+</span><span id=__span-0-40><a id=__codelineno-0-40 name=__codelineno-0-40></a>    <span class=c1># Check if goliat is installed as a package</span>
+</span><span id=__span-0-41><a id=__codelineno-0-41 name=__codelineno-0-41></a>    <span class=n>package_installed</span> <span class=o>=</span> <span class=n>check_package_installed</span><span class=p>()</span>
+</span><span id=__span-0-42><a id=__codelineno-0-42 name=__codelineno-0-42></a>
+</span><span id=__span-0-43><a id=__codelineno-0-43 name=__codelineno-0-43></a>    <span class=k>if</span> <span class=ow>not</span> <span class=n>package_installed</span><span class=p>:</span>
+</span><span id=__span-0-44><a id=__codelineno-0-44 name=__codelineno-0-44></a>        <span class=c1># Prompt user for permission to install</span>
+</span><span id=__span-0-45><a id=__codelineno-0-45 name=__codelineno-0-45></a>        <span class=nb>print</span><span class=p>(</span><span class=s2>&quot;=&quot;</span> <span class=o>*</span> <span class=mi>80</span><span class=p>)</span>
+</span><span id=__span-0-46><a id=__codelineno-0-46 name=__codelineno-0-46></a>        <span class=nb>print</span><span class=p>(</span><span class=s2>&quot;GOLIAT Package Installation&quot;</span><span class=p>)</span>
+</span><span id=__span-0-47><a id=__codelineno-0-47 name=__codelineno-0-47></a>        <span class=nb>print</span><span class=p>(</span><span class=s2>&quot;=&quot;</span> <span class=o>*</span> <span class=mi>80</span><span class=p>)</span>
+</span><span id=__span-0-48><a id=__codelineno-0-48 name=__codelineno-0-48></a>        <span class=nb>print</span><span class=p>(</span><span class=s2>&quot;GOLIAT needs to be installed as a Python package to work properly.&quot;</span><span class=p>)</span>
+</span><span id=__span-0-49><a id=__codelineno-0-49 name=__codelineno-0-49></a>        <span class=nb>print</span><span class=p>(</span><span class=s2>&quot;This will install:&quot;</span><span class=p>)</span>
+</span><span id=__span-0-50><a id=__codelineno-0-50 name=__codelineno-0-50></a>        <span class=nb>print</span><span class=p>(</span><span class=s2>&quot;  - Python dependencies from pyproject.toml&quot;</span><span class=p>)</span>
+</span><span id=__span-0-51><a id=__codelineno-0-51 name=__codelineno-0-51></a>        <span class=nb>print</span><span class=p>(</span><span class=s2>&quot;  - GOLIAT package in editable mode (allows code modifications)&quot;</span><span class=p>)</span>
+</span><span id=__span-0-52><a id=__codelineno-0-52 name=__codelineno-0-52></a>        <span class=nb>print</span><span class=p>()</span>
+</span><span id=__span-0-53><a id=__codelineno-0-53 name=__codelineno-0-53></a>        <span class=nb>print</span><span class=p>(</span><span class=s2>&quot;This is a one-time setup. You can modify the code and changes will&quot;</span><span class=p>)</span>
+</span><span id=__span-0-54><a id=__codelineno-0-54 name=__codelineno-0-54></a>        <span class=nb>print</span><span class=p>(</span><span class=s2>&quot;be reflected immediately without reinstalling.&quot;</span><span class=p>)</span>
+</span><span id=__span-0-55><a id=__codelineno-0-55 name=__codelineno-0-55></a>        <span class=nb>print</span><span class=p>()</span>
+</span><span id=__span-0-56><a id=__codelineno-0-56 name=__codelineno-0-56></a>        <span class=n>response</span> <span class=o>=</span> <span class=nb>input</span><span class=p>(</span><span class=s2>&quot;Do you want to install dependencies and GOLIAT package? [Y/n]: &quot;</span><span class=p>)</span><span class=o>.</span><span class=n>strip</span><span class=p>()</span><span class=o>.</span><span class=n>lower</span><span class=p>()</span>
+</span><span id=__span-0-57><a id=__codelineno-0-57 name=__codelineno-0-57></a>
+</span><span id=__span-0-58><a id=__codelineno-0-58 name=__codelineno-0-58></a>        <span class=k>if</span> <span class=n>response</span> <span class=ow>and</span> <span class=n>response</span> <span class=o>!=</span> <span class=s2>&quot;y&quot;</span> <span class=ow>and</span> <span class=n>response</span> <span class=o>!=</span> <span class=s2>&quot;yes&quot;</span><span class=p>:</span>
+</span><span id=__span-0-59><a id=__codelineno-0-59 name=__codelineno-0-59></a>            <span class=nb>print</span><span class=p>(</span><span class=s2>&quot;Installation cancelled. GOLIAT cannot run without installation.&quot;</span><span class=p>)</span>
+</span><span id=__span-0-60><a id=__codelineno-0-60 name=__codelineno-0-60></a>            <span class=n>sys</span><span class=o>.</span><span class=n>exit</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span>
+</span><span id=__span-0-61><a id=__codelineno-0-61 name=__codelineno-0-61></a>
+</span><span id=__span-0-62><a id=__codelineno-0-62 name=__codelineno-0-62></a>        <span class=c1># Install editable package (this installs dependencies from pyproject.toml automatically)</span>
+</span><span id=__span-0-63><a id=__codelineno-0-63 name=__codelineno-0-63></a>        <span class=nb>print</span><span class=p>(</span><span class=s2>&quot;</span><span class=se>\n</span><span class=s2>Installing GOLIAT package and dependencies in editable mode...&quot;</span><span class=p>)</span>
+</span><span id=__span-0-64><a id=__codelineno-0-64 name=__codelineno-0-64></a>        <span class=k>try</span><span class=p>:</span>
+</span><span id=__span-0-65><a id=__codelineno-0-65 name=__codelineno-0-65></a>            <span class=n>subprocess</span><span class=o>.</span><span class=n>check_call</span><span class=p>([</span><span class=n>sys</span><span class=o>.</span><span class=n>executable</span><span class=p>,</span> <span class=s2>&quot;-m&quot;</span><span class=p>,</span> <span class=s2>&quot;pip&quot;</span><span class=p>,</span> <span class=s2>&quot;install&quot;</span><span class=p>,</span> <span class=s2>&quot;-e&quot;</span><span class=p>,</span> <span class=n>base_dir</span><span class=p>])</span>
+</span><span id=__span-0-66><a id=__codelineno-0-66 name=__codelineno-0-66></a>            <span class=nb>print</span><span class=p>(</span><span class=s2>&quot;✓ GOLIAT package installed successfully!&quot;</span><span class=p>)</span>
+</span><span id=__span-0-67><a id=__codelineno-0-67 name=__codelineno-0-67></a>        <span class=k>except</span> <span class=n>subprocess</span><span class=o>.</span><span class=n>CalledProcessError</span> <span class=k>as</span> <span class=n>e</span><span class=p>:</span>
+</span><span id=__span-0-68><a id=__codelineno-0-68 name=__codelineno-0-68></a>            <span class=n>logging</span><span class=o>.</span><span class=n>error</span><span class=p>(</span><span class=sa>f</span><span class=s2>&quot;Failed to install GOLIAT package: </span><span class=si>{</span><span class=n>e</span><span class=si>}</span><span class=s2>&quot;</span><span class=p>)</span>
+</span><span id=__span-0-69><a id=__codelineno-0-69 name=__codelineno-0-69></a>            <span class=n>sys</span><span class=o>.</span><span class=n>exit</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span>
+</span><span id=__span-0-70><a id=__codelineno-0-70 name=__codelineno-0-70></a>
+</span><span id=__span-0-71><a id=__codelineno-0-71 name=__codelineno-0-71></a>    <span class=c1># Verify package is importable</span>
+</span><span id=__span-0-72><a id=__codelineno-0-72 name=__codelineno-0-72></a>    <span class=k>try</span><span class=p>:</span>
+</span><span id=__span-0-73><a id=__codelineno-0-73 name=__codelineno-0-73></a>        <span class=kn>import</span><span class=w> </span><span class=nn>importlib.util</span>
+</span><span id=__span-0-74><a id=__codelineno-0-74 name=__codelineno-0-74></a>
+</span><span id=__span-0-75><a id=__codelineno-0-75 name=__codelineno-0-75></a>        <span class=n>spec</span> <span class=o>=</span> <span class=n>importlib</span><span class=o>.</span><span class=n>util</span><span class=o>.</span><span class=n>find_spec</span><span class=p>(</span><span class=s2>&quot;goliat&quot;</span><span class=p>)</span>
+</span><span id=__span-0-76><a id=__codelineno-0-76 name=__codelineno-0-76></a>        <span class=k>if</span> <span class=n>spec</span> <span class=ow>is</span> <span class=kc>None</span><span class=p>:</span>
+</span><span id=__span-0-77><a id=__codelineno-0-77 name=__codelineno-0-77></a>            <span class=k>raise</span> <span class=ne>ImportError</span><span class=p>(</span><span class=s2>&quot;goliat module not found&quot;</span><span class=p>)</span>
+</span><span id=__span-0-78><a id=__codelineno-0-78 name=__codelineno-0-78></a>    <span class=k>except</span> <span class=ne>ImportError</span><span class=p>:</span>
+</span><span id=__span-0-79><a id=__codelineno-0-79 name=__codelineno-0-79></a>        <span class=n>logging</span><span class=o>.</span><span class=n>error</span><span class=p>(</span><span class=s2>&quot;GOLIAT package could not be imported. Please ensure installation completed successfully.&quot;</span><span class=p>)</span>
+</span><span id=__span-0-80><a id=__codelineno-0-80 name=__codelineno-0-80></a>        <span class=n>sys</span><span class=o>.</span><span class=n>exit</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span>
+</span><span id=__span-0-81><a id=__codelineno-0-81 name=__codelineno-0-81></a>
+</span><span id=__span-0-82><a id=__codelineno-0-82 name=__codelineno-0-82></a>    <span class=c1># Rest of setup (data preparation, etc.)</span>
+</span><span id=__span-0-83><a id=__codelineno-0-83 name=__codelineno-0-83></a>    <span class=n>data_dir</span> <span class=o>=</span> <span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>join</span><span class=p>(</span><span class=n>base_dir</span><span class=p>,</span> <span class=s2>&quot;data&quot;</span><span class=p>)</span>
+</span><span id=__span-0-84><a id=__codelineno-0-84 name=__codelineno-0-84></a>    <span class=n>os</span><span class=o>.</span><span class=n>makedirs</span><span class=p>(</span><span class=n>data_dir</span><span class=p>,</span> <span class=n>exist_ok</span><span class=o>=</span><span class=kc>True</span><span class=p>)</span>
+</span><span id=__span-0-85><a id=__codelineno-0-85 name=__codelineno-0-85></a>    <span class=n>lock_file</span> <span class=o>=</span> <span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>join</span><span class=p>(</span><span class=n>data_dir</span><span class=p>,</span> <span class=s2>&quot;.setup_done&quot;</span><span class=p>)</span>
+</span><span id=__span-0-86><a id=__codelineno-0-86 name=__codelineno-0-86></a>
+</span><span id=__span-0-87><a id=__codelineno-0-87 name=__codelineno-0-87></a>    <span class=k>if</span> <span class=ow>not</span> <span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>exists</span><span class=p>(</span><span class=n>lock_file</span><span class=p>):</span>
+</span><span id=__span-0-88><a id=__codelineno-0-88 name=__codelineno-0-88></a>        <span class=n>check_repo_root</span><span class=p>()</span>
+</span><span id=__span-0-89><a id=__codelineno-0-89 name=__codelineno-0-89></a>        <span class=c1># Skip interpreter check in CI/test environment</span>
+</span><span id=__span-0-90><a id=__codelineno-0-90 name=__codelineno-0-90></a>        <span class=k>if</span> <span class=ow>not</span> <span class=n>os</span><span class=o>.</span><span class=n>environ</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=s2>&quot;CI&quot;</span><span class=p>)</span> <span class=ow>and</span> <span class=ow>not</span> <span class=n>os</span><span class=o>.</span><span class=n>environ</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=s2>&quot;PYTEST_CURRENT_TEST&quot;</span><span class=p>):</span>
+</span><span id=__span-0-91><a id=__codelineno-0-91 name=__codelineno-0-91></a>            <span class=n>check_python_interpreter</span><span class=p>(</span><span class=n>base_dir</span><span class=o>=</span><span class=n>base_dir</span><span class=p>)</span>  <span class=c1># This function now handles AWS detection internally</span>
+</span><span id=__span-0-92><a id=__codelineno-0-92 name=__codelineno-0-92></a>            <span class=c1># Prompt user about copying .bashrc to home directory (optional)</span>
+</span><span id=__span-0-93><a id=__codelineno-0-93 name=__codelineno-0-93></a>            <span class=n>prompt_copy_bashrc_to_home</span><span class=p>(</span><span class=n>base_dir</span><span class=p>)</span>
+</span><span id=__span-0-94><a id=__codelineno-0-94 name=__codelineno-0-94></a>        <span class=n>prepare_data</span><span class=p>(</span><span class=n>base_dir</span><span class=p>)</span>
+</span><span id=__span-0-95><a id=__codelineno-0-95 name=__codelineno-0-95></a>        <span class=k>with</span> <span class=nb>open</span><span class=p>(</span><span class=n>lock_file</span><span class=p>,</span> <span class=s2>&quot;w&quot;</span><span class=p>)</span> <span class=k>as</span> <span class=n>f</span><span class=p>:</span>
+</span><span id=__span-0-96><a id=__codelineno-0-96 name=__codelineno-0-96></a>            <span class=n>f</span><span class=o>.</span><span class=n>write</span><span class=p>(</span><span class=s2>&quot;Setup complete.&quot;</span><span class=p>)</span>
+</span><span id=__span-0-97><a id=__codelineno-0-97 name=__codelineno-0-97></a>    <span class=k>else</span><span class=p>:</span>
+</span><span id=__span-0-98><a id=__codelineno-0-98 name=__codelineno-0-98></a>        <span class=c1># Skip interpreter check in CI/test environment</span>
+</span><span id=__span-0-99><a id=__codelineno-0-99 name=__codelineno-0-99></a>        <span class=k>if</span> <span class=ow>not</span> <span class=n>os</span><span class=o>.</span><span class=n>environ</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=s2>&quot;CI&quot;</span><span class=p>)</span> <span class=ow>and</span> <span class=ow>not</span> <span class=n>os</span><span class=o>.</span><span class=n>environ</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=s2>&quot;PYTEST_CURRENT_TEST&quot;</span><span class=p>):</span>
+</span><span id=__span-0-100><a id=__codelineno-0-100 name=__codelineno-0-100></a>            <span class=n>check_python_interpreter</span><span class=p>(</span><span class=n>base_dir</span><span class=o>=</span><span class=n>base_dir</span><span class=p>)</span>  <span class=c1># This function now handles AWS detection internally</span>
 </span></code></pre></div></td></tr></table></div> </details> </div> </div> </div> </div> </div><hr> <h2 id=study-orchestration>Study Orchestration<a class=headerlink href=#study-orchestration title="Permanent link">&para;</a></h2> <p>Study classes that orchestrate simulation workflows.</p> <h3 id=base-study>Base Study<a class=headerlink href=#base-study title="Permanent link">&para;</a></h3> <div class="doc doc-object doc-module"> <h2 id=goliat.studies.base_study class="doc doc-heading"> <code class="doc-symbol doc-symbol-heading doc-symbol-module"></code> <span class="doc doc-object-name doc-module-name">goliat.studies.base_study</span> <a href=#goliat.studies.base_study class=headerlink title="Permanent link">&para;</a></h2> <div class="doc doc-contents first"> <div class="doc doc-children"> <h3 id=goliat.studies.base_study-classes>Classes<a href=#goliat.studies.base_study-classes class=headerlink title="Permanent link">&para;</a></h3> <div class="doc doc-object doc-class"> <h4 id=goliat.studies.base_study.BaseStudy class="doc doc-heading"> <code class="doc-symbol doc-symbol-heading doc-symbol-class"></code> <span class="doc doc-object-name doc-class-name">BaseStudy</span> <a href=#goliat.studies.base_study.BaseStudy class=headerlink title="Permanent link">&para;</a></h4> <div class="language-python doc-signature highlight"><pre><span></span><code><span id=__span-0-1><a id=__codelineno-0-1 name=__codelineno-0-1 href=#__codelineno-0-1></a><span class=nf>BaseStudy</span><span class=p>(</span><span class=n>study_type</span><span class=p>:</span> <span class=nb>str</span><span class=p>,</span> <span class=n>config_filename</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=nb>str</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span> <span class=n>gui</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=n>QueueGUI</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span> <span class=n>profiler</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span> <span class=n>no_cache</span><span class=p>:</span> <span class=nb>bool</span> <span class=o>=</span> <span class=kc>False</span><span class=p>)</span>
 </span></code></pre></div> <div class="doc doc-contents "> <p class="doc doc-class-bases"> Bases: <code><a class="autorefs autorefs-internal" title="<code>goliat.logging_manager.LoggingMixin</code>" href=#goliat.logging_manager.LoggingMixin>LoggingMixin</a></code></p> <p>Base class for simulation studies.</p> <p>Handles common setup like config loading, profiling, project management, and <abbr title="Graphical User Interface">GUI</abbr> coordination. Subclasses implement _run_study() for specific logic.</p> <details class=quote> <summary>Source code in <code>goliat/studies/base_study.py</code></summary> <div class="language-python highlight"><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal><a href=#__codelineno-0-37>37</a></span>
 <span class=normal><a href=#__codelineno-0-38>38</a></span>
