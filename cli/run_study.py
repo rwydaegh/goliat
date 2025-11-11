@@ -321,7 +321,9 @@ def main():
 
     config = Config(base_dir, config_filename)
     execution_control = config["execution_control"] or {}
-    use_gui = config["use_gui"] or True
+    use_gui = config["use_gui"]
+    if use_gui is None:
+        use_gui = True
 
     if execution_control.get("batch_run"):
         run_osparc_batch(config_filename)
