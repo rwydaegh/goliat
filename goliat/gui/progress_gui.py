@@ -131,9 +131,14 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
 
     def _initialize_components(self) -> None:
         """Initializes core components (data manager, status manager)."""
-        # Calculate repo root: go up 3 levels from goliat/gui/progress_gui.py to repo root
-        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        data_dir = os.path.join(repo_root, "data")
+        # Determine data directory: prefer cwd if it has data/, otherwise fallback to package location
+        cwd = os.getcwd()
+        if os.path.isdir(os.path.join(cwd, "data")):
+            data_dir = os.path.join(cwd, "data")
+        else:
+            # Fallback: calculate from package location (for backwards compatibility)
+            repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            data_dir = os.path.join(repo_root, "data")
         os.makedirs(data_dir, exist_ok=True)
         self.data_manager: DataManager = DataManager(data_dir, self.verbose_logger)
         self.status_manager: StatusManager = StatusManager()

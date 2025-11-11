@@ -19,7 +19,9 @@ except ImportError:
     REQUESTS_AVAILABLE = False
 
 # Base directory for config files
-base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+from cli.utils import get_base_dir
+
+base_dir = get_base_dir()
 
 
 def setup_console_logging():

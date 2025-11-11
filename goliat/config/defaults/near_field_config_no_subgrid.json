@@ -1,0 +1,39 @@
+{
+  "extends": "near_field_config.json",
+  "antenna_config": {
+    "700": {
+      "gridding": {
+        "automatic": ["component1:Substrate", "Lines 1"],
+        "manual": {
+          "group1": ["component1:Battery", "component1:Patch", "Extrude 1"],
+          "group2": ["component1:ShortingPin"]
+        },
+        "manual_grid_step": {
+          "group1": [1, 0.03, 1],
+          "group2": [0.1, 0.1, 0.1]
+        },
+        "resolution": {
+          "group1": [1.0, 1.0, 1.0],
+          "group2": [0.5, 0.5, 0.5]
+        }
+      }
+    },
+    "835": {
+      "gridding": {
+        "automatic": ["component1:Substrate", "Lines 1"],
+        "manual": {
+          "group1": ["component1:Battery", "component1:Patch", "Extrude 1"],
+          "group2": ["component1:ShortingPin"]
+        },
+        "manual_grid_step": {
+          "group1": [1, 0.03, 1],
+          "group2": [0.1, 0.1, 0.1]
+        },
+        "resolution": {
+          "group1": [1.0, 1.0, 1.0],
+          "group2": [0.5, 0.5, 0.5]
+        }
+      }
+    }
+  }
+}
