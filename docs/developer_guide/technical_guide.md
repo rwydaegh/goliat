@@ -111,6 +111,21 @@ This section details GOLIAT's core classes and their roles within the framework.
 **Access Pattern**: The Config class uses dictionary-style access with fallback:
 - `config["simulation_parameters.excitation_type"] or "Harmonic"` (pythonic fallback pattern)
 
+**⚠️ Important**: When using the `or` pattern for default values, be careful about falsy values:
+
+- **Safe**: If the default is falsy (`False`, `0`, `[]`, `{}`, `""`), the `or` pattern is safe because falsy values won't be masked:
+  - `config["key"] or False` - `False` stays `False`
+  - `config["key"] or 0` - `0` stays `0`
+  - `config["key"] or []` - Empty list stays empty
+
+- **Problematic**: If the default is truthy (`True`, non-zero numbers, non-empty strings/lists), use explicit `None` checks to avoid masking falsy values:
+  - ❌ `config["use_gui"] or True` - `False` becomes `True` (wrong!)
+  - ✅ `use_gui = config["use_gui"]; if use_gui is None: use_gui = True` - `False` stays `False`
+  - ❌ `config["bbox_padding_mm"] or 50` - `0` becomes `50` (wrong if `0` is valid!)
+  - ✅ `padding = config["bbox_padding_mm"]; if padding is None: padding = 50` - `0` stays `0`
+
+**Rule of thumb**: If the default is falsy, the `or` pattern is safe. If the default is truthy, use explicit `None` checks to avoid masking falsy values.
+
 - **API Reference**: [goliat.config.Config](../reference/api_reference.md#goliat.config.Config)
 
 #### `BaseStudy`, `NearFieldStudy`, `FarFieldStudy`
