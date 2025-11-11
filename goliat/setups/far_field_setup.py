@@ -209,7 +209,9 @@ class FarFieldSetup(BaseSetup):
 
         bbox_min, bbox_max = self.model.GetBoundingBox(phantom_entities)
 
-        padding_mm = self.config["simulation_parameters.bbox_padding_mm"] or 50
+        padding_mm = self.config["simulation_parameters.bbox_padding_mm"]
+        if padding_mm is None:
+            padding_mm = 50
 
         sim_bbox_min = np.array(bbox_min) - padding_mm
         sim_bbox_max = np.array(bbox_max) + padding_mm
