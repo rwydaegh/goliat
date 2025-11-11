@@ -93,8 +93,6 @@ source venv/Scripts/activate  # On Windows Git Bash
 # 2. Install GOLIAT
 python -m pip install goliat
 
-This installs the latest released version from PyPI. For unreleased features, use editable installation.
-
 # 3. Navigate to your project directory and initialize
 cd /path/to/your/project
 goliat init
@@ -103,9 +101,9 @@ goliat init
 goliat study near_field_config
 ```
 
-The `--system-site-packages` flag allows the venv to access Sim4Life's packages (like `s4l_v1`).
+The `--system-site-packages` flag allows the venv to access Sim4Life's packages (like `s4l_v1`). This installs the latest released version from PyPI. For unreleased features, use editable installation.
 
-**For developers**: Clone the repository and install in editable mode. See [installation guide](https://rwydaegh.github.io/goliat/installation/#editable-installation) for details.
+**For developers**: If you need to modify code, run tests, or access repository tools, you should install in editable mode instead. See [installation guide](https://rwydaegh.github.io/goliat/installation/#editable-installation) for details.
 
 > **Note**: The `goliat init` command checks your setup and downloads required data files. If you skip this step, `goliat study` will automatically prompt you to install when first run.
 
