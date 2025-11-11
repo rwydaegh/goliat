@@ -149,11 +149,11 @@ class TestNearFieldStudyCoreWorkflow:
 
         with patch("s4l_v1.document", mock_document), patch.object(study, "project_manager", mock_project_manager), patch.object(
             study, "_verify_run_deliverables_before_extraction", return_value=True
-        ), patch("goliat.studies.near_field_study.ResultsExtractor") as mock_extractor_class, patch(
+        ), patch("goliat.studies.near_field_study.ResultsExtractor.from_params") as mock_from_params, patch(
             "goliat.studies.near_field_study.add_simulation_log_handlers"
         ), patch("goliat.studies.near_field_study.remove_simulation_log_handlers"):
             mock_extractor = MagicMock()
-            mock_extractor_class.return_value = mock_extractor
+            mock_from_params.return_value = mock_extractor
 
             study._run_placement(
                 phantom_name="thelonious",
@@ -167,7 +167,7 @@ class TestNearFieldStudyCoreWorkflow:
             )
 
             # Verify extractor was created and extract was called
-            assert mock_extractor_class.called
+            assert mock_from_params.called
             assert mock_extractor.extract.called
 
     def test_near_field_study_validate_auto_cleanup_config_warning(self, dummy_config):
