@@ -21,7 +21,7 @@
 
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/rwydaegh/goliat/master/docs/img/tutorials/tut1_gui.gif" width="50%">
+<img src="docs/img/tutorials/tut1_gui.gif" width="50%">
 
 *GOLIAT GUI showing real-time progress monitoring*
 
