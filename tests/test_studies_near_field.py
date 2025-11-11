@@ -105,7 +105,7 @@ class TestNearFieldStudy:
         }
 
         # Mock phantom definition
-        study.config.config["phantom_definitions"] = {"test_phantom": {"placements": {"do_by_cheek": True}}}
+        study.config.config["phantom_definitions"] = {"thelonious": {"placements": {"do_by_cheek": True}}}
 
         # Count simulations: 2 frequencies * 2 positions * 2 orientations = 8
         total = 0
@@ -169,9 +169,15 @@ class TestNearFieldStudy:
 
         # Should not crash when all phases disabled
         # The actual run would return early, but we can test the check
-        do_setup = study.config["execution_control.do_setup"] or True
-        do_run = study.config["execution_control.do_run"] or True
-        do_extract = study.config["execution_control.do_extract"] or True
+        do_setup = study.config["execution_control.do_setup"]
+        if do_setup is None:
+            do_setup = True
+        do_run = study.config["execution_control.do_run"]
+        if do_run is None:
+            do_run = True
+        do_extract = study.config["execution_control.do_extract"]
+        if do_extract is None:
+            do_extract = True
 
         assert not do_setup and not do_run and not do_extract
 
@@ -221,6 +227,8 @@ class TestNearFieldStudy:
         # Check the condition that triggers the warning
         # get_only_write_input_file has a default of False, so we need to check the config directly
         only_write = study.config.config.get("only_write_input_file", False)
-        do_run = study.config["execution_control.do_run"] or True
+        do_run = study.config["execution_control.do_run"]
+        if do_run is None:
+            do_run = True
 
         assert only_write and not do_run  # This would trigger the warning

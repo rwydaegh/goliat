@@ -141,6 +141,7 @@ class TestNearFieldStudyCoreWorkflow:
         mock_project_manager = MagicMock()
         mock_project_manager.project_path = "/tmp/test.smash"
         mock_project_manager.create_or_open_project.return_value = {"setup_done": True}
+        mock_project_manager.reload_project = MagicMock()
 
         # Mock s4l_v1.document (imported inside _run_placement)
         mock_document = MagicMock()
@@ -236,7 +237,7 @@ class TestNearFieldStudyCoreWorkflow:
         }
 
         # Mock phantom definition
-        study.config.config["phantom_definitions"] = {"test_phantom": {"placements": {"do_by_cheek": True}}}
+        study.config.config["phantom_definitions"] = {"thelonious": {"placements": {"do_by_cheek": True}}}
 
         # Count: 3 frequencies * 3 positions * 2 orientations = 18
         total = 0

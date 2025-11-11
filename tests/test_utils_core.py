@@ -161,7 +161,7 @@ class TestProfiler:
         profiler = Profiler(str(config_path), "sensitivity_analysis")
         profiler.start_study(total_runs=2)
         profiler.start_run()
-        time.sleep(0.01)
+        time.sleep(0.1)  # Increased sleep time to ensure measurable time difference
         profiler.end_run()
 
         profiler.save_estimates()
