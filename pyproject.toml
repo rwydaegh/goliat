@@ -125,10 +125,7 @@ commit_author = "rwydaegh <robin.wydaeghe@ugent.be>"
 commit_message = "chore(release): {version}"
 upload_to_pypi = false
 upload_to_release = true
-version_variables = [
-  "README.md:version = \\{{version}\\}",
-  "CITATION.cff:version: {version}",
-]
+version_variables = []
 
 [tool.setuptools]
 packages = {find = {exclude = ["analysis*", "scripts*", "tests*", "cloud_setup*"]}}
