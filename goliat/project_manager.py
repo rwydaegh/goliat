@@ -591,7 +591,9 @@ class ProjectManager(LoggingMixin):
         if not self.project_path:
             raise ValueError("Project path is not set. Cannot save.")
 
-        retry_count = self.config["save_retry_count"] or 4
+        retry_count = self.config["save_retry_count"]
+        if retry_count is None:
+            retry_count = 4
         if not isinstance(retry_count, int):
             retry_count = 4
         last_exception = None

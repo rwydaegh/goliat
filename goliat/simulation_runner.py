@@ -83,7 +83,9 @@ class SimulationRunner(LoggingMixin):
                 with self.profiler.subtask("run_write_input_file"):
                     self.simulation.WriteInputFile()
                     # Force a save to flush files, with retry logic
-                    retry_count = self.config["save_retry_count"] or 4
+                    retry_count = self.config["save_retry_count"]
+                    if retry_count is None:
+                        retry_count = 4
                     if not isinstance(retry_count, int):
                         retry_count = 4
                     for attempt in range(1, retry_count + 1):

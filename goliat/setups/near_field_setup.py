@@ -426,7 +426,9 @@ class NearFieldSetup(BaseSetup):
                 None,
             )
             antenna_bbox_min, antenna_bbox_max = self.model.GetBoundingBox([antenna_bbox_entity])
-            expansion = self.config["simulation_parameters.freespace_antenna_bbox_expansion_mm"] or [10, 10, 10]
+            expansion = self.config["simulation_parameters.freespace_antenna_bbox_expansion_mm"]
+            if expansion is None:
+                expansion = [10, 10, 10]
             sim_bbox_min = np.array(antenna_bbox_min) - np.array(expansion)
             sim_bbox_max = np.array(antenna_bbox_max) + np.array(expansion)
             sim_bbox = self.XCoreModeling.CreateWireBlock(self.model.Vec3(sim_bbox_min), self.model.Vec3(sim_bbox_max))
