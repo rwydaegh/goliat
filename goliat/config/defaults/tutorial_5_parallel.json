@@ -1,0 +1,21 @@
+{
+  "extends": "base_config.json",
+  "study_type": "far_field",
+  "phantoms": ["thelonious", "eartha", "ella"],
+  "frequencies_mhz": [700, 900],
+  "far_field_setup": {
+    "type": "environmental",
+    "environmental": {
+      "incident_directions": ["x_pos", "z_neg"],
+      "polarizations": ["theta", "phi"]
+    }
+  },
+  "execution_control": {
+    "do_setup": true,
+    "do_run": true,
+    "do_extract": true
+  },
+  "simulation_parameters": {
+    "number_of_point_sensors": 2
+  }
+}

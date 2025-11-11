@@ -22,17 +22,24 @@ Key flow: Config → BaseStudy.run() → Setups → Runner → Extractor → Ana
 
 ## Installation
 
-GOLIAT uses an editable package installation (`python -m pip install -e .`). This is the **only** supported installation method.
+For development, use editable installation from the repository. Users can install from PyPI instead. See the [installation guide](../installation.md) for both options.
 
-**First-time setup**:
+**Developer setup**:
 
-1. Set up Sim4Life Python environment:
+1. Clone the repository:
+
+        ```bash
+        git clone https://github.com/rwydaegh/goliat.git
+        cd goliat
+        ```
+
+2. Set up Sim4Life Python environment:
 
         ```bash
         source .bashrc
         ```
 
-2. Install GOLIAT package in editable mode:
+3. Install GOLIAT package in editable mode (or in a venv):
 
         ```bash
         python -m pip install -e .
@@ -40,7 +47,7 @@ GOLIAT uses an editable package installation (`python -m pip install -e .`). Thi
 
    > **Always use `python -m pip`**: Always use `python -m pip` instead of `pip` directly. This ensures you're using the pip associated with Sim4Life's Python interpreter. The same applies to other Python commands: use `python -m <module>` when possible.
 
-3. Run the initialization command:
+4. Run the initialization command:
 
         ```bash
         goliat init
@@ -50,13 +57,11 @@ This will:
 - Verify Sim4Life Python interpreter is being used
 - Prepare data files (phantoms, antennas)
 
-**Alternative**: Commands like `goliat study` will automatically prompt you to install if needed when first run.
-
 **Benefits of editable install**:
 - Code modifications are immediately reflected (no reinstall needed)
 - Better IDE support and autocomplete
-- Standard Python package structure
-- Scripts can be run from any directory
+- Full repository access (scripts, tests, docs)
+- Can contribute to development
 
 **Note**: If you need to reinstall (e.g., after pulling updates), you can manually run:
 ```bash

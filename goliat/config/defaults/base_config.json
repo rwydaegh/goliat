@@ -1,0 +1,53 @@
+{
+    "use_gui": true,
+    "execution_control": {
+        "do_setup": true,
+        "do_run": true,
+        "do_extract": true,
+        "only_write_input_file": false,
+        "auto_cleanup_previous_results": []
+    },
+    "simulation_parameters": {
+        "global_auto_termination": "GlobalAutoTerminationUserDefined",
+        "convergence_level_dB": -15,
+        "simulation_time_multiplier": 3.5,
+        "number_of_point_sensors": 2,
+        "point_source_order": [
+            "lower_left_bottom",
+            "top_right_up",
+            "lower_right_bottom",
+            "top_left_up",
+            "lower_left_up",
+            "top_right_bottom",
+            "lower_right_up",
+            "top_left_bottom"
+        ]
+    },
+    "gridding_parameters": {
+        "global_gridding": {
+            "grid_mode": "manual",
+            "manual_fallback_max_step_mm": 3.0
+        },
+        "padding": {
+            "padding_mode": "automatic",
+            "manual_bottom_padding_mm": [0, 0, 0],
+            "manual_top_padding_mm": [0, 0, 0]
+        }
+    },
+    "solver_settings": {
+        "kernel": "acceleware",
+        "server": "localhost",
+        "boundary_conditions": {
+            "type": "UpmlCpml",
+            "strength": "Low"
+        }
+    },
+    "verbose": false,
+    "manual_isolve": true,
+    "data_setup": {
+        "gdrive_url": "https://drive.google.com/drive/folders/1Ps0ilW6yx4Z5VoWRZKrkhP225m8lBQOV?usp=sharing&confirm=t",
+        "gdrive_url_aws": "https://drive.google.com/uc?id=1etS9uyi0Ns-vOtG2q0G1hU0LLw0M_dq7",
+        "data_dir": "data"
+    },
+    "save_retry_count": 4
+}

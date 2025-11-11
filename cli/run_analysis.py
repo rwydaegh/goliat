@@ -13,9 +13,10 @@ from goliat.logging_manager import setup_loggers
 
 matplotlib.use("Agg")  # Use non-interactive backend before importing pyplot
 
-# Base directory for config files (package is installed, no sys.path needed)
-# Get project root (go up from cli to repo root)
-base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+# Base directory for config files
+from cli.utils import get_base_dir
+
+base_dir = get_base_dir()
 
 # --- Centralized Startup ---
 # Only run initial_setup if not in test/CI environment
