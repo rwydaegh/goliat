@@ -186,7 +186,9 @@ class BaseSetup(LoggingMixin):
             "top_right_up": (bbox_max, bbox_max, bbox_max),
         }
 
-        point_source_order = self.config["simulation_parameters.point_source_order"] or list(corner_map.keys())
+        point_source_order = self.config["simulation_parameters.point_source_order"]
+        if point_source_order is None:
+            point_source_order = list(corner_map.keys())
 
         for i in range(int(num_points)):  # type: ignore
             if point_source_order is None:

@@ -43,7 +43,9 @@ class FarFieldSetup(BaseSetup):
         self.project_manager = project_manager
         self.profiler = profiler
         self.gui = gui
-        self.simulation_type = self.config["far_field_setup.type"] or "environmental"
+        self.simulation_type = self.config["far_field_setup.type"]
+        if self.simulation_type is None:
+            self.simulation_type = "environmental"
         self.document = self.s4l_v1.document
 
     def run_full_setup(self, project_manager: "ProjectManager") -> "emfdtd.Simulation":

@@ -195,7 +195,9 @@ class Config:
 
     def get_only_write_input_file(self) -> bool:
         """Returns whether to only write input files without running simulations."""
-        result = self["execution_control.only_write_input_file"] or False
+        result = self["execution_control.only_write_input_file"]
+        if result is None:
+            result = False
         assert isinstance(result, bool)
         return result
 

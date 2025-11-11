@@ -92,7 +92,9 @@ class PhantomSetup(BaseSetup):
                 raise FileNotFoundError(f"Phantom '{self.phantom_name}' not found for download or in local files.")
 
             self._log(f"Found '{phantom_to_download.Name}'. Downloading...", log_type="info")
-            download_email = self.config["download_email"] or "example@example.com"
+            download_email = self.config["download_email"]
+            if download_email is None:
+                download_email = "example@example.com"
             self.data.DownloadModel(
                 phantom_to_download,
                 email=download_email,  # type: ignore
