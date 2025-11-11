@@ -43,6 +43,8 @@ python -m pip install goliat
 
 The `--system-site-packages` flag allows the venv to access Sim4Life's packages (like `s4l_v1`). You can find your Sim4Life Python interpreter in your Sim4Life installation directory (e.g., `C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe`).
 
+**Note**: PyPI installation gives you the latest released version. For unreleased features or bug fixes, use editable installation.
+
 Then navigate to your project directory and initialize:
 
 ```bash
