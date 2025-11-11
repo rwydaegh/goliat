@@ -1,6 +1,5 @@
 import os
 import subprocess
-import sys
 import threading
 import time
 import traceback
@@ -9,6 +8,7 @@ from typing import TYPE_CHECKING, Optional
 
 from .logging_manager import LoggingMixin
 from .utils import non_blocking_sleep, open_project
+from .utils.python_interpreter import find_sim4life_root
 
 if TYPE_CHECKING:
     from logging import Logger
@@ -235,8 +235,8 @@ class SimulationRunner(LoggingMixin):
         # --- 1. Setup: Find paths and prepare command ---
         # The input file is now written in the run() method before this is called.
 
-        python_path = sys.executable
-        s4l_root = os.path.dirname(os.path.dirname(python_path))
+        # Find Sim4Life root directory (works for both direct Python and venvs)
+        s4l_root = find_sim4life_root()
         isolve_path = os.path.join(s4l_root, "Solvers", "iSolve.exe")
         if not os.path.exists(isolve_path):
             raise FileNotFoundError(f"iSolve.exe not found at the expected path: {isolve_path}")

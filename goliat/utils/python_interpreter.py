@@ -39,6 +39,58 @@ def find_sim4life_python_executables():
     return found_python_dirs
 
 
+def find_sim4life_root():
+    """
+    Finds the Sim4Life installation root directory.
+
+    Works for both direct Sim4Life Python usage and venvs created with
+    Sim4Life Python using --system-site-packages.
+
+    Returns:
+        str: Path to Sim4Life root directory (e.g., C:\\Program Files\\Sim4Life_8.2.0.16876)
+
+    Raises:
+        FileNotFoundError: If Sim4Life installation cannot be found
+    """
+    # Method 1: If sys.executable is directly Sim4Life Python, go up two directories
+    if "Sim4Life" in sys.executable:
+        python_dir = os.path.dirname(sys.executable)
+        s4l_root = os.path.dirname(python_dir)
+        # Verify Solvers directory exists
+        if os.path.exists(os.path.join(s4l_root, "Solvers", "iSolve.exe")):
+            return s4l_root
+
+    # Method 2: Find Sim4Life Python directories and use the first one found
+    viable_pythons = find_sim4life_python_executables()
+    if viable_pythons:
+        # Go up one directory from Python directory to get Sim4Life root
+        python_dir = viable_pythons[0]
+        s4l_root = os.path.dirname(python_dir)
+        # Verify Solvers directory exists
+        if os.path.exists(os.path.join(s4l_root, "Solvers", "iSolve.exe")):
+            return s4l_root
+
+    # Method 3: Try to infer from s4l_v1 module location (if available)
+    try:
+        import s4l_v1
+
+        # s4l_v1 is typically in Python/Lib/site-packages or similar
+        # Try to find Sim4Life root by going up from module location
+        if hasattr(s4l_v1, "__file__") and s4l_v1.__file__ is not None:
+            module_path = os.path.dirname(os.path.abspath(s4l_v1.__file__))
+            # Navigate up from site-packages to find Sim4Life root
+            # This is a fallback and may not always work
+            current = module_path
+            for _ in range(5):  # Limit search depth
+                current = os.path.dirname(current)
+                if os.path.exists(os.path.join(current, "Solvers", "iSolve.exe")):
+                    return current
+    except ImportError:
+        pass
+
+    raise FileNotFoundError("Could not find Sim4Life installation root directory. Please ensure Sim4Life is installed and accessible.")
+
+
 def check_python_interpreter(base_dir=None):
     """
     Checks if the correct Sim4Life Python interpreter is being used.
