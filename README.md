@@ -4,8 +4,9 @@
 
 ### Comprehensive automated near- and far-field SAR assessments using Sim4Life
 
-[![CI/CD](https://github.com/rwydaegh/goliat/actions/workflows/test.yml/badge.svg)](https://github.com/rwydaegh/goliat/actions/workflows/test.yml)
+[![PyPI](https://img.shields.io/pypi/v/goliat.svg)](https://pypi.org/project/goliat/)
 [![Docs Deploy](https://github.com/rwydaegh/goliat/actions/workflows/docs.yml/badge.svg)](https://github.com/rwydaegh/goliat/actions/workflows/docs.yml)
+[![CI/CD](https://github.com/rwydaegh/goliat/actions/workflows/test.yml/badge.svg)](https://github.com/rwydaegh/goliat/actions/workflows/test.yml)
 [![Tests](https://img.shields.io/badge/tests-passing%20(on%20CI)-brightgreen.svg?logo=pytest)](.github/workflows/test.yml)
 [![Maintainability](https://qlty.sh/gh/rwydaegh/projects/goliat/maintainability.svg)](https://qlty.sh/gh/rwydaegh/projects/goliat)
 [![Lines of code](https://img.shields.io/endpoint?url=https://ghloc.vercel.app/api/rwydaegh/goliat/badge)](https://ghloc.vercel.app/rwydaegh/goliat?branch=master)
