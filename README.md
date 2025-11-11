@@ -215,7 +215,7 @@ Each stage is modular, swap in custom phantoms, antennas, or analysis strategies
 | [API Reference](https://rwydaegh.github.io/goliat/reference/api_reference/) | Class and function details |
 | [Troubleshooting](https://rwydaegh.github.io/goliat/troubleshooting/) | Common issues and solutions |
 | [Cloud & Monitoring](https://rwydaegh.github.io/goliat/cloud/monitoring/) | Web dashboard for distributed execution |
-| [Developer Guide](https://rwydaegh.github.io/goliat/developer_guide/) | Extend GOLIAT or contribute |
+| [Developer Guide](https://rwydaegh.github.io/goliat/developer_guide/developer_guide/) | Extend GOLIAT or contribute |
 
 ---
 
@@ -230,7 +230,7 @@ Contributions are welcome! We follow a standard fork-and-PR workflow:
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines, code style rules, and how to run tests locally.
 
-**Quick links**: [Code of Conduct](CODE_OF_CONDUCT.md) • [Developer Guide](https://rwydaegh.github.io/goliat/developer_guide/)
+**Quick links**: [Code of Conduct](CODE_OF_CONDUCT.md) • [Developer Guide](https://rwydaegh.github.io/goliat/developer_guide/developer_guide/)
 
 > **Note**: GOLIAT has just come out of beta and is still in early development. You may still encounter occasional errors. Please report any issues you find.
 
