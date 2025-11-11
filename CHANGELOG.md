@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **PyPI Publishing:** Full PyPI package support with automated publishing workflow ([#69](https://github.com/rwydaegh/goliat/issues/69))
+  - Package can now be installed via `pip install goliat`
+  - Configs and scripts moved into package structure for distribution
+  - Automated PyPI publishing on GitHub releases
+  - ASCII art banner displayed at start of CLI commands
+- **Documentation:** Sim4Life API snippets reference guide with practical examples ([#61](https://github.com/rwydaegh/goliat/issues/61))
+- **Installation Guide:** Centralized installation documentation with PyPI and editable install options
+
+### Changed
+
+- **Project Structure:** Refactored for PyPI distribution while maintaining editable install compatibility
+  - Configs moved to `goliat/config/defaults/` for package inclusion
+  - Utility scripts moved to `goliat/utils/scripts/` for package inclusion
+  - Improved `base_dir` resolution to work for both PyPI and editable installs
+- **Documentation:** Updated installation instructions to prioritize PyPI for users, editable install for developers
+- **README:** Updated quick start to use PyPI installation with virtual environment setup
+
+### Fixed
+
+- **Config Setup:** Fixed material_name_mapping.json copying during `goliat init`
+- **Repairability:** Improved `goliat init` to detect and repair incomplete setups
+- **Config Overwrites:** Prevented unnecessary config file overwrite prompts after initial setup
+
+### Refactoring
+
+- **Complexity Reduction:** Reduced technical debt with Tier 1 refactorings ([#63](https://github.com/rwydaegh/goliat/issues/63), [#64](https://github.com/rwydaegh/goliat/issues/64))
+  - Extracted tissue grouping logic to separate module
+  - Split config and setup modules for better maintainability
+  - Reduced cyclomatic complexity by 14 (-8.8%) and cognitive complexity by 30 (-13.0%)
+- **Config Access:** Replaced `get_setting()` with dictionary-style access using `__getitem__` ([#66](https://github.com/rwydaegh/goliat/issues/66))
+- **Gridding Setup:** Reduced complexity by extracting helper methods ([#63](https://github.com/rwydaegh/goliat/issues/63))
+- **Code Organization:** Removed duplicate config.py file, improved module structure
+
 ## [1.1.0] - 2025-11-04
 
 Note that the code was already finished last weekend.
