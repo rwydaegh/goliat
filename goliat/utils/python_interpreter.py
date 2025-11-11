@@ -60,17 +60,28 @@ def find_sim4life_root():
         if os.path.exists(os.path.join(s4l_root, "Solvers", "iSolve.exe")):
             return s4l_root
 
-    # Method 2: Find Sim4Life Python directories and use the first one found
-    viable_pythons = find_sim4life_python_executables()
-    if viable_pythons:
-        # Go up one directory from Python directory to get Sim4Life root
-        python_dir = viable_pythons[0]
-        s4l_root = os.path.dirname(python_dir)
-        # Verify Solvers directory exists
-        if os.path.exists(os.path.join(s4l_root, "Solvers", "iSolve.exe")):
-            return s4l_root
+    # Method 2: If in a venv, check sys.base_prefix (points to original Python that created venv)
+    # This is the most accurate way to find which Sim4Life Python was used for the venv
+    if hasattr(sys, "base_prefix") and sys.base_prefix != sys.prefix:
+        # We're in a venv - sys.base_prefix points to the original Python installation
+        base_prefix = os.path.normpath(sys.base_prefix)
+        if "Sim4Life" in base_prefix:
+            # base_prefix is typically the Python directory (e.g., C:\Program Files\Sim4Life_8.2.0.16876\Python)
+            # Check if it's the Python directory by checking if "Python" is the last component
+            if os.path.basename(base_prefix) == "Python":
+                s4l_root = os.path.dirname(base_prefix)
+            else:
+                # Try current directory as root, or go up one level
+                s4l_root = base_prefix
+                # Check if current is root, otherwise try parent
+                if not os.path.exists(os.path.join(s4l_root, "Solvers", "iSolve.exe")):
+                    s4l_root = os.path.dirname(base_prefix)
+            # Verify we found the correct root
+            if s4l_root and os.path.exists(os.path.join(s4l_root, "Solvers", "iSolve.exe")):
+                return s4l_root
 
     # Method 3: Try to infer from s4l_v1 module location (if available)
+    # This is accurate because it finds the actual Sim4Life installation being used
     try:
         import s4l_v1
 
@@ -79,14 +90,26 @@ def find_sim4life_root():
         if hasattr(s4l_v1, "__file__") and s4l_v1.__file__ is not None:
             module_path = os.path.dirname(os.path.abspath(s4l_v1.__file__))
             # Navigate up from site-packages to find Sim4Life root
-            # This is a fallback and may not always work
+            # Path structure: Sim4Life_X.X.X/Python/Lib/site-packages/s4l_v1/...
+            # We need to go up: s4l_v1 -> site-packages -> Lib -> Python -> Sim4Life root
             current = module_path
-            for _ in range(5):  # Limit search depth
+            for _ in range(6):  # Increased depth to handle nested paths
                 current = os.path.dirname(current)
                 if os.path.exists(os.path.join(current, "Solvers", "iSolve.exe")):
                     return current
     except ImportError:
         pass
+
+    # Method 4: Find Sim4Life Python directories and use the first one found
+    # This is a fallback - less accurate if multiple installations exist
+    viable_pythons = find_sim4life_python_executables()
+    if viable_pythons:
+        # Go up one directory from Python directory to get Sim4Life root
+        python_dir = viable_pythons[0]
+        s4l_root = os.path.dirname(python_dir)
+        # Verify Solvers directory exists
+        if os.path.exists(os.path.join(s4l_root, "Solvers", "iSolve.exe")):
+            return s4l_root
 
     raise FileNotFoundError("Could not find Sim4Life installation root directory. Please ensure Sim4Life is installed and accessible.")
 
