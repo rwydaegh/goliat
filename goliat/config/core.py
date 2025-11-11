@@ -54,7 +54,14 @@ class Config:
         self.profiling_config_path = os.path.join(data_dir, f"profiling_config_{session_timestamp}_{session_hash}.json")
 
         self.config = self._load_config_with_inheritance(self.config_path)
-        self.material_mapping = self._load_json(self.material_mapping_path)
+
+        # Load material mapping - provide helpful error if missing
+        try:
+            self.material_mapping = self._load_json(self.material_mapping_path)
+        except FileNotFoundError:
+            raise FileNotFoundError(
+                f"Material mapping file not found at: {self.material_mapping_path}\nPlease run 'goliat init' to set up the required files."
+            )
 
         # Load or initialize profiling config
         self.profiling_config = load_or_create_profiling_config(self.profiling_config_path)

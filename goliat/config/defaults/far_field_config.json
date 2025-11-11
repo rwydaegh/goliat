@@ -1,0 +1,75 @@
+{
+    "extends": "base_config.json",
+    "study_type": "far_field",
+    "execution_control": {
+        "do_setup": true,
+        "only_write_input_file": false,
+        "do_run": true,
+        "do_extract": true,
+        "batch_run": false
+    },
+    "phantoms": [
+        "duke",
+        "ella",
+        "eartha",
+        "thelonious"
+    ],
+    "frequencies_mhz": [
+        450,
+        700,
+        835,
+        1450,
+        2140,
+        2450,
+        3500,
+        5200,
+        5800
+    ],
+    "far_field_setup": {
+        "type": "environmental",
+        "environmental": {
+            "incident_directions": [
+                "x_pos",
+                "x_neg",
+                "y_pos",
+                "y_neg",
+                "z_pos",
+                "z_neg"
+            ],
+            "polarizations": [
+                "theta",
+                "phi"
+            ]
+        },
+        "auto_induced": {
+            "grid_resolution_deg": 15
+        }
+    },
+    "simulation_parameters": {
+        "bbox_padding_mm": 0,
+        "simulation_bbox_points": 8,
+        "number_of_point_sensors": 2
+    },
+    "gridding_parameters": {
+        "global_gridding": {
+            "grid_mode": "manual",
+            "manual_fallback_max_step_mm": 3.0
+        },
+        "global_gridding_per_frequency": {
+            "450": 2.5,
+            "700": 2.5,
+            "835": 2.5,
+            "1450": 2.5,
+            "2140": 1.694,
+            "2450": 1.482,
+            "3500": 1.0,
+            "5200": 1.0,
+            "5800": 1.0
+        },
+        "padding": {
+            "padding_mode": "manual",
+            "manual_bottom_padding_mm": [0, 0, 0],
+            "manual_top_padding_mm": [0, 0, 0]
+        }
+    }
+}

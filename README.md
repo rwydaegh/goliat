@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/img/goliat.svg" width="80%">
+<img src="https://raw.githubusercontent.com/rwydaegh/goliat/master/docs/img/goliat.svg" width="80%">
 
 ### Comprehensive automated near- and far-field SAR assessments using Sim4Life
 
@@ -21,7 +21,7 @@
 
 <div align="center">
 
-<img src="docs/img/tutorials/tut1_gui.gif" width="50%">
+<img src="https://raw.githubusercontent.com/rwydaegh/goliat/master/docs/img/tutorials/tut1_gui.gif" width="50%">
 
 *GOLIAT GUI showing real-time progress monitoring*
 
@@ -163,12 +163,12 @@ Also want to run setup and extract phases in parallel? See the [Cloud Setup Guid
 ### Interactive GUI
 Real-time progress tracking with phase-based ETA estimation.
 
-![GOLIAT GUI](docs/img/tutorials/tut1_gui.gif)
+![GOLIAT GUI](https://raw.githubusercontent.com/rwydaegh/goliat/master/docs/img/tutorials/tut1_gui.gif)
 
 ### Analysis results
 Auto-generated SAR heatmaps by tissue and frequency.
 
-![Results Plot](docs/img/results_plot.png)
+![Results Plot](https://raw.githubusercontent.com/rwydaegh/goliat/master/docs/img/results_plot.png)
 
 </details>
 

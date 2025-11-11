@@ -158,8 +158,17 @@ def create_parser():
     return parser
 
 
+def _print_ascii_art():
+    """Print GOLIAT ASCII art banner."""
+    from cli.ascii_art import GOLIAT_BANNER
+
+    print(GOLIAT_BANNER)
+
+
 def main():
     """Main entry point for GOLIAT CLI."""
+    _print_ascii_art()
+
     parser = create_parser()
     args = parser.parse_args()
 
@@ -181,8 +190,9 @@ def main():
 
     elif args.command == "status":
         from cli.commands import show_status
+        from cli.utils import get_base_dir
 
-        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        base_dir = get_base_dir()
         show_status(base_dir=base_dir)
         return
 

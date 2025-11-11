@@ -14,7 +14,9 @@ def init_config(study_type: str = "near_field", output_path: str = None, base_di
         base_dir: Base directory of the project (for finding templates)
     """
     if base_dir is None:
-        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+        from cli.utils import get_base_dir
+
+        base_dir = get_base_dir()
 
     # Template file
     template_file = os.path.join(base_dir, "configs", f"{study_type}_config.json")
@@ -54,7 +56,9 @@ def init_config(study_type: str = "near_field", output_path: str = None, base_di
 def show_status(base_dir: str = None):
     """Show GOLIAT setup status and environment information."""
     if base_dir is None:
-        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+        from cli.utils import get_base_dir
+
+        base_dir = get_base_dir()
 
     print("=" * 60)
     print("GOLIAT Status")
@@ -113,7 +117,9 @@ def show_status(base_dir: str = None):
 def validate_config(config_path: str, base_dir: str = None):
     """Validate a GOLIAT config file."""
     if base_dir is None:
-        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+        from cli.utils import get_base_dir
+
+        base_dir = get_base_dir()
 
     try:
         from goliat.config import Config
@@ -173,8 +179,9 @@ def show_version():
         # Fallback: try reading from pyproject.toml
         try:
             import tomllib
+            from cli.utils import get_base_dir
 
-            base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+            base_dir = get_base_dir()
             pyproject_path = os.path.join(base_dir, "pyproject.toml")
             if os.path.exists(pyproject_path):
                 with open(pyproject_path, "rb") as f:

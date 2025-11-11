@@ -6,17 +6,22 @@ This section addresses common issues encountered when using GOLIAT. Issues are g
 
 ### Sim4life not found or python path error
 - **Symptom**: "iSolve.exe not found" or import errors for s4l_v1.
-- **Cause**: Sim4Life Python not in PATH.
+- **Cause**: Sim4Life Python not in PATH or wrong Python interpreter being used.
 - **Solution**:
-  1. Locate Sim4Life installation (default: C:\Program Files\Sim4Life_8.2.0).
-  2. Edit `.bashrc` in project root with your path:
-
+  
+  **For PyPI installs**: Use Sim4Life Python interpreter directly:
+  1. Use the Python executable from Sim4Life installation (e.g., `C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe`)
+  2. Or create a virtual environment using Sim4Life Python
+  3. Verify: `python -c "import s4l_v1; print('OK')"` - should print "OK"
+  
+  **For editable installs**: Set up Sim4Life Python in PATH:
+  1. Locate Sim4Life installation (default: C:\Program Files\Sim4Life_8.2.0)
+  2. Edit `.bashrc` in repository root with your path:
         ```
         export PATH="/path/to/Sim4Life/Python:$PATH"
         ```
-
-  3. Source: `source .bashrc`.
-  4. Verify: `python -c "import s4l_v1; print('OK')"` - should print "OK".
+  3. Source: `source .bashrc`
+  4. Verify: `python -c "import s4l_v1; print('OK')"` - should print "OK"
 
 ### Linux/Cloud execution environment
 - **Symptom**: Sim4Life interpreter check fails in AWS/Linux environments.

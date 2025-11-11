@@ -1,0 +1,99 @@
+{
+  "extends": "base_config.json",
+  "study_type": "near_field",
+  "phantoms": ["thelonious"],
+  "execution_control": {
+    "do_setup": true,
+    "do_run": true,
+    "do_extract": true
+  },
+  "simulation_parameters": {
+    "number_of_point_sensors": 2
+  },
+  "gridding_parameters": {
+    "global_gridding": {
+      "grid_mode": "manual",
+      "manual_fallback_max_step_mm": 3.0
+    },
+    "global_gridding_per_frequency": {
+      "700": 2.5,
+      "835": 2.5
+    },
+    "padding": {
+      "padding_mode": "manual",
+      "manual_bottom_padding_mm": [0, 0, 0],
+      "manual_top_padding_mm": [0, 0, 0]
+    }
+  },
+  "antenna_config": {
+    "700": {
+      "center_frequency": 700,
+      "target_power_mW": 267,
+      "model_type": "PIFA",
+      "source_name": "Lines 1",
+      "materials": {
+        "Extrude 1": "Copper",
+        "component1:Battery": "Copper",
+        "component1:Patch": "Copper",
+        "component1:ShortingPin": "Copper",
+        "component1:Substrate": "Rogers RT/duroid 5880"
+      },
+      "gridding": {
+        "automatic": ["component1:Substrate", "Lines 1"],
+        "subgridding": {
+          "components": ["component1:Battery", "component1:Patch", "Extrude 1", "component1:ShortingPin"],
+          "SubGridMode": "Box",
+          "SubGridLevel": "x9",
+          "AutoRefinement": "AutoRefinementVeryFine"
+        }
+      }
+    },
+    "835": {
+      "center_frequency": 835,
+      "target_power_mW": 228,
+      "model_type": "PIFA",
+      "source_name": "Lines 1",
+      "materials": {
+        "Extrude 1": "Copper",
+        "component1:Battery": "Copper",
+        "component1:Patch": "Copper",
+        "component1:ShortingPin": "Copper",
+        "component1:Substrate": "Rogers RT/duroid 5880"
+      },
+      "gridding": {
+        "automatic": ["component1:Substrate", "Lines 1"]
+      }
+    }
+  },
+  "placement_scenarios": {
+    "by_cheek": {
+      "bounding_box": "default",
+      "positions": {
+        "tragus": [0, 0, 0]
+      },
+      "orientations": {
+        "cheek_base": {
+          "rotate_phantom_to_cheek": true,
+          "angle_offset_deg": 0
+        },
+        "tilt_base": []
+      },
+      "antenna_reference": {
+        "distance_from_top": 10
+      },
+      "phantom_reference": "tragus"
+    }
+  },
+  "phantom_definitions": {
+    "thelonious": {
+      "lips": [4, 106, 736],
+      "tragus": [0, 7, -5],
+      "placements": {
+        "do_front_of_eyes": false,
+        "do_by_belly": false,
+        "do_by_cheek": true,
+        "distance_from_cheek": 8
+      }
+    }
+  }
+}

@@ -6,6 +6,20 @@ requires = ["setuptools>=61.0", "wheel"]
 authors = [
   {name = "rwydaegh", email = "robin.wydaeghe@ugent.be"},
 ]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: Physics",
+  "Topic :: Scientific/Engineering :: Medical Science Apps.",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
+]
 dependencies = [
   "numpy<2",
   "pandas",
@@ -24,7 +38,19 @@ dependencies = [
   "requests",
 ]
 description = "A Python framework for dosimetric assessments using Sim4Life."
-license = {file = "LICENSE"}
+keywords = [
+  "emf",
+  "dosimetry",
+  "sar",
+  "sim4life",
+  "electromagnetic",
+  "simulation",
+  "near-field",
+  "far-field",
+  "phantom",
+  "antenna",
+]
+license = {text = "Apache-2.0"}
 name = "goliat"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -46,6 +72,12 @@ docs = [
 
 [project.scripts]
 goliat = "cli.__main__:main"
+
+[project.urls]
+Documentation = "https://rwydaegh.github.io/goliat/"
+Homepage = "https://rwydaegh.github.io/goliat/"
+Issues = "https://github.com/rwydaegh/goliat/issues"
+Repository = "https://github.com/rwydaegh/goliat"
 
 [tool.codespell]
 ignore-words-list = "Studi"
@@ -99,4 +131,10 @@ version_variables = [
 ]
 
 [tool.setuptools]
-packages = ["goliat", "cli"]
+packages = {find = {exclude = ["analysis*", "scripts*", "tests*", "cloud_setup*"]}}
+
+[tool.setuptools.package-data]
+goliat = [
+  "config/defaults/*.json",
+  "config/defaults/material_name_mapping.json",
+]

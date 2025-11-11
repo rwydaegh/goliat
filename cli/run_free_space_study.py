@@ -8,9 +8,10 @@ from goliat.config import Config
 from goliat.logging_manager import setup_loggers, shutdown_loggers
 from goliat.studies.near_field_study import NearFieldStudy
 
-# Base directory for config files (package is installed, no sys.path needed)
-# Get project root (go up from cli to repo root)
-base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+# Base directory for config files
+from cli.utils import get_base_dir
+
+base_dir = get_base_dir()
 
 # --- Centralized Startup ---
 # Only run initial_setup if not in test/CI environment

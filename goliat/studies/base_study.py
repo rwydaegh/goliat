@@ -48,7 +48,13 @@ class BaseStudy(LoggingMixin):
         self.progress_logger = logging.getLogger("progress")
         self.no_cache = no_cache
 
-        self.base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        # Determine base_dir: prefer cwd if it has configs/, otherwise fallback to package location
+        cwd = os.getcwd()
+        if os.path.isdir(os.path.join(cwd, "configs")):
+            self.base_dir = cwd
+        else:
+            # Fallback: calculate from package location (for backwards compatibility)
+            self.base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
         self.config = Config(
             self.base_dir,

@@ -5,65 +5,77 @@ Welcome to GOLIAT! This guide will get you up and running with your first automa
 ## What you'll achieve
 
 By the end of this guide, you will have:
-- Cloned the GOLIAT repository.
-- Set up your Python environment with Sim4Life integration.
-- Configured a basic near-field simulation.
-- Run your first GOLIAT study.
-- Understood where to find and interpret the simulation results.
+
+- Installed GOLIAT on your system
+- Set up your Python environment with Sim4Life integration
+- Created and configured a basic near-field simulation
+- Run your first GOLIAT study
+- Located and understood your simulation results
 
 ## Prerequisites
 
 Before you begin, please ensure you have the following:
 
--   **Sim4Life**: Version 8.2.0 with a valid license. If you don't have it, you can download it from [ZMT Zurich](https://zmt.swiss/zurich-model-of-the-human-body/). **Note**: GOLIAT has only been tested on Sim4Life 8.2.0; compatibility with newer versions is untested.
--   **Python**: Version 3.11 (GOLIAT is designed to use the Python distribution bundled with Sim4Life, so a separate Python installation is usually not required).
--   **Digital Phantom Models**: GOLIAT automatically downloads phantom models (e.g., "thelonious" for a child, "eartha" for an adult) on first run. You may be prompted to provide your email for licensing purposes.
--   **Antenna Models**: Antenna models for various frequencies are auto-downloaded as needed.
+- **Sim4Life**: Version 8.2.0 with a valid license. Download from [ZMT Zurich](https://zmt.swiss/zurich-model-of-the-human-body/) if needed. GOLIAT has only been tested on Sim4Life 8.2.0; newer versions may not work correctly.
+- **Python**: Version 3.11. GOLIAT uses the Python distribution bundled with Sim4Life, so you typically don't need a separate Python installation.
+- **Digital Phantom Models**: GOLIAT automatically downloads phantom models (e.g., "thelonious" for a child, "eartha" for an adult) when you first run a simulation. You may be prompted to provide your email for licensing purposes.
+- **Antenna Models**: Antenna models for various frequencies are downloaded automatically as needed.
 
 **💡 Pro Tip**: If you're new to EMF dosimetry or Sim4Life, familiarize yourself with core concepts. See the [User Guide](user_guide.md) for background on SAR and digital human phantoms.
 
-## Step 1: Clone the repository and set up Sim4Life Python
+## Step 1: Install GOLIAT
 
-First, open your terminal or command prompt and clone the GOLIAT repository:
+GOLIAT supports two installation methods. Choose based on your needs:
+
+**For users**: Install from PyPI and run from any directory. See [installation guide](../installation.md#pypi-installation) for details.
+
+**For developers**: Clone the repository and install in editable mode. See [installation guide](../installation.md#editable-installation) for details.
+
+### Quick PyPI install (users)
+
+Most users (i.e., those that just want to get simulating ASAP) should create a virtual environment with Sim4Life Python:
 
 ```bash
-git clone https://github.com/rwydaegh/goliat.git
-cd goliat
+C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe -m venv venv --system-site-packages
+source venv/Scripts/activate
+python -m pip install goliat
 ```
 
-Next, set up your Sim4Life Python environment:
+The `--system-site-packages` flag allows the venv to access Sim4Life's packages (like `s4l_v1`). You can find your Sim4Life Python interpreter in your Sim4Life installation directory (e.g., `C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe`).
+
+Then navigate to your project directory and initialize:
 
 ```bash
-source .bashrc
-```
-
-**Note**: The `.bashrc` file is created in the project directory and adds Sim4Life Python to your PATH. During setup, GOLIAT will prompt you if you want to copy this to your home directory (`~/.bashrc`) to make Sim4Life Python available automatically in all new bash windows. This is optional - you can keep using the project-local `.bashrc` and remember to run `source .bashrc` each time, or copy it to your home directory for convenience.
-
-If Sim4Life is installed elsewhere or you're using a different version, GOLIAT will automatically detect it and update `.bashrc` accordingly.
-
-**Important**: Install the GOLIAT package in editable mode:
-
-```bash
-python -m pip install -e .
-```
-
-This installs GOLIAT and its dependencies. The editable mode allows code modifications to be reflected immediately without reinstalling.
-
-Now initialize GOLIAT by running:
-
-```bash
+cd /path/to/your/project
 goliat init
 ```
 
-This will:
-- Verify Sim4Life Python interpreter is being used
-- Prepare data files (phantoms, antennas)
+This creates `configs/` and `data/` directories and downloads required models.
 
-**Alternative**: If you skip `goliat init`, commands like `goliat study` will automatically prompt you to install when first run.
+### Developer install (editable)
+
+If you need to modify code or access repository tools:
+
+```bash
+# Clone repository
+git clone https://github.com/rwydaegh/goliat.git
+cd goliat
+
+# Set up Sim4Life Python environment
+source .bashrc
+
+# Install in editable mode (or in a venv)
+python -m pip install -e .
+
+# Initialize GOLIAT
+goliat init
+```
+
+**Note**: The `.bashrc` file adds Sim4Life Python to your PATH. GOLIAT will prompt you to copy it to your home directory for convenience.
 
 ## Step 2: Configure your first study
 
-GOLIAT uses a flexible JSON-based configuration system located in the `configs/` directory. For your first simulation, we'll use a simple near-field configuration.
+GOLIAT uses JSON configuration files to define your simulations. These files are located in the `configs/` directory that was created during initialization.
 
 1.  **Choose a template**:
     -   For **Near-Field** simulations (device close to the body), copy `configs/near_field_config.json` to `configs/my_first_near_field_study.json`.
@@ -146,5 +158,4 @@ You've successfully run your first GOLIAT simulation. Here's what you can do nex
 - **Explore tutorials**: Start with [Far-Field Basics Tutorial](../tutorials/01_far_field_basics.ipynb) or [Parallel and Cloud Execution Tutorial](../tutorials/05_parallel_and_cloud_execution.ipynb)
 
 If you have questions or encounter issues, open a [GitHub Issue](https://github.com/rwydaegh/goliat/issues).
-
 ---

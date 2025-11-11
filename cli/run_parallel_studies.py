@@ -12,9 +12,10 @@ import colorama
 
 from goliat.colors import init_colorama
 
-# Base directory for config files (package is installed, no sys.path needed)
-# Get project root (go up from cli to repo root)
-base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+# Base directory for config files
+from cli.utils import get_base_dir
+
+base_dir = get_base_dir()
 
 
 def setup_console_logging():

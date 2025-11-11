@@ -1,0 +1,12 @@
+{
+    "extends": "far_field_config.json",
+    "use_gui": false,
+    "execution_control": {
+        "do_setup": true,
+        "do_run": false,
+        "do_extract": false
+    },
+    "phantoms": [
+        "duke_posable"
+    ]
+}

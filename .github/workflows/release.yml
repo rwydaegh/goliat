@@ -27,7 +27,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install python-semantic-release
-    - name: Sync version to CITATION.cff and README.md
+    - name: Sync version to CITATION.cff, README.md, and pyproject.toml
       run: |
         # Extract version from tag (remove 'v' prefix)
         VERSION=${GITHUB_REF_NAME#v}
@@ -39,10 +39,13 @@ jobs:
         # Update README.md citation
         sed -i "s/version = {[^}]*}/version = {$VERSION}/" README.md
 
+        # Update pyproject.toml version
+        sed -i "s/^version = \".*\"/version = \"$VERSION\"/" pyproject.toml
+
         # Commit and push if changed
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
-        git add CITATION.cff README.md
+        git add CITATION.cff README.md pyproject.toml
         git diff --staged --quiet || git commit -m "chore: sync version to $VERSION"
         git push origin master || echo "No changes to push"
     - name: Create GitHub Release
@@ -56,3 +59,15 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: semantic-release publish
+
+    - name: Build package
+      run: |
+        python -m pip install --upgrade build twine
+        python -m build
+
+    - name: Publish to PyPI
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+      run: |
+        python -m twine upload dist/*

@@ -1,5 +1,4 @@
 import logging
-import subprocess
 import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor
@@ -224,28 +223,23 @@ class Worker(QObject):
         if self.timer.isActive():
             self.timer.stop()
 
-        # Run the cancel_all_jobs.py script
+        # Run the cancel_all_jobs function
         try:
-            script_path = "scripts/cancel_all_jobs.py"
+            import os
+            from goliat.utils.scripts.cancel_all_jobs import cancel_all_jobs
+
             config_path = self.config_path
             max_jobs = len(self.running_jobs)
-            self.logger.info(f"Running cancellation script for {max_jobs} jobs...")
-            subprocess.run(
-                [
-                    "python",
-                    script_path,
-                    "--config",
-                    config_path,
-                    "--max-jobs",
-                    str(max_jobs),
-                ],
-                check=True,
-            )
-            self.logger.info("--- Job cancellation script finished ---")
-        except FileNotFoundError:
-            self.logger.error(f"Error: The script '{script_path}' was not found.")  # type: ignore
-        except subprocess.CalledProcessError as e:
-            self.logger.error(f"Error running cancellation script: {e}")
+
+            # Determine base_dir from config_path
+            if os.path.isabs(config_path):
+                base_dir = os.path.dirname(os.path.dirname(config_path)) if "configs" in config_path else os.path.dirname(config_path)
+            else:
+                base_dir = os.getcwd()
+
+            self.logger.info(f"Running cancellation for {max_jobs} jobs...")
+            cancel_all_jobs(config_path, max_jobs, base_dir=base_dir)
+            self.logger.info("--- Job cancellation finished ---")
         except Exception as e:
             self.logger.error(f"An unexpected error occurred during job cancellation: {e}")
         finally:
