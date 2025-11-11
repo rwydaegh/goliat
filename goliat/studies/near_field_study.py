@@ -35,9 +35,15 @@ class NearFieldStudy(BaseStudy):
             log_type="header",
         )
 
-        do_setup = self.config["execution_control.do_setup"] or True
-        do_run = self.config["execution_control.do_run"] or True
-        do_extract = self.config["execution_control.do_extract"] or True
+        do_setup = self.config["execution_control.do_setup"]
+        if do_setup is None:
+            do_setup = True
+        do_run = self.config["execution_control.do_run"]
+        if do_run is None:
+            do_run = True
+        do_extract = self.config["execution_control.do_extract"]
+        if do_extract is None:
+            do_extract = True
         auto_cleanup = self.config.get_auto_cleanup_previous_results()
 
         # Warn about common misconfiguration
