@@ -858,11 +858,11 @@ Used in: `goliat/simulation_runner.py` (run)
 ```python
 import os
 import subprocess
-import sys
 
-# Find iSolve.exe relative to Python executable
-python_path = sys.executable
-s4l_root = os.path.dirname(os.path.dirname(python_path))
+# Find iSolve.exe using GOLIAT's helper function (works for both direct Python and venvs)
+from goliat.utils.python_interpreter import find_sim4life_root
+
+s4l_root = find_sim4life_root()
 isolve_path = os.path.join(s4l_root, "Solvers", "iSolve.exe")
 
 # Get input file path
