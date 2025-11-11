@@ -55,6 +55,15 @@ def check_python_interpreter(base_dir=None):
 
     viable_pythons = find_sim4life_python_executables()
 
+    # Check if s4l_v1 can be imported (indicates Sim4Life packages are available)
+    # This handles venvs created with Sim4Life Python using --system-site-packages
+    try:
+        import s4l_v1  # noqa: F401
+
+        s4l_v1_available = True
+    except ImportError:
+        s4l_v1_available = False
+
     # Normalize paths for comparison
     normalized_viable_python_dirs = [os.path.normpath(p) for p in viable_pythons]
     normalized_sys_executable_dir = os.path.normpath(os.path.dirname(sys.executable))
@@ -66,6 +75,10 @@ def check_python_interpreter(base_dir=None):
         else:
             logging.warning(f"You are using an unsupported Sim4Life Python interpreter: {sys.executable}")
             logging.warning("This project requires Sim4Life version 8.2 or 9.0.")
+    elif s4l_v1_available:
+        # Venv created with Sim4Life Python (--system-site-packages) can import s4l_v1
+        logging.info("Sim4Life Python packages detected (venv with system-site-packages).")
+        return
     else:
         logging.warning("You are not using a Sim4Life Python interpreter.")
 
