@@ -83,23 +83,29 @@ Interactive GUI with progress bars, ETA estimation, and live logs. Optional web 
 
 **Prerequisites**: [Sim4Life](https://zmt.swiss/) 8.2.0 with a valid license. **Note**: GOLIAT has only been tested on Sim4Life 8.2.0; compatibility with newer versions is untested.
 
+GOLIAT supports two installation methods. Most users should install from PyPI:
+
 ```bash
-# 1. Clone and navigate
-git clone https://github.com/rwydaegh/goliat.git
-cd goliat
+# 1. Create a virtual environment with Sim4Life Python
+"C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe" -m venv venv --system-site-packages
+source venv/Scripts/activate  # On Windows Git Bash
 
-# 2. Set up Sim4Life Python (uses Sim4Life's Python)
-source .bashrc
+# 2. Install GOLIAT
+python -m pip install goliat
 
-# 3. Install GOLIAT package in editable mode
-python -m pip install -e .
+This installs the latest released version from PyPI. For unreleased features, use editable installation.
 
-# 4. Initialize GOLIAT (downloads phantoms, antennas, verifies setup)
+# 3. Navigate to your project directory and initialize
+cd /path/to/your/project
 goliat init
 
-# 5. Run your first simulation
+# 4. Run your first simulation
 goliat study near_field_config
 ```
+
+The `--system-site-packages` flag allows the venv to access Sim4Life's packages (like `s4l_v1`).
+
+**For developers**: Clone the repository and install in editable mode. See [installation guide](https://rwydaegh.github.io/goliat/installation/#editable-installation) for details.
 
 > **Note**: The `goliat init` command checks your setup and downloads required data files. If you skip this step, `goliat study` will automatically prompt you to install when first run.
 

@@ -23,6 +23,8 @@ Install GOLIAT:
 python -m pip install goliat
 ```
 
+This installs the latest released version from PyPI. For unreleased features or bug fixes, use editable installation.
+
 Navigate to your project directory and initialize:
 
 ```bash
@@ -36,7 +38,7 @@ Creates `configs/` and `data/` directories and downloads required models. Then r
 goliat study near_field_config
 ```
 
-Works from any directory. Upgrade with `python -m pip install --upgrade goliat`. You can't modify source code or access repository scripts.
+Works from any directory. Upgrade with `python -m pip install --upgrade goliat`. You can't modify source code or access repository scripts. PyPI installs only include code from published releases, not the latest repository commits.
 
 ## Editable installation
 
