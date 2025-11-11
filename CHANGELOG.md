@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2025-01-27
+
 ### Added
 
 - **PyPI Publishing:** Full PyPI package support with automated publishing workflow ([#69](https://github.com/rwydaegh/goliat/issues/69))
@@ -31,6 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Config Setup:** Fixed material_name_mapping.json copying during `goliat init`
 - **Repairability:** Improved `goliat init` to detect and repair incomplete setups
 - **Config Overwrites:** Prevented unnecessary config file overwrite prompts after initial setup
+- **Execution Control:** Corrected config access pattern for `execution_control` flags to properly handle `False` values
+- **Config Access Patterns:** Fixed multiple instances where falsy values (`False`, `0`, empty lists/strings) were incorrectly replaced with truthy defaults
+  - Fixed `use_gui`, `bbox_padding_mm`, `freespace_antenna_bbox_expansion_mm`, `point_source_order`, `download_email`, `far_field_setup.type`, `excitation_type`, `save_retry_count`, and `only_write_input_file`
+- **Tests:** Fixed several failing tests related to simulation counting, execution control logic, and profiler timing
 
 ### Refactoring
 
@@ -41,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Config Access:** Replaced `get_setting()` with dictionary-style access using `__getitem__` ([#66](https://github.com/rwydaegh/goliat/issues/66))
 - **Gridding Setup:** Reduced complexity by extracting helper methods ([#63](https://github.com/rwydaegh/goliat/issues/63))
 - **Code Organization:** Removed duplicate config.py file, improved module structure
+- **Config Access Patterns:** Replaced all problematic `or default` patterns with explicit `None` checks to preserve falsy values correctly
 
 ## [1.1.0] - 2025-11-04
 
