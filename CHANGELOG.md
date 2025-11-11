@@ -7,8 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.2.0] - 2025-11-11
-
 ### Added
 
 - **PyPI Publishing:** Full PyPI package support with automated publishing workflow ([#69](https://github.com/rwydaegh/goliat/issues/69))
