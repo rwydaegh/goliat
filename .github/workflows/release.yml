@@ -33,8 +33,13 @@ jobs:
         VERSION=${GITHUB_REF_NAME#v}
         echo "Syncing version: $VERSION"
 
-        # Update CITATION.cff
+        # Get current date in YYYY-MM-DD format
+        RELEASE_DATE=$(date +%Y-%m-%d)
+        echo "Release date: $RELEASE_DATE"
+
+        # Update CITATION.cff version and date-released
         sed -i "s/^version: .*/version: $VERSION/" CITATION.cff
+        sed -i "s/^date-released: .*/date-released: $RELEASE_DATE/" CITATION.cff
 
         # Update README.md citation
         sed -i "s/version = {[^}]*}/version = {$VERSION}/" README.md
