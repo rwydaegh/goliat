@@ -55,7 +55,7 @@ power_data_w = input_power_output.Data.GetComponent(0)  # Power at each frequenc
 **Three constraints determine simulation time:**
 
 1. **Propagation time**: `T_prop = L_bbox/c` (with PML, 1× is sufficient, NOT 2×)
-2. **Pulse duration**: `T_pulse = 2k·σ ≈ 2.22/BW` (for complete pulse)
+2. **Pulse duration**: `T_pulse = 2k·σ ≈ 3.0/BW` (for k=5, Sim4Life requirement, complete pulse)
 3. **Frequency resolution** (NEW and DOMINANT): `T_resolution = 1/Δf_target`
 
 **Critical Finding:** For narrowband antenna characterization (BW = 10-30 MHz, detecting 50-100 MHz shifts), **frequency resolution dominates**:
@@ -312,7 +312,7 @@ if "Copper" in mat_name and excitation_type_lower == "gaussian":
 - [ ] Read `bandwidth_mhz` from config (default: 50 MHz for narrow bandwidth)
 - [ ] Convert to Hz: `bandwidth_hz = bandwidth_mhz * 1e6`
 - [ ] Calculate temporal standard deviation: `sigma = 0.94 / (np.pi * bandwidth_hz)`
-- [ ] Use conservative threshold: `k = 3.7` (for 0.1% of peak)
+- [ ] Use Sim4Life requirement: `k = 5` (forced threshold)
 - [ ] Calculate pulse duration: `T_pulse = 2 * k * sigma`
 
 #### Task 1.3.3: Calculate frequency resolution requirement with ARMA speedup factor (NEW - CRITICAL!)
@@ -358,7 +358,7 @@ if excitation_type_lower == "gaussian":
     
     # Calculate constraints
     bandwidth_hz = bandwidth_mhz * 1e6
-    k = 3.7  # Conservative threshold
+    k = 5  # Sim4Life requirement (forced threshold)
     sigma = 0.94 / (np.pi * bandwidth_hz)
     T_pulse = 2 * k * sigma
     
@@ -1170,7 +1170,7 @@ T_sim = max(multiplier · L_bbox/c, L_bbox/c + 2k·σ, 1/Δf_target)
 ```
 Where:
 - `σ = 0.94/(π·BW)` (pulse temporal width)
-- `k = 3.7` (conservative threshold)
+- `k = 5` (Sim4Life requirement, forced threshold)
 - `Δf_target` = target frequency resolution (typically 5 MHz)
 
 **Typical values for 700 MHz, L_bbox = 0.5 m, BW = 50 MHz:**
