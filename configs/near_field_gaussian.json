@@ -7,7 +7,7 @@
       "do_run": true,
       "do_extract": true,
       "batch_run": false,
-      "auto_cleanup_previous_results": ["output"]
+      "auto_cleanup_previous_results": []
   },
   "phantoms": [
     "thelonious"
@@ -18,6 +18,9 @@
     "target_freq_resolution_mhz": 10.0,
     "s4l_arma_speedup_factor": 1.0,
     "number_of_point_sensors": 2
+  },
+  "solver_settings": {
+    "kernel": "cuda"
   },
   "gridding_parameters": {
     "global_gridding": {
