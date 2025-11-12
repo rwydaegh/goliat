@@ -83,15 +83,60 @@ class BaseSetup(LoggingMixin):
 
         diagonal_length_m = np.linalg.norm(np.array(bbox_max) - np.array(bbox_min)) / 1000.0
 
-        time_to_travel_s = (time_multiplier * diagonal_length_m) / 299792458
-        sim_time_periods = time_to_travel_s / (1 / (frequency_mhz * 1e6))
+        # Check excitation type for Gaussian-specific timing
+        excitation_type = sim_params.get("excitation_type", "Harmonic")
+        excitation_type_lower = excitation_type.lower() if isinstance(excitation_type, str) else "harmonic"
+
+        T_prop = diagonal_length_m / 299792458.0  # Speed of light in m/s
+
+        if excitation_type_lower == "gaussian":
+            # Get Gaussian parameters
+            bandwidth_mhz = sim_params.get("bandwidth_mhz", 50.0)
+            target_freq_resolution_mhz = sim_params.get("target_freq_resolution_mhz", 10.0)
+            arma_speedup = sim_params.get("s4l_arma_speedup_factor", 1.0)
+
+            # Calculate three constraints
+            bandwidth_hz = bandwidth_mhz * 1e6
+            k = 3.7  # Conservative threshold for pulse
+            sigma = 0.94 / (np.pi * bandwidth_hz)
+            T_pulse = 2 * k * sigma
+
+            # Frequency resolution requirement with speedup factor
+            T_resolution = arma_speedup / (target_freq_resolution_mhz * 1e6)
+
+            T_allocated = time_multiplier * T_prop
+            T_prop_plus_pulse = T_prop + T_pulse
+
+            # Take maximum of all constraints
+            T_sim = max(T_allocated, T_prop_plus_pulse, T_resolution)
+
+            # Logging
+            self._log(f"  - Gaussian excitation timing breakdown:", log_type="info")
+            self._log(f"    - Propagation (with multiplier): {T_allocated*1e9:.1f} ns", log_type="info")
+            self._log(f"    - Propagation + Pulse: {T_prop_plus_pulse*1e9:.1f} ns", log_type="info")
+            self._log(f"    - Frequency resolution ({target_freq_resolution_mhz} MHz, speedup={arma_speedup}): {T_resolution*1e9:.1f} ns", log_type="info")
+
+            if T_sim == T_resolution:
+                self._log(f"  - FREQUENCY RESOLUTION DOMINATES", log_type="highlight")
+            elif T_sim == T_prop_plus_pulse:
+                self._log(f"  - Pulse duration dominates", log_type="info")
+            else:
+                self._log(f"  - Multiplier approach sufficient", log_type="info")
+
+            sim_time_periods = T_sim / (1 / (frequency_mhz * 1e6))
+            self._log(f"  - Final simulation time: {T_sim*1e9:.1f} ns ({sim_time_periods:.1f} periods)", log_type="highlight")
+        else:
+            # Harmonic: existing logic
+            time_to_travel_s = (time_multiplier * diagonal_length_m) / 299792458
+            sim_time_periods = time_to_travel_s / (1 / (frequency_mhz * 1e6))
+            self._log(
+                f"  - Simulation time set to {sim_time_periods:.2f} periods.",
+                log_type="info",
+            )
+
         simulation.SetupSettings.SimulationTime = (
             sim_time_periods,
             self.s4l_v1.units.Periods,
-        )
-        self._log(
-            f"  - Simulation time set to {sim_time_periods:.2f} periods.",
-            log_type="info",
         )
 
         # Termination Criteria

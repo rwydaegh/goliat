@@ -53,7 +53,7 @@ class PowerExtractor(LoggingMixin):
             if self.parent.study:
                 with self.parent.study.profiler.subtask("extract_input_power"):  # type: ignore
                     if self.study_type == "far_field":
-                        self._extract_far_field_power()
+                        self._extract_far_field_power(simulation_extractor)
                     else:
                         self._extract_near_field_power(simulation_extractor)
 
@@ -68,7 +68,7 @@ class PowerExtractor(LoggingMixin):
             )
             self.verbose_logger.error(traceback.format_exc())
 
-    def _extract_far_field_power(self):
+    def _extract_far_field_power(self, simulation_extractor: "analysis.Extractor"):  # type: ignore
         """Calculates theoretical input power for a plane wave excitation.
 
         Far-field simulations use plane waves with a fixed E-field amplitude (1 V/m).
@@ -88,6 +88,11 @@ class PowerExtractor(LoggingMixin):
 
         The calculated power is stored in results_data and used later for normalizing
         SAR values to a standard reference power level.
+
+        Also attempts to extract power from s4l for comparison with theoretical value.
+
+        Args:
+            simulation_extractor: Results extractor from the simulation.
         """
         self._log(
             "  - Far-field study: using theoretical model for input power.",
@@ -95,6 +100,7 @@ class PowerExtractor(LoggingMixin):
         )
         import s4l_v1.model
 
+        # Calculate theoretical power
         try:
             bbox_entity = next(
                 (e for e in s4l_v1.model.AllEntities() if hasattr(e, "Name") and e.Name == "far_field_simulation_bbox"),
@@ -108,42 +114,79 @@ class PowerExtractor(LoggingMixin):
                 f"  - WARNING: Could not calculate theoretical input power. {e}",
                 log_type="warning",
             )
-            return
-        # sim_bbox is a list of two points: [min_corner, max_corner]
-        sim_min, sim_max = np.array(sim_bbox[0]), np.array(sim_bbox[1])
-        padding_bottom = np.array(self.config["gridding_parameters.padding.manual_bottom_padding_mm"] or [0, 0, 0])
-        padding_top = np.array(self.config["gridding_parameters.padding.manual_top_padding_mm"] or [0, 0, 0])
-        total_min = sim_min - padding_bottom
-        total_max = sim_max + padding_top
+            theoretical_power = None
+        else:
+            # sim_bbox is a list of two points: [min_corner, max_corner]
+            sim_min, sim_max = np.array(sim_bbox[0]), np.array(sim_bbox[1])
+            padding_bottom = np.array(self.config["gridding_parameters.padding.manual_bottom_padding_mm"] or [0, 0, 0])
+            padding_top = np.array(self.config["gridding_parameters.padding.manual_top_padding_mm"] or [0, 0, 0])
+            total_min = sim_min - padding_bottom
+            total_max = sim_max + padding_top
 
-        e_field_v_m, z0 = 1.0, 377.0
-        power_density_w_m2 = (e_field_v_m**2) / (2 * z0)
+            e_field_v_m, z0 = 1.0, 377.0
+            power_density_w_m2 = (e_field_v_m**2) / (2 * z0)
 
-        # e.g., 'environmental_x_pos_theta' -> 'x'
-        direction = self.parent.orientation_name
-        dims = total_max - total_min  # This is a 3-element array [dx, dy, dz]
+            # e.g., 'environmental_x_pos_theta' -> 'x'
+            direction = self.parent.orientation_name
+            dims = total_max - total_min  # This is a 3-element array [dx, dy, dz]
 
-        if "x" in direction:
-            # Area of the YZ plane
-            area_m2 = (dims[1] * dims[2]) / 1e6
-        elif "y" in direction:
-            # Area of the XZ plane
-            area_m2 = (dims[0] * dims[2]) / 1e6
-        else:  # Default to z-direction
-            # Area of the XY plane
-            area_m2 = (dims[0] * dims[1]) / 1e6
+            if "x" in direction:
+                # Area of the YZ plane
+                area_m2 = (dims[1] * dims[2]) / 1e6
+            elif "y" in direction:
+                # Area of the XZ plane
+                area_m2 = (dims[0] * dims[2]) / 1e6
+            else:  # Default to z-direction
+                # Area of the XY plane
+                area_m2 = (dims[0] * dims[1]) / 1e6
 
-        total_input_power = power_density_w_m2 * area_m2
-        self.results_data.update(
-            {
-                "input_power_W": float(total_input_power),
-                "input_power_frequency_MHz": float(self.frequency_mhz),
-            }
-        )
-        self._log(
-            f"  - Calculated theoretical input power: {float(total_input_power):.4e} W",
-            log_type="highlight",
-        )
+            theoretical_power = power_density_w_m2 * area_m2
+            self.results_data.update(
+                {
+                    "input_power_W": float(theoretical_power),
+                    "input_power_frequency_MHz": float(self.frequency_mhz),
+                }
+            )
+            self._log(
+                f"  - THEORETICAL input power: {float(theoretical_power):.4e} W",
+                log_type="info",
+            )
+
+        # Extract power from s4l for comparison
+        manual_power = None
+        try:
+            em_sensor_extractor = simulation_extractor["Overall Field"]
+            self.document.AllAlgorithms.Add(em_sensor_extractor)
+            em_sensor_extractor.Update()
+            
+            input_power_output = em_sensor_extractor.Outputs["EM Input Power(f)"]
+            input_power_output.Update()
+            
+            power_data = input_power_output.Data.GetComponent(0)
+            if power_data is not None and power_data.size > 0:
+                if power_data.size == 1:
+                    manual_power = power_data.item()
+                else:
+                    center_freq_hz = self.frequency_mhz * 1e6
+                    axis = input_power_output.Data.Axis
+                    target_index = np.argmin(np.abs(axis - center_freq_hz))
+                    manual_power = power_data[target_index]
+                
+                self._log(
+                    f"  - MANUAL input power (from s4l): {float(manual_power):.4e} W",
+                    log_type="info",
+                )
+            else:
+                self._log(
+                    "  - WARNING: Could not extract manual input power from s4l (empty data).",
+                    log_type="warning",
+                )
+        except Exception as e:
+            self._log(
+                f"  - WARNING: Could not extract manual input power from s4l: {e}",
+                log_type="warning",
+            )
+            self.verbose_logger.error(traceback.format_exc())
 
     def _extract_near_field_power(self, simulation_extractor: "analysis.Extractor"):  # type: ignore
         """Extracts input power from port sensor for near-field simulations.
@@ -197,6 +240,10 @@ class PowerExtractor(LoggingMixin):
                         input_power_w, freq_mhz = (
                             power_data[target_index],
                             axis[target_index] / 1e6,
+                        )
+                        self._log(
+                            f"  - Selected frequency: {freq_mhz:.2f} MHz from {power_data.size} points",
+                            log_type="info",
                         )
                     self.results_data.update(
                         {

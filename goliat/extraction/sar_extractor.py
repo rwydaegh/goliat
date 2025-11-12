@@ -106,6 +106,9 @@ class SarExtractor(LoggingMixin):
     def _setup_em_sensor_extractor(self, simulation_extractor: "analysis.Extractor") -> "analysis.Extractor":  # type: ignore
         """Sets up and updates the EM sensor extractor for SAR analysis.
 
+        For Gaussian excitation, extracts at center frequency only. For Harmonic,
+        extracts at all frequencies.
+
         Args:
             simulation_extractor: Results extractor from the simulation object.
 
@@ -113,7 +116,18 @@ class SarExtractor(LoggingMixin):
             Configured EM sensor extractor.
         """
         em_sensor_extractor = simulation_extractor["Overall Field"]
-        em_sensor_extractor.FrequencySettings.ExtractedFrequency = "All"
+
+        excitation_type = self.config["simulation_parameters.excitation_type"] or "Harmonic"
+        excitation_type_lower = excitation_type.lower() if isinstance(excitation_type, str) else "harmonic"
+
+        if excitation_type_lower == "gaussian":
+            # Extract at center frequency for Gaussian
+            center_freq_hz = self.parent.frequency_mhz * 1e6
+            em_sensor_extractor.FrequencySettings.ExtractedFrequency = center_freq_hz, self.units.Hz
+            self._log(f"  - Extracting SAR at center frequency: {self.parent.frequency_mhz} MHz", log_type="info")
+        else:
+            em_sensor_extractor.FrequencySettings.ExtractedFrequency = "All"
+
         self.document.AllAlgorithms.Add(em_sensor_extractor)
         em_sensor_extractor.Update()
         return em_sensor_extractor
