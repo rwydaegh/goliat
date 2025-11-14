@@ -296,42 +296,52 @@ class SimulationRunner(LoggingMixin):
         try:
             self._log("    - Execute iSolve...", level="progress", log_type="progress")
             with self.profiler.subtask("run_isolve_execution"):
-                process = subprocess.Popen(
-                    command,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                    creationflags=subprocess.CREATE_NO_WINDOW,
-                )
+                retry_attempt = 0
 
-                output_queue = Queue()
-                thread = threading.Thread(target=reader_thread, args=(process.stdout, output_queue))
-                thread.daemon = True
-                thread.start()
+                while True:
+                    process = subprocess.Popen(
+                        command,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True,
+                        creationflags=subprocess.CREATE_NO_WINDOW,
+                    )
 
-                # --- 3. Main loop: Monitor process and log output without blocking ---
-                while process.poll() is None:
-                    try:
-                        # Read all available lines from the queue
-                        while True:
-                            line = output_queue.get_nowait()
-                            self.verbose_logger.info(line.strip())
-                    except Empty:
-                        # No new output, sleep briefly to prevent a busy-wait
-                        time.sleep(0.1)
+                    output_queue = Queue()
+                    thread = threading.Thread(target=reader_thread, args=(process.stdout, output_queue))
+                    thread.daemon = True
+                    thread.start()
 
-                # Process has finished, get the return code
-                return_code = process.returncode
-                # Make sure the reader thread has finished and read all remaining output
-                thread.join()
-                while not output_queue.empty():
-                    line = output_queue.get_nowait()
-                    self.verbose_logger.info(line.strip())
+                    # --- 3. Main loop: Monitor process and log output without blocking ---
+                    while process.poll() is None:
+                        try:
+                            # Read all available lines from the queue
+                            while True:
+                                line = output_queue.get_nowait()
+                                self.verbose_logger.info(line.strip())
+                        except Empty:
+                            # No new output, sleep briefly to prevent a busy-wait
+                            time.sleep(0.1)
 
-                if return_code != 0:
-                    error_message = f"iSolve.exe failed with return code {return_code}."
-                    self._log(error_message, level="progress", log_type="error")
-                    raise RuntimeError(error_message)
+                    # Process has finished, get the return code
+                    return_code = process.returncode
+                    # Make sure the reader thread has finished and read all remaining output
+                    thread.join()
+                    while not output_queue.empty():
+                        line = output_queue.get_nowait()
+                        self.verbose_logger.info(line.strip())
+
+                    if return_code == 0:
+                        # Success, break out of retry loop
+                        break
+                    else:
+                        # Failed, retry indefinitely
+                        retry_attempt += 1
+                        self._log(
+                            f"iSolve failed, retry attempt {retry_attempt}",
+                            level="progress",
+                            log_type="warning",
+                        )
 
             elapsed = self.profiler.subtask_times["run_isolve_execution"][-1]
             self._log(f"      - Subtask 'run_isolve_execution' done in {elapsed:.2f}s", log_type="verbose")
