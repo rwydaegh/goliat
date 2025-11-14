@@ -158,10 +158,10 @@ class PowerExtractor(LoggingMixin):
             em_sensor_extractor = simulation_extractor["Overall Field"]
             self.document.AllAlgorithms.Add(em_sensor_extractor)
             em_sensor_extractor.Update()
-            
+
             input_power_output = em_sensor_extractor.Outputs["EM Input Power(f)"]
             input_power_output.Update()
-            
+
             power_data = input_power_output.Data.GetComponent(0)
             if power_data is not None and power_data.size > 0:
                 if power_data.size == 1:
@@ -171,7 +171,7 @@ class PowerExtractor(LoggingMixin):
                     axis = input_power_output.Data.Axis
                     target_index = np.argmin(np.abs(axis - center_freq_hz))
                     manual_power = power_data[target_index]
-                
+
                 self._log(
                     f"  - MANUAL input power (from s4l): {float(manual_power):.4e} W",
                     log_type="info",

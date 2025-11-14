@@ -151,7 +151,7 @@ class MaterialSetup(BaseSetup):
                 if excitation_type is None:
                     excitation_type = "Harmonic"
                 excitation_type_lower = excitation_type.lower() if isinstance(excitation_type, str) else "harmonic"
-                
+
                 if "Copper" in mat_name and excitation_type_lower == "gaussian":
                     material_settings.Type = "PEC"
                     self.simulation.Add(material_settings, [entity])

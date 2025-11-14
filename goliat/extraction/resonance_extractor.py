@@ -80,19 +80,19 @@ class ResonanceExtractor(LoggingMixin):
                 freq_resolution_mhz = 0.0
 
             # Log results
-            self._log(f"\n{'='*80}", log_type="highlight")
-            self._log(f"  ANTENNA RESONANCE ANALYSIS", log_type="highlight")
-            self._log(f"{'='*80}", log_type="highlight")
+            self._log(f"\n{'=' * 80}", log_type="highlight")
+            self._log("  ANTENNA RESONANCE ANALYSIS", log_type="highlight")
+            self._log(f"{'=' * 80}", log_type="highlight")
             self._log(f"  Nominal frequency: {nominal_freq_mhz} MHz", log_type="info")
             self._log(f"  Detected resonance: {resonant_freq_mhz:.2f} MHz", log_type="highlight")
             self._log(
-                f"  Detuning: {detuning_mhz:+.2f} MHz ({detuning_mhz/nominal_freq_mhz*100:+.1f}%)",
+                f"  Detuning: {detuning_mhz:+.2f} MHz ({detuning_mhz / nominal_freq_mhz * 100:+.1f}%)",
                 log_type="highlight" if abs(detuning_mhz) > 10 else "info",
             )
-            self._log(f"  Max power at resonance: {max_power_w*1000:.2f} mW", log_type="info")
+            self._log(f"  Max power at resonance: {max_power_w * 1000:.2f} mW", log_type="info")
             self._log(f"  Frequency resolution: {freq_resolution_mhz:.2f} MHz", log_type="info")
             self._log(f"  Number of frequency points: {len(freq_axis_hz)}", log_type="info")
-            self._log(f"{'='*80}\n", log_type="highlight")
+            self._log(f"{'=' * 80}\n", log_type="highlight")
 
             # Warning for severe detuning
             if abs(detuning_mhz) > 50:
@@ -139,4 +139,3 @@ class ResonanceExtractor(LoggingMixin):
             )
             self.verbose_logger.error(traceback.format_exc())
             return None
-
