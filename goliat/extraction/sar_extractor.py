@@ -305,10 +305,10 @@ class SarExtractor(LoggingMixin):
                     log_type="info",
                 )
                 continue
-            
+
             # Filter out "(not present)" entries for SAR calculation
             present_tissues = [t for t in tissues if "(not present)" not in t]
-            
+
             if not present_tissues:
                 # All tissues are marked as "(not present)" - return 0 SAR
                 group_sar_data[group_name] = {
@@ -349,11 +349,16 @@ class SarExtractor(LoggingMixin):
                     log_type="warning",
                 )
                 # Check which tissues are missing
-                missing = [t for t in tissues if t not in df["Tissue"].values]
+                missing = [t for t in present_tissues if t not in df["Tissue"].values]
                 self._log(
                     f"[GROUP_SAR]   -> Missing tissues: {missing}",
                     log_type="warning",
                 )
+                # Set SAR to 0 if no present tissues are found in DataFrame
+                group_sar_data[group_name] = {
+                    "weighted_avg_sar": 0.0,
+                    "peak_sar": 0.0,
+                }
 
         self._log(
             f"[GROUP_SAR] Final group SAR data: {list(group_sar_data.keys())}",

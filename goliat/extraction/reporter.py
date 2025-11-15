@@ -119,38 +119,53 @@ class Reporter:
         html_content = df.to_html(index=False, border=1)
 
         html_content += "<h2>Tissue Group Composition</h2>"
-        # Convert tissue groups to DataFrame, cleaning tissue names and removing None values
+        # Convert tissue groups to DataFrame, cleaning tissue names for display
         cleaned_groups = {}
         for group_name, tissues in tissue_groups.items():
-            # Remove duplicates, strip phantom suffixes, filter out None
             cleaned_tissues = []
             seen = set()
             for tissue in tissues:
                 if tissue is None:
                     continue
-                # Strip phantom suffix and "(not present)" marker for display
+
+                # Check if this is a "(not present)" entry
+                has_not_present = " (not present)" in tissue
+
+                # Strip phantom suffix (handle both "  (" and " (" patterns)
+                # Phantom suffixes are like "  (Thelonious_6y_V6)" or " (Thelonious_6y_V6)"
                 display_name = tissue
-                if "  (" in display_name:
-                    display_name = display_name.split("  (")[0].strip()
-                if " (not present)" in display_name:
-                    display_name = display_name.replace(" (not present)", "")
-                # Remove duplicates
-                if display_name not in seen:
+                if has_not_present:
+                    # Temporarily remove "(not present)" marker to strip phantom suffix
+                    temp_name = display_name.replace(" (not present)", "")
+                    # Strip phantom suffix
+                    if "  (" in temp_name:
+                        temp_name = temp_name.split("  (")[0].strip()
+                    elif " (" in temp_name:
+                        temp_name = temp_name.split(" (")[0].strip()
+                    # Restore "(not present)" marker
+                    display_name = temp_name + " (not present)"
+                else:
+                    # Strip phantom suffix
+                    if "  (" in display_name:
+                        display_name = display_name.split("  (")[0].strip()
+                    elif " (" in display_name:
+                        display_name = display_name.split(" (")[0].strip()
+
+                # Remove duplicates based on the base name (without "(not present)")
+                base_name = display_name.replace(" (not present)", "")
+                if base_name not in seen:
                     cleaned_tissues.append(display_name)
-                    seen.add(display_name)
+                    seen.add(base_name)
             cleaned_groups[group_name] = cleaned_tissues
-        
+
         # Pad to same length for display
         max_length = max(len(tissues) for tissues in cleaned_groups.values()) if cleaned_groups else 1
         max_length = max(max_length, 1)
-        padded_groups = {
-            group: tissues + [""] * (max_length - len(tissues))
-            for group, tissues in cleaned_groups.items()
-        }
+        padded_groups = {group: tissues + [""] * (max_length - len(tissues)) for group, tissues in cleaned_groups.items()}
         group_df = pd.DataFrame.from_dict(padded_groups, orient="index")
         group_df.columns = [f"Tissue {i + 1}" for i in range(max_length)]
-        # Replace empty strings with None for cleaner HTML (pandas will render them as empty cells)
-        group_df = group_df.replace("", None)
+        # Replace empty strings and None with empty strings for cleaner HTML (pandas will render empty strings as blank cells)
+        group_df = group_df.replace("", "").fillna("")
         html_content += group_df.to_html()
 
         html_content += "<h2>Grouped SAR Statistics</h2>"
