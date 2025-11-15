@@ -174,20 +174,32 @@ class MaterialSetup(BaseSetup):
                     self.simulation.Add(material_settings, [entity])
                     self._log(f"  - Assigned 'PEC' to '{comp_name}'.", log_type="info")
                 else:
+                    # Try to find material in database
+                    # Rogers materials and Copper are only in Generic 1.1 database
+                    mat = None
+                    db_name = "Generic 1.1"
+                    
                     try:
-                        db_name = "IT'IS 4.2" if "Rogers" in mat_name else "Generic 1.1"
-                        mat = self.database[db_name][mat_name]  # type: ignore
-                        self.simulation.LinkMaterialWithDatabase(material_settings, mat)
-                        self.simulation.Add(material_settings, [entity])
-                        self._log(
-                            f"  - Assigned '{mat_name}' to '{comp_name}'.",
-                            log_type="info",
-                        )
+                        mat = self.database["Generic 1.1"][mat_name]  # type: ignore
                     except KeyError:
                         self._log(
-                            f"    - Warning: Could not find material '{mat_name}' in database.",
-                            log_type="warning",
+                            f"    - ERROR: Could not find material '{mat_name}' in Generic 1.1 database.",
+                            log_type="error",
                         )
+                    
+                    if mat is not None:
+                        try:
+                            self.simulation.LinkMaterialWithDatabase(material_settings, mat)
+                            self.simulation.Add(material_settings, [entity])
+                            self._log(
+                                f"  - Assigned '{mat_name}' to '{comp_name}' from {db_name} database.",
+                                log_type="info",
+                            )
+                        except Exception as e:
+                            self._log(
+                                f"    - ERROR: Failed to assign material '{mat_name}' to '{comp_name}': {e}",
+                                log_type="error",
+                            )
             else:
                 self._log(
                     f"    - Warning: Could not find component '{comp_name}' to assign material.",

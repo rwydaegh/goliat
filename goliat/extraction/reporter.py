@@ -119,7 +119,18 @@ class Reporter:
         html_content = df.to_html(index=False, border=1)
 
         html_content += "<h2>Tissue Group Composition</h2>"
-        html_content += pd.DataFrame.from_dict(tissue_groups, orient="index").to_html()
+        # Convert tissue groups to DataFrame, ensuring all groups are shown
+        # Pad lists to same length for cleaner display (minimum 1 column to show group names)
+        max_length = max(len(tissues) for tissues in tissue_groups.values()) if tissue_groups else 1
+        max_length = max(max_length, 1)  # At least 1 column
+        padded_groups = {
+            group: (tissues + [None] * (max_length - len(tissues))) if tissues else [None] * max_length
+            for group, tissues in tissue_groups.items()
+        }
+        # Create DataFrame with proper column names
+        group_df = pd.DataFrame.from_dict(padded_groups, orient="index")
+        group_df.columns = [f"Tissue {i+1}" for i in range(max_length)]
+        html_content += group_df.to_html()
 
         html_content += "<h2>Grouped SAR Statistics</h2>"
         html_content += pd.DataFrame.from_dict(group_sar_stats, orient="index").to_html()
