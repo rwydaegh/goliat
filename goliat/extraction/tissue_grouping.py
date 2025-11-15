@@ -107,19 +107,29 @@ class TissueGrouper:
                 log_type="info",
             )
 
+            # Strip phantom suffix (e.g., "Cornea  (Thelonious_6y_V6)" -> "Cornea")
+            # Sim4Life appends phantom name and version to tissue names
+            cleaned_tissue = tissue
+            if "  (" in tissue:
+                cleaned_tissue = tissue.split("  (")[0].strip()
+                self.logger._log(
+                    f"[TISSUE_GROUPING]   -> Stripped phantom suffix: '{cleaned_tissue}'",
+                    log_type="info",
+                )
+
             entity_name = None
 
             # Try 1: Direct entity name match (Sim4Life returned entity name)
-            if tissue in material_mapping and tissue != "_tissue_groups":
-                entity_name = tissue
+            if cleaned_tissue in material_mapping and cleaned_tissue != "_tissue_groups":
+                entity_name = cleaned_tissue
                 self.logger._log(
                     f"[TISSUE_GROUPING]   -> Matched as entity name: '{entity_name}'",
                     log_type="info",
                 )
 
             # Try 2: Material name match (Sim4Life returned material name)
-            elif tissue in material_to_entity:
-                entity_name = material_to_entity[tissue]
+            elif cleaned_tissue in material_to_entity:
+                entity_name = material_to_entity[cleaned_tissue]
                 self.logger._log(
                     f"[TISSUE_GROUPING]   -> Matched as material name -> entity: '{entity_name}'",
                     log_type="info",
@@ -127,7 +137,7 @@ class TissueGrouper:
 
             if entity_name is None:
                 self.logger._log(
-                    f"[TISSUE_GROUPING]   -> WARNING: No match found for '{tissue}'",
+                    f"[TISSUE_GROUPING]   -> WARNING: No match found for '{tissue}' (cleaned: '{cleaned_tissue}')",
                     log_type="warning",
                 )
                 continue
