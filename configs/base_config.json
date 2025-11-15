@@ -49,6 +49,7 @@
     },
     "verbose": false,
     "manual_isolve": true,
+    "keep_awake": true,
     "data_setup": {
         "gdrive_url": "https://drive.google.com/drive/folders/1Ps0ilW6yx4Z5VoWRZKrkhP225m8lBQOV?usp=sharing&confirm=t",
         "gdrive_url_aws": "https://drive.google.com/uc?id=1etS9uyi0Ns-vOtG2q0G1hU0LLw0M_dq7",
