@@ -242,12 +242,7 @@ class SimulationRunner(LoggingMixin):
         if self.config["keep_awake"] or False:
             script_path = os.path.join(os.path.dirname(__file__), "utils", "scripts", "keep_awake.py")
             if os.path.exists(script_path):
-                subprocess.Popen(
-                    [sys.executable, script_path],
-                    stdout=sys.stdout,
-                    stderr=sys.stderr,
-                    creationflags=subprocess.CREATE_NO_WINDOW
-                )
+                subprocess.Popen([sys.executable, script_path])
 
     def _get_server_id(self, server_name: str) -> Optional[str]:
         """Finds a matching server ID from a partial name.
