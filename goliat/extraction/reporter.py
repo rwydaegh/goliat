@@ -119,28 +119,46 @@ class Reporter:
         html_content = df.to_html(index=False, border=1)
 
         html_content += "<h2>Tissue Group Composition</h2>"
-        # Convert tissue groups to DataFrame, ensuring all groups are shown
-        # Pad lists to same length for cleaner display (minimum 1 column to show group names)
-        max_length = max(len(tissues) for tissues in tissue_groups.values()) if tissue_groups else 1
-        max_length = max(max_length, 1)  # At least 1 column
+        # Convert tissue groups to DataFrame, cleaning tissue names and removing None values
+        cleaned_groups = {}
+        for group_name, tissues in tissue_groups.items():
+            # Remove duplicates, strip phantom suffixes, filter out None
+            cleaned_tissues = []
+            seen = set()
+            for tissue in tissues:
+                if tissue is None:
+                    continue
+                # Strip phantom suffix and "(not present)" marker for display
+                display_name = tissue
+                if "  (" in display_name:
+                    display_name = display_name.split("  (")[0].strip()
+                if " (not present)" in display_name:
+                    display_name = display_name.replace(" (not present)", "")
+                # Remove duplicates
+                if display_name not in seen:
+                    cleaned_tissues.append(display_name)
+                    seen.add(display_name)
+            cleaned_groups[group_name] = cleaned_tissues
+        
+        # Pad to same length for display
+        max_length = max(len(tissues) for tissues in cleaned_groups.values()) if cleaned_groups else 1
+        max_length = max(max_length, 1)
         padded_groups = {
-            group: (tissues + [None] * (max_length - len(tissues))) if tissues else [None] * max_length
-            for group, tissues in tissue_groups.items()
+            group: tissues + [""] * (max_length - len(tissues))
+            for group, tissues in cleaned_groups.items()
         }
-        # Create DataFrame with proper column names
         group_df = pd.DataFrame.from_dict(padded_groups, orient="index")
         group_df.columns = [f"Tissue {i + 1}" for i in range(max_length)]
-        # Verify all tissues are included (debug)
-        for group_name, tissues in tissue_groups.items():
-            if len(tissues) != len([x for x in padded_groups[group_name] if x is not None]):
-                self.parent._log(
-                    f"  - WARNING: Tissue count mismatch for {group_name}: expected {len(tissues)}, got {len([x for x in padded_groups[group_name] if x is not None])}",
-                    log_type="warning",
-                )
+        # Replace empty strings with None for cleaner HTML (pandas will render them as empty cells)
+        group_df = group_df.replace("", None)
         html_content += group_df.to_html()
 
         html_content += "<h2>Grouped SAR Statistics</h2>"
-        html_content += pd.DataFrame.from_dict(group_sar_stats, orient="index").to_html()
+        # Format SAR values in scientific notation
+        sar_df = pd.DataFrame.from_dict(group_sar_stats, orient="index")
+        for col in sar_df.columns:
+            sar_df[col] = sar_df[col].apply(lambda x: f"{x:.2e}" if pd.notna(x) else "0.00e+00")
+        html_content += sar_df.to_html()
 
         html_content += "<h2>Peak SAR Details</h2>"
         peak_sar_df = pd.DataFrame.from_dict(results_data.get("peak_sar_details", {}), orient="index")

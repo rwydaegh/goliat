@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 import threading
 import time
@@ -166,6 +167,49 @@ class SimulationRunner(LoggingMixin):
 
         return self.simulation
 
+    def _check_and_log_progress_milestones(
+        self, line: str, logged_milestones: set, progress_pattern: re.Pattern
+    ) -> None:
+        """Checks a line for progress milestones and logs them if reached.
+        
+        Parses iSolve progress lines and logs milestones at 0%, 50%, and 100%
+        with time remaining and MCells/s information.
+        
+        Args:
+            line: The output line to check for progress information.
+            logged_milestones: Set of milestones that have already been logged.
+            progress_pattern: Compiled regex pattern for matching progress lines.
+        """
+        match = progress_pattern.search(line)
+        if match:
+            percentage = int(match.group(1))
+            time_remaining = match.group(2).strip()
+            mcells_per_sec = match.group(3)
+            
+            # Check if we've hit a milestone that hasn't been logged yet
+            if percentage == 0 and 0 not in logged_milestones:
+                logged_milestones.add(0)
+                self._log(
+                    f"      - FDTD calculation: 0% complete, estimated remaining time {time_remaining} @ {mcells_per_sec} MCells/s",
+                    level="progress",
+                    log_type="default",
+                )
+            elif percentage >= 50 and 50 not in logged_milestones:
+                logged_milestones.add(50)
+                self._log(
+                    f"      - FDTD calculation: 50% complete, estimated remaining time {time_remaining} @ {mcells_per_sec} MCells/s",
+                    level="progress",
+                    log_type="default",
+                )
+            elif percentage >= 100 and 100 not in logged_milestones:
+                logged_milestones.add(100)
+                # At 100%, time_remaining might be "0 seconds" or similar, but include it if present
+                self._log(
+                    f"      - FDTD calculation: 100% complete, estimated remaining time {time_remaining} @ {mcells_per_sec} MCells/s",
+                    level="progress",
+                    log_type="default",
+                )
+
     def _get_server_id(self, server_name: str) -> Optional[str]:
         """Finds a matching server ID from a partial name.
 
@@ -312,13 +356,25 @@ class SimulationRunner(LoggingMixin):
                     thread.daemon = True
                     thread.start()
 
+                    # Track which progress milestones have been logged
+                    logged_milestones = set()
+                    # Regex pattern to match progress lines with Time Update
+                    # Matches: [PROGRESS]: X% [ ... ] Time Update, estimated remaining time ... @ ... MCells/s
+                    progress_pattern = re.compile(
+                        r'\[PROGRESS\]:\s*(\d+)%\s*\[.*?\]\s*Time Update[^@]*estimated remaining time\s+([^@]+?)\s+@\s+([\d.]+)\s+MCells/s'
+                    )
+
                     # --- 3. Main loop: Monitor process and log output without blocking ---
                     while process.poll() is None:
                         try:
                             # Read all available lines from the queue
                             while True:
                                 line = output_queue.get_nowait()
-                                self.verbose_logger.info(line.strip())
+                                stripped_line = line.strip()
+                                self.verbose_logger.info(stripped_line)
+                                
+                                # Check for progress milestones (0%, 50%, 100%)
+                                self._check_and_log_progress_milestones(stripped_line, logged_milestones, progress_pattern)
                         except Empty:
                             # No new output, sleep briefly to prevent a busy-wait
                             time.sleep(0.1)
@@ -329,7 +385,11 @@ class SimulationRunner(LoggingMixin):
                     thread.join()
                     while not output_queue.empty():
                         line = output_queue.get_nowait()
-                        self.verbose_logger.info(line.strip())
+                        stripped_line = line.strip()
+                        self.verbose_logger.info(stripped_line)
+                        
+                        # Check for progress milestones in remaining output
+                        self._check_and_log_progress_milestones(stripped_line, logged_milestones, progress_pattern)
 
                     if return_code == 0:
                         # Success, break out of retry loop

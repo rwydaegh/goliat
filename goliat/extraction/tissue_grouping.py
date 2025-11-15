@@ -83,17 +83,20 @@ class TissueGrouper:
             log_type="info",
         )
 
-        # Build simple reverse mapping: material_name -> entity_name
-        material_to_entity = {}
+        # Build reverse mapping: material_name -> list of entity_names
+        # (multiple entities can map to same material, e.g., "Skin" and "Ear_skin" both map to "Skin")
+        material_to_entities = {}
         entity_to_material = {}
         for entity_name, material_name in material_mapping.items():
             if entity_name == "_tissue_groups":
                 continue
-            material_to_entity[material_name] = entity_name
+            if material_name not in material_to_entities:
+                material_to_entities[material_name] = []
+            material_to_entities[material_name].append(entity_name)
             entity_to_material[entity_name] = material_name
 
         self.logger._log(
-            f"[TISSUE_GROUPING] Built material->entity map with {len(material_to_entity)} entries",
+            f"[TISSUE_GROUPING] Built material->entities map with {len(material_to_entities)} entries",
             log_type="info",
         )
 
@@ -102,13 +105,17 @@ class TissueGrouper:
         tissue_groups = {}
         for group_name, entity_list in phantom_groups.items():
             tissue_groups[group_name] = []
+            # Track which tissues we've already matched to prevent duplicates
+            # Key: tissue name, Value: entity name that matched it
+            matched_tissues = {}
+            
             # Pre-populate with entity names - will be replaced with actual tissue names if found
             for entity_name in entity_list:
                 # Try to find matching tissue from Sim4Life results
                 found_tissue = None
                 for tissue in available_tissues:
                     cleaned_tissue = tissue.split("  (")[0].strip() if "  (" in tissue else tissue
-                    # Check if this tissue matches the entity
+                    # Check if this tissue matches the entity name directly
                     if cleaned_tissue == entity_name:
                         found_tissue = tissue  # Use original tissue name with phantom suffix
                         break
@@ -120,10 +127,22 @@ class TissueGrouper:
                             break
                 
                 if found_tissue:
-                    tissue_groups[group_name].append(found_tissue)
+                    # Check if this tissue was already matched to another entity
+                    if found_tissue in matched_tissues:
+                        # This tissue matches multiple entities (e.g., "Skin" matches both "Skin" and "Ear_skin")
+                        # Only add it once, mark others as "(not present)"
+                        if matched_tissues[found_tissue] == entity_name:
+                            # This is the first entity that matched - already added, skip
+                            continue
+                        else:
+                            # Another entity already matched this tissue - mark this one as "(not present)"
+                            tissue_groups[group_name].append(f"{entity_name} (not present)")
+                    else:
+                        # First time this tissue is matched - add it
+                        tissue_groups[group_name].append(found_tissue)
+                        matched_tissues[found_tissue] = entity_name
                 else:
                     # Tissue not found in simulation - still include entity name for display
-                    # Format: "EntityName (not present)"
                     tissue_groups[group_name].append(f"{entity_name} (not present)")
 
         # For each tissue from Sim4Life, find which group(s) it belongs to
@@ -155,10 +174,20 @@ class TissueGrouper:
                 )
 
             # Try 2: Material name match (Sim4Life returned material name)
-            elif cleaned_tissue in material_to_entity:
-                entity_name = material_to_entity[cleaned_tissue]
+            elif cleaned_tissue in material_to_entities:
+                # Multiple entities can map to same material - try to find one that matches
+                possible_entities = material_to_entities[cleaned_tissue]
+                # Prefer direct entity name match if available
+                entity_name = None
+                for ent in possible_entities:
+                    if cleaned_tissue == ent:
+                        entity_name = ent
+                        break
+                # If no direct match, use first entity (they all map to same material anyway)
+                if entity_name is None:
+                    entity_name = possible_entities[0]
                 self.logger._log(
-                    f"[TISSUE_GROUPING]   -> Matched as material name -> entity: '{entity_name}'",
+                    f"[TISSUE_GROUPING]   -> Matched as material name -> entity: '{entity_name}' (from {len(possible_entities)} possible entities)",
                     log_type="info",
                 )
 
@@ -177,14 +206,19 @@ class TissueGrouper:
                     if f"{entity_name} (not present)" in tissue_groups[group_name]:
                         idx = tissue_groups[group_name].index(f"{entity_name} (not present)")
                         tissue_groups[group_name][idx] = tissue
+                        matched_groups.append(group_name)
+                        self.logger._log(
+                            f"[TISSUE_GROUPING]   -> Added to group '{group_name}'",
+                            log_type="info",
+                        )
                     elif tissue not in tissue_groups[group_name]:
-                        # Only add if not already present (shouldn't happen, but safety check)
+                        # Only add if not already present (prevents duplicates)
                         tissue_groups[group_name].append(tissue)
-                    matched_groups.append(group_name)
-                    self.logger._log(
-                        f"[TISSUE_GROUPING]   -> Added to group '{group_name}'",
-                        log_type="info",
-                    )
+                        matched_groups.append(group_name)
+                        self.logger._log(
+                            f"[TISSUE_GROUPING]   -> Added to group '{group_name}'",
+                            log_type="info",
+                        )
 
             if not matched_groups:
                 self.logger._log(
