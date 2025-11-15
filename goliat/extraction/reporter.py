@@ -129,7 +129,14 @@ class Reporter:
         }
         # Create DataFrame with proper column names
         group_df = pd.DataFrame.from_dict(padded_groups, orient="index")
-        group_df.columns = [f"Tissue {i+1}" for i in range(max_length)]
+        group_df.columns = [f"Tissue {i + 1}" for i in range(max_length)]
+        # Verify all tissues are included (debug)
+        for group_name, tissues in tissue_groups.items():
+            if len(tissues) != len([x for x in padded_groups[group_name] if x is not None]):
+                self.parent._log(
+                    f"  - WARNING: Tissue count mismatch for {group_name}: expected {len(tissues)}, got {len([x for x in padded_groups[group_name] if x is not None])}",
+                    log_type="warning",
+                )
         html_content += group_df.to_html()
 
         html_content += "<h2>Grouped SAR Statistics</h2>"
