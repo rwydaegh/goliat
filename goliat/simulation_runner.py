@@ -238,6 +238,17 @@ class SimulationRunner(LoggingMixin):
                     log_type="default",
                 )
 
+    def _launch_keep_awake_script(self):
+        if self.config["keep_awake"] or False:
+            script_path = os.path.join(os.path.dirname(__file__), "utils", "scripts", "keep_awake.py")
+            if os.path.exists(script_path):
+                subprocess.Popen(
+                    [sys.executable, script_path],
+                    stdout=None,
+                    stderr=None,
+                    creationflags=subprocess.CREATE_NO_WINDOW
+                )
+
     def _get_server_id(self, server_name: str) -> Optional[str]:
         """Finds a matching server ID from a partial name.
 
@@ -411,11 +422,8 @@ class SimulationRunner(LoggingMixin):
                                 self.verbose_logger.info(stripped_line)
 
                                 if not keep_awake_triggered and "Calculating update coefficients" in stripped_line:
-                                    if self.config["keep_awake"] or False:
-                                        script_path = os.path.join(os.path.dirname(__file__), "utils", "scripts", "keep_awake.py")
-                                        if os.path.exists(script_path):
-                                            subprocess.Popen([sys.executable, script_path], creationflags=subprocess.CREATE_NO_WINDOW)
-                                            keep_awake_triggered = True
+                                    self._launch_keep_awake_script()
+                                    keep_awake_triggered = True
 
                                 # Check for progress milestones (0%, 50%, 100%)
                                 self._check_and_log_progress_milestones(stripped_line, logged_milestones, progress_pattern)
