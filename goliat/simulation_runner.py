@@ -244,8 +244,8 @@ class SimulationRunner(LoggingMixin):
             if os.path.exists(script_path):
                 subprocess.Popen(
                     [sys.executable, script_path],
-                    stdout=None,
-                    stderr=None,
+                    stdout=sys.stdout,
+                    stderr=sys.stderr,
                     creationflags=subprocess.CREATE_NO_WINDOW
                 )
 
