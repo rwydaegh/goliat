@@ -354,8 +354,9 @@ class SimulationRunner(LoggingMixin):
                     sys.path.insert(0, script_dir)
                 from keep_awake import keep_awake  # type: ignore
                 keep_awake()
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"Warning: keep_awake() failed: {e}")
+                sys.stdout.flush()
 
         command = [isolve_path, "-i", input_file_path]
 
