@@ -97,10 +97,37 @@ class TissueGrouper:
             log_type="info",
         )
 
-        # Initialize groups
-        tissue_groups = {group_name: [] for group_name in phantom_groups.keys()}
+        # Initialize groups with all expected tissues from JSON config
+        # This ensures all groups show up in reports even if some tissues aren't present
+        tissue_groups = {}
+        for group_name, entity_list in phantom_groups.items():
+            tissue_groups[group_name] = []
+            # Pre-populate with entity names - will be replaced with actual tissue names if found
+            for entity_name in entity_list:
+                # Try to find matching tissue from Sim4Life results
+                found_tissue = None
+                for tissue in available_tissues:
+                    cleaned_tissue = tissue.split("  (")[0].strip() if "  (" in tissue else tissue
+                    # Check if this tissue matches the entity
+                    if cleaned_tissue == entity_name:
+                        found_tissue = tissue  # Use original tissue name with phantom suffix
+                        break
+                    # Also check material name match
+                    elif entity_name in material_mapping:
+                        material_name = material_mapping[entity_name]
+                        if cleaned_tissue == material_name:
+                            found_tissue = tissue
+                            break
+                
+                if found_tissue:
+                    tissue_groups[group_name].append(found_tissue)
+                else:
+                    # Tissue not found in simulation - still include entity name for display
+                    # Format: "EntityName (not present)"
+                    tissue_groups[group_name].append(f"{entity_name} (not present)")
 
         # For each tissue from Sim4Life, find which group(s) it belongs to
+        # (This ensures we catch any tissues that might have been missed)
         for tissue in available_tissues:
             self.logger._log(
                 f"[TISSUE_GROUPING] Processing tissue: '{tissue}'",
@@ -146,7 +173,13 @@ class TissueGrouper:
             matched_groups = []
             for group_name, entity_list in phantom_groups.items():
                 if entity_name in entity_list:
-                    tissue_groups[group_name].append(tissue)
+                    # Replace "(not present)" entry with actual tissue name if it exists
+                    if f"{entity_name} (not present)" in tissue_groups[group_name]:
+                        idx = tissue_groups[group_name].index(f"{entity_name} (not present)")
+                        tissue_groups[group_name][idx] = tissue
+                    elif tissue not in tissue_groups[group_name]:
+                        # Only add if not already present (shouldn't happen, but safety check)
+                        tissue_groups[group_name].append(tissue)
                     matched_groups.append(group_name)
                     self.logger._log(
                         f"[TISSUE_GROUPING]   -> Added to group '{group_name}'",
