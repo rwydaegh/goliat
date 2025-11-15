@@ -27,7 +27,6 @@
         "manual_fallback_max_step_mm": 3.0
     },
     "global_gridding_per_frequency": {
-        "450": 2.5,
         "700": 2.5,
         "835": 2.5,
         "1450": 2.5,
@@ -223,7 +222,7 @@
   },
   "placement_scenarios": {
     "front_of_eyes": {
-      "bounding_box": "default",
+      "bounding_box": "whole_body",
       "positions": {
         "center": [0, 0, -40],
         "left": [-25, 0, -40],
@@ -242,7 +241,7 @@
       "phantom_reference": "nasion"
     },
     "by_cheek": {
-      "bounding_box": "default",
+      "bounding_box": "whole_body",
       "positions": {
         "tragus": [0, 0, 0]
       },
@@ -278,7 +277,7 @@
       "phantom_reference": "tragus"
     },
     "by_belly": {
-      "bounding_box": "default",
+      "bounding_box": "whole_body",
       "positions": {
         "center": [0, 0, 0],
         "left": [-150, 0, 0],

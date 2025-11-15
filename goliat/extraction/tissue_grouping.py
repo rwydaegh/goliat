@@ -1,35 +1,14 @@
 """Tissue grouping logic for SAR analysis.
 
 Groups tissues into logical categories (eyes, skin, brain) for aggregated
-SAR metrics calculation. Supports both explicit mapping from configuration
-files and keyword-based fallback matching.
+SAR metrics calculation. Uses explicit mapping from material_name_mapping.json.
 """
 
-import re
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..config import Config
     from ..logging_manager import LoggingMixin
-
-
-# Default tissue group definitions (fallback when not in config)
-DEFAULT_TISSUE_GROUPS = {
-    "eyes_group": ["eye", "cornea", "sclera", "lens", "vitreous"],
-    "skin_group": ["skin"],
-    "brain_group": [
-        "brain",
-        "commissura",
-        "midbrain",
-        "pineal",
-        "hypophysis",
-        "medulla_oblongata",
-        "pons",
-        "thalamus",
-        "hippocampus",
-        "cerebellum",
-    ],
-}
 
 
 class TissueGrouper:
@@ -48,18 +27,9 @@ class TissueGrouper:
         self.logger = logger
 
     def group_tissues(self, available_tissues: list[str]) -> dict[str, list[str]]:
-        """Groups tissues into logical categories (eyes, skin, brain).
+        """Groups tissues according to material_name_mapping.json.
 
-        Tries two approaches in order:
-        1. Explicit mapping: Uses tissue group definitions from material_name_mapping.json
-           if available. This is preferred as it's explicit and configurable.
-
-        2. Keyword matching: Falls back to matching tissue names against known keywords.
-           For example, tissues containing 'eye', 'cornea', 'sclera' go into eyes_group.
-
-        This grouping is used later to calculate aggregated SAR metrics (weighted average
-        and peak SAR) for each anatomical region, which is more meaningful than individual
-        tissue values for safety assessment.
+        Simple matching: tissue_name -> material_name -> entity_name -> check group.
 
         Args:
             available_tissues: List of tissue names found in the simulation results.
@@ -68,16 +38,33 @@ class TissueGrouper:
             Dict mapping group names to lists of tissue names that belong to that group.
             Empty groups are still included but with empty lists.
         """
+        self.logger._log(
+            f"[TISSUE_GROUPING] Starting tissue grouping for '{self.phantom_name}'",
+            log_type="info",
+        )
+        self.logger._log(
+            f"[TISSUE_GROUPING] Available tissues from Sim4Life ({len(available_tissues)}): {available_tissues[:10]}{'...' if len(available_tissues) > 10 else ''}",
+            log_type="info",
+        )
+
         material_mapping = self.config.get_material_mapping(self.phantom_name)
 
-        if "_tissue_groups" in material_mapping:
-            return self._group_from_config(material_mapping, available_tissues)
+        if "_tissue_groups" not in material_mapping:
+            self.logger._log(
+                "[TISSUE_GROUPING] ERROR: '_tissue_groups' not found in material mapping. Returning empty groups.",
+                log_type="error",
+            )
+            return {}
 
-        return self._group_by_keywords(available_tissues)
+        return self._group_from_config(material_mapping, available_tissues)
 
     def _group_from_config(self, material_mapping: dict, available_tissues: list[str]) -> dict[str, list[str]]:
         """Groups tissues using explicit configuration from material mapping.
 
+        Simple approach:
+        1. Build reverse map: material_name -> entity_name
+        2. For each tissue: match to entity, check if entity is in group
+
         Args:
             material_mapping: Material mapping dictionary from config.
             available_tissues: List of tissue names found in simulation results.
@@ -86,136 +73,91 @@ class TissueGrouper:
             Dict mapping group names to lists of matched tissue names.
         """
         self.logger._log(
-            f"  - Loading tissue groups for '{self.phantom_name}' from material_name_mapping.json",
+            "[TISSUE_GROUPING] Loading tissue groups from material_name_mapping.json",
             log_type="info",
         )
+
         phantom_groups = material_mapping["_tissue_groups"]
-        tissue_groups = {}
+        self.logger._log(
+            f"[TISSUE_GROUPING] Found groups: {list(phantom_groups.keys())}",
+            log_type="info",
+        )
 
-        # Build mapping dictionaries for entity name resolution
-        mappings = self._build_entity_mappings(material_mapping)
-
-        for group_name, tissue_list in phantom_groups.items():
-            s4l_names_in_group = set(tissue_list)
-            matched_tissues = []
-
-            for tissue in available_tissues:
-                entity_names = self._find_entity_names(tissue, mappings, material_mapping)
-                # If any of the found entity names are in this group, include this tissue
-                if any(entity_name in s4l_names_in_group for entity_name in entity_names):
-                    matched_tissues.append(tissue)
-
-            tissue_groups[group_name] = matched_tissues
-
-        return tissue_groups
-
-    def _build_entity_mappings(self, material_mapping: dict) -> dict:
-        """Builds various mapping dictionaries for entity name resolution.
-
-        Creates mappings to handle normalization for spaces/underscores and case differences.
-
-        Args:
-            material_mapping: Material mapping dictionary from config.
-
-        Returns:
-            Dict containing various mapping dictionaries:
-            - material_to_entity: Direct material name -> entity name
-            - normalized_material_to_entity: Normalized material -> entity name
-            - normalized_entity_to_entity: Normalized entity -> entity name
-            - cleaned_material_to_entities: Cleaned material -> list of entity names
-        """
+        # Build simple reverse mapping: material_name -> entity_name
         material_to_entity = {}
-        normalized_material_to_entity = {}
-        normalized_entity_to_entity = {}
-        cleaned_material_to_entities = {}
-
+        entity_to_material = {}
         for entity_name, material_name in material_mapping.items():
             if entity_name == "_tissue_groups":
                 continue
-
             material_to_entity[material_name] = entity_name
+            entity_to_material[entity_name] = material_name
 
-            # Normalize: lowercase, replace spaces with underscores
-            normalized_mat = material_name.lower().replace(" ", "_")
-            normalized_ent = entity_name.lower()
-            normalized_material_to_entity[normalized_mat] = entity_name
-            normalized_entity_to_entity[normalized_ent] = entity_name
-
-            # Simulate the cleaning that happens in extract_sar_statistics
-            cleaned_mat = re.sub(r"\s*\(.*\)\s*$", "", material_name).strip().replace(")", "")
-            if cleaned_mat not in cleaned_material_to_entities:
-                cleaned_material_to_entities[cleaned_mat] = []
-            cleaned_material_to_entities[cleaned_mat].append(entity_name)
-
-        return {
-            "material_to_entity": material_to_entity,
-            "normalized_material_to_entity": normalized_material_to_entity,
-            "normalized_entity_to_entity": normalized_entity_to_entity,
-            "cleaned_material_to_entities": cleaned_material_to_entities,
-        }
-
-    def _find_entity_names(self, cleaned_tissue: str, mappings: dict, material_mapping: dict) -> list[str]:
-        """Finds entity names from a cleaned tissue name using various matching strategies.
-
-        Args:
-            cleaned_tissue: Cleaned tissue name from simulation results.
-            mappings: Dict containing various mapping dictionaries.
-            material_mapping: Material mapping dictionary from config.
-
-        Returns:
-            List of entity names that match the tissue name.
-        """
-        entity_names = []
-        material_to_entity = mappings["material_to_entity"]
-        normalized_material_to_entity = mappings["normalized_material_to_entity"]
-        normalized_entity_to_entity = mappings["normalized_entity_to_entity"]
-        cleaned_material_to_entities = mappings["cleaned_material_to_entities"]
-
-        # First try exact match (for cases where Sim4Life returns entity names directly)
-        if cleaned_tissue in material_mapping:
-            entity_names.append(cleaned_tissue)
-
-        # Try normalized exact match
-        normalized_cleaned = cleaned_tissue.lower().replace(" ", "_")
-        if normalized_cleaned in normalized_entity_to_entity:
-            entity_name = normalized_entity_to_entity[normalized_cleaned]
-            if entity_name not in entity_names:
-                entity_names.append(entity_name)
-
-        # Try reverse mapping from material name (exact match)
-        if cleaned_tissue in material_to_entity:
-            entity_name = material_to_entity[cleaned_tissue]
-            if entity_name not in entity_names:
-                entity_names.append(entity_name)
-
-        # Try normalized material name mapping
-        if normalized_cleaned in normalized_material_to_entity:
-            entity_name = normalized_material_to_entity[normalized_cleaned]
-            if entity_name not in entity_names:
-                entity_names.append(entity_name)
-
-        # Try cleaned material mapping (handles cases like "Eye" -> ["Cornea", "Eye_lens", ...])
-        if cleaned_tissue in cleaned_material_to_entities:
-            for entity_name in cleaned_material_to_entities[cleaned_tissue]:
-                if entity_name not in entity_names:
-                    entity_names.append(entity_name)
-
-        return entity_names
-
-    def _group_by_keywords(self, available_tissues: list[str]) -> dict[str, list[str]]:
-        """Groups tissues using keyword matching as fallback.
-
-        Args:
-            available_tissues: List of tissue names found in simulation results.
-
-        Returns:
-            Dict mapping group names to lists of matched tissue names.
-        """
         self.logger._log(
-            "  - WARNING: '_tissue_groups' not found in material mapping. Falling back to keyword-based tissue grouping.",
-            log_type="warning",
+            f"[TISSUE_GROUPING] Built material->entity map with {len(material_to_entity)} entries",
+            log_type="info",
         )
-        return {
-            group: [t for t in available_tissues if any(k in t.lower() for k in keywords)]
-            for group, keywords in DEFAULT_TISSUE_GROUPS.items()
-        }
+
+        # Initialize groups
+        tissue_groups = {group_name: [] for group_name in phantom_groups.keys()}
+
+        # For each tissue from Sim4Life, find which group(s) it belongs to
+        for tissue in available_tissues:
+            self.logger._log(
+                f"[TISSUE_GROUPING] Processing tissue: '{tissue}'",
+                log_type="info",
+            )
+
+            entity_name = None
+
+            # Try 1: Direct entity name match (Sim4Life returned entity name)
+            if tissue in material_mapping and tissue != "_tissue_groups":
+                entity_name = tissue
+                self.logger._log(
+                    f"[TISSUE_GROUPING]   -> Matched as entity name: '{entity_name}'",
+                    log_type="info",
+                )
+
+            # Try 2: Material name match (Sim4Life returned material name)
+            elif tissue in material_to_entity:
+                entity_name = material_to_entity[tissue]
+                self.logger._log(
+                    f"[TISSUE_GROUPING]   -> Matched as material name -> entity: '{entity_name}'",
+                    log_type="info",
+                )
+
+            if entity_name is None:
+                self.logger._log(
+                    f"[TISSUE_GROUPING]   -> WARNING: No match found for '{tissue}'",
+                    log_type="warning",
+                )
+                continue
+
+            # Check which group(s) this entity belongs to
+            matched_groups = []
+            for group_name, entity_list in phantom_groups.items():
+                if entity_name in entity_list:
+                    tissue_groups[group_name].append(tissue)
+                    matched_groups.append(group_name)
+                    self.logger._log(
+                        f"[TISSUE_GROUPING]   -> Added to group '{group_name}'",
+                        log_type="info",
+                    )
+
+            if not matched_groups:
+                self.logger._log(
+                    f"[TISSUE_GROUPING]   -> Entity '{entity_name}' not found in any group",
+                    log_type="warning",
+                )
+
+        # Log final results
+        self.logger._log(
+            "[TISSUE_GROUPING] Final grouping results:",
+            log_type="info",
+        )
+        for group_name, tissues in tissue_groups.items():
+            self.logger._log(
+                f"[TISSUE_GROUPING]   {group_name}: {len(tissues)} tissues - {tissues}",
+                log_type="info",
+            )
+
+        return tissue_groups

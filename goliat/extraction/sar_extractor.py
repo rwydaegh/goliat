@@ -1,4 +1,3 @@
-import re
 import traceback
 from typing import TYPE_CHECKING
 
@@ -170,8 +169,22 @@ class SarExtractor(LoggingMixin):
         """
         # Type ignore needed because Sim4Life API types are not fully typed
         columns = ["Tissue"] + [cap for cap in results.ColumnMainCaptions]  # type: ignore
+
+        # Keep original tissue names from Sim4Life (don't clean/strip parentheses)
+        # This preserves distinct tissues like "Eye (Cornea)" vs "Eye (Lens)"
+        raw_tissue_names = [results.RowCaptions[i] for i in range(results.NumberOfRows())]  # type: ignore
+
+        self._log(
+            f"[SAR_EXTRACTOR] Sim4Life returned {len(raw_tissue_names)} tissue rows",
+            log_type="info",
+        )
+        self._log(
+            f"[SAR_EXTRACTOR] First 10 raw tissue names from Sim4Life: {raw_tissue_names[:10]}",
+            log_type="info",
+        )
+
         data = [
-            [re.sub(r"\s*\(.*\)\s*$", "", results.RowCaptions[i]).strip().replace(")", "")]  # type: ignore
+            [raw_tissue_names[i]]  # Use original name, not cleaned
             + [results.Value(i, j) for j in range(results.NumberOfColumns())]  # type: ignore
             for i in range(results.NumberOfRows())  # type: ignore
         ]
@@ -180,6 +193,16 @@ class SarExtractor(LoggingMixin):
         df.columns = columns
         numeric_cols = [col for col in df.columns if col != "Tissue"]
         df[numeric_cols] = df[numeric_cols].apply(pd.to_numeric, errors="coerce").fillna(0)
+
+        self._log(
+            f"[SAR_EXTRACTOR] DataFrame created with {len(df)} rows, unique tissues: {df['Tissue'].nunique()}",
+            log_type="info",
+        )
+        self._log(
+            f"[SAR_EXTRACTOR] Unique tissue names in DataFrame: {sorted(df['Tissue'].unique())[:20]}",
+            log_type="info",
+        )
+
         return df
 
     def _store_group_sar_results(self, group_sar_stats: dict) -> None:
@@ -249,11 +272,46 @@ class SarExtractor(LoggingMixin):
             Dict with 'weighted_avg_sar' and 'peak_sar' for each group. Groups with
             no matching tissues are skipped.
         """
+        self._log(
+            "[GROUP_SAR] Starting group SAR calculation",
+            log_type="info",
+        )
+        self._log(
+            f"[GROUP_SAR] DataFrame has {len(df)} rows, columns: {list(df.columns)}",
+            log_type="info",
+        )
+        self._log(
+            f"[GROUP_SAR] Available tissues in DataFrame: {sorted(df['Tissue'].unique())[:20]}",
+            log_type="info",
+        )
+
         group_sar_data = {}
         peak_sar_col = "Peak Spatial-Average SAR[IEEE/IEC62704-1] (10g)"
+
         for group_name, tissues in tissue_groups.items():
+            self._log(
+                f"[GROUP_SAR] Processing group '{group_name}' with {len(tissues)} tissues: {tissues}",
+                log_type="info",
+            )
+
+            if not tissues:
+                self._log(
+                    f"[GROUP_SAR]   -> Group '{group_name}' has no tissues, skipping",
+                    log_type="info",
+                )
+                continue
+
             group_df = df[df["Tissue"].isin(tissues)]
+            self._log(
+                f"[GROUP_SAR]   -> Found {len(group_df)} matching rows in DataFrame",
+                log_type="info",
+            )
+
             if not group_df.empty:
+                self._log(
+                    f"[GROUP_SAR]   -> Matching tissues in DataFrame: {sorted(group_df['Tissue'].unique())}",
+                    log_type="info",
+                )
                 total_mass = group_df["Total Mass"].sum()
                 weighted_avg_sar = (group_df["Total Mass"] * group_df["Mass-Averaged SAR"]).sum() / total_mass if total_mass > 0 else 0
                 peak_sar = group_df[peak_sar_col].max() if peak_sar_col in group_df.columns else -1.0
@@ -261,6 +319,26 @@ class SarExtractor(LoggingMixin):
                     "weighted_avg_sar": weighted_avg_sar,
                     "peak_sar": peak_sar,
                 }
+                self._log(
+                    f"[GROUP_SAR]   -> Calculated: weighted_avg={weighted_avg_sar:.2e}, peak={peak_sar:.2e}",
+                    log_type="info",
+                )
+            else:
+                self._log(
+                    f"[GROUP_SAR]   -> WARNING: No matching tissues found in DataFrame for group '{group_name}'",
+                    log_type="warning",
+                )
+                # Check which tissues are missing
+                missing = [t for t in tissues if t not in df["Tissue"].values]
+                self._log(
+                    f"[GROUP_SAR]   -> Missing tissues: {missing}",
+                    log_type="warning",
+                )
+
+        self._log(
+            f"[GROUP_SAR] Final group SAR data: {list(group_sar_data.keys())}",
+            log_type="info",
+        )
         return group_sar_data
 
     def extract_peak_sar_details(self, em_sensor_extractor: "analysis.Extractor"):  # type: ignore
