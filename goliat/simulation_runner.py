@@ -240,7 +240,7 @@ class SimulationRunner(LoggingMixin):
 
     def _launch_keep_awake_script(self):
         if self.config["keep_awake"] or False:
-            script_path = os.path.join(os.path.dirname(__file__), "utils", "scripts", "keep_awake.py")
+            script_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "scripts", "keep_awake.py")
             if os.path.exists(script_path):
                 subprocess.Popen([sys.executable, script_path])
 
@@ -349,8 +349,10 @@ class SimulationRunner(LoggingMixin):
 
         if self.config["keep_awake"] or False:
             try:
-                from .utils.scripts.keep_awake import keep_awake
-
+                script_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "scripts")
+                if script_dir not in sys.path:
+                    sys.path.insert(0, script_dir)
+                from keep_awake import keep_awake  # type: ignore
                 keep_awake()
             except Exception:
                 pass

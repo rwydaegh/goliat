@@ -59,7 +59,7 @@ configs/*
 .env
 
 # Scripts
-goliat/utils/scripts/keep_awake.py
+scripts/keep_awake.py
 
 # Cloud setup - credentials and documentation
 cloud_setup/tensordock_documentation.md
