@@ -58,6 +58,9 @@ configs/*
 #.bashrc
 .env
 
+# Scripts
+goliat/utils/scripts/keep_awake.py
+
 # Cloud setup - credentials and documentation
 cloud_setup/tensordock_documentation.md
 cloud_setup/my_*.bat

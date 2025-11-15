@@ -1,6 +1,7 @@
 import os
 import re
 import subprocess
+import sys
 import threading
 import time
 import traceback
@@ -167,12 +168,38 @@ class SimulationRunner(LoggingMixin):
 
         return self.simulation
 
+    def _format_time_remaining(self, time_str: str) -> str:
+        """Converts time remaining string to X:Y format (minutes:seconds).
+        
+        Parses strings like "3 minutes 27 seconds" or "27 seconds" to "3:27" or "0:27".
+        
+        Args:
+            time_str: Time string from iSolve output.
+            
+        Returns:
+            Formatted time as "X:Y" where X is minutes and Y is seconds.
+        """
+        minutes = 0
+        seconds = 0
+        
+        # Extract minutes
+        minutes_match = re.search(r'(\d+)\s+minute', time_str)
+        if minutes_match:
+            minutes = int(minutes_match.group(1))
+        
+        # Extract seconds
+        seconds_match = re.search(r'(\d+)\s+second', time_str)
+        if seconds_match:
+            seconds = int(seconds_match.group(1))
+        
+        return f"{minutes}:{seconds:02d}"
+
     def _check_and_log_progress_milestones(
         self, line: str, logged_milestones: set, progress_pattern: re.Pattern
     ) -> None:
         """Checks a line for progress milestones and logs them if reached.
         
-        Parses iSolve progress lines and logs milestones at 0%, 50%, and 100%
+        Parses iSolve progress lines and logs milestones at 0% (using 1% data), 33%, and 66%
         with time remaining and MCells/s information.
         
         Args:
@@ -186,26 +213,29 @@ class SimulationRunner(LoggingMixin):
             time_remaining = match.group(2).strip()
             mcells_per_sec = match.group(3)
             
+            # Format time remaining as X:Y
+            time_formatted = self._format_time_remaining(time_remaining)
+            
             # Check if we've hit a milestone that hasn't been logged yet
-            if percentage == 0 and 0 not in logged_milestones:
+            # For 0%, use 1% data (more accurate) but log as 0%
+            if percentage == 1 and 0 not in logged_milestones:
                 logged_milestones.add(0)
                 self._log(
-                    f"      - FDTD calculation: 0% complete, estimated remaining time {time_remaining} @ {mcells_per_sec} MCells/s",
+                    f"      - FDTD: 0% ({time_formatted} remaining @ {mcells_per_sec} MCells/s)",
                     level="progress",
                     log_type="default",
                 )
-            elif percentage >= 50 and 50 not in logged_milestones:
-                logged_milestones.add(50)
+            elif percentage >= 33 and 33 not in logged_milestones:
+                logged_milestones.add(33)
                 self._log(
-                    f"      - FDTD calculation: 50% complete, estimated remaining time {time_remaining} @ {mcells_per_sec} MCells/s",
+                    f"      - FDTD: 33% ({time_formatted} remaining @ {mcells_per_sec} MCells/s)",
                     level="progress",
                     log_type="default",
                 )
-            elif percentage >= 100 and 100 not in logged_milestones:
-                logged_milestones.add(100)
-                # At 100%, time_remaining might be "0 seconds" or similar, but include it if present
+            elif percentage >= 66 and 66 not in logged_milestones:
+                logged_milestones.add(66)
                 self._log(
-                    f"      - FDTD calculation: 100% complete, estimated remaining time {time_remaining} @ {mcells_per_sec} MCells/s",
+                    f"      - FDTD: 66% ({time_formatted} remaining @ {mcells_per_sec} MCells/s)",
                     level="progress",
                     log_type="default",
                 )
@@ -313,6 +343,13 @@ class SimulationRunner(LoggingMixin):
         log_msg = f"Running iSolve with {solver_kernel} on {os.path.basename(input_file_path)}"
         self._log(log_msg, log_type="info")  # verbose only
 
+        if self.config.get("keep_awake") or False:
+            try:
+                from .utils.scripts.keep_awake import keep_awake
+                keep_awake()
+            except Exception:
+                pass
+
         command = [isolve_path, "-i", input_file_path]
 
         # --- 2. Non-blocking reader thread setup ---
@@ -363,6 +400,7 @@ class SimulationRunner(LoggingMixin):
                     progress_pattern = re.compile(
                         r'\[PROGRESS\]:\s*(\d+)%\s*\[.*?\]\s*Time Update[^@]*estimated remaining time\s+([^@]+?)\s+@\s+([\d.]+)\s+MCells/s'
                     )
+                    keep_awake_triggered = False
 
                     # --- 3. Main loop: Monitor process and log output without blocking ---
                     while process.poll() is None:
@@ -372,6 +410,13 @@ class SimulationRunner(LoggingMixin):
                                 line = output_queue.get_nowait()
                                 stripped_line = line.strip()
                                 self.verbose_logger.info(stripped_line)
+                                
+                                if not keep_awake_triggered and "Calculating update coefficients" in stripped_line:
+                                    if self.config.get("keep_awake") or False:
+                                        script_path = os.path.join(os.path.dirname(__file__), "utils", "scripts", "keep_awake.py")
+                                        if os.path.exists(script_path):
+                                            subprocess.Popen([sys.executable, script_path], creationflags=subprocess.CREATE_NO_WINDOW)
+                                            keep_awake_triggered = True
                                 
                                 # Check for progress milestones (0%, 50%, 100%)
                                 self._check_and_log_progress_milestones(stripped_line, logged_milestones, progress_pattern)
