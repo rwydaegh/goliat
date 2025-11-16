@@ -420,7 +420,7 @@ class SimulationRunner(LoggingMixin):
                                 self.verbose_logger.info(stripped_line)
 
                                 if not keep_awake_triggered and "Calculating update coefficients" in stripped_line:
-                                    self._launch_keep_awake_script()
+                                    #self._launch_keep_awake_script()
                                     keep_awake_triggered = True
 
                                 # Check for progress milestones (0%, 50%, 100%)
