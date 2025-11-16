@@ -187,6 +187,8 @@ def run_assignment(assignment, super_study_name, assignment_index, title, no_cac
             logger.warning(f"  Base config not found: {base_config_name}")
 
     # Write the assignment config
+    # Note: json.dump preserves key order by default (Python 3.7+), ensuring the original
+    # JSON structure from the server is maintained when saved to file.
     with open(config_path, "w") as f:
         json.dump(config_data, f, indent=2)
 

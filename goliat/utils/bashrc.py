@@ -37,6 +37,10 @@ def sync_bashrc_to_home(base_dir):
                 continue
             if in_goliat_section and (line.startswith("export PATH") and "Sim4Life" in line):
                 continue
+            # Preserve AX_USE_UNSUPPORTED_CARDS even if it's in GOLIAT section
+            if in_goliat_section and "AX_USE_UNSUPPORTED_CARDS" in line:
+                new_lines.append(line)
+                continue
             if in_goliat_section and line.strip() == "" and new_lines and new_lines[-1].strip() == "":
                 in_goliat_section = False
                 continue
@@ -68,6 +72,9 @@ def update_bashrc(selected_python_path, base_dir=None):
 
     This creates a .bashrc file in the project directory (non-intrusive).
     If base_dir is provided and user preference is set, also syncs to ~/.bashrc.
+    
+    Preserves existing content that is not Sim4Life PATH related, including
+    AX_USE_UNSUPPORTED_CARDS and other custom environment variables.
     """
     bashrc_path = os.path.join(os.getcwd(), ".bashrc")
 
@@ -96,10 +103,64 @@ def update_bashrc(selected_python_path, base_dir=None):
     # Scripts directory: for pip-installed executables like goliat.exe
     scripts_line = f'export PATH="{bash_path}/Scripts:$PATH"\n'
 
-    # Overwrite the file with both paths
-    with open(bashrc_path, "w") as f:
-        f.write(python_line)
-        f.write(scripts_line)
+    # Read existing content to preserve non-Sim4Life lines
+    preserved_lines = []  # Lines to preserve (comments, non-Sim4Life exports, etc.)
+    preserved_vars = {}  # Track preserved environment variables
+    has_ax_unsupported = False
+    
+    if os.path.exists(bashrc_path):
+        try:
+            with open(bashrc_path, "r", encoding="utf-8") as f:
+                all_lines = f.readlines()
+            
+            # Parse existing content and preserve non-Sim4Life PATH lines
+            for line in all_lines:
+                stripped = line.strip()
+                # Skip Sim4Life PATH lines (will be replaced)
+                if stripped.startswith("export PATH") and "Sim4Life" in line:
+                    continue
+                # Preserve AX_USE_UNSUPPORTED_CARDS
+                if "AX_USE_UNSUPPORTED_CARDS" in line:
+                    has_ax_unsupported = True
+                    preserved_vars["AX_USE_UNSUPPORTED_CARDS"] = line.rstrip("\n")
+                    continue
+                # Preserve other export statements that aren't Sim4Life PATH
+                if stripped.startswith("export ") and "PATH" not in line:
+                    var_name = stripped.split("=")[0].replace("export ", "").strip()
+                    if var_name:
+                        preserved_vars[var_name] = line.rstrip("\n")
+                        continue
+                # Preserve comments and other non-export lines
+                preserved_lines.append(line.rstrip("\n"))
+        except Exception as e:
+            logging.warning(f"Could not read existing .bashrc: {e}")
+
+    # Build new content
+    new_lines = []
+    
+    # Add preserved non-export lines first
+    new_lines.extend(preserved_lines)
+    
+    # Add Sim4Life PATH lines
+    new_lines.append(python_line.rstrip("\n"))
+    new_lines.append(scripts_line.rstrip("\n"))
+    
+    # Add AX_USE_UNSUPPORTED_CARDS if not already present
+    if not has_ax_unsupported:
+        new_lines.append("export AX_USE_UNSUPPORTED_CARDS=1")
+    elif "AX_USE_UNSUPPORTED_CARDS" in preserved_vars:
+        new_lines.append(preserved_vars["AX_USE_UNSUPPORTED_CARDS"])
+    
+    # Add other preserved environment variables
+    for var_name, var_line in preserved_vars.items():
+        if var_name != "AX_USE_UNSUPPORTED_CARDS":
+            new_lines.append(var_line)
+
+    # Write the updated content
+    with open(bashrc_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(new_lines))
+        if new_lines:  # Add trailing newline if file has content
+            f.write("\n")
 
     logging.info("'.bashrc' has been updated. Please restart your shell or run 'source .bashrc'.")
 

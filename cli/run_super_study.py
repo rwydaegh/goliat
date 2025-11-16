@@ -196,6 +196,8 @@ def upload_super_study(name, description, base_config, assignment_configs, serve
 
     try:
         # Create super study
+        # Note: Python 3.7+ preserves dict insertion order, and requests.post(json=...) uses json.dumps()
+        # which preserves order by default (sort_keys=False). This ensures JSON key order is maintained.
         payload = {
             "name": name,
             "description": description or "",
