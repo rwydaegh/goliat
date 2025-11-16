@@ -38,22 +38,9 @@ class TissueGrouper:
             Dict mapping group names to lists of tissue names that belong to that group.
             Empty groups are still included but with empty lists.
         """
-        self.logger._log(
-            f"[TISSUE_GROUPING] Starting tissue grouping for '{self.phantom_name}'",
-            log_type="info",
-        )
-        self.logger._log(
-            f"[TISSUE_GROUPING] Available tissues from Sim4Life ({len(available_tissues)}): {available_tissues[:10]}{'...' if len(available_tissues) > 10 else ''}",
-            log_type="info",
-        )
-
         material_mapping = self.config.get_material_mapping(self.phantom_name)
 
         if "_tissue_groups" not in material_mapping:
-            self.logger._log(
-                "[TISSUE_GROUPING] ERROR: '_tissue_groups' not found in material mapping. Returning empty groups.",
-                log_type="error",
-            )
             return {}
 
         return self._group_from_config(material_mapping, available_tissues)
@@ -72,16 +59,7 @@ class TissueGrouper:
         Returns:
             Dict mapping group names to lists of matched tissue names.
         """
-        self.logger._log(
-            "[TISSUE_GROUPING] Loading tissue groups from material_name_mapping.json",
-            log_type="info",
-        )
-
         phantom_groups = material_mapping["_tissue_groups"]
-        self.logger._log(
-            f"[TISSUE_GROUPING] Found groups: {list(phantom_groups.keys())}",
-            log_type="info",
-        )
 
         # Build reverse mapping: material_name -> list of entity_names
         # (multiple entities can map to same material, e.g., "Skin" and "Ear_skin" both map to "Skin")
@@ -94,11 +72,6 @@ class TissueGrouper:
                 material_to_entities[material_name] = []
             material_to_entities[material_name].append(entity_name)
             entity_to_material[entity_name] = material_name
-
-        self.logger._log(
-            f"[TISSUE_GROUPING] Built material->entities map with {len(material_to_entities)} entries",
-            log_type="info",
-        )
 
         # Initialize groups with all expected tissues from JSON config
         # This ensures all groups show up in reports even if some tissues aren't present
@@ -148,30 +121,17 @@ class TissueGrouper:
         # For each tissue from Sim4Life, find which group(s) it belongs to
         # (This ensures we catch any tissues that might have been missed)
         for tissue in available_tissues:
-            self.logger._log(
-                f"[TISSUE_GROUPING] Processing tissue: '{tissue}'",
-                log_type="info",
-            )
-
             # Strip phantom suffix (e.g., "Cornea  (Thelonious_6y_V6)" -> "Cornea")
             # Sim4Life appends phantom name and version to tissue names
             cleaned_tissue = tissue
             if "  (" in tissue:
                 cleaned_tissue = tissue.split("  (")[0].strip()
-                self.logger._log(
-                    f"[TISSUE_GROUPING]   -> Stripped phantom suffix: '{cleaned_tissue}'",
-                    log_type="info",
-                )
 
             entity_name = None
 
             # Try 1: Direct entity name match (Sim4Life returned entity name)
             if cleaned_tissue in material_mapping and cleaned_tissue != "_tissue_groups":
                 entity_name = cleaned_tissue
-                self.logger._log(
-                    f"[TISSUE_GROUPING]   -> Matched as entity name: '{entity_name}'",
-                    log_type="info",
-                )
 
             # Try 2: Material name match (Sim4Life returned material name)
             elif cleaned_tissue in material_to_entities:
@@ -186,16 +146,8 @@ class TissueGrouper:
                 # If no direct match, use first entity (they all map to same material anyway)
                 if entity_name is None:
                     entity_name = possible_entities[0]
-                self.logger._log(
-                    f"[TISSUE_GROUPING]   -> Matched as material name -> entity: '{entity_name}' (from {len(possible_entities)} possible entities)",
-                    log_type="info",
-                )
 
             if entity_name is None:
-                self.logger._log(
-                    f"[TISSUE_GROUPING]   -> WARNING: No match found for '{tissue}' (cleaned: '{cleaned_tissue}')",
-                    log_type="warning",
-                )
                 continue
 
             # Check which group(s) this entity belongs to
@@ -207,34 +159,9 @@ class TissueGrouper:
                         idx = tissue_groups[group_name].index(f"{entity_name} (not present)")
                         tissue_groups[group_name][idx] = tissue
                         matched_groups.append(group_name)
-                        self.logger._log(
-                            f"[TISSUE_GROUPING]   -> Added to group '{group_name}'",
-                            log_type="info",
-                        )
                     elif tissue not in tissue_groups[group_name]:
                         # Only add if not already present (prevents duplicates)
                         tissue_groups[group_name].append(tissue)
                         matched_groups.append(group_name)
-                        self.logger._log(
-                            f"[TISSUE_GROUPING]   -> Added to group '{group_name}'",
-                            log_type="info",
-                        )
-
-            if not matched_groups:
-                self.logger._log(
-                    f"[TISSUE_GROUPING]   -> Entity '{entity_name}' not found in any group",
-                    log_type="warning",
-                )
-
-        # Log final results
-        self.logger._log(
-            "[TISSUE_GROUPING] Final grouping results:",
-            log_type="info",
-        )
-        for group_name, tissues in tissue_groups.items():
-            self.logger._log(
-                f"[TISSUE_GROUPING]   {group_name}: {len(tissues)} tissues - {tissues}",
-                log_type="info",
-            )
 
         return tissue_groups

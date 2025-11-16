@@ -455,90 +455,114 @@ class SimulationRunner(LoggingMixin):
                             print(f"Warning: keep_awake() failed: {e}")
                             sys.stdout.flush()
 
-                    process = subprocess.Popen(
-                        command,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        text=True,
-                        creationflags=subprocess.CREATE_NO_WINDOW,
-                    )
-                    self.current_isolve_process = process  # Track current process
+                    try:
+                        process = subprocess.Popen(
+                            command,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            text=True,
+                            creationflags=subprocess.CREATE_NO_WINDOW,
+                        )
+                        self.current_isolve_process = process  # Track current process
 
-                    output_queue = Queue()
-                    thread = threading.Thread(target=reader_thread, args=(process.stdout, output_queue))
-                    thread.daemon = True
-                    thread.start()
+                        output_queue = Queue()
+                        thread = threading.Thread(target=reader_thread, args=(process.stdout, output_queue))
+                        thread.daemon = True
+                        thread.start()
 
-                    # Track which progress milestones have been logged
-                    logged_milestones = set()
-                    # Regex pattern to match progress lines with Time Update
-                    # Matches: [PROGRESS]: X% [ ... ] Time Update, estimated remaining time ... @ ... MCells/s
-                    progress_pattern = re.compile(
-                        r"\[PROGRESS\]:\s*(\d+)%\s*\[.*?\]\s*Time Update[^@]*estimated remaining time\s+([^@]+?)\s+@\s+([\d.]+)\s+MCells/s"
-                    )
-                    keep_awake_triggered = False
+                        # Track which progress milestones have been logged
+                        logged_milestones = set()
+                        # Regex pattern to match progress lines with Time Update
+                        # Matches: [PROGRESS]: X% [ ... ] Time Update, estimated remaining time ... @ ... MCells/s
+                        progress_pattern = re.compile(
+                            r"\[PROGRESS\]:\s*(\d+)%\s*\[.*?\]\s*Time Update[^@]*estimated remaining time\s+([^@]+?)\s+@\s+([\d.]+)\s+MCells/s"
+                        )
+                        keep_awake_triggered = False
 
-                    # --- 3. Main loop: Monitor process and log output without blocking ---
-                    while process.poll() is None:
-                        # Check for stop signal periodically during execution
-                        if self.gui and self.gui.is_stopped():
-                            # Kill process immediately when stop is requested
-                            self._log("Stop signal detected, terminating iSolve subprocess...", log_type="warning")
-                            process.terminate()
-                            # Wait briefly for graceful termination
-                            try:
-                                process.wait(timeout=2)
-                            except subprocess.TimeoutExpired:
-                                process.kill()
-                                process.wait()
-                            raise StudyCancelledError("Study cancelled by user.")
-
-                        try:
-                            # Read all available lines from the queue
-                            while True:
-                                line = output_queue.get_nowait()
-                                stripped_line = line.strip()
-                                self.verbose_logger.info(stripped_line)
-
-                                if not keep_awake_triggered and "Time Update, estimated remaining time" in stripped_line:
-                                    self._launch_keep_awake_script()
-                                    keep_awake_triggered = True
-
-                                # Check for progress milestones (0%, 50%, 100%)
-                                self._check_and_log_progress_milestones(stripped_line, logged_milestones, progress_pattern)
-                        except Empty:
-                            # No new output, sleep briefly to prevent a busy-wait
-                            time.sleep(0.1)
-
-                    # Process has finished, get the return code
-                    return_code = process.returncode
-                    # Make sure the reader thread has finished and read all remaining output
-                    thread.join()
-                    while not output_queue.empty():
-                        line = output_queue.get_nowait()
-                        stripped_line = line.strip()
-                        self.verbose_logger.info(stripped_line)
-
-                        # Check for progress milestones in remaining output
-                        self._check_and_log_progress_milestones(stripped_line, logged_milestones, progress_pattern)
-
-                    # Clear process tracking since it's finished
-                    self.current_isolve_process = None
-
-                    if return_code == 0:
-                        # Success, break out of retry loop
-                        break
-                    else:
-                        # Failed, check for stop signal before retrying
-                        self._check_for_stop_signal()
-                        
-                        # Clean up failed process before retrying (should already be done, but ensure it)
-                        if process.poll() is None:
-                            try:
+                        # --- 3. Main loop: Monitor process and log output without blocking ---
+                        while process.poll() is None:
+                            # Check for stop signal periodically during execution
+                            if self.gui and self.gui.is_stopped():
+                                # Kill process immediately when stop is requested
+                                self._log("Stop signal detected, terminating iSolve subprocess...", log_type="warning")
                                 process.terminate()
-                                process.wait(timeout=2)
+                                # Wait briefly for graceful termination
+                                try:
+                                    process.wait(timeout=2)
+                                except subprocess.TimeoutExpired:
+                                    process.kill()
+                                    process.wait()
+                                raise StudyCancelledError("Study cancelled by user.")
+
+                            try:
+                                # Read all available lines from the queue
+                                while True:
+                                    line = output_queue.get_nowait()
+                                    stripped_line = line.strip()
+                                    self.verbose_logger.info(stripped_line)
+
+                                    if not keep_awake_triggered and "Time Update, estimated remaining time" in stripped_line:
+                                        self._launch_keep_awake_script()
+                                        keep_awake_triggered = True
+
+                                    # Check for progress milestones (0%, 50%, 100%)
+                                    self._check_and_log_progress_milestones(stripped_line, logged_milestones, progress_pattern)
+                            except Empty:
+                                # No new output, sleep briefly to prevent a busy-wait
+                                time.sleep(0.1)
+
+                        # Process has finished, get the return code
+                        return_code = process.returncode
+                        # Make sure the reader thread has finished and read all remaining output
+                        thread.join()
+                        while not output_queue.empty():
+                            line = output_queue.get_nowait()
+                            stripped_line = line.strip()
+                            self.verbose_logger.info(stripped_line)
+
+                            # Check for progress milestones in remaining output
+                            self._check_and_log_progress_milestones(stripped_line, logged_milestones, progress_pattern)
+
+                        # Clear process tracking since it's finished
+                        self.current_isolve_process = None
+
+                        if return_code == 0:
+                            # Success, break out of retry loop
+                            break
+                        else:
+                            # Failed, check for stop signal before retrying
+                            self._check_for_stop_signal()
+                            
+                            # Clean up failed process before retrying (should already be done, but ensure it)
+                            if process.poll() is None:
+                                try:
+                                    process.terminate()
+                                    process.wait(timeout=2)
+                                except Exception:
+                                    pass
+                            
+                            retry_attempt += 1
+                            self._log(
+                                f"iSolve failed, retry attempt {retry_attempt}",
+                                level="progress",
+                                log_type="warning",
+                            )
+                    except StudyCancelledError:
+                        # Re-raise cancellation errors immediately
+                        raise
+                    except Exception as e:
+                        # Log exception at verbose level with traceback, then retry
+                        self.verbose_logger.info(f"iSolve execution failed with exception:\n{traceback.format_exc()}")
+                        
+                        # Clean up failed process before retrying
+                        if self.current_isolve_process is not None:
+                            try:
+                                if self.current_isolve_process.poll() is None:
+                                    self.current_isolve_process.terminate()
+                                    self.current_isolve_process.wait(timeout=2)
                             except Exception:
                                 pass
+                            self.current_isolve_process = None
                         
                         retry_attempt += 1
                         self._log(
