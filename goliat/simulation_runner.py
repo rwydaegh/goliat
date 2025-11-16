@@ -188,30 +188,37 @@ class SimulationRunner(LoggingMixin):
         return self.simulation
 
     def _format_time_remaining(self, time_str: str) -> str:
-        """Converts time remaining string to X:Y format (minutes:seconds).
+        """Converts time remaining string to HH:MM:SS format.
 
-        Parses strings like "3 minutes 27 seconds" or "27 seconds" to "3:27" or "0:27".
+        Parses strings like "1 hours 9 minutes", "3 minutes 27 seconds", or "27 seconds"
+        to "1:09:00", "0:03:27", or "0:00:27" respectively.
 
         Args:
             time_str: Time string from iSolve output.
 
         Returns:
-            Formatted time as "X:Y" where X is minutes and Y is seconds.
+            Formatted time as "HH:MM:SS" where HH is hours, MM is minutes, and SS is seconds.
         """
+        hours = 0
         minutes = 0
         seconds = 0
 
-        # Extract minutes
-        minutes_match = re.search(r"(\d+)\s+minute", time_str)
+        # Extract hours (handles both "hour" and "hours")
+        hours_match = re.search(r"(\d+)\s+hours?", time_str, re.IGNORECASE)
+        if hours_match:
+            hours = int(hours_match.group(1))
+
+        # Extract minutes (handles both "minute" and "minutes")
+        minutes_match = re.search(r"(\d+)\s+minutes?", time_str, re.IGNORECASE)
         if minutes_match:
             minutes = int(minutes_match.group(1))
 
-        # Extract seconds
-        seconds_match = re.search(r"(\d+)\s+second", time_str)
+        # Extract seconds (handles both "second" and "seconds")
+        seconds_match = re.search(r"(\d+)\s+seconds?", time_str, re.IGNORECASE)
         if seconds_match:
             seconds = int(seconds_match.group(1))
 
-        return f"{minutes}:{seconds:02d}"
+        return f"{hours}:{minutes:02d}:{seconds:02d}"
 
     def _check_and_log_progress_milestones(self, line: str, logged_milestones: set, progress_pattern: re.Pattern) -> None:
         """Checks a line for progress milestones and logs them if reached.
