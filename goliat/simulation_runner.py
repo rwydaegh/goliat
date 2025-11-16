@@ -1,3 +1,4 @@
+import atexit
 import os
 import re
 import subprocess
@@ -6,11 +7,27 @@ import threading
 import time
 import traceback
 from queue import Empty, Queue
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Set
 
 from .logging_manager import LoggingMixin
 from .utils import non_blocking_sleep, open_project, StudyCancelledError
 from .utils.python_interpreter import find_sim4life_root
+
+# Global registry to track active SimulationRunner instances for cleanup
+_active_runners: Set["SimulationRunner"] = set()
+
+
+def _cleanup_all_runners():
+    """Cleanup function registered with atexit to ensure all runners clean up their subprocesses."""
+    for runner in list(_active_runners):
+        try:
+            runner._cleanup_isolve_process()
+        except Exception:
+            pass  # Ignore errors during cleanup
+
+
+# Register cleanup handler to run on process exit
+atexit.register(_cleanup_all_runners)
 
 if TYPE_CHECKING:
     from logging import Logger
@@ -61,6 +78,7 @@ class SimulationRunner(LoggingMixin):
 
         self.document = s4l_v1.document
         self.current_isolve_process: Optional[subprocess.Popen] = None  # Track current iSolve subprocess
+        _active_runners.add(self)  # Register this instance for global cleanup
 
     def run(self):
         """Runs the simulation using the configured execution method.
@@ -249,11 +267,16 @@ class SimulationRunner(LoggingMixin):
         
         This prevents orphaned processes when the parent process terminates.
         Should be called on cancellation, exceptions, and in finally blocks.
+        Also registered with atexit to ensure cleanup on abrupt termination.
         """
         if self.current_isolve_process is not None:
             if self.current_isolve_process.poll() is None:
                 try:
-                    self._log("Terminating iSolve subprocess...", log_type="warning")
+                    # Try to log, but don't fail if loggers are already shut down
+                    try:
+                        self._log("Terminating iSolve subprocess...", log_type="warning")
+                    except Exception:
+                        pass
                     self.current_isolve_process.terminate()
                     self.current_isolve_process.wait(timeout=5)
                 except subprocess.TimeoutExpired:
@@ -261,8 +284,15 @@ class SimulationRunner(LoggingMixin):
                     self.current_isolve_process.kill()
                     self.current_isolve_process.wait()
                 except Exception as e:
-                    self.verbose_logger.warning(f"Error cleaning up iSolve process: {e}")
+                    # Try to log error, but don't fail if loggers are shut down
+                    try:
+                        self.verbose_logger.warning(f"Error cleaning up iSolve process: {e}")
+                    except Exception:
+                        pass
             self.current_isolve_process = None
+        
+        # Remove from global registry when cleanup is done
+        _active_runners.discard(self)
 
     def _launch_keep_awake_script(self):
         if self.config["keep_awake"] or False:

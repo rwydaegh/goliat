@@ -355,8 +355,15 @@ def main():
 
             # Ensure the study process is cleaned up
             if study_process.is_alive():
-                study_process.terminate()
-                study_process.join()
+                # First, set stop event to allow graceful cleanup
+                stop_event.set()
+                # Give the process a moment to clean up subprocesses
+                import time
+                time.sleep(1)
+                # Then terminate if still alive
+                if study_process.is_alive():
+                    study_process.terminate()
+                    study_process.join()
     else:
         try:
             from goliat.profiler import Profiler

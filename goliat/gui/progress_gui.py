@@ -366,8 +366,15 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
 
         if self.process.is_alive():
             self.progress_logger.info("Terminating study process...", extra={"log_type": "warning"})
-            self.process.terminate()
-            self.process.join(timeout=5)
+            # First, set stop event to allow graceful cleanup
+            self.stop_event.set()
+            # Give the process a moment to clean up subprocesses
+            import time
+            time.sleep(1)
+            # Then terminate if still alive
+            if self.process.is_alive():
+                self.process.terminate()
+                self.process.join(timeout=5)
 
         # Stop web bridge if enabled
         self.web_bridge_manager.stop()
