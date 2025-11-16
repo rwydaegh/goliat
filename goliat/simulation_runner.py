@@ -403,17 +403,6 @@ class SimulationRunner(LoggingMixin):
         log_msg = f"Running iSolve with {solver_kernel} on {os.path.basename(input_file_path)}"
         self._log(log_msg, log_type="info")  # verbose only
 
-        if self.config["keep_awake"] or False:
-            try:
-                script_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "scripts")
-                if script_dir not in sys.path:
-                    sys.path.insert(0, script_dir)
-                from keep_awake import keep_awake  # type: ignore
-                keep_awake()
-            except Exception as e:
-                print(f"Warning: keep_awake() failed: {e}")
-                sys.stdout.flush()
-
         command = [isolve_path, "-i", input_file_path]
 
         # --- 2. Non-blocking reader thread setup ---
@@ -446,6 +435,18 @@ class SimulationRunner(LoggingMixin):
                 while True:
                     # Check for stop signal before starting new subprocess
                     self._check_for_stop_signal()
+
+                    # Run keep_awake before each attempt
+                    if self.config["keep_awake"] or False:
+                        try:
+                            script_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "scripts")
+                            if script_dir not in sys.path:
+                                sys.path.insert(0, script_dir)
+                            from keep_awake import keep_awake  # type: ignore
+                            keep_awake()
+                        except Exception as e:
+                            print(f"Warning: keep_awake() failed: {e}")
+                            sys.stdout.flush()
 
                     process = subprocess.Popen(
                         command,
