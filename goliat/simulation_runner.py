@@ -523,6 +523,16 @@ class SimulationRunner(LoggingMixin):
                             # Check for progress milestones in remaining output
                             self._check_and_log_progress_milestones(stripped_line, logged_milestones, progress_pattern)
 
+                        # Read stderr output from iSolve
+                        stderr_output = ""
+                        if process.stderr:
+                            try:
+                                stderr_output = process.stderr.read()
+                                if stderr_output:
+                                    stderr_output = stderr_output.strip()
+                            except Exception:
+                                pass
+
                         # Clear process tracking since it's finished
                         self.current_isolve_process = None
 
@@ -532,6 +542,10 @@ class SimulationRunner(LoggingMixin):
                         else:
                             # Failed, check for stop signal before retrying
                             self._check_for_stop_signal()
+                            
+                            # Log stderr output at verbose level if available
+                            if stderr_output:
+                                self.verbose_logger.info(f"iSolve stderr output:\n{stderr_output}")
                             
                             # Clean up failed process before retrying (should already be done, but ensure it)
                             if process.poll() is None:
@@ -551,8 +565,19 @@ class SimulationRunner(LoggingMixin):
                         # Re-raise cancellation errors immediately
                         raise
                     except Exception as e:
-                        # Log exception at verbose level with traceback, then retry
-                        self.verbose_logger.info(f"iSolve execution failed with exception:\n{traceback.format_exc()}")
+                        # Capture stderr output if process exists
+                        stderr_output = ""
+                        if self.current_isolve_process and self.current_isolve_process.stderr:
+                            try:
+                                stderr_output = self.current_isolve_process.stderr.read()
+                                if stderr_output:
+                                    stderr_output = stderr_output.strip()
+                            except Exception:
+                                pass
+                        
+                        # Log stderr output at verbose level if available
+                        if stderr_output:
+                            self.verbose_logger.info(f"iSolve stderr output:\n{stderr_output}")
                         
                         # Clean up failed process before retrying
                         if self.current_isolve_process is not None:
