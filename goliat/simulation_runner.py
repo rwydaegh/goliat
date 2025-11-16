@@ -9,7 +9,7 @@ from queue import Empty, Queue
 from typing import TYPE_CHECKING, Optional
 
 from .logging_manager import LoggingMixin
-from .utils import non_blocking_sleep, open_project
+from .utils import non_blocking_sleep, open_project, StudyCancelledError
 from .utils.python_interpreter import find_sim4life_root
 
 if TYPE_CHECKING:
@@ -60,6 +60,7 @@ class SimulationRunner(LoggingMixin):
         import s4l_v1.document
 
         self.document = s4l_v1.document
+        self.current_isolve_process: Optional[subprocess.Popen] = None  # Track current iSolve subprocess
 
     def run(self):
         """Runs the simulation using the configured execution method.
@@ -238,6 +239,31 @@ class SimulationRunner(LoggingMixin):
                     log_type="default",
                 )
 
+    def _check_for_stop_signal(self):
+        """Checks if the GUI has requested a stop and raises StudyCancelledError if so."""
+        if self.gui and self.gui.is_stopped():
+            raise StudyCancelledError("Study cancelled by user.")
+
+    def _cleanup_isolve_process(self):
+        """Kills the current iSolve subprocess if it's still running.
+        
+        This prevents orphaned processes when the parent process terminates.
+        Should be called on cancellation, exceptions, and in finally blocks.
+        """
+        if self.current_isolve_process is not None:
+            if self.current_isolve_process.poll() is None:
+                try:
+                    self._log("Terminating iSolve subprocess...", log_type="warning")
+                    self.current_isolve_process.terminate()
+                    self.current_isolve_process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    # Force kill if terminate didn't work
+                    self.current_isolve_process.kill()
+                    self.current_isolve_process.wait()
+                except Exception as e:
+                    self.verbose_logger.warning(f"Error cleaning up iSolve process: {e}")
+            self.current_isolve_process = None
+
     def _launch_keep_awake_script(self):
         if self.config["keep_awake"] or False:
             script_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "scripts", "keep_awake.py")
@@ -388,6 +414,9 @@ class SimulationRunner(LoggingMixin):
                 retry_attempt = 0
 
                 while True:
+                    # Check for stop signal before starting new subprocess
+                    self._check_for_stop_signal()
+
                     process = subprocess.Popen(
                         command,
                         stdout=subprocess.PIPE,
@@ -395,6 +424,7 @@ class SimulationRunner(LoggingMixin):
                         text=True,
                         creationflags=subprocess.CREATE_NO_WINDOW,
                     )
+                    self.current_isolve_process = process  # Track current process
 
                     output_queue = Queue()
                     thread = threading.Thread(target=reader_thread, args=(process.stdout, output_queue))
@@ -412,6 +442,19 @@ class SimulationRunner(LoggingMixin):
 
                     # --- 3. Main loop: Monitor process and log output without blocking ---
                     while process.poll() is None:
+                        # Check for stop signal periodically during execution
+                        if self.gui and self.gui.is_stopped():
+                            # Kill process immediately when stop is requested
+                            self._log("Stop signal detected, terminating iSolve subprocess...", log_type="warning")
+                            process.terminate()
+                            # Wait briefly for graceful termination
+                            try:
+                                process.wait(timeout=2)
+                            except subprocess.TimeoutExpired:
+                                process.kill()
+                                process.wait()
+                            raise StudyCancelledError("Study cancelled by user.")
+
                         try:
                             # Read all available lines from the queue
                             while True:
@@ -441,11 +484,24 @@ class SimulationRunner(LoggingMixin):
                         # Check for progress milestones in remaining output
                         self._check_and_log_progress_milestones(stripped_line, logged_milestones, progress_pattern)
 
+                    # Clear process tracking since it's finished
+                    self.current_isolve_process = None
+
                     if return_code == 0:
                         # Success, break out of retry loop
                         break
                     else:
-                        # Failed, retry indefinitely
+                        # Failed, check for stop signal before retrying
+                        self._check_for_stop_signal()
+                        
+                        # Clean up failed process before retrying (should already be done, but ensure it)
+                        if process.poll() is None:
+                            try:
+                                process.terminate()
+                                process.wait(timeout=2)
+                            except Exception:
+                                pass
+                        
                         retry_attempt += 1
                         self._log(
                             f"iSolve failed, retry attempt {retry_attempt}",
@@ -490,7 +546,13 @@ class SimulationRunner(LoggingMixin):
                 log_type="success",  # verbose only
             )
 
+        except StudyCancelledError:
+            # Clean up subprocess on cancellation
+            self._cleanup_isolve_process()
+            raise
         except Exception as e:
+            # Clean up subprocess on any exception
+            self._cleanup_isolve_process()
             self._log(
                 f"An unexpected error occurred while running iSolve.exe: {e}",
                 level="progress",
@@ -498,6 +560,9 @@ class SimulationRunner(LoggingMixin):
             )
             self.verbose_logger.error(traceback.format_exc())
             raise
+        finally:
+            # Always ensure cleanup, even on successful completion
+            self._cleanup_isolve_process()
 
     def _run_osparc_direct(self, simulation: "s4l_v1.simulation.emfdtd.Simulation", server_name: str):
         """Submits simulation directly to oSPARC cloud platform.
