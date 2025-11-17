@@ -271,7 +271,7 @@ class SystemUtilizationPlot:
         self.ax.plot([], [], "-", color="#4ecdc4", linewidth=0.5, label="RAM")
         self.ax.plot([], [], "-", color="#f9ca24", linewidth=0.5, label="GPU")
         self.ax.plot([], [], "-", color="#e74c3c", linewidth=0.5, label="GPU VRAM")
-        self.ax.legend(loc="upper right", facecolor="#3c3c3c", edgecolor="#f0f0f0", labelcolor="#f0f0f0", fontsize=9)
+        self.ax.legend(loc="upper left", facecolor="#3c3c3c", edgecolor="#f0f0f0", labelcolor="#f0f0f0", fontsize=9)
 
         self.canvas.draw()
 
@@ -378,7 +378,7 @@ class SystemUtilizationPlot:
         self.ax.spines["top"].set_color("#2b2b2b")
         self.ax.spines["right"].set_color("#2b2b2b")
 
-        self.ax.legend(loc="upper right", facecolor="#3c3c3c", edgecolor="#f0f0f0", labelcolor="#f0f0f0", fontsize=10)
+        self.ax.legend(loc="upper left", facecolor="#3c3c3c", edgecolor="#f0f0f0", labelcolor="#f0f0f0", fontsize=10)
 
         self.figure.tight_layout()
         self.canvas.draw()

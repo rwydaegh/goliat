@@ -92,6 +92,7 @@ nav:
   - Overview: developer_guide/developer_guide.md
   - Technical Guide: developer_guide/technical_guide.md
   - Advanced Features: developer_guide/advanced_features.md
+  - System Architecture: developer_guide/system_architecture.md
   - Configuration: developer_guide/configuration.md
   - Coloring Rules: developer_guide/coloring_rules.md
   - UML: developer_guide/uml.md
@@ -120,6 +121,7 @@ plugins:
 - kroki:
     HttpMethod: POST
 - mermaid2: {}
+- panzoom: {}
 - mknotebooks:
     execute: false
 - mkdocstrings:

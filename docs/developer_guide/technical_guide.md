@@ -15,6 +15,7 @@ graph TB
     subgraph "User Interface Layer"
         GUI[GUI Manager<br/>PySide6]
         CLI[Command Line]
+        WebBridge[Web Bridge<br/>Remote Monitoring]
     end
     
     subgraph "Orchestration Layer"
@@ -38,10 +39,13 @@ graph TB
     subgraph "External Services"
         S4L[Sim4Life Engine]
         oSPARC[oSPARC Cloud]
+        Dashboard[Monitoring Dashboard<br/>Web API]
     end
     
     GUI --> Study
     CLI --> Study
+    GUI --> WebBridge
+    WebBridge --> Dashboard
     Study --> Config
     Study --> Profiler
     Study --> PM
@@ -56,12 +60,14 @@ graph TB
     Extractor --> S4L
     
     style GUI fill:#E1BEE7
+    style WebBridge fill:#BBDEFB
     style Study fill:#BBDEFB
     style Setup fill:#C5E1A5
     style Runner fill:#FFE082
     style Extractor fill:#FFCCBC
     style Analyzer fill:#D1C4E9
     style Plotter fill:#D1C4E9
+    style Dashboard fill:#E1BEE7
 ```
 
 ## Workflow and component interactions

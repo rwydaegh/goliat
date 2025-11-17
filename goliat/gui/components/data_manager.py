@@ -51,7 +51,7 @@ class DataManager:
 
         with open(self.system_utilization_file, "w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(["timestamp", "cpu_percent", "ram_percent_with_cache", "ram_percent_no_cache", "gpu_percent", "gpu_vram_percent"])
+            writer.writerow(["timestamp", "cpu_percent", "ram_percent", "gpu_percent", "gpu_vram_percent"])
 
     def _write_csv_row(self, file_path: str, value: float, value_name: str) -> None:
         """Appends a timestamped data point to a CSV file.
@@ -95,19 +95,17 @@ class DataManager:
         self,
         cpu_percent: float,
         ram_percent: float,
-        ram_percent_no_cache: float,
         gpu_percent: Optional[float] = None,
         gpu_vram_percent: Optional[float] = None,
     ) -> None:
         """Appends a system utilization data point to CSV.
 
-        Writes timestamp and CPU, RAM (with/without cache), GPU utilization, and GPU VRAM
+        Writes timestamp and CPU, RAM, GPU utilization, and GPU VRAM
         percentages to session-specific CSV file. Used for plotting utilization trends over time.
 
         Args:
             cpu_percent: CPU utilization percentage (0-100).
-            ram_percent: RAM utilization percentage with cache (0-100).
-            ram_percent_no_cache: RAM utilization percentage without cache (0-100).
+            ram_percent: RAM utilization percentage (0-100).
             gpu_percent: GPU utilization percentage (0-100), or None if unavailable.
             gpu_vram_percent: GPU VRAM utilization percentage (0-100), or None if unavailable.
         """
@@ -115,14 +113,15 @@ class DataManager:
             current_time = datetime.now()
             with open(self.system_utilization_file, "a", newline="") as f:
                 writer = csv.writer(f)
-                writer.writerow([
-                    current_time.isoformat(),
-                    cpu_percent,
-                    ram_percent,
-                    ram_percent_no_cache,
-                    gpu_percent if gpu_percent is not None else "",
-                    gpu_vram_percent if gpu_vram_percent is not None else "",
-                ])
+                writer.writerow(
+                    [
+                        current_time.isoformat(),
+                        cpu_percent,
+                        ram_percent,
+                        gpu_percent if gpu_percent is not None else "",
+                        gpu_vram_percent if gpu_vram_percent is not None else "",
+                    ]
+                )
         except Exception as e:
             self.verbose_logger.error(f"Failed to write system utilization data: {e}")
 
