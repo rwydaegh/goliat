@@ -149,6 +149,11 @@ def create_parser():
         help="If set, redo simulations even if the configuration matches a completed run.",
     )
     worker_parser.add_argument(
+        "--reupload-results",
+        action="store_true",
+        help="When caching skips simulations, upload extraction results that appear valid.",
+    )
+    worker_parser.add_argument(
         "--server-url",
         type=str,
         default=None,
@@ -295,6 +300,8 @@ def main():
             sys.argv.extend(["--title", args.title])
         if args.no_cache:
             sys.argv.append("--no-cache")
+        if args.reupload_results:
+            sys.argv.append("--reupload-results")
         if args.server_url:
             sys.argv.extend(["--server-url", args.server_url])
         try:

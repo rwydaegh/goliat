@@ -204,6 +204,10 @@ class FarFieldStudy(BaseStudy):
                     if verification_status["extract_done"]:
                         do_extract = False
                         self._log("Skipping extract phase, deliverables found.", log_type="info")
+                        # Upload results if reupload flag is set and running as assignment
+                        if self._should_reupload_results() and self.project_manager.project_path:
+                            project_dir = os.path.dirname(self.project_manager.project_path)
+                            self._upload_results_if_assignment(project_dir)
 
                     if self.gui:
                         self.gui.update_stage_progress("Setup", 1, 1)
