@@ -36,6 +36,24 @@ class TimingsTable:
         )
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
 
+        # Set background color for the table widget to ensure grey background extends
+        # beyond the table rows (especially for the first column area)
+        self.table.setStyleSheet("""
+            QTableWidget {
+                background-color: #2b2b2b;
+                gridline-color: #444444;
+            }
+            QTableWidget::item {
+                background-color: #2b2b2b;
+            }
+            QHeaderView::section {
+                background-color: #3c3c3c;
+                color: #f0f0f0;
+                padding: 4px;
+                border: 1px solid #444444;
+            }
+        """)
+
     def update(self, profiler: "Profiler") -> None:
         """Populates table with timing statistics from profiler.
 
