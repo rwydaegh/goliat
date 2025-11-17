@@ -68,34 +68,38 @@ class ScreenshotCapture:
                         self.verbose_logger.warning(f"Tab {i} ({tab_name}) has no widget")
                         continue
 
-                    # Get the size of the tab widget's parent (QTabWidget) to know the proper size
-                    # Non-visible tabs might have zero size, so we use parent size as reference
-                    parent_size = tabs.size()
-                    widget_width = tab_widget.width() if tab_widget.width() > 0 else parent_size.width()
-                    widget_height = tab_widget.height() if tab_widget.height() > 0 else parent_size.height()
+                    # Temporarily switch to this tab to ensure proper rendering
+                    # This ensures the widget is properly laid out and visible
+                    tabs.setCurrentIndex(i)
 
-                    # Fallback to reasonable defaults if sizes are still zero
+                    # Process events to ensure tab switch completes and widgets are laid out
+                    if QApplication is not None:
+                        QApplication.processEvents()
+
+                    # Get widget size (should be proper now that tab is visible)
+                    widget_width = tab_widget.width()
+                    widget_height = tab_widget.height()
+
+                    # Fallback to parent size if widget still has zero size
+                    if widget_width == 0 or widget_height == 0:
+                        parent_size = tabs.size()
+                        widget_width = parent_size.width() if widget_width == 0 else widget_width
+                        widget_height = parent_size.height() if widget_height == 0 else widget_height
+
+                    # Final fallback to reasonable defaults
                     if widget_width == 0:
                         widget_width = 800
                     if widget_height == 0:
                         widget_height = 600
 
-                    # Process events to ensure all widgets are painted
+                    # Process events again to ensure all widgets are painted
                     if QApplication is not None:
                         QApplication.processEvents()
 
-                    # Use render() instead of grab() - render() works better for non-visible widgets
-                    # render() can render widgets even when they're not visible, as long as we provide size
-                    pixmap = QPixmap(widget_width, widget_height)
-                    pixmap.fill()  # Fill with default background
+                    # Use grab() now that tab is visible - this captures everything properly
+                    pixmap = tab_widget.grab()
 
-                    # Render the widget to the pixmap
-                    # PySide6 render() signature: render(target, targetOffset=QPoint(), sourceRegion=QRegion(), ...)
-                    # All arguments must be positional, not keyword arguments
-                    # This works even if the widget is not currently visible
-                    tab_widget.render(pixmap)
-
-                    # Process events after rendering
+                    # Process events after capture
                     if QApplication is not None:
                         QApplication.processEvents()
 
