@@ -172,10 +172,15 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
         self.clock_timer.timeout.connect(self.update_clock)
         self.clock_timer.start(1000)
 
-        # Graph update timer (every 5 seconds)
+        # Graph update timer (every 5 seconds for time remaining/progress, 2 seconds for utilization)
         self.graph_timer: _QTimer = _QTimer(self)
         self.graph_timer.timeout.connect(self.update_graphs)
         self.graph_timer.start(5000)
+        
+        # System utilization plot update timer (every 2 seconds)
+        self.utilization_plot_timer: _QTimer = _QTimer(self)
+        self.utilization_plot_timer.timeout.connect(self.update_utilization_plot)
+        self.utilization_plot_timer.start(2000)
 
         # System utilization update timer (every 1 second)
         self.utilization_timer: _QTimer = _QTimer(self)
@@ -295,6 +300,10 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
         """Updates time remaining and overall progress graphs."""
         self.graph_manager.update()
 
+    def update_utilization_plot(self) -> None:
+        """Updates system utilization plot (called every 2 seconds)."""
+        self.utilization_manager.update_plot()
+
     def hide_to_tray(self) -> None:
         """Hides main window and shows system tray icon."""
         self.hide()
@@ -331,6 +340,7 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
         self.queue_timer.stop()
         self.graph_timer.stop()
         self.utilization_timer.stop()
+        self.utilization_plot_timer.stop()
         self.progress_sync_timer.stop()
         self.progress_animation.stop()
         if not error:

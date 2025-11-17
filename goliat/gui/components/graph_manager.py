@@ -19,7 +19,7 @@ class GraphManager:
         self.gui = gui
 
     def update(self) -> None:
-        """Updates time remaining and overall progress graphs (called every 5 seconds).
+        """Updates time remaining, overall progress, and system utilization graphs (called every 5 seconds).
 
         Gets current ETA and progress values, writes them to CSV files (via
         DataManager), and adds data points to matplotlib plots. The plots
@@ -50,3 +50,5 @@ class GraphManager:
         current_time = datetime.now()
         self.gui.data_manager.write_overall_progress(progress_percent)
         self.gui.overall_progress_plot.add_data_point(current_time, progress_percent)
+
+        # Note: System utilization plot is updated separately via utilization_plot_timer (every 2s)

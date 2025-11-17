@@ -6,7 +6,7 @@ import os
 import time
 from datetime import datetime
 from logging import Logger
-from typing import List
+from typing import List, Optional
 
 
 class DataManager:
@@ -34,6 +34,7 @@ class DataManager:
 
         self.time_remaining_file: str = os.path.join(self.data_dir, f"time_remaining_{session_timestamp}_{self.session_hash}.csv")
         self.overall_progress_file: str = os.path.join(self.data_dir, f"overall_progress_{session_timestamp}_{self.session_hash}.csv")
+        self.system_utilization_file: str = os.path.join(self.data_dir, f"system_utilization_{session_timestamp}_{self.session_hash}.csv")
 
         # Initialize data files
         self._initialize_files()
@@ -47,6 +48,10 @@ class DataManager:
         with open(self.overall_progress_file, "w", newline="") as f:
             writer = csv.writer(f)
             writer.writerow(["timestamp", "progress_percent"])
+
+        with open(self.system_utilization_file, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["timestamp", "cpu_percent", "ram_percent_with_cache", "ram_percent_no_cache", "gpu_percent", "gpu_vram_percent"])
 
     def _write_csv_row(self, file_path: str, value: float, value_name: str) -> None:
         """Appends a timestamped data point to a CSV file.
@@ -86,6 +91,41 @@ class DataManager:
         """
         self._write_csv_row(self.overall_progress_file, progress_percent, "overall progress")
 
+    def write_system_utilization(
+        self,
+        cpu_percent: float,
+        ram_percent: float,
+        ram_percent_no_cache: float,
+        gpu_percent: Optional[float] = None,
+        gpu_vram_percent: Optional[float] = None,
+    ) -> None:
+        """Appends a system utilization data point to CSV.
+
+        Writes timestamp and CPU, RAM (with/without cache), GPU utilization, and GPU VRAM
+        percentages to session-specific CSV file. Used for plotting utilization trends over time.
+
+        Args:
+            cpu_percent: CPU utilization percentage (0-100).
+            ram_percent: RAM utilization percentage with cache (0-100).
+            ram_percent_no_cache: RAM utilization percentage without cache (0-100).
+            gpu_percent: GPU utilization percentage (0-100), or None if unavailable.
+            gpu_vram_percent: GPU VRAM utilization percentage (0-100), or None if unavailable.
+        """
+        try:
+            current_time = datetime.now()
+            with open(self.system_utilization_file, "a", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow([
+                    current_time.isoformat(),
+                    cpu_percent,
+                    ram_percent,
+                    ram_percent_no_cache,
+                    gpu_percent if gpu_percent is not None else "",
+                    gpu_vram_percent if gpu_vram_percent is not None else "",
+                ])
+        except Exception as e:
+            self.verbose_logger.error(f"Failed to write system utilization data: {e}")
+
     def _cleanup_old_data_files(self) -> None:
         """Removes old CSV and JSON files when more than 50 exist.
 
@@ -98,7 +138,7 @@ class DataManager:
             for f in os.listdir(self.data_dir):
                 if f.endswith((".csv", ".json")):
                     # Only include files with expected naming pattern
-                    if any(prefix in f for prefix in ["time_remaining_", "overall_progress_", "profiling_config_"]):
+                    if any(prefix in f for prefix in ["time_remaining_", "overall_progress_", "system_utilization_", "profiling_config_"]):
                         full_path = os.path.join(self.data_dir, f)
                         data_files.append(full_path)
 

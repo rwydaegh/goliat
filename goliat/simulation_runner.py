@@ -557,7 +557,7 @@ class SimulationRunner(LoggingMixin):
                             
                             retry_attempt += 1
                             self._log(
-                                f"iSolve failed, retry attempt {retry_attempt}",
+                                f"    - iSolve failed, retry attempt {retry_attempt}",
                                 level="progress",
                                 log_type="warning",
                             )
@@ -591,7 +591,7 @@ class SimulationRunner(LoggingMixin):
                         
                         retry_attempt += 1
                         self._log(
-                            f"iSolve failed, retry attempt {retry_attempt}",
+                            f"    - iSolve failed, retry attempt {retry_attempt}",
                             level="progress",
                             log_type="warning",
                         )

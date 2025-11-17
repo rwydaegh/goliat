@@ -1,7 +1,7 @@
 """Plotting components for GUI: time remaining, overall progress, and pie charts."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Tuple, Dict
+from typing import TYPE_CHECKING, List, Tuple, Dict, Optional
 
 import matplotlib
 
@@ -209,6 +209,184 @@ class OverallProgressPlot:
         self.ax.spines["right"].set_color("#2b2b2b")
 
         self.ax.legend(loc="lower right", facecolor="#3c3c3c", edgecolor="#f0f0f0", labelcolor="#f0f0f0", fontsize=10)
+
+        self.figure.tight_layout()
+        self.canvas.draw()
+
+
+class SystemUtilizationPlot:
+    """Manages system utilization plot with real-time updates.
+
+    Creates a matplotlib line plot showing CPU, RAM (with/without cache), GPU utilization,
+    and GPU VRAM utilization percentages over time. Updates dynamically as new data points arrive.
+    Y-axis fixed at 0-100%. GPU lines only shown if GPU is available.
+    """
+
+    def __init__(self) -> None:
+        """Sets up matplotlib figure and axes with dark theme."""
+        if Figure is None or FigureCanvas is None:
+            raise ImportError("matplotlib is required for plotting")
+        from matplotlib.figure import Figure as _Figure
+        from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as _FigureCanvas
+        from matplotlib.axes import Axes as _Axes
+
+        self.figure: _Figure = _Figure(figsize=(10, 6), facecolor="#2b2b2b")
+        self.canvas: _FigureCanvas = _FigureCanvas(self.figure)
+        self.ax: _Axes = self.figure.add_subplot(111)
+        self.cpu_data: List[Tuple[datetime, float]] = []
+        self.ram_data: List[Tuple[datetime, float]] = []  # With cache
+        self.ram_no_cache_data: List[Tuple[datetime, float]] = []  # Without cache
+        self.gpu_data: List[Tuple[datetime, Optional[float]]] = []
+        self.gpu_vram_data: List[Tuple[datetime, Optional[float]]] = []
+        self.gpu_available: bool = False
+        
+        # System info for legend (will be populated when first data point is added)
+        self.cpu_cores: int = 0
+        self.total_ram_gb: float = 0.0
+        self.gpu_name: Optional[str] = None
+        self.total_gpu_vram_gb: float = 0.0
+        
+        self._setup()
+
+    def _setup(self) -> None:
+        """Initializes plot with dark theme styling."""
+        self.ax.clear()
+        self.ax.set_facecolor("#2b2b2b")
+        self.figure.patch.set_facecolor("#2b2b2b")
+
+        self.ax.set_xlabel("Time", fontsize=12, color="#f0f0f0")
+        self.ax.set_ylabel("Utilization (%)", fontsize=12, color="#f0f0f0")
+        self.ax.set_title("System Utilization", fontsize=14, color="#f0f0f0", pad=20)
+
+        self.ax.tick_params(colors="#f0f0f0", which="both")
+        self.ax.spines["bottom"].set_color("#f0f0f0")
+        self.ax.spines["left"].set_color("#f0f0f0")
+        self.ax.spines["top"].set_color("#2b2b2b")
+        self.ax.spines["right"].set_color("#2b2b2b")
+
+        self.ax.grid(True, alpha=0.2, color="#f0f0f0")
+        self.ax.set_ylim(0, 100)
+
+        # Initialize empty plots for legend (labels will be updated with system info when data arrives)
+        self.ax.plot([], [], "o-", color="#ff6b6b", linewidth=2, markersize=4, label="CPU")
+        self.ax.plot([], [], "o-", color="#4ecdc4", linewidth=2, markersize=4, label="RAM (with cache)")
+        self.ax.plot([], [], "o--", color="#4ecdc4", linewidth=1.5, markersize=3, alpha=0.7, label="RAM (no cache)")
+        self.ax.plot([], [], "o-", color="#f9ca24", linewidth=2, markersize=4, label="GPU")
+        self.ax.plot([], [], "o--", color="#f9ca24", linewidth=1.5, markersize=3, alpha=0.7, label="GPU VRAM")
+        self.ax.legend(loc="upper right", facecolor="#3c3c3c", edgecolor="#f0f0f0", labelcolor="#f0f0f0", fontsize=9)
+
+        self.canvas.draw()
+
+    def add_data_point(
+        self,
+        timestamp: datetime,
+        cpu_percent: float,
+        ram_percent: float,
+        ram_percent_no_cache: float,
+        gpu_percent: Optional[float] = None,
+        gpu_vram_percent: Optional[float] = None,
+        cpu_cores: int = 0,
+        total_ram_gb: float = 0.0,
+        gpu_name: Optional[str] = None,
+        total_gpu_vram_gb: float = 0.0,
+    ) -> None:
+        """Adds data point and refreshes plot.
+
+        Args:
+            timestamp: Timestamp for the data point.
+            cpu_percent: CPU utilization percentage (0-100).
+            ram_percent: RAM utilization percentage with cache (0-100).
+            ram_percent_no_cache: RAM utilization percentage without cache (0-100).
+            gpu_percent: GPU utilization percentage (0-100), or None if unavailable.
+            gpu_vram_percent: GPU VRAM utilization percentage (0-100), or None if unavailable.
+            cpu_cores: Number of CPU cores (for legend).
+            total_ram_gb: Total RAM in GB (for legend).
+            gpu_name: GPU model name (for legend).
+            total_gpu_vram_gb: Total GPU VRAM in GB (for legend).
+        """
+        # Store system info on first data point
+        if len(self.cpu_data) == 0:
+            self.cpu_cores = cpu_cores
+            self.total_ram_gb = total_ram_gb
+            self.gpu_name = gpu_name
+            self.total_gpu_vram_gb = total_gpu_vram_gb
+        
+        self.cpu_data.append((timestamp, cpu_percent))
+        self.ram_data.append((timestamp, ram_percent))
+        self.ram_no_cache_data.append((timestamp, ram_percent_no_cache))
+        
+        self.gpu_data.append((timestamp, gpu_percent))
+        if gpu_percent is not None:
+            self.gpu_available = True
+        
+        self.gpu_vram_data.append((timestamp, gpu_vram_percent))
+        if gpu_vram_percent is not None:
+            self.gpu_available = True
+        
+        self._refresh()
+
+    def _refresh(self) -> None:
+        """Refreshes plot with current data."""
+        if not self.cpu_data:
+            return
+
+        self.ax.clear()
+
+        # Extract times and values
+        times = [t for t, _ in self.cpu_data]
+        cpu_values = [v for _, v in self.cpu_data]
+        ram_values = [v for _, v in self.ram_data]
+        ram_no_cache_values = [v for _, v in self.ram_no_cache_data]
+        
+        # Filter GPU data to only include non-None values (data points are aligned)
+        gpu_times_and_values = [(t, v) for (t, v) in self.gpu_data if v is not None]
+        gpu_times = [t for t, _ in gpu_times_and_values]
+        gpu_values = [v for _, v in gpu_times_and_values]
+        
+        # Filter GPU VRAM data
+        gpu_vram_times_and_values = [(t, v) for (t, v) in self.gpu_vram_data if v is not None]
+        gpu_vram_times = [t for t, _ in gpu_vram_times_and_values]
+        gpu_vram_values = [v for _, v in gpu_vram_times_and_values]
+
+        # Build legend labels with system info
+        cpu_label = f"CPU ({self.cpu_cores} cores)" if self.cpu_cores > 0 else "CPU"
+        ram_with_cache_label = f"RAM (with cache) ({self.total_ram_gb:.1f} GB)" if self.total_ram_gb > 0 else "RAM (with cache)"
+        ram_no_cache_label = f"RAM (no cache) ({self.total_ram_gb:.1f} GB)" if self.total_ram_gb > 0 else "RAM (no cache)"
+        gpu_label = f"GPU ({self.gpu_name})" if self.gpu_name else "GPU"
+        gpu_vram_label = f"GPU VRAM ({self.total_gpu_vram_gb:.1f} GB)" if self.total_gpu_vram_gb > 0 else "GPU VRAM"
+
+        # Plot CPU and RAM (always available)
+        self.ax.plot(times, cpu_values, "o-", color="#ff6b6b", linewidth=2, markersize=4, label=cpu_label)  # type: ignore[arg-type]
+        self.ax.plot(times, ram_values, "o-", color="#4ecdc4", linewidth=2, markersize=4, label=ram_with_cache_label)  # type: ignore[arg-type]
+        self.ax.plot(times, ram_no_cache_values, "o--", color="#4ecdc4", linewidth=1.5, markersize=3, alpha=0.7, label=ram_no_cache_label)  # type: ignore[arg-type]
+
+        # Plot GPU only if we have data
+        if self.gpu_available and gpu_times:
+            self.ax.plot(gpu_times, gpu_values, "o-", color="#f9ca24", linewidth=2, markersize=4, label=gpu_label)  # type: ignore[arg-type]
+        
+        # Plot GPU VRAM only if we have data
+        if self.gpu_available and gpu_vram_times:
+            self.ax.plot(gpu_vram_times, gpu_vram_values, "o--", color="#f9ca24", linewidth=1.5, markersize=3, alpha=0.7, label=gpu_vram_label)  # type: ignore[arg-type]
+
+        self.ax.set_facecolor("#2b2b2b")
+        self.ax.set_xlabel("Time", fontsize=12, color="#f0f0f0")
+        self.ax.set_ylabel("Utilization (%)", fontsize=12, color="#f0f0f0")
+        self.ax.set_title("System Utilization", fontsize=14, color="#f0f0f0", pad=20)
+
+        self.ax.set_ylim(0, 100)
+
+        if mdates is not None:
+            self.ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M:%S"))
+        self.figure.autofmt_xdate(rotation=45)
+
+        self.ax.grid(True, alpha=0.2, color="#f0f0f0")
+        self.ax.tick_params(colors="#f0f0f0", which="both")
+        self.ax.spines["bottom"].set_color("#f0f0f0")
+        self.ax.spines["left"].set_color("#f0f0f0")
+        self.ax.spines["top"].set_color("#2b2b2b")
+        self.ax.spines["right"].set_color("#2b2b2b")
+
+        self.ax.legend(loc="upper right", facecolor="#3c3c3c", edgecolor="#f0f0f0", labelcolor="#f0f0f0", fontsize=10)
 
         self.figure.tight_layout()
         self.canvas.draw()
