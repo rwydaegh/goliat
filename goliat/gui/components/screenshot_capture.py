@@ -7,15 +7,17 @@ if TYPE_CHECKING:
     from goliat.gui.progress_gui import ProgressGUI
 
 try:
-    from PySide6.QtCore import QBuffer, QIODevice
+    from PySide6.QtCore import QBuffer, QIODevice, QRect
     from PySide6.QtGui import QPixmap
-    from PySide6.QtWidgets import QWidget
+    from PySide6.QtWidgets import QWidget, QApplication
 except ImportError:
     # Fallback for environments without PySide6
     QBuffer = None  # type: ignore
     QIODevice = None  # type: ignore
     QPixmap = None  # type: ignore
     QWidget = None  # type: ignore
+    QRect = None  # type: ignore
+    QApplication = None  # type: ignore
 
 
 class ScreenshotCapture:
@@ -62,11 +64,47 @@ class ScreenshotCapture:
                         self.verbose_logger.warning(f"Tab {i} ({tab_name}) has no widget")
                         continue
 
-                    # Capture this tab's widget (doesn't require switching tabs)
-                    pixmap = tab_widget.grab()
+                    # Get the size of the tab widget's parent (QTabWidget) to know the proper size
+                    # Non-visible tabs might have zero size, so we use parent size as reference
+                    parent_size = tabs.size()
+                    widget_width = tab_widget.width() if tab_widget.width() > 0 else parent_size.width()
+                    widget_height = tab_widget.height() if tab_widget.height() > 0 else parent_size.height()
+
+                    # Fallback to reasonable defaults if sizes are still zero
+                    if widget_width == 0:
+                        widget_width = 800
+                    if widget_height == 0:
+                        widget_height = 600
+
+                    # Process events to ensure all widgets are painted
+                    if QApplication is not None:
+                        QApplication.processEvents()
+
+                    # Use render() instead of grab() - render() works better for non-visible widgets
+                    # render() can render widgets even when they're not visible, as long as we provide size
+                    pixmap = QPixmap(widget_width, widget_height)
+                    pixmap.fill()  # Fill with default background
+
+                    # Render the widget to the pixmap
+                    # This works even if the widget is not currently visible
+                    if QRect is not None:
+                        target_rect = QRect(0, 0, widget_width, widget_height)
+                        source_rect = QRect(0, 0, widget_width, widget_height)
+                        tab_widget.render(pixmap, target=target_rect, sourceRegion=source_rect)
+                    else:
+                        tab_widget.render(pixmap)
+
+                    # Process events after rendering
+                    if QApplication is not None:
+                        QApplication.processEvents()
 
                     if pixmap.isNull():
                         self.verbose_logger.warning(f"Failed to grab pixmap for tab {tab_name}")
+                        continue
+
+                    # Verify pixmap has content (not just empty/white)
+                    if pixmap.width() == 0 or pixmap.height() == 0:
+                        self.verbose_logger.warning(f"Pixmap for tab {tab_name} has zero size")
                         continue
 
                     # Convert to JPEG bytes
