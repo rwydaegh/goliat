@@ -131,12 +131,13 @@ class HTTPClient(LoggingMixin):
             # Add machineId as form field
             data = {"machineId": self.machine_id}
 
-            # Send with longer timeout for large payloads (up to 2MB for 6 tabs)
+            # With quality 95, expect ~100-200KB per screenshot
+            # For 5 tabs: ~0.5-1MB per upload at 1 FPS
             response = requests.post(  # type: ignore[attr-defined]
                 f"{self.server_url}/api/gui-screenshots",
                 data=data,
                 files=files,
-                timeout=30,  # Longer timeout for large payloads
+                timeout=30,
             )
 
             if response.status_code == 200:

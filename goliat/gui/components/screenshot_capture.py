@@ -84,15 +84,8 @@ class ScreenshotCapture:
                     if QApplication is not None:
                         QApplication.processEvents()
 
-                    # Use render() instead of grab() - render() works better for non-visible widgets
-                    # render() can render widgets even when they're not visible, as long as we provide size
                     pixmap = QPixmap(widget_width, widget_height)
-                    pixmap.fill()  # Fill with default background
-
-                    # Render the widget to the pixmap
-                    # PySide6 render() signature: render(target, targetOffset=QPoint(), sourceRegion=QRegion(), ...)
-                    # All arguments must be positional, not keyword arguments
-                    # This works even if the widget is not currently visible
+                    pixmap.fill()
                     tab_widget.render(pixmap)
 
                     # Process events after rendering
@@ -125,12 +118,12 @@ class ScreenshotCapture:
 
         return screenshots
 
-    def _compress_to_jpeg(self, pixmap: Any, quality: int = 75) -> Optional[bytes]:
+    def _compress_to_jpeg(self, pixmap: Any, quality: int = 95) -> Optional[bytes]:
         """Convert QPixmap to JPEG bytes.
 
         Args:
             pixmap: QPixmap to compress.
-            quality: JPEG quality (0-100), default 75.
+            quality: JPEG quality (0-100), default 95 for minimal compression.
 
         Returns:
             JPEG bytes, or None if compression fails.

@@ -89,6 +89,7 @@ goliat worker <assignment_index> <super_study_name> [options]
 - `super_study_name`: Name of the super study
 - `--title`: GUI window title
 - `--no-cache`: Force re-running even if cached
+- `--reupload-results`: When caching skips simulations, upload extraction results that appear valid. Useful when rerunning on a different study with existing results. Will overwrite results already on the dashboard.
 - `--server-url`: Dashboard URL (default: from `GOLIAT_MONITORING_URL` env var, or `https://goliat.waves-ugent.be`)
 
 **Example:**
