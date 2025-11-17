@@ -46,7 +46,6 @@ class ScreenshotCapture:
             return {}
 
         screenshots: Dict[str, bytes] = {}
-        current_tab_index = 0  # Default to first tab
 
         try:
             if not hasattr(self.gui, "tabs"):
@@ -55,9 +54,6 @@ class ScreenshotCapture:
 
             tabs = self.gui.tabs
             tab_count = tabs.count()
-
-            # Store current tab index to restore later
-            current_tab_index = tabs.currentIndex()
 
             for i in range(tab_count):
                 try:
@@ -68,38 +64,38 @@ class ScreenshotCapture:
                         self.verbose_logger.warning(f"Tab {i} ({tab_name}) has no widget")
                         continue
 
-                    # Temporarily switch to this tab to ensure proper rendering
-                    # This ensures the widget is properly laid out and visible
-                    tabs.setCurrentIndex(i)
+                    # Skip the main "Progress" tab - its data is already sent via other mechanisms
+                    if tab_name == "Progress":
+                        continue
 
-                    # Process events to ensure tab switch completes and widgets are laid out
-                    if QApplication is not None:
-                        QApplication.processEvents()
+                    # Get the size of the tab widget's parent (QTabWidget) to know the proper size
+                    # Non-visible tabs might have zero size, so we use parent size as reference
+                    parent_size = tabs.size()
+                    widget_width = tab_widget.width() if tab_widget.width() > 0 else parent_size.width()
+                    widget_height = tab_widget.height() if tab_widget.height() > 0 else parent_size.height()
 
-                    # Get widget size (should be proper now that tab is visible)
-                    widget_width = tab_widget.width()
-                    widget_height = tab_widget.height()
-
-                    # Fallback to parent size if widget still has zero size
-                    if widget_width == 0 or widget_height == 0:
-                        parent_size = tabs.size()
-                        widget_width = parent_size.width() if widget_width == 0 else widget_width
-                        widget_height = parent_size.height() if widget_height == 0 else widget_height
-
-                    # Final fallback to reasonable defaults
+                    # Fallback to reasonable defaults if sizes are still zero
                     if widget_width == 0:
                         widget_width = 800
                     if widget_height == 0:
                         widget_height = 600
 
-                    # Process events again to ensure all widgets are painted
+                    # Process events to ensure all widgets are painted
                     if QApplication is not None:
                         QApplication.processEvents()
 
-                    # Use grab() now that tab is visible - this captures everything properly
-                    pixmap = tab_widget.grab()
+                    # Use render() instead of grab() - render() works better for non-visible widgets
+                    # render() can render widgets even when they're not visible, as long as we provide size
+                    pixmap = QPixmap(widget_width, widget_height)
+                    pixmap.fill()  # Fill with default background
 
-                    # Process events after capture
+                    # Render the widget to the pixmap
+                    # PySide6 render() signature: render(target, targetOffset=QPoint(), sourceRegion=QRegion(), ...)
+                    # All arguments must be positional, not keyword arguments
+                    # This works even if the widget is not currently visible
+                    tab_widget.render(pixmap)
+
+                    # Process events after rendering
                     if QApplication is not None:
                         QApplication.processEvents()
 
@@ -124,22 +120,8 @@ class ScreenshotCapture:
                     self.verbose_logger.warning(f"Failed to capture tab {i}: {e}", exc_info=True)
                     continue
 
-            # Restore original tab selection
-            try:
-                tabs.setCurrentIndex(current_tab_index)
-                if QApplication is not None:
-                    QApplication.processEvents()
-            except Exception as e:
-                self.verbose_logger.warning(f"Failed to restore tab selection: {e}")
-
         except Exception as e:
             self.verbose_logger.error(f"Failed to capture screenshots: {e}", exc_info=True)
-            # Try to restore tab selection even on error
-            try:
-                if hasattr(self.gui, "tabs"):
-                    self.gui.tabs.setCurrentIndex(current_tab_index)
-            except Exception:
-                pass
 
         return screenshots
 
