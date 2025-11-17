@@ -61,7 +61,7 @@ class ProjectManager(LoggingMixin):
         config_string = json.dumps(config_dict, sort_keys=True)
         return hashlib.sha256(config_string.encode("utf-8")).hexdigest()
 
-    def write_simulation_metadata(self, meta_path: str, surgical_config: dict):
+    def write_simulation_metadata(self, meta_path: str, surgical_config: dict, update_setup_timestamp: bool = False):
         """Writes config metadata and hash to disk for verification/resume.
 
         Creates a metadata file that tracks the config hash and completion status
@@ -70,12 +70,26 @@ class ProjectManager(LoggingMixin):
         Args:
             meta_path: Full path where metadata should be saved.
             surgical_config: The minimal config snapshot for this simulation.
+            update_setup_timestamp: If True, updates setup_timestamp to now (use when setup was done).
+                                    If False, preserves existing timestamp if metadata exists.
         """
         config_hash = self._generate_config_hash(surgical_config)
+
+        # Preserve existing setup_timestamp unless we're updating it (setup was done)
+        setup_timestamp = datetime.now().isoformat()
+        if not update_setup_timestamp and os.path.exists(meta_path):
+            try:
+                with open(meta_path, "r") as f:
+                    existing_metadata = json.load(f)
+                    if "setup_timestamp" in existing_metadata:
+                        setup_timestamp = existing_metadata["setup_timestamp"]
+            except (json.JSONDecodeError, KeyError, ValueError):
+                pass  # Use new timestamp if we can't read existing
+
         metadata = {
             "config_hash": config_hash,
             "config_snapshot": surgical_config,
-            "setup_timestamp": datetime.now().isoformat(),
+            "setup_timestamp": setup_timestamp,
             "run_done": False,
             "extract_done": False,
         }
