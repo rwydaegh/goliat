@@ -65,7 +65,7 @@ class TimeRemainingPlot:
 
         self.ax.grid(True, alpha=0.2, color="#f0f0f0")
 
-        self.ax.plot([], [], "-", color="#007acc", linewidth=0.5, label="Time Remaining")
+        self.ax.plot([], [], "-", color="#007acc", linewidth=2.5, label="Time Remaining")
         self.ax.legend(loc="upper right", facecolor="#3c3c3c", edgecolor="#f0f0f0", labelcolor="#f0f0f0", fontsize=10)
 
         self.canvas.draw()
@@ -92,7 +92,7 @@ class TimeRemainingPlot:
         times = [t for t, _ in self.data]
         hours = [h for _, h in self.data]
 
-        self.ax.plot(times, hours, "-", color="#007acc", linewidth=0.5, label="Time Remaining")  # type: ignore[arg-type]
+        self.ax.plot(times, hours, "-", color="#007acc", linewidth=2.5, label="Time Remaining")  # type: ignore[arg-type]
 
         self.ax.set_facecolor("#2b2b2b")
         self.ax.set_xlabel("Time", fontsize=12, color="#f0f0f0")
@@ -161,7 +161,7 @@ class OverallProgressPlot:
         self.ax.grid(True, alpha=0.2, color="#f0f0f0")
         self.ax.set_ylim(0, 100)
 
-        self.ax.plot([], [], "-", color="#28a745", linewidth=0.5, label="Overall Progress")
+        self.ax.plot([], [], "-", color="#28a745", linewidth=2.5, label="Overall Progress")
         self.ax.legend(loc="lower right", facecolor="#3c3c3c", edgecolor="#f0f0f0", labelcolor="#f0f0f0", fontsize=10)
 
         self.canvas.draw()
@@ -188,7 +188,7 @@ class OverallProgressPlot:
         times = [t for t, _ in self.data]
         progress = [p for _, p in self.data]
 
-        self.ax.plot(times, progress, "-", color="#28a745", linewidth=0.5, label="Overall Progress")  # type: ignore[arg-type]
+        self.ax.plot(times, progress, "-", color="#28a745", linewidth=2.5, label="Overall Progress")  # type: ignore[arg-type]
 
         self.ax.set_facecolor("#2b2b2b")
         self.ax.set_xlabel("Time", fontsize=12, color="#f0f0f0")
@@ -267,10 +267,10 @@ class SystemUtilizationPlot:
         self.ax.set_ylim(0, 100)
 
         # Initialize empty plots for legend (labels will be updated with system info when data arrives)
-        self.ax.plot([], [], "-", color="#ff6b6b", linewidth=0.5, label="CPU")
-        self.ax.plot([], [], "-", color="#4ecdc4", linewidth=0.5, label="RAM")
-        self.ax.plot([], [], "-", color="#f9ca24", linewidth=0.5, label="GPU")
-        self.ax.plot([], [], "-", color="#e74c3c", linewidth=0.5, label="GPU VRAM")
+        self.ax.plot([], [], "-", color="#ff4444", linewidth=1.0, label="CPU")
+        self.ax.plot([], [], "-", color="#00d4ff", linewidth=1.0, label="RAM")
+        self.ax.plot([], [], "-", color="#ffd700", linewidth=1.0, label="GPU")
+        self.ax.plot([], [], "-", color="#9d4edd", linewidth=1.0, label="GPU VRAM")
         self.ax.legend(loc="upper left", facecolor="#3c3c3c", edgecolor="#f0f0f0", labelcolor="#f0f0f0", fontsize=9)
 
         self.canvas.draw()
@@ -349,16 +349,16 @@ class SystemUtilizationPlot:
         gpu_vram_label = f"GPU VRAM ({self.total_gpu_vram_gb:.1f} GB)" if self.total_gpu_vram_gb > 0 else "GPU VRAM"
 
         # Plot CPU and RAM (always available)
-        self.ax.plot(times, cpu_values, "-", color="#ff6b6b", linewidth=0.5, label=cpu_label)  # type: ignore[arg-type]
-        self.ax.plot(times, ram_values, "-", color="#4ecdc4", linewidth=0.5, label=ram_label)  # type: ignore[arg-type]
+        self.ax.plot(times, cpu_values, "-", color="#ff4444", linewidth=1.0, label=cpu_label)  # type: ignore[arg-type]
+        self.ax.plot(times, ram_values, "-", color="#00d4ff", linewidth=1.0, label=ram_label)  # type: ignore[arg-type]
 
         # Plot GPU only if we have data
         if self.gpu_available and gpu_times:
-            self.ax.plot(gpu_times, gpu_values, "-", color="#f9ca24", linewidth=0.5, label=gpu_label)  # type: ignore[arg-type]
+            self.ax.plot(gpu_times, gpu_values, "-", color="#ffd700", linewidth=1.0, label=gpu_label)  # type: ignore[arg-type]
 
         # Plot GPU VRAM only if we have data
         if self.gpu_available and gpu_vram_times:
-            self.ax.plot(gpu_vram_times, gpu_vram_values, "-", color="#e74c3c", linewidth=0.5, label=gpu_vram_label)  # type: ignore[arg-type]
+            self.ax.plot(gpu_vram_times, gpu_vram_values, "-", color="#9d4edd", linewidth=1.0, label=gpu_vram_label)  # type: ignore[arg-type]
 
         self.ax.set_facecolor("#2b2b2b")
         self.ax.set_xlabel("Time", fontsize=12, color="#f0f0f0")
