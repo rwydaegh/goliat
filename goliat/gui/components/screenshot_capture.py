@@ -86,13 +86,10 @@ class ScreenshotCapture:
                     pixmap.fill()  # Fill with default background
 
                     # Render the widget to the pixmap
+                    # PySide6 render() signature: render(target, targetOffset=QPoint(), sourceRegion=QRegion(), ...)
+                    # All arguments must be positional, not keyword arguments
                     # This works even if the widget is not currently visible
-                    if QRect is not None:
-                        target_rect = QRect(0, 0, widget_width, widget_height)
-                        source_rect = QRect(0, 0, widget_width, widget_height)
-                        tab_widget.render(pixmap, target=target_rect, sourceRegion=source_rect)
-                    else:
-                        tab_widget.render(pixmap)
+                    tab_widget.render(pixmap)
 
                     # Process events after rendering
                     if QApplication is not None:
