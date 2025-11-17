@@ -124,6 +124,8 @@ class ProjectManager(LoggingMixin):
         - Files must be newer than setup_timestamp to ensure they're from this run,
           not an old run
         - All extract deliverables must exist (not just some) to mark extract as done
+        - If auto_cleanup_previous_results includes "output" and extract deliverables exist,
+          run phase is considered done even if _Output.h5 is missing (it was intentionally deleted)
 
         Args:
             project_dir: Directory containing the project file.
@@ -134,6 +136,18 @@ class ProjectManager(LoggingMixin):
             Dict with 'run_done' and 'extract_done' boolean flags.
         """
         status = {"run_done": False, "extract_done": False}
+
+        # Check for extract deliverables first (needed for auto-cleanup logic)
+        deliverable_filenames = ResultsExtractor.get_deliverable_filenames()
+        extract_files = [os.path.join(project_dir, filename) for filename in deliverable_filenames.values()]
+
+        # All deliverables must exist and be fresher than the setup timestamp.
+        are_all_deliverables_fresh = all(
+            os.path.exists(file_path) and os.path.getmtime(file_path) > setup_timestamp for file_path in extract_files
+        )
+
+        if are_all_deliverables_fresh:
+            status["extract_done"] = True
 
         # Check for run deliverables
         results_dir = os.path.join(project_dir, project_filename + "_Results")
@@ -147,18 +161,18 @@ class ProjectManager(LoggingMixin):
         # TODO: iSolve somehow still produces small _Output.h5 files. 8 MB limit is arbitrary...
         if h5_file_path and os.path.getsize(h5_file_path) > 8 * 1024 * 1024 and os.path.getmtime(h5_file_path) > setup_timestamp:
             status["run_done"] = True
-
-        # Check for extract deliverables
-        deliverable_filenames = ResultsExtractor.get_deliverable_filenames()
-        extract_files = [os.path.join(project_dir, filename) for filename in deliverable_filenames.values()]
-
-        # All deliverables must exist and be fresher than the setup timestamp.
-        are_all_deliverables_fresh = all(
-            os.path.exists(file_path) and os.path.getmtime(file_path) > setup_timestamp for file_path in extract_files
-        )
-
-        if are_all_deliverables_fresh:
-            status["extract_done"] = True
+        else:
+            # _Output.h5 is missing or invalid, but check if it was intentionally cleaned up
+            auto_cleanup = self.config.get_auto_cleanup_previous_results()
+            if "output" in auto_cleanup and status["extract_done"]:
+                # Output file was cleaned up, but extraction is complete, so run phase is considered done
+                status["run_done"] = True
+                self._log(
+                    "WARNING: _Output.h5 file not found, but extract deliverables exist and "
+                    "'auto_cleanup_previous_results' includes 'output'. Skipping run phase "
+                    "(output file was intentionally deleted after extraction).",
+                    log_type="warning",
+                )
 
         return status
 

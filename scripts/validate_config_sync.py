@@ -88,3 +88,4 @@ if __name__ == "__main__":
     success = compare_configs()
     sys.exit(0 if success else 1)
 
+

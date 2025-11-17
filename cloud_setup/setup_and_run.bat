@@ -1,6 +1,29 @@
 @echo off
 
 :: ============================================================================
+:: Detect Username and Change to Desktop
+:: ============================================================================
+:: Automatically detect the current username
+set "CURRENT_USER=%USERNAME%"
+if "%CURRENT_USER%"=="" (
+    echo ERROR: Could not detect username. USERNAME environment variable is not set.
+    pause
+    exit /b 1
+)
+
+:: Change to the user's Desktop directory
+set "DESKTOP_PATH=C:\Users\%CURRENT_USER%\Desktop"
+if not exist "%DESKTOP_PATH%" (
+    echo ERROR: Desktop directory not found at: %DESKTOP_PATH%
+    pause
+    exit /b 1
+)
+
+cd /d "%DESKTOP_PATH%"
+echo Changed to Desktop directory: %CD%
+echo.
+
+:: ============================================================================
 :: Check NVIDIA GPU Drivers (nvidia-smi)
 :: ============================================================================
 nvidia-smi >nul 2>&1
@@ -177,21 +200,21 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-if not exist "%~dp0certs\Intec-iGent.ovpn" (
-    echo ERROR: Intec-iGent.ovpn not found in the 'certs' directory.
+if not exist "%DESKTOP_PATH%\certs\Intec-iGent.ovpn" (
+    echo ERROR: Intec-iGent.ovpn not found in the 'certs' directory on Desktop.
     pause
     exit /b 1
 )
 
 echo Creating credentials file...
-set "AUTH_FILE=%~dp0certs\openvpn_auth.txt"
+set "AUTH_FILE=%DESKTOP_PATH%\certs\openvpn_auth.txt"
 (
     echo YOUR_VPN_USERNAME
     echo YOUR_VPN_PASSWORD
 ) > "%AUTH_FILE%"
 
 echo Launching OpenVPN with the specified profile...
-cd /d "%~dp0certs"
+cd /d "%DESKTOP_PATH%\certs"
 start "OpenVPN" "C:\Program Files\OpenVPN\bin\openvpn.exe" --config "Intec-iGent.ovpn" --auth-user-pass "openvpn_auth.txt"
 
 echo Waiting for connection to establish...
@@ -245,7 +268,7 @@ if %errorlevel% neq 0 (
 )
 
 echo Cloning GOLIAT repository...
-cd /d C:\Users\user
+cd /d C:\Users\%CURRENT_USER%
 "C:\Program Files\Git\bin\git.exe" clone https://github.com/YOUR_USERNAME/goliat
 if %errorlevel% neq 0 (
     echo ERROR: Failed to clone repository.
@@ -270,7 +293,7 @@ echo ===========================================================================
 echo.
 
 :: Launch Git Bash in the goliat directory
-cd /d C:\Users\user\goliat
+cd /d C:\Users\%CURRENT_USER%\goliat
 start "GOLIAT" "C:\Program Files\Git\bin\bash.exe" --login -i
 
 echo Study launched in separate window.
