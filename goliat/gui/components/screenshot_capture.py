@@ -46,6 +46,7 @@ class ScreenshotCapture:
             return {}
 
         screenshots: Dict[str, bytes] = {}
+        current_tab_index = 0  # Default to first tab
 
         try:
             if not hasattr(self.gui, "tabs"):
@@ -54,6 +55,9 @@ class ScreenshotCapture:
 
             tabs = self.gui.tabs
             tab_count = tabs.count()
+
+            # Store current tab index to restore later
+            current_tab_index = tabs.currentIndex()
 
             for i in range(tab_count):
                 try:
@@ -116,8 +120,22 @@ class ScreenshotCapture:
                     self.verbose_logger.warning(f"Failed to capture tab {i}: {e}", exc_info=True)
                     continue
 
+            # Restore original tab selection
+            try:
+                tabs.setCurrentIndex(current_tab_index)
+                if QApplication is not None:
+                    QApplication.processEvents()
+            except Exception as e:
+                self.verbose_logger.warning(f"Failed to restore tab selection: {e}")
+
         except Exception as e:
             self.verbose_logger.error(f"Failed to capture screenshots: {e}", exc_info=True)
+            # Try to restore tab selection even on error
+            try:
+                if hasattr(self.gui, "tabs"):
+                    self.gui.tabs.setCurrentIndex(current_tab_index)
+            except Exception:
+                pass
 
         return screenshots
 
