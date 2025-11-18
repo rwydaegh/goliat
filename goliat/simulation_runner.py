@@ -543,9 +543,13 @@ class SimulationRunner(LoggingMixin):
                             # Failed, check for stop signal before retrying
                             self._check_for_stop_signal()
                             
-                            # Log stderr output at verbose level if available
+                            # Log stderr output to progress level with error type if available
                             if stderr_output:
-                                self.verbose_logger.info(f"iSolve stderr output:\n{stderr_output}")
+                                self._log(
+                                    f"iSolve: {stderr_output}",
+                                    level="progress",
+                                    log_type="error",
+                                )
                             
                             # Clean up failed process before retrying (should already be done, but ensure it)
                             if process.poll() is None:
@@ -575,9 +579,13 @@ class SimulationRunner(LoggingMixin):
                             except Exception:
                                 pass
                         
-                        # Log stderr output at verbose level if available
+                        # Log stderr output to progress level with error type if available
                         if stderr_output:
-                            self.verbose_logger.info(f"iSolve stderr output:\n{stderr_output}")
+                            self._log(
+                                f"iSolve: {stderr_output}",
+                                level="progress",
+                                log_type="error",
+                            )
                         
                         # Clean up failed process before retrying
                         if self.current_isolve_process is not None:

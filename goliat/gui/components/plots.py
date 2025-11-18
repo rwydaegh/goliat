@@ -1,6 +1,6 @@
 """Plotting components for GUI: time remaining, overall progress, and pie charts."""
 
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from typing import TYPE_CHECKING, List, Tuple, Dict, Optional
 
 import matplotlib
@@ -21,6 +21,40 @@ if TYPE_CHECKING:
     from matplotlib.figure import Figure
     from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
     from goliat.profiler import Profiler
+
+
+def convert_to_utc_plus_one(timestamp: datetime) -> datetime:
+    """Convert a datetime to UTC+1 timezone.
+    
+    Handles both naive (local time) and timezone-aware datetimes.
+    Works correctly on Windows regardless of system timezone.
+    
+    Args:
+        timestamp: Datetime to convert (can be naive or timezone-aware).
+        
+    Returns:
+        Datetime in UTC+1 timezone (timezone-aware).
+    """
+    import time
+    
+    utc_plus_one_tz = timezone(timedelta(hours=1))
+    
+    # If timestamp is naive, assume it's in local timezone
+    if timestamp.tzinfo is None:
+        # Get the timezone offset in seconds
+        # time.timezone is offset in seconds west of UTC (positive for timezones behind UTC)
+        # time.altzone is used when DST is in effect
+        # To convert local time to UTC, we ADD the offset (since local is behind UTC)
+        tz_offset_seconds = time.altzone if time.daylight != 0 else time.timezone
+        # Convert naive local time to UTC
+        utc_timestamp = timestamp + timedelta(seconds=tz_offset_seconds)
+        utc_timestamp = utc_timestamp.replace(tzinfo=timezone.utc)
+    else:
+        # Convert timezone-aware datetime to UTC first
+        utc_timestamp = timestamp.astimezone(timezone.utc)
+    
+    # Convert UTC to UTC+1
+    return utc_timestamp.astimezone(utc_plus_one_tz)
 
 
 class TimeRemainingPlot:
@@ -53,7 +87,7 @@ class TimeRemainingPlot:
         self.ax.set_facecolor("#2b2b2b")
         self.figure.patch.set_facecolor("#2b2b2b")
 
-        self.ax.set_xlabel("Time", fontsize=12, color="#f0f0f0")
+        self.ax.set_xlabel("Time (UTC+1)", fontsize=12, color="#f0f0f0")
         self.ax.set_ylabel("Hours Remaining", fontsize=12, color="#f0f0f0")
         self.ax.set_title("Estimated Time Remaining", fontsize=14, color="#f0f0f0", pad=20)
 
@@ -79,7 +113,9 @@ class TimeRemainingPlot:
         """
         if hours_remaining > self.max_time_remaining_seen:
             self.max_time_remaining_seen = hours_remaining
-        self.data.append((timestamp, hours_remaining))
+        # Convert timestamp to UTC+1
+        utc_plus_one_timestamp = convert_to_utc_plus_one(timestamp)
+        self.data.append((utc_plus_one_timestamp, hours_remaining))
         self._refresh()
 
     def _refresh(self) -> None:
@@ -95,7 +131,7 @@ class TimeRemainingPlot:
         self.ax.plot(times, hours, "-", color="#007acc", linewidth=2.5, label="Time Remaining")  # type: ignore[arg-type]
 
         self.ax.set_facecolor("#2b2b2b")
-        self.ax.set_xlabel("Time", fontsize=12, color="#f0f0f0")
+        self.ax.set_xlabel("Time (UTC+1)", fontsize=12, color="#f0f0f0")
         self.ax.set_ylabel("Hours Remaining", fontsize=12, color="#f0f0f0")
         self.ax.set_title("Estimated Time Remaining", fontsize=14, color="#f0f0f0", pad=20)
 
@@ -148,7 +184,7 @@ class OverallProgressPlot:
         self.ax.set_facecolor("#2b2b2b")
         self.figure.patch.set_facecolor("#2b2b2b")
 
-        self.ax.set_xlabel("Time", fontsize=12, color="#f0f0f0")
+        self.ax.set_xlabel("Time (UTC+1)", fontsize=12, color="#f0f0f0")
         self.ax.set_ylabel("Progress (%)", fontsize=12, color="#f0f0f0")
         self.ax.set_title("Overall Progress", fontsize=14, color="#f0f0f0", pad=20)
 
@@ -175,7 +211,9 @@ class OverallProgressPlot:
         """
         if progress_percent > self.max_progress_seen:
             self.max_progress_seen = progress_percent
-        self.data.append((timestamp, progress_percent))
+        # Convert timestamp to UTC+1
+        utc_plus_one_timestamp = convert_to_utc_plus_one(timestamp)
+        self.data.append((utc_plus_one_timestamp, progress_percent))
         self._refresh()
 
     def _refresh(self) -> None:
@@ -191,7 +229,7 @@ class OverallProgressPlot:
         self.ax.plot(times, progress, "-", color="#28a745", linewidth=2.5, label="Overall Progress")  # type: ignore[arg-type]
 
         self.ax.set_facecolor("#2b2b2b")
-        self.ax.set_xlabel("Time", fontsize=12, color="#f0f0f0")
+        self.ax.set_xlabel("Time (UTC+1)", fontsize=12, color="#f0f0f0")
         self.ax.set_ylabel("Progress (%)", fontsize=12, color="#f0f0f0")
         self.ax.set_title("Overall Progress", fontsize=14, color="#f0f0f0", pad=20)
 
@@ -253,7 +291,7 @@ class SystemUtilizationPlot:
         self.ax.set_facecolor("#2b2b2b")
         self.figure.patch.set_facecolor("#2b2b2b")
 
-        self.ax.set_xlabel("Time", fontsize=12, color="#f0f0f0")
+        self.ax.set_xlabel("Time (UTC+1)", fontsize=12, color="#f0f0f0")
         self.ax.set_ylabel("Utilization (%)", fontsize=12, color="#f0f0f0")
         self.ax.set_title("System Utilization", fontsize=14, color="#f0f0f0", pad=20)
 
@@ -307,14 +345,17 @@ class SystemUtilizationPlot:
             self.gpu_name = gpu_name
             self.total_gpu_vram_gb = total_gpu_vram_gb
 
-        self.cpu_data.append((timestamp, cpu_percent))
-        self.ram_data.append((timestamp, ram_percent))
+        # Convert timestamp to UTC+1
+        utc_plus_one_timestamp = convert_to_utc_plus_one(timestamp)
+        
+        self.cpu_data.append((utc_plus_one_timestamp, cpu_percent))
+        self.ram_data.append((utc_plus_one_timestamp, ram_percent))
 
-        self.gpu_data.append((timestamp, gpu_percent))
+        self.gpu_data.append((utc_plus_one_timestamp, gpu_percent))
         if gpu_percent is not None:
             self.gpu_available = True
 
-        self.gpu_vram_data.append((timestamp, gpu_vram_percent))
+        self.gpu_vram_data.append((utc_plus_one_timestamp, gpu_vram_percent))
         if gpu_vram_percent is not None:
             self.gpu_available = True
 
@@ -361,7 +402,7 @@ class SystemUtilizationPlot:
             self.ax.plot(gpu_vram_times, gpu_vram_values, "-", color="#9d4edd", linewidth=1.0, label=gpu_vram_label)  # type: ignore[arg-type]
 
         self.ax.set_facecolor("#2b2b2b")
-        self.ax.set_xlabel("Time", fontsize=12, color="#f0f0f0")
+        self.ax.set_xlabel("Time (UTC+1)", fontsize=12, color="#f0f0f0")
         self.ax.set_ylabel("Utilization (%)", fontsize=12, color="#f0f0f0")
         self.ax.set_title("System Utilization", fontsize=14, color="#f0f0f0", pad=20)
 
