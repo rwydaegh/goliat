@@ -22,6 +22,8 @@ export GOLIAT_MONITORING_URL=https://your-dashboard.com
 goliat super_study configs/near_field_config.json --name my_study --num-splits 8
 ```
 
+**Note:** Your configuration file must have `use_web: true` (default) to upload super studies. If `use_web` is `false`, the command will error with a clear message.
+
 This will:
 - Split `near_field_config.json` into 8 assignments
 - Upload them to the web dashboard
@@ -44,6 +46,8 @@ goliat worker 1 my_study
 
 # ... and so on
 ```
+
+**Note:** The `goliat worker` command requires `use_web: true` in the configuration. If `use_web` is `false`, the command will error immediately. Worker mode needs web connectivity to fetch assignments and upload results.
 
 Each worker will:
 - Fetch its assigned config from the web

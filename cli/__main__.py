@@ -164,10 +164,34 @@ def create_parser():
 
 
 def _print_ascii_art():
-    """Print GOLIAT ASCII art banner."""
+    """Print GOLIAT ASCII art banner if terminal is wide enough, otherwise print simple text."""
+    import shutil
+
     from cli.ascii_art import GOLIAT_BANNER
 
-    print(GOLIAT_BANNER)
+    # Get terminal width
+    try:
+        terminal_width = shutil.get_terminal_size().columns
+    except (OSError, AttributeError):
+        # Fallback if terminal size can't be determined (e.g., piped output)
+        terminal_width = 80
+
+    # Find the widest line in the ASCII art
+    lines = [line for line in GOLIAT_BANNER.split("\n") if line.strip()]
+    if not lines:
+        print("\nGOLIAT\n")
+        return
+
+    max_width = max(len(line) for line in lines)
+
+    # Only print ASCII art if it uses less than 120% of terminal width
+    if max_width < terminal_width * 1.2:
+        print(GOLIAT_BANNER)
+    else:
+        # Print simple replacement when terminal is too narrow
+        print("\n" + "=" * min(terminal_width - 2, 60))
+        print("GOLIAT".center(min(terminal_width - 2, 60)))
+        print("=" * min(terminal_width - 2, 60) + "\n")
 
 
 def main():

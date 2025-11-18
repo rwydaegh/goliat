@@ -75,6 +75,7 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
         stop_event: Event,
         process: Process,
         init_window_title: str = "",
+        use_web: bool = True,
     ) -> None:
         """Sets up the GUI window and all components.
 
@@ -87,6 +88,7 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
             stop_event: Event to signal termination to worker process.
             process: Worker process running the study.
             init_window_title: Initial window title.
+            use_web: Whether to enable web monitoring dashboard integration.
         """
         super().__init__()
         self.queue: Queue = queue
@@ -114,14 +116,19 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
         UIBuilder.build(self, self.status_manager)
 
         # Initialize managers
-        self.web_bridge_manager = WebBridgeManager(self, self.server_url, self.machine_id)
+        # Only initialize web bridge manager if use_web is True
+        if use_web:
+            self.web_bridge_manager = WebBridgeManager(self, self.server_url, self.machine_id)
+            # Initialize web GUI bridge after UI is built (so we can set callback)
+            self.web_bridge_manager.initialize()
+        else:
+            self.web_bridge_manager = None
+            self.verbose_logger.info("Web monitoring disabled (use_web=false)")
+
         self.progress_manager = ProgressManager(self)
         self.clock_manager = ClockManager(self)
         self.utilization_manager = UtilizationManager(self)
         self.graph_manager = GraphManager(self)
-
-        # Initialize web GUI bridge after UI is built (so we can set callback)
-        self.web_bridge_manager.initialize()
 
         # Initialize animation and other components
         self._initialize_animation()
@@ -176,7 +183,7 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
         self.graph_timer: _QTimer = _QTimer(self)
         self.graph_timer.timeout.connect(self.update_graphs)
         self.graph_timer.start(5000)
-        
+
         # System utilization plot update timer (every 2 seconds)
         self.utilization_plot_timer: _QTimer = _QTimer(self)
         self.utilization_plot_timer.timeout.connect(self.update_utilization_plot)
@@ -188,9 +195,13 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
         self.utilization_timer.start(1000)
 
         # Progress sync timer (every 2 seconds) - send actual progress bar values to web
-        self.progress_sync_timer: _QTimer = _QTimer(self)
-        self.progress_sync_timer.timeout.connect(self.web_bridge_manager.sync_progress)
-        self.progress_sync_timer.start(2000)
+        # Only set up if web bridge manager is enabled
+        if self.web_bridge_manager is not None:
+            self.progress_sync_timer: _QTimer = _QTimer(self)
+            self.progress_sync_timer.timeout.connect(self.web_bridge_manager.sync_progress)
+            self.progress_sync_timer.start(2000)
+        else:
+            self.progress_sync_timer = None
 
     def _initialize_system_monitoring(self) -> None:
         """Initializes system monitoring (GPU availability, CPU measurement)."""
@@ -270,6 +281,7 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
         web_connected = False
         if (
             hasattr(self, "web_bridge_manager")
+            and self.web_bridge_manager is not None
             and self.web_bridge_manager.web_bridge
             and hasattr(self.web_bridge_manager.web_bridge, "is_connected")
         ):
@@ -341,7 +353,8 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
         self.graph_timer.stop()
         self.utilization_timer.stop()
         self.utilization_plot_timer.stop()
-        self.progress_sync_timer.stop()
+        if self.progress_sync_timer is not None:
+            self.progress_sync_timer.stop()
         self.progress_animation.stop()
         if not error:
             self.update_status("--- Study Finished ---", log_type="success")
@@ -355,7 +368,8 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
         self.tray_button.setEnabled(False)
 
         # Send final status update to web before stopping bridge
-        self.web_bridge_manager.send_finished(error)
+        if self.web_bridge_manager is not None:
+            self.web_bridge_manager.send_finished(error)
 
         self.update_clock()  # Final title update
 
@@ -380,6 +394,7 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
             self.stop_event.set()
             # Give the process a moment to clean up subprocesses
             import time
+
             time.sleep(1)
             # Then terminate if still alive
             if self.process.is_alive():
@@ -387,7 +402,8 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
                 self.process.join(timeout=5)
 
         # Stop web bridge if enabled
-        self.web_bridge_manager.stop()
+        if self.web_bridge_manager is not None:
+            self.web_bridge_manager.stop()
 
         shutdown_loggers()
         event.accept()

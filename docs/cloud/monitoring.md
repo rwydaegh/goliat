@@ -105,11 +105,12 @@ Messages are throttled to prevent overwhelming the API (typically 10 messages/se
 
 Web monitoring enables automatically when:
 
-1. The `requests` library is installed (`pip install requests`)
-2. A machine ID can be detected (public IP or local IP)
-3. The dashboard URL is accessible
+1. `use_web` is set to `true` in your configuration (default)
+2. The `requests` library is installed (`pip install requests`)
+3. A machine ID can be detected (public IP or local IP)
+4. The dashboard URL is accessible
 
-No configuration required. GOLIAT connects to the hardcoded dashboard URL automatically.
+To disable web monitoring, set `use_web: false` in your configuration file. The GUI continues to function normally without web monitoring.
 
 ### Viewing worker details
 

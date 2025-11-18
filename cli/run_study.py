@@ -325,6 +325,10 @@ def main():
     if use_gui is None:
         use_gui = True
 
+    use_web = config["use_web"]
+    if use_web is None:
+        use_web = True
+
     if execution_control.get("batch_run"):
         run_osparc_batch(config_filename)
     elif use_gui:
@@ -348,7 +352,7 @@ def main():
 
             # The GUI runs in the main process
             app = QApplication(sys.argv)
-            gui = ProgressGUI(queue, stop_event, study_process, init_window_title=args.title)
+            gui = ProgressGUI(queue, stop_event, study_process, init_window_title=args.title, use_web=use_web)
             gui.show()
 
             app.exec()
@@ -359,6 +363,7 @@ def main():
                 stop_event.set()
                 # Give the process a moment to clean up subprocesses
                 import time
+
                 time.sleep(1)
                 # Then terminate if still alive
                 if study_process.is_alive():

@@ -111,7 +111,11 @@ class QueueHandler:
                         handler(msg)
 
                 # Forward message to web bridge if enabled
-                if hasattr(self.gui, "web_bridge_manager") and self.gui.web_bridge_manager.web_bridge is not None:
+                if (
+                    hasattr(self.gui, "web_bridge_manager")
+                    and self.gui.web_bridge_manager is not None
+                    and self.gui.web_bridge_manager.web_bridge is not None
+                ):
                     try:
                         # Sanitize profiler_update messages before forwarding
                         if msg_type == "profiler_update" and "profiler" in msg:
@@ -122,7 +126,7 @@ class QueueHandler:
                                 # Get current stage progress ratio (0.0 to 1.0)
                                 current_stage_progress_ratio = self.gui.stage_progress_bar.value() / 1000.0
                                 eta_seconds = profiler.get_time_remaining(current_stage_progress=current_stage_progress_ratio)
-                            
+
                             sanitized_msg = {
                                 "type": "profiler_update",
                                 "eta_seconds": eta_seconds,

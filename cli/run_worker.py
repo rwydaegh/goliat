@@ -170,6 +170,17 @@ def run_assignment(assignment, super_study_name, assignment_index, title, no_cac
     # Create config file in configs directory (not temp)
     config_data = assignment.get("splitConfig", {})
 
+    # Check use_web setting early - worker NEEDS web to function
+    use_web = config_data.get("use_web")
+    if use_web is None:
+        use_web = True  # Default to True if not specified
+
+    if not use_web:
+        logger.error(f"{colorama.Fore.RED}Error: use_web must be True for goliat worker command.")
+        logger.error("Worker mode requires web connectivity to fetch assignments and upload results.")
+        logger.error("Set 'use_web': true in your config file.")
+        sys.exit(1)
+
     # Use configs directory instead of temp
     configs_dir = os.path.join(base_dir, "configs")
     os.makedirs(configs_dir, exist_ok=True)

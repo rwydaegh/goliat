@@ -1,5 +1,6 @@
 {
     "use_gui": true,
+    "use_web": false,
     "execution_control": {
         "do_setup": true,
         "do_run": true,

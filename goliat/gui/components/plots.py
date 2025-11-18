@@ -25,20 +25,20 @@ if TYPE_CHECKING:
 
 def convert_to_utc_plus_one(timestamp: datetime) -> datetime:
     """Convert a datetime to UTC+1 timezone.
-    
+
     Handles both naive (local time) and timezone-aware datetimes.
     Works correctly on Windows regardless of system timezone.
-    
+
     Args:
         timestamp: Datetime to convert (can be naive or timezone-aware).
-        
+
     Returns:
         Datetime in UTC+1 timezone (timezone-aware).
     """
     import time
-    
+
     utc_plus_one_tz = timezone(timedelta(hours=1))
-    
+
     # If timestamp is naive, assume it's in local timezone
     if timestamp.tzinfo is None:
         # Get the timezone offset in seconds
@@ -52,7 +52,7 @@ def convert_to_utc_plus_one(timestamp: datetime) -> datetime:
     else:
         # Convert timezone-aware datetime to UTC first
         utc_timestamp = timestamp.astimezone(timezone.utc)
-    
+
     # Convert UTC to UTC+1
     return utc_timestamp.astimezone(utc_plus_one_tz)
 
@@ -135,10 +135,10 @@ class TimeRemainingPlot:
         if times and hours:
             latest_time = times[-1]
             latest_hours = hours[-1]
-            
+
             # Calculate projected completion time: current time + hours remaining
             projected_completion_time = latest_time + timedelta(hours=latest_hours)
-            
+
             # Draw dashed line from (latest_time, latest_hours) to (projected_completion_time, 0)
             self.ax.plot(
                 [latest_time, projected_completion_time],
@@ -147,7 +147,7 @@ class TimeRemainingPlot:
                 color="#007acc",
                 linewidth=2.0,
                 alpha=0.6,
-                label="Projected Completion"
+                label="Projected Completion",
             )  # type: ignore[arg-type]
 
         self.ax.set_facecolor("#2b2b2b")
@@ -175,8 +175,8 @@ class TimeRemainingPlot:
         self.ax.tick_params(colors="#f0f0f0", which="both")
         self.ax.spines["bottom"].set_color("#f0f0f0")
         self.ax.spines["left"].set_color("#f0f0f0")
-        self.ax.spines["top"].set_color="#2b2b2b"
-        self.ax.spines["right"].set_color="#2b2b2b"
+        self.ax.spines["top"].set_color = "#2b2b2b"
+        self.ax.spines["right"].set_color = "#2b2b2b"
 
         self.ax.legend(loc="upper right", facecolor="#3c3c3c", edgecolor="#f0f0f0", labelcolor="#f0f0f0", fontsize=10)
 
@@ -286,7 +286,8 @@ class SystemUtilizationPlot:
 
     Creates a matplotlib line plot showing CPU, RAM, GPU utilization,
     and GPU VRAM utilization percentages over time. Updates dynamically as new data points arrive.
-    Y-axis fixed at 0-100%. GPU lines only shown if GPU is available.
+    Y-axis extends to 105% (with ticks at 0, 20, 40, 60, 80, 100) to prevent clipping of lines at 100%.
+    GPU lines only shown if GPU is available.
     """
 
     def __init__(self) -> None:
@@ -331,7 +332,8 @@ class SystemUtilizationPlot:
         self.ax.spines["right"].set_color("#2b2b2b")
 
         self.ax.grid(True, alpha=0.2, color="#f0f0f0")
-        self.ax.set_ylim(0, 100)
+        self.ax.set_ylim(0, 105)
+        self.ax.set_yticks([0, 20, 40, 60, 80, 100])
 
         # Initialize empty plots for legend (labels will be updated with system info when data arrives)
         self.ax.plot([], [], "-", color="#ff4444", linewidth=1.0, label="CPU")
@@ -376,7 +378,7 @@ class SystemUtilizationPlot:
 
         # Convert timestamp to UTC+1
         utc_plus_one_timestamp = convert_to_utc_plus_one(timestamp)
-        
+
         self.cpu_data.append((utc_plus_one_timestamp, cpu_percent))
         self.ram_data.append((utc_plus_one_timestamp, ram_percent))
 
@@ -435,7 +437,8 @@ class SystemUtilizationPlot:
         self.ax.set_ylabel("Utilization (%)", fontsize=12, color="#f0f0f0")
         self.ax.set_title("System Utilization", fontsize=14, color="#f0f0f0", pad=20)
 
-        self.ax.set_ylim(0, 100)
+        self.ax.set_ylim(0, 105)
+        self.ax.set_yticks([0, 20, 40, 60, 80, 100])
 
         if mdates is not None:
             self.ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M:%S"))
@@ -466,6 +469,89 @@ class PieChartsManager:
     Updates automatically when profiler state changes. Filters out fake
     aggregated entries. Uses color palette for visual distinction.
     """
+
+    @staticmethod
+    def _format_task_label(subtask_key: str) -> str:
+        """Formats a subtask key into a properly capitalized label.
+
+        Handles special cases:
+        - "isolve" -> "iSolve"
+        - "sar" -> "SAR" (when part of "sar_statistics" or similar)
+
+        Args:
+            subtask_key: The subtask key (e.g., "run_isolve_execution", "extract_sar_statistics")
+
+        Returns:
+            Formatted label (e.g., "Run iSolve execution", "Extract SAR statistics")
+        """
+        # Replace underscores with spaces and split into words
+        words = subtask_key.replace("_", " ").split()
+
+        # Capitalize each word, with special handling for "isolve" and "sar"
+        formatted_words = []
+        for word in words:
+            word_lower = word.lower()
+            if word_lower == "isolve":
+                formatted_words.append("iSolve")
+            elif word_lower == "sar":
+                formatted_words.append("SAR")
+            else:
+                formatted_words.append(word.capitalize())
+
+        return " ".join(formatted_words)
+
+    @staticmethod
+    def _group_small_slices(labels: List[str], sizes: List[float], threshold_percent: float = 3.0) -> Tuple[List[str], List[float]]:
+        """Groups slices below threshold into an "Others" slice.
+
+        If "Others" ends up containing only one item, uses that item's name instead.
+
+        Args:
+            labels: List of slice labels
+            sizes: List of slice sizes (in same order as labels)
+            threshold_percent: Percentage threshold below which slices are grouped
+
+        Returns:
+            Tuple of (new_labels, new_sizes) with small slices grouped
+        """
+        if not labels or not sizes:
+            return labels, sizes
+
+        total = sum(sizes)
+        if total == 0:
+            return labels, sizes
+
+        threshold_value = total * (threshold_percent / 100.0)
+
+        # Separate large and small slices
+        large_labels = []
+        large_sizes = []
+        small_labels = []
+        small_sizes = []
+
+        for label, size in zip(labels, sizes):
+            if size >= threshold_value:
+                large_labels.append(label)
+                large_sizes.append(size)
+            else:
+                small_labels.append(label)
+                small_sizes.append(size)
+
+        # If no small slices, return as-is
+        if not small_labels:
+            return labels, sizes
+
+        # If only one small slice, use its name instead of "Others"
+        if len(small_labels) == 1:
+            large_labels.append(small_labels[0])
+            large_sizes.append(small_sizes[0])
+        else:
+            # Multiple small slices -> group as "Others"
+            others_total = sum(small_sizes)
+            large_labels.append("Others")
+            large_sizes.append(others_total)
+
+        return large_labels, large_sizes
 
     def __init__(self) -> None:
         """Sets up matplotlib figure with 2x2 subplot grid."""
@@ -526,6 +612,9 @@ class PieChartsManager:
             labels = list(phase_weights.keys())
             sizes = list(phase_weights.values())
 
+            # Group small slices into "Others"
+            labels, sizes = self._group_small_slices(labels, sizes, threshold_percent=3.0)
+
             pie_result = ax0.pie(
                 sizes,
                 labels=labels,
@@ -576,12 +665,15 @@ class PieChartsManager:
                     if subtask_key in fake_entries:
                         continue
 
-                    task_name = subtask_key.replace("_", " ").capitalize()
+                    task_name = self._format_task_label(subtask_key)
                     subtask_data[task_name] = value
 
             if subtask_data:
                 labels = list(subtask_data.keys())
                 sizes = list(subtask_data.values())
+
+                # Group small slices into "Others"
+                labels, sizes = self._group_small_slices(labels, sizes, threshold_percent=3.0)
 
                 # Create pie chart
                 pie_result = ax.pie(

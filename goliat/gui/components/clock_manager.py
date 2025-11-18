@@ -67,7 +67,7 @@ class ClockManager:
         self.gui.setWindowTitle(title)
 
         # Update web connection status indicator periodically
-        if hasattr(self.gui, "web_bridge_manager") and self.gui.web_bridge_manager and self.gui.web_bridge_manager.web_bridge:
+        if hasattr(self.gui, "web_bridge_manager") and self.gui.web_bridge_manager is not None and self.gui.web_bridge_manager.web_bridge:
             if hasattr(self.gui.web_bridge_manager.web_bridge, "is_connected"):
                 if hasattr(self.gui, "error_counter_label") and hasattr(self.gui, "status_manager"):
                     self.gui._update_web_status(self.gui.web_bridge_manager.web_bridge.is_connected)
