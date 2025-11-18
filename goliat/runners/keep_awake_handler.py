@@ -27,7 +27,8 @@ class KeepAwakeHandler:
             return
 
         try:
-            script_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "scripts")
+            # Path: goliat/goliat/runners/keep_awake_handler.py -> goliat/scripts/
+            script_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "scripts")
             if script_dir not in sys.path:
                 sys.path.insert(0, script_dir)
             from keep_awake import keep_awake  # type: ignore
@@ -38,20 +39,17 @@ class KeepAwakeHandler:
             sys.stdout.flush()
 
     def trigger_on_progress(self) -> None:
-        """Trigger keep_awake when progress updates are detected."""
+        """Trigger keep_awake script on first progress update."""
         if not (self.config["keep_awake"] or False):
             return
 
-        try:
-            script_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "scripts")
-            if script_dir not in sys.path:
-                sys.path.insert(0, script_dir)
-            from keep_awake import keep_awake  # type: ignore
-            
-            keep_awake()
-        except Exception as e:
-            print(f"Warning: keep_awake() failed on progress update: {e}")
-            sys.stdout.flush()
+        if self.triggered:
+            return
+
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "scripts", "keep_awake.py")
+        if os.path.exists(script_path):
+            subprocess.Popen([sys.executable, script_path])
+        self.triggered = True
 
     def reset(self) -> None:
         """Reset triggered flag (for new simulation)."""
