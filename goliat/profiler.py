@@ -46,6 +46,7 @@ class Profiler:
         self.start_time = time.monotonic()
         self.current_phase = None
         self.phase_start_time = None
+        self.phase_skipped = False
         self.run_phase_total_duration = 0
 
     def _calculate_phase_weights(self) -> dict:
@@ -95,6 +96,7 @@ class Profiler:
         """
         self.current_phase = phase_name
         self.phase_start_time = time.monotonic()
+        self.phase_skipped = False
         self.completed_stages_in_phase = 0
         self.total_stages_in_phase = total_stages
 
@@ -102,8 +104,22 @@ class Profiler:
         """Ends current phase and records its duration for future estimates."""
         if self.phase_start_time:
             elapsed = time.monotonic() - self.phase_start_time
-            self.profiling_config[f"avg_{self.current_phase}_time"] = elapsed
+            
+            # For setup phase: if it was cached/skipped, don't add to statistics
+            # (cached phases pollute real execution time statistics)
+            if self.current_phase == "setup" and self.phase_skipped:
+                # Cached setup: don't pollute statistics
+                # avg_{phase}_time remains unchanged (uses previous real measurements)
+                pass
+            else:
+                # Real phase: add to statistics and compute simple average for display
+                self.subtask_times[self.current_phase].append(elapsed)
+                times = self.subtask_times[self.current_phase]
+                # Store simple average for pie charts, timings table, etc.
+                self.profiling_config[f"avg_{self.current_phase}_time"] = sum(times) / len(times)
+        
         self.current_phase = None
+        self.phase_skipped = False  # Reset for next phase
 
     def complete_run_phase(self):
         """Stores the total duration of the 'run' phase from its subtasks."""
@@ -169,6 +185,64 @@ class Profiler:
                 subtasks.append(key.replace("avg_", ""))
         return subtasks
 
+    def _get_smart_phase_estimate(self, phase: str) -> float:
+        """Computes a robust, recent-weighted estimate for a phase.
+        
+        Emphasizes the last 3 simulations while using all available data.
+        Uses weighted average where recent measurements get higher weights.
+        
+        Args:
+            phase: Phase name ('setup', 'run', or 'extract')
+            
+        Returns:
+            Estimated time in seconds for this phase
+        """
+        times = self.subtask_times.get(phase, [])
+        
+        if not times:
+            # No data yet - use saved average or default
+            return self.profiling_config.get(f"avg_{phase}_time", 60)
+        
+        if len(times) == 1:
+            # Only one measurement - use it
+            return times[0]
+        
+        # Emphasize last 3 simulations with weighted average
+        # Last 3 get 70% of total weight, remaining get 30%
+        # Within last 3: most recent gets highest weight (0.5), then 0.3, then 0.2
+        
+        if len(times) >= 3:
+            # Get last 3 measurements (oldest to newest)
+            last_3 = times[-3:]
+            # Weights: [oldest of last 3, middle, most recent]
+            # Most recent (last element) gets highest weight
+            last_3_weights = [0.2, 0.3, 0.5]  # Most recent gets highest weight
+            last_3_total_weight = sum(last_3_weights)
+            
+            # Remaining measurements (all except last 3) get equal weight
+            remaining = times[:-3]
+            if remaining:
+                remaining_avg = sum(remaining) / len(remaining)
+                # Remaining gets 30% of total weight, last 3 gets 70%
+                remaining_weight = 0.3
+                last_3_weight = 0.7
+                
+                # Normalize last_3 weights to sum to last_3_weight (0.7)
+                normalized_last_3_weights = [w * last_3_weight / last_3_total_weight for w in last_3_weights]
+                last_3_weighted_sum = sum(t * w for t, w in zip(last_3, normalized_last_3_weights))
+                
+                estimate = last_3_weighted_sum + remaining_avg * remaining_weight
+            else:
+                # Only 3 measurements total - use weighted average
+                estimate = sum(t * w for t, w in zip(last_3, last_3_weights)) / last_3_total_weight
+        else:
+            # Less than 3 measurements - use weighted average of what we have
+            # Most recent gets higher weight
+            weights = [0.6, 0.4] if len(times) == 2 else [1.0]
+            estimate = sum(t * w for t, w in zip(times, weights)) / sum(weights)
+        
+        return estimate
+
     def get_time_remaining(self, current_stage_progress: float = 0.0) -> float:
         """Estimates total time remaining for the entire study.
 
@@ -192,42 +266,35 @@ class Profiler:
         if not self.current_phase or self.total_simulations == 0:
             return 0.0
 
-        # Calculate the total estimated time for one simulation
+        # Calculate the total estimated time for one simulation using smart estimates
         total_time_per_sim = 0
         for phase in ["setup", "run", "extract"]:
             if self.execution_control.get(f"do_{phase}", False):
-                total_time_per_sim += self.profiling_config.get(f"avg_{phase}_time", 60)
+                total_time_per_sim += self._get_smart_phase_estimate(phase)
 
-        # Calculate the time already spent on completed simulations
-        time_for_completed_sims = self.completed_simulations * total_time_per_sim
-
-        # Calculate the time spent on the current simulation so far
-        time_spent_on_current_sim = 0
+        # Calculate estimated time remaining in the current simulation
         ordered_phases = [p for p in ["setup", "run", "extract"] if self.execution_control.get(f"do_{p}", False)]
         try:
             current_phase_index = ordered_phases.index(self.current_phase)
         except ValueError:
             current_phase_index = 0
 
-        for i in range(current_phase_index):
+        # Estimated time remaining in current phase (based on progress)
+        # Clamp progress to [0.0, 1.0] to handle edge cases
+        progress = max(0.0, min(1.0, current_stage_progress))
+        current_phase_time = self._get_smart_phase_estimate(self.current_phase)
+        time_remaining_in_current_sim = current_phase_time * (1.0 - progress)
+
+        # Add time for phases not yet started in current simulation
+        for i in range(current_phase_index + 1, len(ordered_phases)):
             phase = ordered_phases[i]
-            time_spent_on_current_sim += self.profiling_config.get(f"avg_{phase}_time", 60)
+            time_remaining_in_current_sim += self._get_smart_phase_estimate(phase)
 
-        current_phase_time = self.profiling_config.get(f"avg_{self.current_phase}_time", 60)
-        time_spent_on_current_sim += current_phase_time * current_stage_progress
+        # Calculate remaining simulations (excluding current one)
+        remaining_simulations = self.total_simulations - self.completed_simulations - 1
 
-        # Time elapsed in the current phase
-        if self.phase_start_time:
-            time_spent_on_current_sim += time.monotonic() - self.phase_start_time
-
-        # Total time elapsed is the sum of time for completed sims and time spent on the current one
-        total_elapsed_time = time_for_completed_sims + time_spent_on_current_sim
-
-        # Total estimated time for all simulations
-        total_estimated_time = self.total_simulations * total_time_per_sim
-
-        # Estimated time remaining
-        eta = total_estimated_time - total_elapsed_time
+        # Estimated time remaining = time left in current sim + time for all remaining sims
+        eta = time_remaining_in_current_sim + (remaining_simulations * total_time_per_sim)
         return max(0, eta)
 
     @contextlib.contextmanager

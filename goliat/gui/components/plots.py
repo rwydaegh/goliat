@@ -130,10 +130,39 @@ class TimeRemainingPlot:
 
         self.ax.plot(times, hours, "-", color="#007acc", linewidth=2.5, label="Time Remaining")  # type: ignore[arg-type]
 
+        # Draw dashed projection line from latest point to zero time remaining
+        projected_completion_time = None
+        if times and hours:
+            latest_time = times[-1]
+            latest_hours = hours[-1]
+            
+            # Calculate projected completion time: current time + hours remaining
+            projected_completion_time = latest_time + timedelta(hours=latest_hours)
+            
+            # Draw dashed line from (latest_time, latest_hours) to (projected_completion_time, 0)
+            self.ax.plot(
+                [latest_time, projected_completion_time],
+                [latest_hours, 0.0],
+                "--",
+                color="#007acc",
+                linewidth=2.0,
+                alpha=0.6,
+                label="Projected Completion"
+            )  # type: ignore[arg-type]
+
         self.ax.set_facecolor("#2b2b2b")
         self.ax.set_xlabel("Time (UTC+1)", fontsize=12, color="#f0f0f0")
         self.ax.set_ylabel("Hours Remaining", fontsize=12, color="#f0f0f0")
         self.ax.set_title("Estimated Time Remaining", fontsize=14, color="#f0f0f0", pad=20)
+
+        # Set x-axis limits: from first data point to projected completion time
+        if times:
+            earliest_time = times[0]
+            if projected_completion_time is not None:
+                self.ax.set_xlim(earliest_time, projected_completion_time)
+            else:
+                # Fallback: if no projection, just use data range
+                self.ax.set_xlim(earliest_time, times[-1])
 
         y_max = self.max_time_remaining_seen * 1.1
         self.ax.set_ylim(0, max(y_max, 0.1))
@@ -146,8 +175,8 @@ class TimeRemainingPlot:
         self.ax.tick_params(colors="#f0f0f0", which="both")
         self.ax.spines["bottom"].set_color("#f0f0f0")
         self.ax.spines["left"].set_color("#f0f0f0")
-        self.ax.spines["top"].set_color("#2b2b2b")
-        self.ax.spines["right"].set_color("#2b2b2b")
+        self.ax.spines["top"].set_color="#2b2b2b"
+        self.ax.spines["right"].set_color="#2b2b2b"
 
         self.ax.legend(loc="upper right", facecolor="#3c3c3c", edgecolor="#f0f0f0", labelcolor="#f0f0f0", fontsize=10)
 
