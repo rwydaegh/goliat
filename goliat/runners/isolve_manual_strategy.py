@@ -88,11 +88,16 @@ class ISolveManualStrategy(ExecutionStrategy, LoggingMixin):
                 keep_awake_handler = KeepAwakeHandler(self.config)
                 retry_handler = RetryHandler(self.progress_logger)
 
+                # Call keep_awake before first attempt
+                keep_awake_handler.trigger_before_retry()
+
                 while True:
                     # Check for stop signal before starting new subprocess
                     self._check_for_stop_signal()
 
-                    keep_awake_handler.trigger_before_retry()
+                    # Call keep_awake before each retry attempt
+                    if retry_handler.get_attempt_number() > 0:
+                        keep_awake_handler.trigger_before_retry()
 
                     # Track iSolve errors detected in stdout (iSolve writes errors to stdout, not stderr)
                     # Initialize outside try block so it's available in exception handler
