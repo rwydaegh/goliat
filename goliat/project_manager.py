@@ -541,8 +541,13 @@ class ProjectManager(LoggingMixin):
         verification_status = self.verify_simulation_metadata(os.path.join(project_dir, "config.json"), surgical_config)
 
         if verification_status["setup_done"]:
-            self._log("Verified existing project. Opening.", log_type="info")
-            self.open()
+            # Only open the file if we need to run or extract phases
+            # If everything is done, skip opening to avoid unnecessary file access
+            if not verification_status["run_done"] or not verification_status["extract_done"]:
+                self._log("Verified existing project. Opening.", log_type="info")
+                self.open()
+            else:
+                self._log("Project completely done, skipping file open.", log_type="info")
             return verification_status
 
         if os.path.exists(project_dir):

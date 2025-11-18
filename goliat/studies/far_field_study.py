@@ -228,21 +228,24 @@ class FarFieldStudy(BaseStudy):
                     project_dir = os.path.dirname(self.project_manager.project_path)
                     sim_log_handlers = add_simulation_log_handlers(project_dir)
 
-            import s4l_v1.document
+            # Get a fresh simulation handle from the document if we need to run or extract
+            # If everything is done, we don't need the simulation handle
+            if do_run or do_extract:
+                import s4l_v1.document
 
-            if s4l_v1.document.AllSimulations:
-                sim_name = f"EM_FDTD_{phantom_name}_{freq}MHz_{direction_name}_{polarization_name}"
-                simulation = next(
-                    (s for s in s4l_v1.document.AllSimulations if s.Name == sim_name),
-                    None,
-                )
+                if s4l_v1.document.AllSimulations:
+                    sim_name = f"EM_FDTD_{phantom_name}_{freq}MHz_{direction_name}_{polarization_name}"
+                    simulation = next(
+                        (s for s in s4l_v1.document.AllSimulations if s.Name == sim_name),
+                        None,
+                    )
 
-            if not simulation:
-                self._log(
-                    f"ERROR: No simulation found for {direction_name}_{polarization_name}.",
-                    log_type="error",
-                )
-                return
+                if not simulation:
+                    self._log(
+                        f"ERROR: No simulation found for {direction_name}_{polarization_name}.",
+                        log_type="error",
+                    )
+                    return
 
             # 2. Run Phase
             if do_run:

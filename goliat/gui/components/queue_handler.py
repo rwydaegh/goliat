@@ -116,10 +116,16 @@ class QueueHandler:
                         # Sanitize profiler_update messages before forwarding
                         if msg_type == "profiler_update" and "profiler" in msg:
                             profiler = msg.get("profiler")
-                            # Extract only serializable data from profiler
+                            # Calculate eta_seconds using profiler's get_time_remaining method
+                            eta_seconds: Optional[float] = None
+                            if profiler and profiler.current_phase:
+                                # Get current stage progress ratio (0.0 to 1.0)
+                                current_stage_progress_ratio = self.gui.stage_progress_bar.value() / 1000.0
+                                eta_seconds = profiler.get_time_remaining(current_stage_progress=current_stage_progress_ratio)
+                            
                             sanitized_msg = {
                                 "type": "profiler_update",
-                                "eta_seconds": getattr(profiler, "eta_seconds", None) if profiler else None,
+                                "eta_seconds": eta_seconds,
                             }
                             self.gui.web_bridge_manager.web_bridge.enqueue(sanitized_msg)
                         else:
