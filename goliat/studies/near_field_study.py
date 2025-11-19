@@ -227,7 +227,7 @@ class NearFieldStudy(BaseStudy):
                         project_dir = os.path.dirname(self.project_manager.project_path)
                         sim_log_handlers = add_simulation_log_handlers(project_dir)
                     needs_setup = not verification_status["setup_done"]
-                    
+
                     # Mark profiler if setup was cached/skipped
                     if not needs_setup:
                         self.profiler.phase_skipped = True

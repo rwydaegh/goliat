@@ -183,7 +183,7 @@ class ProjectManager(LoggingMixin):
             if output_filename.endswith("_Output.h5"):
                 hash_prefix = output_filename[:-10]  # Remove "_Output.h5" suffix
                 input_file_path = os.path.join(results_dir, f"{hash_prefix}_Input.h5")
-                
+
                 if os.path.exists(input_file_path):
                     output_size = os.path.getsize(h5_file_path)
                     input_size = os.path.getsize(input_file_path)
@@ -196,7 +196,7 @@ class ProjectManager(LoggingMixin):
             else:
                 # Fallback: if filename doesn't match expected pattern, use original check
                 is_valid_output = True
-        
+
         if is_valid_output:
             status["run_done"] = True
         else:
