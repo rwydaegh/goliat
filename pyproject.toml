@@ -36,6 +36,7 @@ dependencies = [
   "psutil",
   "h5py",
   "requests",
+  "pywin32; sys_platform == 'win32'",
 ]
 description = "A Python framework for dosimetric assessments using Sim4Life."
 keywords = [
@@ -63,6 +64,7 @@ docs = [
   "pymdown-extensions==10.7",
   "mkdocstrings[python]",
   "mkdocs-mermaid2-plugin",
+  "mkdocs-panzoom-plugin",
   "mkdocs-git-revision-date-localized-plugin",
   "mkdocs-minify-plugin",
   "mkdocs-kroki-plugin",

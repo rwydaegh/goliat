@@ -70,7 +70,7 @@ class Analyzer:
             return
 
         results_df = pd.DataFrame(self.all_results)
-        all_organ_results_df = pd.DataFrame(self.all_organ_results)
+        all_organ_results_df = pd.DataFrame(self.all_organ_results) if self.all_organ_results else pd.DataFrame()
 
         results_df = self._convert_units_and_cache(results_df, all_organ_results_df)
         self._export_reports(results_df, all_organ_results_df)
@@ -82,7 +82,7 @@ class Analyzer:
         """Processes one simulation result file.
 
         Locates JSON/PKL files, extracts data via strategy, applies bug fixes,
-        and adds to aggregator lists.
+        and adds to aggregator lists. Handles missing files and errors gracefully.
 
         Args:
             frequency_mhz: Simulation frequency in MHz.
@@ -94,26 +94,78 @@ class Analyzer:
             # For far-field, pos_name is the full placement directory name
             detailed_placement_name = pos_name
         else:
-            detailed_placement_name = f"{scenario_name}_{pos_name}_{orient_name}"
+            if pos_name and orient_name:
+                detailed_placement_name = f"{scenario_name}_{pos_name}_{orient_name}"
+            elif pos_name:
+                detailed_placement_name = f"{scenario_name}_{pos_name}"
+            else:
+                detailed_placement_name = scenario_name
 
         results_dir = os.path.join(self.results_base_dir, f"{frequency_mhz}MHz", detailed_placement_name)
         pickle_path = os.path.join(results_dir, "sar_stats_all_tissues.pkl")
         json_path = os.path.join(results_dir, "sar_results.json")
 
-        if not (os.path.exists(pickle_path) and os.path.exists(json_path)):
+        # Check if files exist - skip silently if missing (partial results)
+        if not os.path.exists(json_path):
+            logging.getLogger("progress").debug(
+                f"  - Skipping (no JSON): {frequency_mhz}MHz, {detailed_placement_name}",
+                extra={"log_type": "debug"},
+            )
             return
+
+        if not os.path.exists(pickle_path):
+            logging.getLogger("progress").warning(
+                f"  - Warning: PKL file missing for {frequency_mhz}MHz, {detailed_placement_name}",
+                extra={"log_type": "warning"},
+            )
+            # Try to process with JSON only (limited data)
+            pickle_data = {}
 
         logging.getLogger("progress").info(
             f"  - Processing: {frequency_mhz}MHz, {detailed_placement_name}",
             extra={"log_type": "progress"},
         )
         try:
-            with open(pickle_path, "rb") as f:
-                pickle_data = pickle.load(f)
+            # Load JSON (required)
             with open(json_path, "r") as f:
                 sar_results = json.load(f)
 
+            # Load PKL if available
+            if os.path.exists(pickle_path):
+                with open(pickle_path, "rb") as f:
+                    pickle_data = pickle.load(f)
+            else:
+                # Create minimal pickle_data structure from JSON
+                pickle_data = {
+                    "summary_results": {
+                        "head_SAR": sar_results.get("head_SAR", None),
+                        "trunk_SAR": sar_results.get("trunk_SAR", None),
+                        "whole_body_sar": sar_results.get("whole_body_sar", None),
+                        "peak_sar_10g_W_kg": sar_results.get("peak_sar_10g_W_kg", None),
+                        "power_balance": sar_results.get("power_balance", None),
+                    },
+                    "grouped_sar_stats": {},
+                    "detailed_sar_stats": None,
+                }
+                # Try to extract group stats from JSON
+                for key, value in sar_results.items():
+                    if key.endswith("_peak_sar") or key.endswith("_weighted_avg_sar"):
+                        group_name = key.replace("_peak_sar", "").replace("_weighted_avg_sar", "")
+                        if group_name not in pickle_data["grouped_sar_stats"]:
+                            pickle_data["grouped_sar_stats"][f"{group_name}_group"] = {}
+                        if key.endswith("_peak_sar"):
+                            pickle_data["grouped_sar_stats"][f"{group_name}_group"]["peak_sar"] = value
+
             simulated_power_w = sar_results.get("input_power_W", float("nan"))
+
+            # Warn if results exist but input power is missing (unusual)
+            if pd.isna(simulated_power_w) or simulated_power_w <= 0:
+                logging.getLogger("progress").warning(
+                    f"    - WARNING: Missing or invalid input_power_W in JSON for {detailed_placement_name} at {frequency_mhz}MHz. "
+                    "This is unusual - results may not be normalized correctly.",
+                    extra={"log_type": "warning"},
+                )
+
             normalization_factor = self.strategy.get_normalization_factor(frequency_mhz, simulated_power_w)
             result_entry, organ_entries = self.strategy.extract_data(
                 pickle_data,
@@ -125,12 +177,21 @@ class Analyzer:
             )
             result_entry = self.strategy.apply_bug_fixes(result_entry)
             self.all_results.append(result_entry)
-            self.all_organ_results.extend(organ_entries)
+            if organ_entries:
+                self.all_organ_results.extend(organ_entries)
+        except json.JSONDecodeError as e:
+            logging.getLogger("progress").error(
+                f"    - ERROR: Invalid JSON for {detailed_placement_name} at {frequency_mhz}MHz: {e}",
+                extra={"log_type": "error"},
+            )
         except Exception as e:
             logging.getLogger("progress").error(
                 f"    - ERROR: Could not process data for {detailed_placement_name} at {frequency_mhz}MHz: {e}",
                 extra={"log_type": "error"},
             )
+            import traceback
+
+            logging.getLogger("progress").debug(traceback.format_exc(), extra={"log_type": "debug"})
 
     def _convert_units_and_cache(self, results_df: pd.DataFrame, organ_results_df: pd.DataFrame) -> pd.DataFrame:
         """Converts SAR units to mW/kg and caches summary and organ-level results."""
@@ -157,13 +218,26 @@ class Analyzer:
             results_df: DataFrame with main aggregated results.
             all_organ_results_df: DataFrame with detailed organ-level results.
         """
-        results_for_export = results_df.drop(columns=["input_power_w", "scenario"])
+        # Drop columns that might not exist
+        cols_to_drop = []
+        if "input_power_w" in results_df.columns:
+            cols_to_drop.append("input_power_w")
+        if "scenario" in results_df.columns:
+            cols_to_drop.append("scenario")
+
+        results_for_export = results_df.drop(columns=cols_to_drop) if cols_to_drop else results_df
+
         logging.getLogger("progress").info(
             "\n--- Full Normalized Results per Simulation (in mW/kg) ---",
             extra={"log_type": "header"},
         )
         with pd.option_context("display.max_rows", None, "display.max_columns", None, "display.width", 1000):
-            logging.getLogger("progress").info(results_for_export.sort_values(by=["frequency_mhz", "placement"]))
+            sort_cols = [c for c in ["frequency_mhz", "placement"] if c in results_for_export.columns]
+            if sort_cols:
+                logging.getLogger("progress").info(results_for_export.sort_values(by=sort_cols))
+            else:
+                logging.getLogger("progress").info(results_for_export)
+
         summary_stats = self.strategy.calculate_summary_stats(results_df)
         logging.getLogger("progress").info(
             "\n--- Summary Statistics (Mean) of Normalized SAR per Scenario and Frequency (in mW/kg) ---",
@@ -171,22 +245,27 @@ class Analyzer:
         )
         with pd.option_context("display.max_rows", None, "display.max_columns", None, "display.width", 1000):
             logging.getLogger("progress").info(summary_stats)
+
         detailed_csv_path = os.path.join(self.results_base_dir, "normalized_results_detailed.csv")
         summary_csv_path = os.path.join(self.results_base_dir, "normalized_results_summary.csv")
         organ_csv_path = os.path.join(self.results_base_dir, "normalized_results_organs.csv")
+
         results_for_export.to_csv(detailed_csv_path, index=False)
         summary_stats.to_csv(summary_csv_path)
-        all_organ_results_df.to_csv(organ_csv_path, index=False)
+
+        if not all_organ_results_df.empty:
+            all_organ_results_df.to_csv(organ_csv_path, index=False)
+            logging.getLogger("progress").info(
+                f"--- Organ-level results saved to: {organ_csv_path} ---",
+                extra={"log_type": "success"},
+            )
+
         logging.getLogger("progress").info(
             f"\n--- Detailed results saved to: {detailed_csv_path} ---",
             extra={"log_type": "success"},
         )
         logging.getLogger("progress").info(
             f"--- Summary statistics saved to: {summary_csv_path} ---",
-            extra={"log_type": "success"},
-        )
-        logging.getLogger("progress").info(
-            f"--- Organ-level results saved to: {organ_csv_path} ---",
             extra={"log_type": "success"},
         )
 
