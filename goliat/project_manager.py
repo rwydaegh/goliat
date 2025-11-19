@@ -2,10 +2,11 @@ import hashlib
 import json
 import os
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Tuple
 
 import h5py
 
+from .constants import H5_SIZE_INCREASE_THRESHOLD, MIN_H5_FILE_SIZE_BYTES
 from .logging_manager import LoggingMixin
 from .results_extractor import ResultsExtractor
 from .utils import open_project
@@ -125,6 +126,117 @@ class ProjectManager(LoggingMixin):
             f.truncate()
         self._log(f"Updated metadata in {os.path.basename(meta_path)}", log_type="info")
 
+    def _check_extract_deliverables(self, project_dir: str, setup_timestamp: float) -> bool:
+        """Checks if extract deliverables exist and are newer than setup time.
+
+        Args:
+            project_dir: Directory containing the project file.
+            setup_timestamp: Timestamp to compare against (setup time in seconds).
+
+        Returns:
+            True if all extract deliverables exist and are fresh, False otherwise.
+        """
+        deliverable_filenames = ResultsExtractor.get_deliverable_filenames()
+        extract_files = [os.path.join(project_dir, filename) for filename in deliverable_filenames.values()]
+
+        return all(os.path.exists(file_path) and os.path.getmtime(file_path) > setup_timestamp for file_path in extract_files)
+
+    def _validate_h5_file(self, h5_file_path: str, results_dir: str, setup_timestamp: float) -> bool:
+        """Validates that an H5 output file meets size and timestamp requirements.
+
+        Checks that the file is:
+        - Larger than 8MB (iSolve sometimes creates incomplete files)
+        - Newer than setup_timestamp
+        - At least 10% bigger than corresponding Input.h5 (if Input.h5 exists)
+
+        Args:
+            h5_file_path: Path to the _Output.h5 file.
+            results_dir: Directory containing the results files.
+            setup_timestamp: Timestamp to compare against.
+
+        Returns:
+            True if the H5 file is valid, False otherwise.
+        """
+        if not h5_file_path:
+            return False
+
+        file_size = os.path.getsize(h5_file_path)
+        file_mtime = os.path.getmtime(h5_file_path)
+
+        # Check basic size and timestamp requirements
+        if file_size <= MIN_H5_FILE_SIZE_BYTES or file_mtime <= setup_timestamp:
+            return False
+
+        # Check if Output.h5 is at least 10% bigger than Input.h5
+        output_filename = os.path.basename(h5_file_path)
+        if not output_filename.endswith("_Output.h5"):
+            return True  # Fallback: if filename doesn't match pattern, use original check
+
+        hash_prefix = output_filename[:-10]  # Remove "_Output.h5" suffix
+        input_file_path = os.path.join(results_dir, f"{hash_prefix}_Input.h5")
+
+        if os.path.exists(input_file_path):
+            input_size = os.path.getsize(input_file_path)
+            return file_size >= input_size * H5_SIZE_INCREASE_THRESHOLD
+
+        # If Input.h5 doesn't exist, fall back to just size check (>8MB)
+        return True
+
+    def _check_auto_cleanup_scenario(self, extract_done: bool) -> bool:
+        """Checks if run phase should be considered done due to auto-cleanup.
+
+        If auto_cleanup_previous_results includes "output" and extract deliverables exist,
+        run phase is considered done even if _Output.h5 is missing (it was intentionally deleted).
+
+        Args:
+            extract_done: Whether extract phase is complete.
+
+        Returns:
+            True if auto-cleanup scenario applies, False otherwise.
+        """
+        if not extract_done:
+            return False
+
+        auto_cleanup = self.config.get_auto_cleanup_previous_results()
+        if "output" in auto_cleanup:
+            self._log(
+                "WARNING: _Output.h5 file not found, but extract deliverables exist and "
+                "'auto_cleanup_previous_results' includes 'output'. Skipping run phase "
+                "(output file was intentionally deleted after extraction).",
+                log_type="warning",
+            )
+            return True
+        return False
+
+    def _check_run_deliverables(self, project_dir: str, project_filename: str, setup_timestamp: float, extract_done: bool) -> bool:
+        """Checks if run deliverables exist and are valid.
+
+        Args:
+            project_dir: Directory containing the project file.
+            project_filename: Base name of the project file (without extension).
+            setup_timestamp: Timestamp to compare against.
+            extract_done: Whether extract phase is complete (for auto-cleanup logic).
+
+        Returns:
+            True if run deliverables are valid or were intentionally cleaned up, False otherwise.
+        """
+        results_dir = os.path.join(project_dir, project_filename + "_Results")
+        if not os.path.exists(results_dir):
+            return self._check_auto_cleanup_scenario(extract_done)
+
+        output_files = [os.path.join(results_dir, f) for f in os.listdir(results_dir) if f.endswith("_Output.h5")]
+        if not output_files:
+            return self._check_auto_cleanup_scenario(extract_done)
+
+        # Find the latest file based on modification time
+        h5_file_path = max(output_files, key=os.path.getmtime)
+
+        if self._validate_h5_file(h5_file_path, results_dir, setup_timestamp):
+            return True
+
+        # _Output.h5 is invalid, but check if it was intentionally cleaned up
+        return self._check_auto_cleanup_scenario(extract_done)
+
     def _get_deliverables_status(self, project_dir: str, project_filename: str, setup_timestamp: float) -> dict:
         """Checks if simulation deliverables exist and are newer than setup time.
 
@@ -133,9 +245,9 @@ class ProjectManager(LoggingMixin):
         phase, checks for JSON, PKL, and HTML report files.
 
         Important safeguards:
-        - Only considers H5 files larger than 8MB (iSolve sometimes creates incomplete
+        - Only considers H5 files larger than MIN_H5_FILE_SIZE_BYTES (iSolve sometimes creates incomplete
           files that are smaller)
-        - Output.h5 must be at least 10% bigger than the corresponding Input.h5 file
+        - Output.h5 must be at least H5_SIZE_INCREASE_THRESHOLD times bigger than the corresponding Input.h5 file
           (if Input.h5 exists) to ensure the simulation completed successfully
         - Files must be newer than setup_timestamp to ensure they're from this run,
           not an old run
@@ -151,68 +263,120 @@ class ProjectManager(LoggingMixin):
         Returns:
             Dict with 'run_done' and 'extract_done' boolean flags.
         """
-        status = {"run_done": False, "extract_done": False}
+        extract_done = self._check_extract_deliverables(project_dir, setup_timestamp)
+        run_done = self._check_run_deliverables(project_dir, project_filename, setup_timestamp, extract_done)
 
-        # Check for extract deliverables first (needed for auto-cleanup logic)
-        deliverable_filenames = ResultsExtractor.get_deliverable_filenames()
-        extract_files = [os.path.join(project_dir, filename) for filename in deliverable_filenames.values()]
+        return {"run_done": run_done, "extract_done": extract_done}
 
-        # All deliverables must exist and be fresher than the setup timestamp.
-        are_all_deliverables_fresh = all(
-            os.path.exists(file_path) and os.path.getmtime(file_path) > setup_timestamp for file_path in extract_files
-        )
+    def _verify_config_hash(self, metadata: dict, surgical_config: dict, meta_path: str) -> bool:
+        """Verifies that the stored config hash matches the current config.
 
-        if are_all_deliverables_fresh:
-            status["extract_done"] = True
+        Args:
+            metadata: Parsed metadata dictionary.
+            surgical_config: Current config snapshot to compare against.
+            meta_path: Path to metadata file (for logging).
 
-        # Check for run deliverables
-        results_dir = os.path.join(project_dir, project_filename + "_Results")
-        h5_file_path = None
-        if os.path.exists(results_dir):
-            output_files = [os.path.join(results_dir, f) for f in os.listdir(results_dir) if f.endswith("_Output.h5")]
-            if output_files:
-                # Find the latest file based on modification time
-                h5_file_path = max(output_files, key=os.path.getmtime)
+        Returns:
+            True if config hash matches, False otherwise.
+        """
+        stored_hash = metadata.get("config_hash")
+        current_hash = self._generate_config_hash(surgical_config)
 
-        # TODO: iSolve somehow still produces small _Output.h5 files. 8 MB limit is arbitrary...
-        # Also check that Output.h5 is at least 10% bigger than corresponding Input.h5
-        is_valid_output = False
-        if h5_file_path and os.path.getsize(h5_file_path) > 8 * 1024 * 1024 and os.path.getmtime(h5_file_path) > setup_timestamp:
-            # Extract hash from Output.h5 filename and check corresponding Input.h5 size
-            output_filename = os.path.basename(h5_file_path)
-            if output_filename.endswith("_Output.h5"):
-                hash_prefix = output_filename[:-10]  # Remove "_Output.h5" suffix
-                input_file_path = os.path.join(results_dir, f"{hash_prefix}_Input.h5")
+        if stored_hash != current_hash:
+            self._log(f"Config hash mismatch for {os.path.basename(meta_path)}. Simulation is outdated.", log_type="warning")
+            return False
+        return True
 
-                if os.path.exists(input_file_path):
-                    output_size = os.path.getsize(h5_file_path)
-                    input_size = os.path.getsize(input_file_path)
-                    # Check if Output.h5 is at least 10% bigger than Input.h5
-                    if output_size >= input_size * 1.1:
-                        is_valid_output = True
-                else:
-                    # If Input.h5 doesn't exist, fall back to just size check (>8MB)
-                    is_valid_output = True
-            else:
-                # Fallback: if filename doesn't match expected pattern, use original check
-                is_valid_output = True
+    def _verify_project_file(self, smash_path: Optional[str]) -> Tuple[bool, Optional[str]]:
+        """Verifies that the project file exists and is valid.
 
-        if is_valid_output:
-            status["run_done"] = True
-        else:
-            # _Output.h5 is missing or invalid, but check if it was intentionally cleaned up
-            auto_cleanup = self.config.get_auto_cleanup_previous_results()
-            if "output" in auto_cleanup and status["extract_done"]:
-                # Output file was cleaned up, but extraction is complete, so run phase is considered done
-                status["run_done"] = True
-                self._log(
-                    "WARNING: _Output.h5 file not found, but extract deliverables exist and "
-                    "'auto_cleanup_previous_results' includes 'output'. Skipping run phase "
-                    "(output file was intentionally deleted after extraction).",
-                    log_type="warning",
-                )
+        Args:
+            smash_path: Optional override for project file path.
 
+        Returns:
+            Tuple of (is_valid, path_to_check). Returns (False, None) if path is invalid.
+        """
+        path_to_check = smash_path or self.project_path
+        if not path_to_check:
+            self._log("Project path not set, cannot verify .smash file.", log_type="error")
+            return False, None
+
+        original_path = self.project_path
+        self.project_path = path_to_check
+        is_valid = self._is_valid_smash_file()
+        self.project_path = original_path
+
+        if not is_valid:
+            self._log(f"Project file '{os.path.basename(path_to_check)}' is missing or corrupted.", log_type="warning")
+            return False, None
+
+        return True, path_to_check
+
+    def _parse_setup_timestamp(self, metadata: dict) -> Optional[float]:
+        """Parses setup timestamp from metadata.
+
+        Args:
+            metadata: Parsed metadata dictionary.
+
+        Returns:
+            Setup timestamp as float, or None if not found or invalid.
+        """
+        setup_timestamp_str = metadata.get("setup_timestamp")
+        if not setup_timestamp_str:
+            self._log("No setup_timestamp in metadata, cannot verify deliverables.", log_type="warning")
+            return None
+
+        # Convert ISO 8601 string to timestamp
+        if isinstance(setup_timestamp_str, str):
+            return datetime.fromisoformat(setup_timestamp_str).timestamp()
+        return float(setup_timestamp_str)  # Backward compatibility
+
+    def _verify_deliverables(self, path_to_check: str, setup_timestamp: float) -> dict:
+        """Verifies that deliverables exist and are fresh.
+
+        Args:
+            path_to_check: Path to the project file.
+            setup_timestamp: Timestamp to compare against.
+
+        Returns:
+            Dict with 'run_done' and 'extract_done' flags.
+        """
+        project_dir = os.path.dirname(path_to_check)
+        project_filename = os.path.basename(path_to_check)
+        return self._get_deliverables_status(project_dir, project_filename, setup_timestamp)
+
+    def _normalize_status(self, status: dict) -> dict:
+        """Normalizes status to ensure consistency.
+
+        Ensures extract_done is False if run_done is False.
+
+        Args:
+            status: Status dictionary with phase completion flags.
+
+        Returns:
+            Normalized status dictionary.
+        """
+        # Extract cannot possibly be done if the corresponding run is not done or invalid
+        if status["extract_done"] and not status["run_done"]:
+            self._log("Extraction was done, but run not. Rerunning both.", log_type="warning")
+            status["extract_done"] = False
         return status
+
+    def _log_status_summary(self, status: dict):
+        """Logs a summary of the verification status.
+
+        Args:
+            status: Status dictionary with phase completion flags.
+        """
+        status_parts = []
+        for key, value in status.items():
+            name = key.replace("_done", "").replace("_", " ").title()
+            status_text = "done" if value else "NOT done"
+            status_parts.append(f"{name} {status_text}")
+        status_msg = ", ".join(status_parts)
+        self._log(f"Verified existing project. Status: {status_msg}", log_type="success")
+        if status["run_done"] and status["extract_done"]:
+            self._log("Project already done, skipping.", level="progress", log_type="success")
 
     def verify_simulation_metadata(self, meta_path: str, surgical_config: dict, smash_path: Optional[str] = None) -> dict:
         """Verifies if an existing simulation can be reused to skip completed phases.
@@ -245,6 +409,7 @@ class ProjectManager(LoggingMixin):
             All False if verification fails at any step.
         """
         status = {"setup_done": False, "run_done": False, "extract_done": False}
+
         if not os.path.exists(meta_path):
             self._log(f"No metadata file found at {os.path.basename(meta_path)}.", log_type="info")
             return status
@@ -253,63 +418,25 @@ class ProjectManager(LoggingMixin):
             with open(meta_path, "r") as f:
                 metadata = json.load(f)
 
-            stored_hash = metadata.get("config_hash")
-            current_hash = self._generate_config_hash(surgical_config)
-
-            if stored_hash != current_hash:
-                self._log(f"Config hash mismatch for {os.path.basename(meta_path)}. Simulation is outdated.", log_type="warning")
+            if not self._verify_config_hash(metadata, surgical_config, meta_path):
                 return status
 
-            path_to_check = smash_path or self.project_path
-            if not path_to_check:
-                self._log("Project path not set, cannot verify .smash file.", log_type="error")
-                return status
-
-            original_path = self.project_path
-            self.project_path = path_to_check
-            is_valid = self._is_valid_smash_file()
-            self.project_path = original_path
-
-            if not is_valid:
-                self._log(f"Project file '{os.path.basename(path_to_check)}' is missing or corrupted.", log_type="warning")
+            is_valid, path_to_check = self._verify_project_file(smash_path)
+            if not is_valid or path_to_check is None:
                 return status
 
             status["setup_done"] = True
 
-            setup_timestamp_str = metadata.get("setup_timestamp")
-            if not setup_timestamp_str:
-                self._log("No setup_timestamp in metadata, cannot verify deliverables.", log_type="warning")
-                return status  # Returns all False
+            setup_timestamp = self._parse_setup_timestamp(metadata)
+            if setup_timestamp is None:
+                return status
 
-            # Convert ISO 8601 string to timestamp
-            if isinstance(setup_timestamp_str, str):
-                setup_timestamp = datetime.fromisoformat(setup_timestamp_str).timestamp()
-            else:
-                setup_timestamp = float(setup_timestamp_str)  # Backward compatibility
-
-            project_dir = os.path.dirname(path_to_check)
-            project_filename = os.path.basename(path_to_check)
-            deliverables_status = self._get_deliverables_status(project_dir, project_filename, setup_timestamp)
-
-            # The final status is determined *only* by the presence of deliverables on the file system.
-            # This prevents a situation where metadata claims completion but files are missing.
+            deliverables_status = self._verify_deliverables(path_to_check, setup_timestamp)
             status["run_done"] = deliverables_status["run_done"]
             status["extract_done"] = deliverables_status["extract_done"]
 
-            # Extract cannot possible be done if the corresponding run is not done or invalid
-            if status["extract_done"] and not status["run_done"]:
-                self._log("Extraction was done, but run not. Rerunning both.", log_type="warning")
-                status["extract_done"] = False
-
-            status_parts = []
-            for key, value in status.items():
-                name = key.replace("_done", "").replace("_", " ").title()
-                status_text = "done" if value else "NOT done"
-                status_parts.append(f"{name} {status_text}")
-            status_msg = ", ".join(status_parts)
-            self._log(f"Verified existing project. Status: {status_msg}", log_type="success")
-            if status["run_done"] and status["extract_done"]:
-                self._log("Project already done, skipping.", level="progress", log_type="success")
+            status = self._normalize_status(status)
+            self._log_status_summary(status)
             return status
 
         except (json.JSONDecodeError, KeyError):
