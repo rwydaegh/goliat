@@ -17,6 +17,8 @@ The dashboard shows:
 - Super study coordination across multiple workers
 - Color-coded log messages from each worker
 - GPU, CPU, and RAM information for each worker
+- GUI screenshots from each worker (all tabs except Progress)
+- System utilization plots (CPU, RAM, GPU, VRAM) over time
 
 ## Features
 
@@ -95,9 +97,11 @@ The GUI bridge forwards messages to the dashboard:
 - Progress updates: Overall and stage progress percentages
 - Status messages: Log messages with color coding
 - System information: GPU, CPU, RAM, hostname
+- GUI screenshots: All tabs captured at 1 FPS (JPEG compressed)
+- System utilization: CPU, RAM, GPU, VRAM metrics
 - Heartbeats: Periodic messages every 30 seconds
 
-Messages are throttled to prevent overwhelming the API (typically 10 messages/second).
+Messages are throttled to prevent overwhelming the API (typically 10 messages/second). Screenshots are sent asynchronously via multipart form upload.
 
 ## Usage
 

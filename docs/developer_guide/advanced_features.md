@@ -45,14 +45,28 @@ The GUI runs in the main process. It uses a `QTimer` to poll a `multiprocessing.
 The GUI is built using modular components located in `goliat/gui/components/`:
 
 -   **`StatusManager`**: Manages status messages and log display with color-coding.
--   **`DataManager`**: Handles CSV data files for progress tracking and time series visualization.
+-   **`DataManager`**: Handles CSV data files for progress tracking, time series visualization, and system utilization data.
 -   **`TimingsTable`**: Displays execution statistics in a table format.
 -   **`PieChartsManager`**: Generates pie charts showing time breakdown by phase and subtask.
 -   **`ProgressAnimation`**: Manages smooth animations for progress bars during long-running phases.
 -   **`TrayManager`**: Provides system tray integration for background operation.
 -   **`QueueHandler`**: Processes messages from the study process queue and forwards them to the web bridge.
--   **`WebBridgeManager`**: Manages connection to the web monitoring dashboard and forwards GUI messages.
+-   **`WebBridgeManager`**: Manages connection to the web monitoring dashboard, forwards GUI messages, and handles screenshot capture.
+-   **`UtilizationManager`**: Updates CPU, RAM, and GPU utilization displays from system monitoring data.
+-   **`SystemMonitor`**: Provides system resource monitoring (CPU, RAM, GPU) via psutil and nvidia-smi.
+-   **`ScreenshotCapture`**: Captures GUI tab screenshots for remote monitoring via web dashboard.
 -   **`UIBuilder`**: Constructs the window layout and manages UI components.
+
+### Plot components
+
+Plotting functionality is organized into separate classes in `goliat/gui/components/plots/`:
+
+-   **`TimeRemainingPlot`**: Displays time remaining estimates over the course of the study.
+-   **`OverallProgressPlot`**: Shows overall study progress percentage over time.
+-   **`SystemUtilizationPlot`**: Time-series plots for CPU, RAM, GPU utilization, and GPU VRAM.
+-   **`PieChartsManager`**: Pie charts showing time breakdown by phase and subtask.
+
+Each plot class manages its own matplotlib figure and canvas, updating independently based on data from the `DataManager`. Common utilities (like timezone conversion) are centralized in `plots/utils.py`.
 
 ### The `Profiler`
 
@@ -295,5 +309,76 @@ The web bridge handles errors gracefully:
 - Thread safety: HTTP requests are executed in a thread pool to avoid blocking the GUI thread.
 
 For more information about using the monitoring dashboard, see the [Monitoring Dashboard documentation](../cloud/monitoring.md).
+
+## 9. System utilization monitoring
+
+The GUI includes real-time system resource monitoring to track CPU, RAM, GPU utilization, and GPU VRAM usage during simulations. This helps identify bottlenecks and optimize performance.
+
+### Architecture
+
+System monitoring uses two components:
+
+- **`SystemMonitor`**: Provides low-level system resource queries using `psutil` for CPU/RAM and `nvidia-smi` for GPU metrics. Handles missing dependencies gracefully (returns 0.0 or None if unavailable).
+- **`UtilizationManager`**: Updates GUI progress bars and labels with current utilization values. Called every second by a Qt timer.
+
+### Metrics tracked
+
+- **CPU utilization**: Percentage (0-100) using non-blocking `psutil.cpu_percent()` calls
+- **RAM utilization**: Used and total GB, plus percentage with/without cacheable memory
+- **GPU utilization**: Percentage (0-100) via `nvidia-smi` queries
+- **GPU VRAM**: Used and total GB, plus percentage utilization
+
+### Data collection and export
+
+Utilization data is written to CSV files (`system_utilization_DD-MM_HH-MM-SS_hash.csv`) for analysis and plotting. The GUI includes a dedicated "System Utilization" tab with time-series plots showing all metrics over the simulation duration.
+
+### Update frequency
+
+- Progress bars: Updated every 1 second via `UtilizationManager.update()`
+- CSV data: Written every 2 seconds (via `GraphManager` timer)
+- Plot updates: Refreshed every 5 seconds
+
+The monitoring system gracefully handles missing GPU drivers or unavailable hardware, continuing to track CPU and RAM even when GPU data isn't available.
+
+## 10. GUI screenshot streaming
+
+For remote monitoring scenarios (cloud deployments, distributed workers), GOLIAT streams GUI screenshots to the web dashboard, enabling visual monitoring of simulation progress without direct access to the worker machine.
+
+### Architecture
+
+Screenshot capture is handled by two components:
+
+- **`ScreenshotCapture`**: Captures all GUI tabs as JPEG images using Qt's `render()` method. Excludes the Progress tab (data sent separately via web bridge).
+- **`WebBridgeManager`**: Manages screenshot capture timer (1 FPS) and forwards screenshots to the web bridge.
+
+### Capture process
+
+1. **Timer initialization**: A Qt timer fires every 1 second (1 FPS) to capture screenshots
+2. **Tab rendering**: Each visible tab is rendered to a QPixmap using `render()` without switching tabs (avoids GUI jumping)
+3. **Compression**: Screenshots are compressed to JPEG format (95% quality) to reduce bandwidth
+4. **Asynchronous upload**: Screenshots are enqueued to the web bridge and sent via HTTP POST to `/api/gui-screenshots`
+
+### Screenshot format
+
+Screenshots are sent as multipart/form-data with:
+- Each tab as a separate file field (tab name sanitized for form field names)
+- `machineId` included as form data
+- JPEG format with 95% quality for balance between quality and file size
+
+### Error handling
+
+Screenshot capture failures don't affect GUI operation. Errors are logged but don't interrupt the simulation or GUI updates. If screenshot capture isn't available (missing dependencies, initialization failures), the GUI continues normally without screenshots.
+
+### Dashboard integration
+
+The web dashboard displays screenshots for each worker, allowing remote monitoring of:
+- Progress tab (via data, not screenshot)
+- System Utilization tab
+- Timings tab
+- Logs tab
+- Plots tab
+- Settings tab
+
+Screenshots are stored on the dashboard server and served via API endpoints (`/api/gui-screenshots/[workerId]/[tabName]`).
 
 For a complete reference of all features mentioned here and more, see the [Full List of Features](../reference/full_features_list.md).
