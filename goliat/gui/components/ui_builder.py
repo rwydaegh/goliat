@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
     QTextEdit,
 )
 
-from goliat.gui.components.plots import TimeRemainingPlot, OverallProgressPlot, PieChartsManager, SystemUtilizationPlot
+from goliat.gui.components.plots import PieChartsManager, SystemUtilizationPlot, TimeRemainingPlot, OverallProgressPlot
 from goliat.gui.components.timings_table import TimingsTable
 
 if TYPE_CHECKING:

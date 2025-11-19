@@ -301,9 +301,9 @@ class FarFieldStudy(BaseStudy):
                         return
 
                     self.project_manager.reload_project()
-                    sim_name = simulation.Name
+                    sim_name = simulation.Name  # type: ignore[attr-defined]
                     reloaded_simulation = next(
-                        (s for s in s4l_v1.document.AllSimulations if s.Name == sim_name),
+                        (s for s in s4l_v1.document.AllSimulations if s.Name == sim_name),  # type: ignore[possibly-unbound]
                         None,
                     )
                     if not reloaded_simulation:

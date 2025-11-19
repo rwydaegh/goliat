@@ -363,7 +363,7 @@ class NearFieldStudy(BaseStudy):
 
                     import s4l_v1.document
 
-                    sim_name = simulation.Name
+                    sim_name = simulation.Name  # type: ignore[attr-defined]
                     reloaded_simulation = next(
                         (s for s in s4l_v1.document.AllSimulations if s.Name == sim_name),
                         None,
