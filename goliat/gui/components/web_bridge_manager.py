@@ -6,6 +6,11 @@ from typing import TYPE_CHECKING, Optional, Any
 if TYPE_CHECKING:
     from goliat.gui.progress_gui import ProgressGUI
 
+try:
+    from PySide6.QtCore import QTimer
+except ImportError:
+    QTimer = None  # type: ignore
+
 
 class WebBridgeManager:
     """Manages web GUI bridge initialization and status updates.
@@ -26,6 +31,8 @@ class WebBridgeManager:
         self.server_url = server_url
         self.machine_id = machine_id
         self.web_bridge: Optional[Any] = None
+        self.screenshot_timer: Optional[Any] = None
+        self.screenshot_capture: Optional[Any] = None
 
     def initialize(self) -> None:
         """Initializes web GUI bridge for remote monitoring.
@@ -55,6 +62,9 @@ class WebBridgeManager:
 
                 # Send initial heartbeat with system info
                 self.web_bridge.send_heartbeat_with_system_info(system_info)
+
+                # Initialize screenshot capture
+                self._initialize_screenshot_capture()
 
                 self.gui.verbose_logger.info(f"Web GUI bridge enabled: {self.server_url}, machine_id={self.machine_id}")
                 self.gui.verbose_logger.info(
@@ -107,8 +117,64 @@ class WebBridgeManager:
             if hasattr(self.gui, "verbose_logger"):
                 self.gui.verbose_logger.debug(f"Failed to sync progress to web: {e}")
 
+    def _initialize_screenshot_capture(self) -> None:
+        """Initialize screenshot capture timer.
+
+        Sets up a timer to capture screenshots every 1 second (1 FPS)
+        and send them via the web bridge.
+        """
+        if QTimer is None:
+            return
+
+        try:
+            from goliat.gui.components.screenshot_capture import ScreenshotCapture
+
+            self.screenshot_capture = ScreenshotCapture(self.gui)
+
+            # Create timer for screenshot capture (1 FPS = every 1000ms)
+            if QTimer is not None:
+                timer = QTimer(self.gui)
+                timer.timeout.connect(self._capture_and_send_screenshots)
+                timer.start(1000)  # 1 second interval
+                self.screenshot_timer = timer
+
+            self.gui.verbose_logger.info("Screenshot capture initialized (1 FPS)")
+
+        except Exception as e:
+            self.gui.verbose_logger.warning(f"Failed to initialize screenshot capture: {e}. Continuing without screenshots.")
+
+    def _capture_and_send_screenshots(self) -> None:
+        """Capture screenshots and send via web bridge.
+
+        Called by QTimer every second. Captures all tabs asynchronously
+        and enqueues them for sending via the web bridge.
+        """
+        if self.web_bridge is None or self.screenshot_capture is None:
+            return
+
+        try:
+            screenshots = self.screenshot_capture.capture_all_tabs()
+
+            if screenshots:
+                # Enqueue screenshots message for web bridge
+                self.web_bridge.enqueue({"type": "gui_screenshots", "screenshots": screenshots})
+
+        except Exception as e:
+            # Don't let screenshot failures break the GUI
+            if hasattr(self.gui, "verbose_logger"):
+                self.gui.verbose_logger.debug(f"Failed to capture/send screenshots: {e}")
+
     def stop(self) -> None:
-        """Stops the web bridge."""
+        """Stops the web bridge and screenshot capture."""
+        # Stop screenshot timer
+        if self.screenshot_timer is not None:
+            try:
+                self.screenshot_timer.stop()
+            except Exception as e:
+                if hasattr(self.gui, "verbose_logger"):
+                    self.gui.verbose_logger.warning(f"Error stopping screenshot timer: {e}")
+
+        # Stop web bridge
         if self.web_bridge is not None:
             try:
                 self.web_bridge.stop()

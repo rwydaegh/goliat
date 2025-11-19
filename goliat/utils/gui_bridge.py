@@ -200,6 +200,9 @@ class WebGUIBridge(LoggingMixin):
                         message_counts["status_batched"] = message_counts.get("status_batched", 0) + len(log_batch)
                         log_batch = []
                         last_batch_send = current_time
+                elif message_type == "gui_screenshots":
+                    # Send screenshots immediately via dedicated endpoint (don't batch)
+                    self._send_screenshots(message)
                 else:
                     # Send progress/profiler updates immediately
                     should_throttle = message_type in ["overall_progress", "stage_progress", "profiler_update"]
@@ -260,6 +263,28 @@ class WebGUIBridge(LoggingMixin):
 
         # Submit to thread pool for async execution (non-blocking)
         self.executor.submit(self._send_message_sync, message)
+
+    def _send_screenshots(self, message: Dict[str, Any]) -> None:
+        """Send screenshots to the dashboard API (async).
+
+        Args:
+            message: Message dictionary with 'screenshots' key containing tab name -> bytes mapping
+        """
+        if not self.executor or "screenshots" not in message:
+            return
+
+        # Submit to thread pool for async execution (non-blocking)
+        self.executor.submit(self._send_screenshots_sync, message.get("screenshots", {}))
+
+    def _send_screenshots_sync(self, screenshots: Dict[str, bytes]) -> None:
+        """Synchronous implementation of screenshot sending (runs in thread pool).
+
+        Args:
+            screenshots: Dictionary mapping tab names to JPEG bytes
+        """
+        success = self.http_client.post_gui_screenshots(screenshots)
+        if success:
+            self.is_connected = True
 
     def _send_message_sync(self, message: Dict[str, Any]) -> None:
         """Synchronous implementation of message sending (runs in thread pool).
