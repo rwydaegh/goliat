@@ -38,7 +38,7 @@ def compare_configs():
 
         # Check if the file exists in configs/
         if not config_file.exists():
-            errors.append(f"❌ Missing in configs/: {default_file.name}")
+            errors.append(f"[ERROR] Missing in configs/: {default_file.name}")
             continue
 
         checked_count += 1
@@ -49,7 +49,7 @@ def compare_configs():
             config_data = normalize_json(config_file)
 
             if default_data != config_data:
-                errors.append(f"❌ Content mismatch: {default_file.name}")
+                errors.append(f"[ERROR] Content mismatch: {default_file.name}")
                 # Show a brief diff
                 import difflib
 
@@ -68,9 +68,9 @@ def compare_configs():
                 # Limit diff output to avoid overwhelming output
                 errors.extend(diff[:30])
         except json.JSONDecodeError as e:
-            errors.append(f"❌ Invalid JSON in {config_file.name}: {e}")
+            errors.append(f"[ERROR] Invalid JSON in {config_file.name}: {e}")
         except Exception as e:
-            errors.append(f"❌ Error comparing {default_file.name}: {e}")
+            errors.append(f"[ERROR] Error comparing {default_file.name}: {e}")
 
     if errors:
         print("=" * 80)
@@ -83,7 +83,7 @@ def compare_configs():
         print("\n💡 Tip: Run 'python scripts/sync_configs.py' to sync configs")
         return False
 
-    print(f"✓ All {checked_count} config file(s) are in sync!")
+    print(f"All {checked_count} config file(s) are in sync!")
     return True
 
 

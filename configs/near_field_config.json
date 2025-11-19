@@ -27,6 +27,7 @@
         "manual_fallback_max_step_mm": 3.0
     },
     "global_gridding_per_frequency": {
+        "450": 2.5,
         "700": 2.5,
         "835": 2.5,
         "1450": 2.5,
