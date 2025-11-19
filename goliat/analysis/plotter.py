@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import cast
 
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
@@ -117,18 +118,21 @@ class Plotter:
             return
 
         # Filter out rows with missing power balance data
-        power_df = results_df[
-            [
-                "frequency_mhz",
-                "scenario",
-                "placement",
-                "power_balance_pct",
-                "power_pin_W",
-                "power_diel_loss_W",
-                "power_rad_W",
-                "power_sibc_loss_W",
-            ]
-        ].copy()
+        power_df = cast(
+            pd.DataFrame,
+            results_df[
+                [
+                    "frequency_mhz",
+                    "scenario",
+                    "placement",
+                    "power_balance_pct",
+                    "power_pin_W",
+                    "power_diel_loss_W",
+                    "power_rad_W",
+                    "power_sibc_loss_W",
+                ]
+            ].copy(),
+        )
         power_df = power_df.dropna(subset=["power_balance_pct"])
 
         if power_df.empty:
@@ -198,7 +202,7 @@ class Plotter:
 
         # Plot 2: Power components breakdown (if we have enough data)
         power_cols = ["power_pin_W", "power_diel_loss_W", "power_rad_W", "power_sibc_loss_W"]
-        available_cols = [col for col in power_cols if col in power_df.columns and power_df[col].notna().any()]
+        available_cols = [col for col in power_cols if col in power_df.columns and bool(power_df[col].notna().any())]
 
         if len(available_cols) >= 2:
             # Group by frequency and scenario, calculate means
@@ -239,7 +243,8 @@ class Plotter:
 
                     for i, col in enumerate(available_cols):
                         offset = (i - len(available_cols) / 2) * width + width / 2
-                        values = freq_data[col].values
+                        col_data = freq_data[col]
+                        values = col_data.to_numpy() if isinstance(col_data, pd.Series) else np.asarray(col_data)
                         ax.bar(x + offset, values, width, label=col.replace("power_", "").replace("_W", "").replace("_", " ").title())
 
                     ax.set_xlabel("Scenario")

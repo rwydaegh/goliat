@@ -328,8 +328,13 @@ class SarExtractor(LoggingMixin):
             )
 
             if not group_df.empty:
+                tissue_col = group_df["Tissue"]
+                if isinstance(tissue_col, pd.Series):
+                    unique_tissues = tissue_col.unique()
+                else:
+                    unique_tissues = pd.Series(tissue_col).unique()
                 self._log(
-                    f"[GROUP_SAR]   -> Matching tissues in DataFrame: {sorted(group_df['Tissue'].unique())}",
+                    f"[GROUP_SAR]   -> Matching tissues in DataFrame: {sorted(unique_tissues)}",
                     log_type="info",
                 )
                 total_mass = group_df["Total Mass"].sum()
