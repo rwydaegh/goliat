@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING, List, Tuple, Dict, Optional
 
 import matplotlib
 
+from ...constants import PLOT_Y_AXIS_BUFFER_MULTIPLIER
+
 matplotlib.use("Qt5Agg")
 try:
     import matplotlib.dates as mdates
@@ -122,7 +124,7 @@ class TimeRemainingPlot:
         hours = [h for _, h in self.data]
 
         # Determine if we should display in minutes (if max y-axis value < 1 hour)
-        y_max = self.max_time_remaining_seen * 1.1
+        y_max = self.max_time_remaining_seen * PLOT_Y_AXIS_BUFFER_MULTIPLIER
         use_minutes = y_max < 1.0
 
         # Convert to minutes if needed for visualization
