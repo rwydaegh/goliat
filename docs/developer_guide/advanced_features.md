@@ -18,8 +18,17 @@ graph TD
     B -- Instantiates --> Study[NearFieldStudy/FarFieldStudy];
     Study -- Uses --> QueueGUI[QueueGUI object];
     QueueGUI -- Puts messages --> C{multiprocessing.Queue};
-    C -- Polled by QTimer --> A;
+    C -- Polled by QTimer<br/>every 100ms --> E[QueueHandler];
+    E -- Updates GUI --> A;
+    E -- Forwards messages --> F[WebGUIBridge];
+    F -- HTTP POST<br/>throttled --> G[Monitoring Dashboard<br/>API];
     A -- Updates UI --> D[User];
+    G -- Displays status --> H[Web Dashboard];
+    
+    style C fill:#FFE082
+    style E fill:#C5E1A5
+    style F fill:#BBDEFB
+    style G fill:#E1BEE7
 ```
 
 ## 2. GUI and profiling system
@@ -41,7 +50,8 @@ The GUI is built using modular components located in `goliat/gui/components/`:
 -   **`PieChartsManager`**: Generates pie charts showing time breakdown by phase and subtask.
 -   **`ProgressAnimation`**: Manages smooth animations for progress bars during long-running phases.
 -   **`TrayManager`**: Provides system tray integration for background operation.
--   **`QueueHandler`**: Processes messages from the study process queue.
+-   **`QueueHandler`**: Processes messages from the study process queue and forwards them to the web bridge.
+-   **`WebBridgeManager`**: Manages connection to the web monitoring dashboard and forwards GUI messages.
 -   **`UIBuilder`**: Constructs the window layout and manages UI components.
 
 ### The `Profiler`
@@ -186,5 +196,104 @@ goliat study my_study.json --no-cache
 When this flag is active, GOLIAT will ignore any existing project files or metadata. It skips the verification process, deletes any existing `.smash` file for the target simulation, and executes all phases (setup, run, extract) from a clean state. This is useful for debugging configuration issues, validating code changes, or when a fresh run is explicitly required.
 
 The `--no-cache` flag can also be used when you need to ensure that cached results from a previous configuration are not reused, even if the current configuration appears identical.
+
+## 8. Web monitoring dashboard integration
+
+GOLIAT supports remote monitoring through a web dashboard. Monitor multiple worker machines from one interface, track progress across distributed studies, and view real-time logs and system information.
+
+### Architecture overview
+
+The web monitoring system uses a bridge pattern to forward GUI messages to a remote dashboard API without interfering with local GUI operation. The architecture consists of four components:
+
+- **`QueueHandler`**: Processes messages from the study process queue. After updating the local GUI, forwards a copy of each message to the web bridge (if enabled).
+
+- **`WebBridgeManager`**: Manages the web bridge connection lifecycle. Initializes the bridge, collects system information (GPU, CPU, RAM, hostname), and handles connection status updates.
+
+- **`WebGUIBridge`**: Core bridge component that forwards messages to the dashboard API. Uses an internal queue to decouple from the multiprocessing queue and implements message throttling to prevent API overload.
+
+- **`HTTPClient`**: Handles HTTP requests to the dashboard API endpoints (`/api/gui-update` and `/api/heartbeat`).
+
+### Message flow
+
+Messages flow from the study process to the web dashboard through this path:
+
+```mermaid
+sequenceDiagram
+    participant Study as Study Process
+    participant Queue as multiprocessing.Queue
+    participant Handler as QueueHandler
+    participant GUI as ProgressGUI
+    participant Bridge as WebGUIBridge
+    participant API as Dashboard API
+    participant Dashboard as Web Dashboard
+    
+    Study->>Queue: Put message (status, progress, etc.)
+    Queue->>Handler: Poll (every 100ms)
+    Handler->>GUI: Update local UI
+    Handler->>Bridge: Enqueue message copy
+    Bridge->>Bridge: Throttle & batch
+    Bridge->>API: HTTP POST /api/gui-update
+    API->>Dashboard: Update worker state
+    Bridge->>Bridge: Send heartbeat (every 30s)
+    Bridge->>API: HTTP POST /api/heartbeat
+```
+
+### Message types and handling
+
+The `QueueHandler` processes several message types, each forwarded to the web bridge (with appropriate sanitization):
+
+- `status`: Log messages with color coding. Batched together (up to 20 messages per batch, sent every 300ms) for efficiency.
+- `overall_progress`: Overall study progress (e.g., 5 out of 108 simulations). Sent immediately with throttling (up to 50 Hz).
+- `stage_progress`: Progress within the current phase (setup/run/extract). Sent immediately with throttling.
+- `profiler_update`: ETA and timing information. The profiler object is sanitized to extract only serializable data (e.g., `eta_seconds`).
+- `finished`: Study completion notification.
+- `fatal_error`: Fatal error notification.
+
+### Throttling and batching
+
+The `WebGUIBridge` throttles messages to prevent API overload:
+
+- Progress updates (`overall_progress`, `stage_progress`, `profiler_update`): Sent immediately but throttled to 50 Hz (20ms minimum interval).
+- Log messages (`status`): Batched together and sent every 300ms, or immediately if the batch reaches 20 messages.
+- Heartbeats: Sent every 30 seconds to maintain worker registration and update connection status.
+
+### Connection management
+
+The web bridge maintains connection state and provides feedback to the GUI:
+
+- Connection callback: The bridge calls `ProgressGUI._update_web_status` whenever the connection status changes. Updates a visual indicator (green dot for connected, red dot for disconnected) in the GUI.
+- Graceful degradation: If the dashboard is unavailable or the `requests` library is not installed, the GUI continues to function normally. Messages are silently dropped (not queued) to prevent memory buildup.
+- System information: On initialization, the bridge collects and sends system information (GPU model, CPU cores, RAM capacity, hostname) with the initial heartbeat. This information is displayed on the web dashboard.
+
+### Worker identification
+
+Workers are identified by their IP address (or local IP if no public IP is available). The dashboard handles IP changes (e.g., VPN reconnections) by matching workers by hostname and transferring running assignments to the new worker session.
+
+### API endpoints
+
+The web bridge communicates with two API endpoints:
+
+- `POST /api/gui-update`: Sends GUI state updates (progress, logs, status). Payload includes `machineId`, `message`, and `timestamp`.
+- `POST /api/heartbeat`: Registers or updates worker status and sends system information. Called automatically every 30 seconds.
+
+### Initialization
+
+The web bridge initializes automatically when:
+
+- The `requests` library is installed (`pip install requests`).
+- A machine ID can be detected (public IP or local IP).
+- The dashboard URL is accessible (default: `https://goliat.waves-ugent.be`).
+
+No configuration is required. The GUI shows a connection status indicator to inform users whether web monitoring is active.
+
+### Error handling
+
+The web bridge handles errors gracefully:
+
+- Network errors: Connection timeouts and errors are logged but do not affect GUI operation.
+- Message serialization: Non-serializable objects (like the `Profiler` instance) are sanitized before sending.
+- Thread safety: HTTP requests are executed in a thread pool to avoid blocking the GUI thread.
+
+For more information about using the monitoring dashboard, see the [Monitoring Dashboard documentation](../cloud/monitoring.md).
 
 For a complete reference of all features mentioned here and more, see the [Full List of Features](../reference/full_features_list.md).
