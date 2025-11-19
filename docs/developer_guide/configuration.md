@@ -43,6 +43,7 @@ These are the foundational settings shared across all study types.
 | `extends` | string | `"base_config.json"` | **(Optional)** Specifies the parent configuration file to inherit from. This is typically used in study-specific configs. |
 | `study_type` | string | `"near_field"` | **(Required)** The type of study to run. Valid options are `"near_field"` or `"far_field"`. |
 | `use_gui` | boolean | `true` | If `true`, the graphical user interface (GUI) will be launched to monitor progress. If `false`, the study runs in headless mode, printing logs to the console. |
+| `use_web` | boolean | `true` | If `true`, enables web monitoring dashboard integration. Progress updates and logs are forwarded to the monitoring dashboard. If `false`, web monitoring is disabled. Required for `goliat super_study` and `goliat worker` commands. |
 | `phantoms` | array | `["thelonious", "eartha"]` | A list of the virtual human phantom models to be used in the study. For near-field studies, you can also include `"freespace"` to run a simulation of the antenna in isolation. |
 | `verbose` | boolean | `false` | If `true`, enables detailed verbose logging to the console, in addition to the standard progress logs. |
 

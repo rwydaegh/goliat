@@ -164,32 +164,24 @@ t₀ ≈ 3.7σ
 
 The pulse has significant energy from `t = t₀ - k·σ` to `t = t₀ + k·σ`, where `k` determines the threshold.
 
-**For k = 3 (1% threshold):**
+**For k = 5 (Sim4Life requirement, forced threshold):**
 - Left side: `k·σ` before peak
 - Right side: `k·σ` after peak
-- **Total duration:** `2k·σ = 6σ`
-
-**For k = 3.7 (0.1% threshold, more conservative):**
-- **Total duration:** `2k·σ = 7.4σ`
+- **Total duration:** `2k·σ = 10σ`
 
 ### Pulse Duration in Terms of Bandwidth
 
 Substituting `σ ≈ 0.94/(π·BW)`:
 
-**For k = 3:**
+**For k = 5 (Sim4Life requirement):**
 ```
-T_pulse = 2k·σ = 2·3·0.94/(π·BW) = 5.64/(π·BW) ≈ 1.80/BW
-```
-
-**For k = 3.7:**
-```
-T_pulse = 2k·σ = 2·3.7·0.94/(π·BW) = 6.96/(π·BW) ≈ 2.22/BW
+T_pulse = 2k·σ = 2·5·0.94/(π·BW) = 9.4/(π·BW) ≈ 3.0/BW
 ```
 
 **Examples:**
-- `BW = 100 MHz`: `T_pulse ≈ 18.0 ns` (k=3) or `22.2 ns` (k=3.7)
-- `BW = 50 MHz`: `T_pulse ≈ 36.0 ns` (k=3) or `44.4 ns` (k=3.7)
-- `BW = 200 MHz`: `T_pulse ≈ 9.0 ns` (k=3) or `11.1 ns` (k=3.7)
+- `BW = 100 MHz`: `T_pulse ≈ 30.0 ns`
+- `BW = 50 MHz`: `T_pulse ≈ 60.0 ns`
+- `BW = 200 MHz`: `T_pulse ≈ 15.0 ns`
 
 ## Required Simulation Time
 
@@ -207,7 +199,7 @@ For a complete simulation, we need:
 
 2. **Pulse Wait Time (`T_pulse`)**: Time for the complete pulse to pass through
    ```
-   T_pulse = 2k·σ ≈ 1.80/BW  (for k=3)
+   T_pulse = 2k·σ ≈ 3.0/BW  (for k=5, Sim4Life requirement)
    ```
 
 ### Total Required Time
@@ -218,12 +210,7 @@ T_required = T_prop + T_pulse = L_bbox/c + 2k·σ
 
 **Substituting:**
 ```
-T_required = L_bbox/c + 1.80/BW  (for k=3)
-```
-
-or more conservatively:
-```
-T_required = L_bbox/c + 2.22/BW  (for k=3.7)
+T_required = L_bbox/c + 3.0/BW  (for k=5, Sim4Life requirement)
 ```
 
 ## Current Allocation vs. Required Time
@@ -277,33 +264,33 @@ multiplier · L_bbox/c < L_bbox/c + 2k·σ
 L_bbox/c < 2k·σ/(multiplier - 1)
 ```
 
-**For multiplier = 3.5, k = 3:**
+**For multiplier = 3.5, k = 5:**
 ```
-L_bbox/c < 2·3·σ/2.5 = 2.4·σ
-L_bbox < 2.4·c·σ
+L_bbox/c < 2·5·σ/2.5 = 4.0·σ
+L_bbox < 4.0·c·σ
 ```
 
 **Substituting σ:**
 ```
-L_bbox < 2.4·c·0.94/(π·BW)
-L_bbox < 0.72·c/BW
+L_bbox < 4.0·c·0.94/(π·BW)
+L_bbox < 1.20·c/BW
 ```
 
 ### Critical Bounding Box Sizes
 
 **For BW = 100 MHz:**
 ```
-L_bbox < 0.72 · 3×10⁸ / (100×10⁶) = 2.16 m
+L_bbox < 1.20 · 3×10⁸ / (100×10⁶) = 3.60 m
 ```
 
 **For BW = 50 MHz:**
 ```
-L_bbox < 0.72 · 3×10⁸ / (50×10⁶) = 4.32 m
+L_bbox < 1.20 · 3×10⁸ / (50×10⁶) = 7.20 m
 ```
 
 **For BW = 200 MHz:**
 ```
-L_bbox < 0.72 · 3×10⁸ / (200×10⁶) = 1.08 m
+L_bbox < 1.20 · 3×10⁸ / (200×10⁶) = 1.80 m
 ```
 
 ### Practical Implications
@@ -324,22 +311,22 @@ For typical near-field scenarios:
 - `BW = 100 MHz`
 - `f₀ = 700 MHz`
 - `multiplier = 3.5`
-- `k = 3`
+- `k = 5` (Sim4Life requirement)
 
 **Calculations:**
 ```
 T_prop = 0.3 / 3×10⁸ = 1.0×10⁻⁹ s = 1.0 ns
-T_pulse = 1.80/(100×10⁶) = 18.0×10⁻⁹ s = 18.0 ns
-T_required = 1.0 + 18.0 = 19.0 ns
+T_pulse = 3.0/(100×10⁶) = 30.0×10⁻⁹ s = 30.0 ns
+T_required = 1.0 + 30.0 = 31.0 ns
 T_allocated = 3.5 × 1.0 = 3.5 ns
 ```
 
-**Result:** ❌ **FAILS** - `3.5 ns < 19.0 ns`
+**Result:** ❌ **FAILS** - `3.5 ns < 31.0 ns`
 
 **Required simulation time:**
 ```
-T_sim = max(3.5 ns, 19.0 ns) = 19.0 ns
-N_periods = 19.0×10⁻⁹ / (1/(700×10⁶)) = 13.3 periods
+T_sim = max(3.5 ns, 31.0 ns) = 31.0 ns
+N_periods = 31.0×10⁻⁹ / (1/(700×10⁶)) = 21.7 periods
 ```
 
 ### Example 2: Medium Bbox, 100 MHz Bandwidth
@@ -348,22 +335,22 @@ N_periods = 19.0×10⁻⁹ / (1/(700×10⁶)) = 13.3 periods
 - `L_bbox = 0.5 m`
 - `BW = 100 MHz`
 - `multiplier = 3.5`
-- `k = 3`
+- `k = 5` (Sim4Life requirement)
 
 **Calculations:**
 ```
 T_prop = 0.5 / 3×10⁸ = 1.67 ns
-T_pulse = 18.0 ns
-T_required = 1.67 + 18.0 = 19.67 ns
+T_pulse = 30.0 ns
+T_required = 1.67 + 30.0 = 31.67 ns
 T_allocated = 3.5 × 1.67 = 5.84 ns
 ```
 
-**Result:** ❌ **FAILS** - `5.84 ns < 19.67 ns`
+**Result:** ❌ **FAILS** - `5.84 ns < 31.67 ns`
 
 **Required simulation time:**
 ```
-T_sim = max(5.84 ns, 19.67 ns) = 19.67 ns
-N_periods = 19.67×10⁻⁹ / (1/(700×10⁶)) = 13.8 periods
+T_sim = max(5.84 ns, 31.67 ns) = 31.67 ns
+N_periods = 31.67×10⁻⁹ / (1/(700×10⁶)) = 22.2 periods
 ```
 
 ### Example 3: Large Bbox, 100 MHz Bandwidth
@@ -372,22 +359,22 @@ N_periods = 19.67×10⁻⁹ / (1/(700×10⁶)) = 13.8 periods
 - `L_bbox = 1.0 m`
 - `BW = 100 MHz`
 - `multiplier = 3.5`
-- `k = 3`
+- `k = 5` (Sim4Life requirement)
 
 **Calculations:**
 ```
 T_prop = 1.0 / 3×10⁸ = 3.33 ns
-T_pulse = 18.0 ns
-T_required = 3.33 + 18.0 = 21.33 ns
+T_pulse = 30.0 ns
+T_required = 3.33 + 30.0 = 33.33 ns
 T_allocated = 3.5 × 3.33 = 11.67 ns
 ```
 
-**Result:** ❌ **FAILS** - `11.67 ns < 21.33 ns`
+**Result:** ❌ **FAILS** - `11.67 ns < 33.33 ns`
 
 **Required simulation time:**
 ```
-T_sim = max(11.67 ns, 21.33 ns) = 21.33 ns
-N_periods = 21.33×10⁻⁹ / (1/(700×10⁶)) = 14.9 periods
+T_sim = max(11.67 ns, 33.33 ns) = 33.33 ns
+N_periods = 33.33×10⁻⁹ / (1/(700×10⁶)) = 23.3 periods
 ```
 
 ### Example 4: Small Bbox, 50 MHz Bandwidth
@@ -396,22 +383,22 @@ N_periods = 21.33×10⁻⁹ / (1/(700×10⁶)) = 14.9 periods
 - `L_bbox = 0.3 m`
 - `BW = 50 MHz`
 - `multiplier = 3.5`
-- `k = 3`
+- `k = 5` (Sim4Life requirement)
 
 **Calculations:**
 ```
 T_prop = 1.0 ns
-T_pulse = 1.80/(50×10⁶) = 36.0 ns
-T_required = 1.0 + 36.0 = 37.0 ns
+T_pulse = 3.0/(50×10⁶) = 60.0 ns
+T_required = 1.0 + 60.0 = 61.0 ns
 T_allocated = 3.5 ns
 ```
 
-**Result:** ❌ **FAILS** - `3.5 ns < 37.0 ns`
+**Result:** ❌ **FAILS** - `3.5 ns < 61.0 ns`
 
 **Required simulation time:**
 ```
-T_sim = max(3.5 ns, 37.0 ns) = 37.0 ns
-N_periods = 37.0×10⁻⁹ / (1/(700×10⁶)) = 25.9 periods
+T_sim = max(3.5 ns, 61.0 ns) = 61.0 ns
+N_periods = 61.0×10⁻⁹ / (1/(700×10⁶)) = 42.7 periods
 ```
 
 ### Example 5: Very Large Bbox, 100 MHz Bandwidth
@@ -420,29 +407,29 @@ N_periods = 37.0×10⁻⁹ / (1/(700×10⁶)) = 25.9 periods
 - `L_bbox = 2.5 m`
 - `BW = 100 MHz`
 - `multiplier = 3.5`
-- `k = 3`
+- `k = 5` (Sim4Life requirement)
 
 **Calculations:**
 ```
 T_prop = 2.5 / 3×10⁸ = 8.33 ns
-T_pulse = 18.0 ns
-T_required = 8.33 + 18.0 = 26.33 ns
+T_pulse = 30.0 ns
+T_required = 8.33 + 30.0 = 38.33 ns
 T_allocated = 3.5 × 8.33 = 29.17 ns
 ```
 
-**Result:** ✅ **PASSES** - `29.17 ns > 26.33 ns`
+**Result:** ❌ **FAILS** - `29.17 ns < 38.33 ns`
 
 **Required simulation time:**
 ```
-T_sim = max(29.17 ns, 26.33 ns) = 29.17 ns
-N_periods = 29.17×10⁻⁹ / (1/(700×10⁶)) = 20.4 periods
+T_sim = max(29.17 ns, 38.33 ns) = 38.33 ns
+N_periods = 38.33×10⁻⁹ / (1/(700×10⁶)) = 26.8 periods
 ```
 
 ## Key Insights
 
 ### 1. Pulse Duration Dominates for Small Bboxes
 
-For typical near-field scenarios (`L_bbox < 1 m`), the pulse duration term (`T_pulse ≈ 18-36 ns`) is much larger than the propagation time (`T_prop ≈ 1-3 ns`). This means:
+For typical near-field scenarios (`L_bbox < 1 m`), the pulse duration term (`T_pulse ≈ 30-60 ns`) is much larger than the propagation time (`T_prop ≈ 1-3 ns`). This means:
 
 - The current multiplier approach is insufficient
 - We must explicitly add the pulse duration term
@@ -451,19 +438,16 @@ For typical near-field scenarios (`L_bbox < 1 m`), the pulse duration term (`T_p
 ### 2. Bandwidth Has Strong Impact
 
 Wider bandwidths mean shorter pulses, but the relationship is inverse:
-- `BW = 50 MHz` → `T_pulse ≈ 36 ns`
-- `BW = 100 MHz` → `T_pulse ≈ 18 ns`
-- `BW = 200 MHz` → `T_pulse ≈ 9 ns`
+- `BW = 50 MHz` → `T_pulse ≈ 60 ns`
+- `BW = 100 MHz` → `T_pulse ≈ 30 ns`
+- `BW = 200 MHz` → `T_pulse ≈ 15 ns`
 
 For narrow bandwidths, pulse duration becomes even more dominant.
 
-### 3. Conservative Threshold Matters
+### 3. Sim4Life Requirement
 
-Using `k = 3.7` (0.1% threshold) instead of `k = 3` (1% threshold) increases pulse duration by ~23%:
-- `k = 3`: `T_pulse = 1.80/BW`
-- `k = 3.7`: `T_pulse = 2.22/BW`
-
-For safety, we should use the more conservative value.
+Sim4Life forces `k = 5` for Gaussian pulse duration calculation, which gives:
+- `T_pulse = 3.0/BW` (for k=5)
 
 ## Implementation Formula
 
@@ -481,8 +465,8 @@ if excitation_type == "Gaussian":
     bandwidth_mhz = config["simulation_parameters.bandwidth_mhz"] or 50.0
     bandwidth_hz = bandwidth_mhz * 1e6
     
-    # Conservative threshold (0.1% of peak)
-    k = 3.7
+    # Sim4Life requirement (forced threshold)
+    k = 5
     
     # Calculate temporal standard deviation
     sigma = 0.94 / (np.pi * bandwidth_hz)  # seconds
@@ -523,13 +507,13 @@ else:
 For quick reference, the pulse duration can be approximated as:
 
 ```
-T_pulse ≈ 2.22/BW  (for k=3.7, BW in Hz)
+T_pulse ≈ 3.0/BW  (for k=5, Sim4Life requirement, BW in Hz)
 ```
 
 So the total required time is:
 
 ```
-T_sim = max(multiplier · L_bbox/c, L_bbox/c + 2.22/BW)
+T_sim = max(multiplier · L_bbox/c, L_bbox/c + 3.0/BW)
 ```
 
 ## Frequency Extraction Context
@@ -587,7 +571,7 @@ Where:
 ### Balancing Pulse Duration and Frequency Resolution
 
 There's a **trade-off** between:
-1. **Pulse duration requirement** (minimum time): `T_pulse = 2k·σ ≈ 2.22/BW_excitation`
+1. **Pulse duration requirement** (minimum time): `T_pulse = 2k·σ ≈ 3.0/BW_excitation` (for k=5, Sim4Life requirement)
 2. **Frequency resolution requirement** (longer is better): `T_sim ≥ 1/Δf_required`
 
 **For antenna characterization with narrow bandwidth:**
@@ -653,14 +637,14 @@ Based on antenna characteristics (BW = 10-30 MHz, shift up to 100 MHz):
 **Option 1: Narrow bandwidth (Recommended for high resolution)**
 - `BW_excitation = 50 MHz` (covers ±25 MHz around nominal)
 - Frequency resolution: 5 MHz (T_sim = 200 ns)
-- Pulse duration: ~44 ns
+- Pulse duration: ~60 ns (k=5)
 - **Pros:** Better resolution, less computational cost
 - **Cons:** May need to run multiple simulations if shift > 25 MHz
 
 **Option 2: Wide bandwidth (Better coverage)**
 - `BW_excitation = 150 MHz` (covers ±75 MHz around nominal)
 - Frequency resolution: 5 MHz (T_sim = 200 ns)
-- Pulse duration: ~15 ns
+- Pulse duration: ~20 ns (k=5)
 - **Pros:** Captures larger shifts in single simulation
 - **Cons:** Wastes computation on frequencies where antenna doesn't respond
 
@@ -675,7 +659,7 @@ Based on antenna characteristics (BW = 10-30 MHz, shift up to 100 MHz):
 ```python
 # Constants
 c = 2.998e8  # m/s
-k = 3.7      # Conservative threshold
+k = 5        # Sim4Life requirement (forced threshold)
 
 # Configuration
 bandwidth_mhz = 50  # MHz (narrower for better resolution)
@@ -705,14 +689,14 @@ sim_time_periods = T_sim / (1 / (frequency_mhz * 1e6))
 
 ```
 T_prop = 0.5 / 3e8 = 1.67 ns
-T_pulse = 2.22 / (50e6) = 44.4 ns
+T_pulse = 3.0 / (50e6) = 60.0 ns
 T_resolution = 1 / (5e6) = 200 ns
 
 Component 1 (multiplier): 3.5 × 1.67 = 5.84 ns
-Component 2 (propagation + pulse): 1.67 + 44.4 = 46.1 ns
+Component 2 (propagation + pulse): 1.67 + 60.0 = 61.7 ns
 Component 3 (resolution): 200 ns
 
-T_sim = max(5.84, 46.1, 200) = 200 ns  ← FREQUENCY RESOLUTION DOMINATES!
+T_sim = max(5.84, 61.7, 200) = 200 ns  ← FREQUENCY RESOLUTION DOMINATES!
 
 N_periods = 200e-9 / (1/700e6) = 140 periods
 ```
@@ -723,7 +707,7 @@ N_periods = 200e-9 / (1/700e6) = 140 periods
 
 ```
 With BW = 100 MHz:
-T_pulse = 22.2 ns (shorter)
+T_pulse = 30.0 ns (shorter)
 T_resolution = 200 ns (same, set by target resolution)
 T_sim = 200 ns (still dominated by resolution requirement)
 ```
@@ -833,8 +817,8 @@ T_sim = max(multiplier · L_bbox/c, L_bbox/c + 2k·σ, 1/Δf_target)
 
 Where:
 - `σ = 0.94/(π·BW)` (temporal standard deviation of Gaussian pulse)
-- `k = 3.7` (conservative threshold for 0.1% of peak amplitude)
-- `2k·σ ≈ 2.22/BW` (pulse duration)
+- `k = 5` (Sim4Life requirement, forced threshold)
+- `2k·σ ≈ 3.0/BW` (pulse duration)
 - `Δf_target` = required frequency resolution (typically 5 MHz for narrowband antennas)
 
 **⚠️ CAVEAT:** This formula assumes standard FFT with no advanced post-processing. **Empirical validation required** to determine if Sim4Life's internal processing (ARMA, interpolation, zero-padding) allows shorter simulation times.

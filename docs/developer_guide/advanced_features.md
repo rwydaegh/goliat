@@ -58,9 +58,14 @@ The GUI is built using modular components located in `goliat/gui/components/`:
 
 The `Profiler` class is the engine for all timing and estimation.
 
--   **Session-Based Timing**: The profiler maintains a session-specific timing configuration file in the `data/` folder (e.g., `profiling_config_31-10_14-15-30_a1b2c3d4.json`). The filename includes a timestamp prefix followed by a unique hash. This file stores the average time taken for each major phase (`avg_setup_time`, `avg_run_time`, etc.) and for granular subtasks. The session-specific approach means each study run tracks its own timing data, allowing for cleaner session management and avoiding conflicts between concurrent runs.
--   **ETA Calculation**: The `get_time_remaining` method provides the core ETA logic. It calculates the total estimated time for all simulations based on the current session's timing averages and subtracts the time that has already elapsed. This elapsed time is a combination of the total time for already completed simulations and the real-time duration of the current, in-progress simulation.
--   **Weighted Progress**: The `Profiler` calculates the progress within a single simulation by using phase weights. These weights are derived from the average time of each phase in the current session, normalized to sum to 1. This makes a longer phase, like `run`, contribute more to the intra-simulation progress than a shorter one, like `extract`.
+-   **Session-Based Timing**: The profiler maintains a session-specific timing configuration file in the `data/` folder (e.g., `profiling_config_31-10_14-15-30_a1b2c3d4.json`). The filename includes a timestamp prefix followed by a unique hash. This file stores average times for each major phase (`avg_setup_time`, `avg_run_time`, etc.) and for granular subtasks. The session-specific approach means each study run tracks its own timing data, allowing for cleaner session management and avoiding conflicts between concurrent runs.
+-   **Dual Estimation System**: The profiler maintains two types of estimates:
+    - **Simple averages** (`avg_{phase}_time`): Used for display purposes (pie charts, timings table, phase weights). These are straightforward arithmetic means of all real phase executions, excluding cached phases.
+    - **Smart estimates**: Computed on-the-fly for ETA calculations using a weighted average that emphasizes the last 3 simulations (70% weight) while incorporating all historical data. Within the last 3, the most recent measurement gets the highest weight. This makes ETA calculations more responsive to recent trends while maintaining stability from older data.
+-   **Cached Phase Handling**: Cached setup phases are excluded from statistics to prevent polluting real execution time estimates. When a setup phase is skipped due to caching, it doesn't affect the simple average stored in `avg_{phase}_time`, ensuring pie charts and statistics reflect actual execution times.
+-   **Starting with Cached Simulations**: When a study begins with many cached simulations, ETA calculations use estimates from the previous session (or defaults) until real measurements are available. As real simulations complete, the smart estimate adapts quickly, emphasizing the most recent measurements. The ETA calculation uses actual elapsed time rather than estimated time, so cached simulations that complete quickly don't inflate the remaining time estimate.
+-   **ETA Calculation**: The `get_time_remaining` method provides the core ETA logic. It calculates the total estimated time for all simulations based on the current session's smart phase estimates and subtracts the time that has already elapsed. This elapsed time is a combination of the total time for already completed simulations and the real-time duration of the current, in-progress simulation.
+-   **Weighted Progress**: The `Profiler` calculates the progress within a single simulation by using phase weights. These weights are derived from the estimated time of each phase in the current session, normalized to sum to 1. This makes a longer phase, like `run`, contribute more to the intra-simulation progress than a shorter one, like `extract`.
 
 ### The animation system
 
@@ -68,7 +73,7 @@ For long-running phases where the underlying process provides no feedback (like 
 
 **How it works:**
 
-1.  **Initiation**: When a major phase (e.g., `setup`) begins, the `profile` context manager in the study process retrieves the estimated duration for that entire phase from the `Profiler` (e.g., `avg_setup_time`). It sends a `start_animation` message to the GUI with this duration.
+1.  **Initiation**: When a major phase (e.g., `setup`) begins, the `profile` context manager in the study process retrieves the estimated duration for that entire phase from the `Profiler` (stored as `avg_setup_time`, `avg_run_time`, etc.). It sends a `start_animation` message to the GUI with this duration.
 
 2.  **Animation Execution**: The `ProgressGUI` receives the message. It resets the stage progress bar to 0% and starts a `QTimer` that fires every 50ms.
 
@@ -280,11 +285,12 @@ The web bridge communicates with two API endpoints:
 
 The web bridge initializes automatically when:
 
+- `use_web` is set to `true` in the configuration (default).
 - The `requests` library is installed (`pip install requests`).
 - A machine ID can be detected (public IP or local IP).
 - The dashboard URL is accessible (default: `https://goliat.waves-ugent.be`).
 
-No configuration is required. The GUI shows a connection status indicator to inform users whether web monitoring is active.
+To disable web monitoring, set `use_web: false` in your configuration. The GUI shows a connection status indicator to inform users whether web monitoring is active.
 
 ### Error handling
 

@@ -217,7 +217,7 @@ class SarExtractor(LoggingMixin):
                 # Try to match against config first (most reliable)
                 placement_scenarios = self.config["placement_scenarios"] or {}
                 base_scenario_name = None
-                
+
                 # Try matching progressively shorter prefixes
                 placement_parts = self.placement_name.split("_")
                 for i in range(len(placement_parts), 0, -1):
@@ -225,7 +225,7 @@ class SarExtractor(LoggingMixin):
                     if candidate in placement_scenarios:
                         base_scenario_name = candidate
                         break
-                
+
                 # Fallback: try common patterns if config matching failed
                 if not base_scenario_name:
                     if self.placement_name.startswith("front_of_eyes"):
@@ -234,7 +234,7 @@ class SarExtractor(LoggingMixin):
                         base_scenario_name = "by_cheek"
                     elif self.placement_name.startswith("by_belly"):
                         base_scenario_name = "by_belly"
-                
+
                 # Get bounding box setting from config
                 bounding_box_setting = "default"
                 if base_scenario_name:
@@ -247,7 +247,7 @@ class SarExtractor(LoggingMixin):
                         "Using default placement-based logic.",
                         log_type="warning",
                     )
-                
+
                 # Determine SAR key based on bounding box setting
                 if bounding_box_setting == "whole_body":
                     sar_key = "whole_body_sar"
@@ -266,7 +266,7 @@ class SarExtractor(LoggingMixin):
                             sar_key = "head_SAR"
                         else:
                             sar_key = "trunk_SAR"
-                
+
                 self.results_data[sar_key] = float(mass_averaged_sar)
             else:
                 self.results_data["whole_body_sar"] = float(mass_averaged_sar)

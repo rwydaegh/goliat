@@ -8,7 +8,7 @@ GOLIAT automates the complex and often tedious aspects of EMF simulations: downl
 
 Before diving into the workflows, let's clarify some fundamental terms:
 
--   **Phantoms**: These are highly detailed digital human models (e.g., "thelonious" represents a 6-year-old boy, "ella" an adult female). They serve as realistic 3D representations for safe and accurate simulation of EMF interaction with biological tissues.
+-   **Phantoms**: These are highly detailed digital human models (e.g., "thelonious" represents a 6-year-old boy, "eartha" an adult female). They serve as realistic 3D representations for safe and accurate simulation of EMF interaction with biological tissues.
 -   **Near-Field Simulations**: Focus on scenarios where an EMF source (e.g., an antenna in a mobile device) is in close proximity to the body. These simulations assess localized absorption, particularly in sensitive areas like the head, eyes, or limbs.
 -   **Far-Field Simulations**: Address scenarios involving plane waves impinging on the entire body from various directions (e.g., front, back, sides). These are typically used for evaluating environmental or broadcast exposure.
 -   **Specific Absorption Rate (SAR)**: The primary output metric, representing the rate at which electromagnetic energy is absorbed per unit mass of biological tissue, typically expressed in milliwatts per kilogram (mW/kg) per 1W of input power. GOLIAT provides whole-body average SAR, localized SAR (e.g., head/trunk), and peak spatial-average SAR (psSAR) over 10g tissue cubes in specific organs (e.g., brain, eyes, skin).

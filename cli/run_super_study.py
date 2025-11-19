@@ -10,6 +10,7 @@ from copy import deepcopy
 import colorama
 
 from goliat.colors import init_colorama
+from goliat.config.merge import deep_merge
 
 try:
     import requests
@@ -90,9 +91,63 @@ def calculate_split_factors(num_phantoms, num_items, target_splits):
     return best_phantom_splits, best_item_splits
 
 
+def _resolve_config_path(config_filename: str, base_path: str) -> str:
+    """Resolves the absolute path to a config file.
+
+    Handles both absolute paths and relative paths. If the filename doesn't
+    end with .json, it's added automatically.
+
+    Args:
+        config_filename: Filename or relative path to the config.
+        base_path: Base directory for resolving relative paths (typically the directory containing the current config).
+
+    Returns:
+        Absolute path to the config file.
+    """
+    if os.path.isabs(config_filename):
+        return config_filename
+
+    # Make base_path absolute if it isn't already
+    if not os.path.isabs(base_path):
+        base_path = os.path.abspath(base_path)
+
+    # If it has a directory component, resolve relative to base_path
+    if os.path.dirname(config_filename):
+        return os.path.join(base_path, config_filename)
+
+    # Otherwise, assume it's in the same directory as base_path
+    if not config_filename.endswith(".json"):
+        config_filename += ".json"
+
+    return os.path.join(base_path, config_filename)
+
+
+def _load_config_with_inheritance(path: str) -> dict:
+    """Loads a JSON config and handles 'extends' for inheritance.
+
+    Args:
+        path: The path to the configuration file.
+
+    Returns:
+        The fully resolved configuration dictionary (without 'extends' key).
+    """
+    with open(path, "r") as f:
+        config = json.load(f)
+
+    if "extends" in config:
+        base_config_path = _resolve_config_path(config["extends"], base_path=os.path.dirname(path))
+        base_config = _load_config_with_inheritance(base_config_path)
+        config = deep_merge(config, base_config)
+        # Remove the 'extends' key after merging
+        config.pop("extends", None)
+
+    return config
+
+
 def split_config(config_path, num_splits, logger):
     """
     Splits the configuration file into multiple assignment configs.
+    Resolves config inheritance (extends) before splitting.
 
     Returns: (base_config, assignment_configs) where assignment_configs is a list of dicts
     """
@@ -100,8 +155,8 @@ def split_config(config_path, num_splits, logger):
         logger.error(f"{colorama.Fore.RED}Error: Config file not found at '{config_path}'")
         sys.exit(1)
 
-    with open(config_path, "r") as f:
-        base_config = json.load(f)
+    # Load and resolve config inheritance (merge with base_config)
+    base_config = _load_config_with_inheritance(config_path)
 
     # Extract phantoms
     base_phantoms = base_config.get("phantoms", [])
@@ -196,6 +251,8 @@ def upload_super_study(name, description, base_config, assignment_configs, serve
 
     try:
         # Create super study
+        # Note: Python 3.7+ preserves dict insertion order, and requests.post(json=...) uses json.dumps()
+        # which preserves order by default (sort_keys=False). This ensures JSON key order is maintained.
         payload = {
             "name": name,
             "description": description or "",
@@ -278,6 +335,21 @@ def main():
     logger.info(f"  Config: {args.config}")
     logger.info(f"  Splits: {args.num_splits}")
     logger.info(f"  Server: {server_url}\n")
+
+    # Load config to check use_web setting
+    from goliat.config import Config
+    from cli.utils import get_base_dir
+
+    base_dir = get_base_dir()
+    config = Config(base_dir, args.config)
+    use_web = config["use_web"]
+    if use_web is None:
+        use_web = True
+
+    if not use_web:
+        logger.error(f"{colorama.Fore.RED}Error: use_web must be True to upload super study configs to the web dashboard.")
+        logger.error("Set 'use_web': true in your config file to enable super study uploads.")
+        sys.exit(1)
 
     # Split the config
     base_config, assignment_configs = split_config(args.config, args.num_splits, logger)

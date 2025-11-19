@@ -240,6 +240,7 @@ This document provides a complete reference of every feature available in GOLIAT
 - System tray integration for background operation
 - Responsive GUI (multiprocessing architecture prevents freezing)
 - Headless mode option (`use_gui: false` for console-only operation)
+- Web monitoring dashboard integration (`use_web: true` for remote monitoring)
 - Window title customization via `--title` command-line argument
 
 ## Logging system
@@ -345,6 +346,12 @@ This document provides a complete reference of every feature available in GOLIAT
 - `goliat parallel <config> --num-splits <n>` - Split config and run studies in parallel
 - `goliat parallel <config> --skip-split` - Run from existing parallel directory
 - `goliat parallel <config> --no-cache` - Bypass caching in parallel runs
+
+### Distributed execution commands
+
+- `goliat super_study <config> --name <name> --num-splits <n>` - Create and upload super study to web dashboard (requires `use_web: true`)
+- `goliat worker <index> <name>` - Run worker on super study assignment (requires `use_web: true`)
+- `goliat worker <index> <name> --reupload-results` - Reupload results when caching skips simulations
 
 ### Utility commands
 
