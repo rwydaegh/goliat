@@ -33,7 +33,16 @@ def mock_study():
     return study
 
 
-def test_simulation_runner_initialization(mock_config, mock_study):
+@pytest.fixture
+def mock_project_manager():
+    """Create a mock project manager."""
+    pm = MagicMock()
+    pm.project_path = "/tmp/project.smash"
+    pm.save = MagicMock()
+    return pm
+
+
+def test_simulation_runner_initialization(mock_config, mock_study, mock_project_manager):
     runner = SimulationRunner(
         config=mock_config,
         project_path="/tmp/project.smash",
@@ -41,12 +50,13 @@ def test_simulation_runner_initialization(mock_config, mock_study):
         profiler=MagicMock(),
         verbose_logger=MagicMock(),
         progress_logger=MagicMock(),
+        project_manager=mock_project_manager,
         gui=None,
     )
     assert runner is not None
 
 
-def test_run_no_simulation(mock_config, mock_study):
+def test_run_no_simulation(mock_config, mock_study, mock_project_manager):
     runner = SimulationRunner(
         config=mock_config,
         project_path="/tmp/project.smash",
@@ -54,6 +64,7 @@ def test_run_no_simulation(mock_config, mock_study):
         profiler=MagicMock(),
         verbose_logger=MagicMock(),
         progress_logger=MagicMock(),
+        project_manager=mock_project_manager,
         gui=None,
     )
     # This should run without error

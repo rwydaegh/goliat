@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
     QTextEdit,
 )
 
-from goliat.gui.components.plots import TimeRemainingPlot, OverallProgressPlot, PieChartsManager
+from goliat.gui.components.plots import TimeRemainingPlot, OverallProgressPlot, PieChartsManager, SystemUtilizationPlot
 from goliat.gui.components.timings_table import TimingsTable
 
 if TYPE_CHECKING:
@@ -207,6 +207,7 @@ class UIBuilder:
         UIBuilder._build_piecharts_tab(gui_instance)
         UIBuilder._build_time_remaining_tab(gui_instance)
         UIBuilder._build_overall_progress_tab(gui_instance)
+        UIBuilder._build_system_utilization_tab(gui_instance)
 
         # Build buttons
         UIBuilder._build_buttons(gui_instance, main_layout)
@@ -406,6 +407,15 @@ class UIBuilder:
         gui_instance.tabs.addTab(overall_progress_widget, "Overall Progress")
         gui_instance.overall_progress_plot = OverallProgressPlot()
         overall_progress_layout.addWidget(gui_instance.overall_progress_plot.canvas)
+
+    @staticmethod
+    def _build_system_utilization_tab(gui_instance: "ProgressGUI") -> None:
+        """Builds the System Utilization tab."""
+        utilization_widget = QWidget()
+        utilization_layout = QVBoxLayout(utilization_widget)
+        gui_instance.tabs.addTab(utilization_widget, "System Utilization")
+        gui_instance.system_utilization_plot = SystemUtilizationPlot()
+        utilization_layout.addWidget(gui_instance.system_utilization_plot.canvas)
 
     @staticmethod
     def _build_buttons(gui_instance: "ProgressGUI", main_layout: QVBoxLayout) -> None:
