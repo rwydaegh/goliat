@@ -27,6 +27,7 @@ graph TB
         PM[Project Manager]
         Setup[Setup Classes<br/>Scene Building]
         Runner[Simulation Runner]
+        Strategies[Execution Strategies<br/>Strategy Pattern]
         Extractor[Results Extractor]
     end
 
@@ -48,10 +49,11 @@ graph TB
     Study --> Setup
     Study --> Runner
     Study --> Extractor
+    Runner --> Strategies
     Extractor --> Analyzer
     Analyzer --> Plotter
-    Runner --> S4L
-    Runner --> oSPARC
+    Strategies --> S4L
+    Strategies --> oSPARC
     Setup --> S4L
     Extractor --> S4L
     
@@ -59,6 +61,7 @@ graph TB
     style Study fill:#BBDEFB
     style Setup fill:#C5E1A5
     style Runner fill:#FFE082
+    style Strategies fill:#FFE082
     style Extractor fill:#FFCCBC
     style Analyzer fill:#D1C4E9
     style Plotter fill:#D1C4E9
@@ -200,10 +203,15 @@ GOLIAT groups individual tissues into logical categories (e.g., eyes, brain, ski
 - **API Reference**: [goliat.setups](../reference/api_reference.md#goliat.setups)
 
 #### `SimulationRunner`
-- **Function**: Executes a single simulation, either locally using `iSolve.exe` or by submitting it to the oSPARC cloud platform. It also handles real-time logging of the solver output. A key feature is the `_run_isolve_manual` method, which runs the solver in a separate process and uses a non-blocking reader thread to capture and log its output in real-time.
+- **Function**: Executes a single simulation using the Strategy pattern to select the appropriate execution method. The runner delegates actual execution to specialized strategy classes, making it easy to add new execution methods without modifying the core runner logic.
+- **Execution Strategies**: The runner uses three main strategies:
+    - `ISolveManualStrategy`: Executes simulations locally using `iSolve.exe` subprocess. Handles real-time output logging, progress milestone tracking, and retry logic for failed runs.
+    - `Sim4LifeAPIStrategy`: Executes simulations via the Sim4Life Python API. Used when running simulations directly through the API.
+    - `OSPARCDirectStrategy`: Submits simulations to the oSPARC cloud platform for distributed execution.
 - **Some interesting methods**:
 
-    - `run()`: Executes a single simulation as defined by its configuration.
+    - `run()`: Writes the input file, then delegates to the appropriate execution strategy based on configuration.
+    - `_create_execution_strategy()`: Factory method that selects the correct strategy based on solver settings.
 
 - **API Reference**: [goliat.simulation_runner.SimulationRunner](../reference/api_reference.md#goliat.simulation_runner.SimulationRunner)
 

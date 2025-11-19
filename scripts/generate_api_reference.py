@@ -51,6 +51,16 @@ CATEGORY_MAPPING = {
         "description": None,
         "modules": {},
     },
+    "runners": {
+        "name": "Execution Strategies",
+        "description": "Strategy pattern implementations for different simulation execution methods.",
+        "subcategories": {
+            "execution_strategy.py": {"name": "Base Strategy", "description": None},
+            "isolve_manual_strategy.py": {"name": "iSolve Manual Strategy", "description": None},
+            "sim4life_api_strategy.py": {"name": "Sim4Life API Strategy", "description": None},
+            "osparc_direct_strategy.py": {"name": "oSPARC Direct Strategy", "description": None},
+        },
+    },
     "extraction": {
         "name": "Results Extraction",
         "description": "Classes for extracting and processing simulation results.",
@@ -165,7 +175,7 @@ def scan_goliat_directory(src_root: Path) -> Dict[str, List[Tuple[Path, str]]]:
         elif len(parts) == 2:
             # Package module
             package = parts[0]
-            if package in ["studies", "setups", "extraction", "analysis", "gui"]:
+            if package in ["studies", "setups", "extraction", "analysis", "gui", "runners"]:
                 categories.setdefault(package, []).append((file_path, str(relative_path)))
             else:
                 # Unknown package, add to core
@@ -329,7 +339,7 @@ def generate_section(category_key: str, files: List[Tuple[Path, str]], src_root:
                     output_lines.append(generate_mkdocstrings_directive(module_path))
                 output_lines.append("")
 
-    elif category_key in ["studies", "setups", "analysis"]:
+    elif category_key in ["studies", "setups", "analysis", "runners"]:
         # Group by subcategory
         current_subcat = None
         for file_path, relative_path in sorted(files):
@@ -384,7 +394,7 @@ def generate_api_reference(src_root: Path = Path("goliat"), output_path: Path = 
     categories = scan_goliat_directory(src_root)
 
     # Generate sections in order
-    category_order = ["core", "studies", "setups", "simulation_runner.py", "extraction", "analysis", "gui"]
+    category_order = ["core", "studies", "setups", "simulation_runner.py", "runners", "extraction", "analysis", "gui"]
     for category_key in category_order:
         if category_key in categories:
             generate_section(category_key, categories[category_key], src_root, output_lines)
