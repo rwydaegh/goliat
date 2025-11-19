@@ -119,10 +119,61 @@ class Reporter:
         html_content = df.to_html(index=False, border=1)
 
         html_content += "<h2>Tissue Group Composition</h2>"
-        html_content += pd.DataFrame.from_dict(tissue_groups, orient="index").to_html()
+        # Convert tissue groups to DataFrame, cleaning tissue names for display
+        cleaned_groups = {}
+        for group_name, tissues in tissue_groups.items():
+            cleaned_tissues = []
+            seen = set()
+            for tissue in tissues:
+                if tissue is None:
+                    continue
+
+                # Check if this is a "(not present)" entry
+                has_not_present = " (not present)" in tissue
+
+                # Strip phantom suffix (handle both "  (" and " (" patterns)
+                # Phantom suffixes are like "  (Thelonious_6y_V6)" or " (Thelonious_6y_V6)"
+                display_name = tissue
+                if has_not_present:
+                    # Temporarily remove "(not present)" marker to strip phantom suffix
+                    temp_name = display_name.replace(" (not present)", "")
+                    # Strip phantom suffix
+                    if "  (" in temp_name:
+                        temp_name = temp_name.split("  (")[0].strip()
+                    elif " (" in temp_name:
+                        temp_name = temp_name.split(" (")[0].strip()
+                    # Restore "(not present)" marker
+                    display_name = temp_name + " (not present)"
+                else:
+                    # Strip phantom suffix
+                    if "  (" in display_name:
+                        display_name = display_name.split("  (")[0].strip()
+                    elif " (" in display_name:
+                        display_name = display_name.split(" (")[0].strip()
+
+                # Remove duplicates based on the base name (without "(not present)")
+                base_name = display_name.replace(" (not present)", "")
+                if base_name not in seen:
+                    cleaned_tissues.append(display_name)
+                    seen.add(base_name)
+            cleaned_groups[group_name] = cleaned_tissues
+
+        # Pad to same length for display
+        max_length = max(len(tissues) for tissues in cleaned_groups.values()) if cleaned_groups else 1
+        max_length = max(max_length, 1)
+        padded_groups = {group: tissues + [""] * (max_length - len(tissues)) for group, tissues in cleaned_groups.items()}
+        group_df = pd.DataFrame.from_dict(padded_groups, orient="index")
+        group_df.columns = [f"Tissue {i + 1}" for i in range(max_length)]
+        # Replace empty strings and None with empty strings for cleaner HTML (pandas will render empty strings as blank cells)
+        group_df = group_df.replace("", "").fillna("")
+        html_content += group_df.to_html()
 
         html_content += "<h2>Grouped SAR Statistics</h2>"
-        html_content += pd.DataFrame.from_dict(group_sar_stats, orient="index").to_html()
+        # Format SAR values in scientific notation
+        sar_df = pd.DataFrame.from_dict(group_sar_stats, orient="index")
+        for col in sar_df.columns:
+            sar_df[col] = sar_df[col].apply(lambda x: f"{x:.2e}" if pd.notna(x) else "0.00e+00")
+        html_content += sar_df.to_html()
 
         html_content += "<h2>Peak SAR Details</h2>"
         peak_sar_df = pd.DataFrame.from_dict(results_data.get("peak_sar_details", {}), orient="index")

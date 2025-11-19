@@ -32,6 +32,9 @@ jobs:
     - name: Install dependencies
       run: uv pip install --system -e .
 
+    - name: Validate config file sync
+      run: python scripts/validate_config_sync.py
+
     - name: Run Pytest tests
       run: |
         export PYTHONPATH=$PYTHONPATH:./goliat

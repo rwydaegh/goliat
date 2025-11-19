@@ -8,6 +8,11 @@
         "auto_cleanup_previous_results": []
     },
     "simulation_parameters": {
+        "excitation_type": "Harmonic",
+        "bandwidth_mhz": 50.0,
+        "target_freq_resolution_mhz": 10.0,
+        "s4l_arma_speedup_factor": 1.0,
+        "gaussian_pulse_k": 3,
         "global_auto_termination": "GlobalAutoTerminationUserDefined",
         "convergence_level_dB": -15,
         "simulation_time_multiplier": 3.5,
@@ -44,6 +49,7 @@
     },
     "verbose": false,
     "manual_isolve": true,
+    "keep_awake": false,
     "data_setup": {
         "gdrive_url": "https://drive.google.com/drive/folders/1Ps0ilW6yx4Z5VoWRZKrkhP225m8lBQOV?usp=sharing&confirm=t",
         "gdrive_url_aws": "https://drive.google.com/uc?id=1etS9uyi0Ns-vOtG2q0G1hU0LLw0M_dq7",
