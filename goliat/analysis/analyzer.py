@@ -68,7 +68,7 @@ class Analyzer:
         if not self.all_results:
             logging.getLogger("progress").info("--- No results found to analyze. ---", extra={"log_type": "warning"})
             return
-
+        
         results_df = pd.DataFrame(self.all_results)
         all_organ_results_df = pd.DataFrame(self.all_organ_results) if self.all_organ_results else pd.DataFrame()
 
@@ -112,7 +112,7 @@ class Analyzer:
                 extra={"log_type": "debug"},
             )
             return
-
+        
         if not os.path.exists(pickle_path):
             logging.getLogger("progress").warning(
                 f"  - Warning: PKL file missing for {frequency_mhz}MHz, {detailed_placement_name}",
@@ -129,7 +129,7 @@ class Analyzer:
             # Load JSON (required)
             with open(json_path, "r") as f:
                 sar_results = json.load(f)
-
+            
             # Load PKL if available
             if os.path.exists(pickle_path):
                 with open(pickle_path, "rb") as f:
@@ -157,7 +157,7 @@ class Analyzer:
                             pickle_data["grouped_sar_stats"][f"{group_name}_group"]["peak_sar"] = value
 
             simulated_power_w = sar_results.get("input_power_W", float("nan"))
-
+            
             # Warn if results exist but input power is missing (unusual)
             if pd.isna(simulated_power_w) or simulated_power_w <= 0:
                 logging.getLogger("progress").warning(
@@ -165,7 +165,7 @@ class Analyzer:
                     "This is unusual - results may not be normalized correctly.",
                     extra={"log_type": "warning"},
                 )
-
+            
             normalization_factor = self.strategy.get_normalization_factor(frequency_mhz, simulated_power_w)
             result_entry, organ_entries = self.strategy.extract_data(
                 pickle_data,
@@ -190,7 +190,6 @@ class Analyzer:
                 extra={"log_type": "error"},
             )
             import traceback
-
             logging.getLogger("progress").debug(traceback.format_exc(), extra={"log_type": "debug"})
 
     def _convert_units_and_cache(self, results_df: pd.DataFrame, organ_results_df: pd.DataFrame) -> pd.DataFrame:
@@ -224,9 +223,9 @@ class Analyzer:
             cols_to_drop.append("input_power_w")
         if "scenario" in results_df.columns:
             cols_to_drop.append("scenario")
-
+        
         results_for_export = results_df.drop(columns=cols_to_drop) if cols_to_drop else results_df
-
+        
         logging.getLogger("progress").info(
             "\n--- Full Normalized Results per Simulation (in mW/kg) ---",
             extra={"log_type": "header"},
@@ -237,7 +236,7 @@ class Analyzer:
                 logging.getLogger("progress").info(results_for_export.sort_values(by=sort_cols))
             else:
                 logging.getLogger("progress").info(results_for_export)
-
+        
         summary_stats = self.strategy.calculate_summary_stats(results_df)
         logging.getLogger("progress").info(
             "\n--- Summary Statistics (Mean) of Normalized SAR per Scenario and Frequency (in mW/kg) ---",
@@ -245,21 +244,21 @@ class Analyzer:
         )
         with pd.option_context("display.max_rows", None, "display.max_columns", None, "display.width", 1000):
             logging.getLogger("progress").info(summary_stats)
-
+        
         detailed_csv_path = os.path.join(self.results_base_dir, "normalized_results_detailed.csv")
         summary_csv_path = os.path.join(self.results_base_dir, "normalized_results_summary.csv")
         organ_csv_path = os.path.join(self.results_base_dir, "normalized_results_organs.csv")
-
+        
         results_for_export.to_csv(detailed_csv_path, index=False)
         summary_stats.to_csv(summary_csv_path)
-
+        
         if not all_organ_results_df.empty:
             all_organ_results_df.to_csv(organ_csv_path, index=False)
             logging.getLogger("progress").info(
                 f"--- Organ-level results saved to: {organ_csv_path} ---",
                 extra={"log_type": "success"},
             )
-
+        
         logging.getLogger("progress").info(
             f"\n--- Detailed results saved to: {detailed_csv_path} ---",
             extra={"log_type": "success"},

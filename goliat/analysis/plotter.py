@@ -55,7 +55,7 @@ class Plotter:
             progress_info: Series with completion counts like '5/6' per frequency.
         """
         fig, ax = plt.subplots(figsize=(12, 7))
-
+        
         # Select available columns
         sar_cols = []
         legend_labels = []
@@ -68,7 +68,7 @@ class Plotter:
         if "SAR_whole_body" in avg_results.columns:
             sar_cols.append("SAR_whole_body")
             legend_labels.append("Whole-Body SAR")
-
+        
         if sar_cols:
             avg_results[sar_cols].plot(kind="bar", ax=ax, colormap="viridis")
             progress_labels = [f"{freq} MHz\n({progress_info.get(freq, '0/0')})" for freq in avg_results.index]
@@ -80,7 +80,7 @@ class Plotter:
         else:
             ax.text(0.5, 0.5, "No SAR data available", ha="center", va="center")
             ax.set_title(f"Average Normalized SAR for Scenario: {scenario_name}")
-
+        
         plt.tight_layout()
         fig.savefig(os.path.join(self.plots_dir, f"average_sar_bar_{scenario_name}.png"))
         plt.close(fig)
@@ -99,12 +99,12 @@ class Plotter:
 
     def plot_power_balance_overview(self, results_df: pd.DataFrame):
         """Creates comprehensive plots showing power balance across all simulations.
-
+        
         Generates multiple plots:
         1. Balance percentage distribution (boxplot/bar chart)
         2. Power components breakdown (stacked bar or grouped bar)
         3. Balance vs frequency/scenario heatmap
-
+        
         Args:
             results_df: DataFrame with all simulation results including power balance columns.
         """
@@ -115,32 +115,24 @@ class Plotter:
                 extra={"log_type": "warning"},
             )
             return
-
+        
         # Filter out rows with missing power balance data
         power_df = results_df[
-            [
-                "frequency_mhz",
-                "scenario",
-                "placement",
-                "power_balance_pct",
-                "power_pin_W",
-                "power_diel_loss_W",
-                "power_rad_W",
-                "power_sibc_loss_W",
-            ]
+            ["frequency_mhz", "scenario", "placement", "power_balance_pct", 
+             "power_pin_W", "power_diel_loss_W", "power_rad_W", "power_sibc_loss_W"]
         ].copy()
         power_df = power_df.dropna(subset=["power_balance_pct"])
-
+        
         if power_df.empty:
             logging.getLogger("progress").warning(
                 "  - No valid power balance data found, skipping power balance plots",
                 extra={"log_type": "warning"},
             )
             return
-
+        
         # Plot 1: Balance percentage distribution by frequency and scenario
         fig, axes = plt.subplots(2, 1, figsize=(14, 10))
-
+        
         # Top plot: Boxplot of balance by frequency
         ax1 = axes[0]
         if len(power_df["frequency_mhz"].unique()) > 1:
@@ -168,7 +160,7 @@ class Plotter:
             ax1.set_ylabel("Power Balance (%)")
             ax1.legend()
             ax1.grid(True, alpha=0.3)
-
+        
         # Bottom plot: Balance by scenario
         ax2 = axes[1]
         if len(power_df["scenario"].unique()) > 1:
@@ -189,31 +181,32 @@ class Plotter:
             ax2.grid(True, alpha=0.3)
             ax2.tick_params(axis="x", rotation=45)
         else:
-            ax2.text(0.5, 0.5, "Single scenario - insufficient data for comparison", ha="center", va="center", transform=ax2.transAxes)
+            ax2.text(0.5, 0.5, "Single scenario - insufficient data for comparison", 
+                    ha="center", va="center", transform=ax2.transAxes)
             ax2.set_title("Power Balance by Scenario", fontsize=14, fontweight="bold")
-
+        
         plt.tight_layout()
         fig.savefig(os.path.join(self.plots_dir, "power_balance_distribution.png"), dpi=150, bbox_inches="tight")
         plt.close(fig)
-
+        
         # Plot 2: Power components breakdown (if we have enough data)
         power_cols = ["power_pin_W", "power_diel_loss_W", "power_rad_W", "power_sibc_loss_W"]
         available_cols = [col for col in power_cols if col in power_df.columns and power_df[col].notna().any()]
-
+        
         if len(available_cols) >= 2:
             # Group by frequency and scenario, calculate means
             if len(power_df["frequency_mhz"].unique()) > 1 and len(power_df["scenario"].unique()) > 1:
                 # Create grouped bar chart
                 summary_power = power_df.groupby(["frequency_mhz", "scenario"])[available_cols].mean().reset_index()
-
+                
                 # Create figure with subplots for each frequency
                 frequencies = sorted(power_df["frequency_mhz"].unique())
                 n_freqs = len(frequencies)
                 n_cols = min(3, n_freqs)
                 n_rows = (n_freqs + n_cols - 1) // n_cols
-
+                
                 fig, axes_array = plt.subplots(n_rows, n_cols, figsize=(6 * n_cols, 5 * n_rows))
-
+                
                 # Normalize axes to always be a list
                 if n_freqs == 1:
                     axes = [axes_array]
@@ -224,24 +217,24 @@ class Plotter:
                         axes = [axes_array]
                 else:
                     axes = axes_array.flatten().tolist()
-
+                
                 for idx, freq in enumerate(frequencies):
                     if idx >= len(axes):
                         break
                     ax = axes[idx]
-
+                    
                     freq_data = summary_power[summary_power["frequency_mhz"] == freq]
                     if freq_data.empty:
                         continue
-
+                    
                     x = np.arange(len(freq_data))
                     width = 0.2
-
+                    
                     for i, col in enumerate(available_cols):
                         offset = (i - len(available_cols) / 2) * width + width / 2
                         values = freq_data[col].values
                         ax.bar(x + offset, values, width, label=col.replace("power_", "").replace("_W", "").replace("_", " ").title())
-
+                    
                     ax.set_xlabel("Scenario")
                     ax.set_ylabel("Power (W)")
                     ax.set_title(f"Power Components at {freq} MHz")
@@ -249,19 +242,24 @@ class Plotter:
                     ax.set_xticklabels(freq_data["scenario"], rotation=45, ha="right")
                     ax.legend(fontsize=8)
                     ax.grid(True, alpha=0.3, axis="y")
-
+                
                 # Hide unused subplots
                 for idx in range(len(frequencies), len(axes)):
                     axes[idx].set_visible(False)
-
+                
                 plt.tight_layout()
                 fig.savefig(os.path.join(self.plots_dir, "power_components_breakdown.png"), dpi=150, bbox_inches="tight")
                 plt.close(fig)
-
+        
         # Plot 3: Heatmap of balance by frequency and scenario
         if len(power_df["frequency_mhz"].unique()) > 1 and len(power_df["scenario"].unique()) > 1:
-            pivot_balance = power_df.pivot_table(values="power_balance_pct", index="scenario", columns="frequency_mhz", aggfunc="mean")
-
+            pivot_balance = power_df.pivot_table(
+                values="power_balance_pct",
+                index="scenario",
+                columns="frequency_mhz",
+                aggfunc="mean"
+            )
+            
             fig, ax = plt.subplots(figsize=(10, 6))
             sns.heatmap(
                 pivot_balance,
@@ -281,7 +279,7 @@ class Plotter:
             plt.tight_layout()
             fig.savefig(os.path.join(self.plots_dir, "power_balance_heatmap.png"), dpi=150, bbox_inches="tight")
             plt.close(fig)
-
+        
         logging.getLogger("progress").info(
             "  - Power balance plots generated",
             extra={"log_type": "success"},

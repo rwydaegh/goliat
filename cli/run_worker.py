@@ -165,10 +165,21 @@ def fetch_assignment(super_study_name, assignment_index, server_url, machine_id,
         sys.exit(1)
 
 
-def run_assignment(assignment, super_study_name, assignment_index, title, no_cache, logger):
+def run_assignment(assignment, super_study_name, assignment_index, title, no_cache, reupload_results, logger):
     """Run the study with the assignment config."""
     # Create config file in configs directory (not temp)
     config_data = assignment.get("splitConfig", {})
+
+    # Check use_web setting early - worker NEEDS web to function
+    use_web = config_data.get("use_web")
+    if use_web is None:
+        use_web = True  # Default to True if not specified
+
+    if not use_web:
+        logger.error(f"{colorama.Fore.RED}Error: use_web must be True for goliat worker command.")
+        logger.error("Worker mode requires web connectivity to fetch assignments and upload results.")
+        logger.error("Set 'use_web': true in your config file.")
+        sys.exit(1)
 
     # Use configs directory instead of temp
     configs_dir = os.path.join(base_dir, "configs")
@@ -187,6 +198,8 @@ def run_assignment(assignment, super_study_name, assignment_index, title, no_cac
             logger.warning(f"  Base config not found: {base_config_name}")
 
     # Write the assignment config
+    # Note: json.dump preserves key order by default (Python 3.7+), ensuring the original
+    # JSON structure from the server is maintained when saved to file.
     with open(config_path, "w") as f:
         json.dump(config_data, f, indent=2)
 
@@ -196,6 +209,8 @@ def run_assignment(assignment, super_study_name, assignment_index, title, no_cac
 
     # Set environment variables for web integration
     os.environ["GOLIAT_ASSIGNMENT_ID"] = assignment.get("id", "")
+    if reupload_results:
+        os.environ["GOLIAT_REUPLOAD_RESULTS"] = "1"
 
     # Run the study using goliat study command
     from cli.run_study import main as study_main
@@ -249,6 +264,11 @@ def main():
         help="If set, redo simulations even if the configuration matches a completed run.",
     )
     parser.add_argument(
+        "--reupload-results",
+        action="store_true",
+        help="When caching skips simulations, upload extraction results that appear valid.",
+    )
+    parser.add_argument(
         "--server-url",
         type=str,
         default=None,
@@ -273,7 +293,7 @@ def main():
 
     # Run the assignment
     title = args.title or f"[Worker {args.assignment_index}] {args.super_study_name}"
-    success = run_assignment(assignment, args.super_study_name, args.assignment_index, title, args.no_cache, logger)
+    success = run_assignment(assignment, args.super_study_name, args.assignment_index, title, args.no_cache, args.reupload_results, logger)
 
     if not success:
         sys.exit(1)

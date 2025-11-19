@@ -32,8 +32,8 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
         far_field_params = self.config["far_field_setup.environmental"]
         if not far_field_params:
             return
-        incident_directions = far_field_params.get("incident_directions", [])
-        polarizations = far_field_params.get("polarizations", [])
+        incident_directions = far_field_params["incident_directions"] if "incident_directions" in far_field_params else []
+        polarizations = far_field_params["polarizations"] if "polarizations" in far_field_params else []
 
         if not frequencies:
             return

@@ -174,15 +174,6 @@ class SarExtractor(LoggingMixin):
         # This preserves distinct tissues like "Eye (Cornea)" vs "Eye (Lens)"
         raw_tissue_names = [results.RowCaptions[i] for i in range(results.NumberOfRows())]  # type: ignore
 
-        self._log(
-            f"[SAR_EXTRACTOR] Sim4Life returned {len(raw_tissue_names)} tissue rows",
-            log_type="info",
-        )
-        self._log(
-            f"[SAR_EXTRACTOR] First 10 raw tissue names from Sim4Life: {raw_tissue_names[:10]}",
-            log_type="info",
-        )
-
         data = [
             [raw_tissue_names[i]]  # Use original name, not cleaned
             + [results.Value(i, j) for j in range(results.NumberOfColumns())]  # type: ignore
@@ -193,15 +184,6 @@ class SarExtractor(LoggingMixin):
         df.columns = columns
         numeric_cols = [col for col in df.columns if col != "Tissue"]
         df[numeric_cols] = df[numeric_cols].apply(pd.to_numeric, errors="coerce").fillna(0)
-
-        self._log(
-            f"[SAR_EXTRACTOR] DataFrame created with {len(df)} rows, unique tissues: {df['Tissue'].nunique()}",
-            log_type="info",
-        )
-        self._log(
-            f"[SAR_EXTRACTOR] Unique tissue names in DataFrame: {sorted(df['Tissue'].unique())[:20]}",
-            log_type="info",
-        )
 
         return df
 
@@ -218,6 +200,12 @@ class SarExtractor(LoggingMixin):
     def _store_all_regions_sar(self, df: pd.DataFrame) -> None:
         """Stores all-regions SAR results (head/trunk/whole-body and peak SAR).
 
+        For near-field studies, determines which SAR to store based on bounding box setting:
+        - If bounding_box is "whole_body": stores as "whole_body_sar"
+        - If bounding_box is "default" or not set: uses placement-based logic
+          (by_cheek/front_of_eyes -> head_SAR, by_belly -> trunk_SAR)
+        - If bounding_box is explicitly "head" or "trunk": uses that
+
         Args:
             df: DataFrame with SAR statistics per tissue.
         """
@@ -225,7 +213,60 @@ class SarExtractor(LoggingMixin):
         if not all_regions_row.empty:
             mass_averaged_sar = all_regions_row["Mass-Averaged SAR"].iloc[0]  # type: ignore
             if self.parent.study_type == "near_field":
-                sar_key = "head_SAR" if self.placement_name.lower() in ["front_of_eyes", "by_cheek"] else "trunk_SAR"
+                # Extract base scenario name from placement_name (e.g., "by_cheek_tragus_tilt_base" -> "by_cheek")
+                # Try to match against config first (most reliable)
+                placement_scenarios = self.config["placement_scenarios"] or {}
+                base_scenario_name = None
+                
+                # Try matching progressively shorter prefixes
+                placement_parts = self.placement_name.split("_")
+                for i in range(len(placement_parts), 0, -1):
+                    candidate = "_".join(placement_parts[:i])
+                    if candidate in placement_scenarios:
+                        base_scenario_name = candidate
+                        break
+                
+                # Fallback: try common patterns if config matching failed
+                if not base_scenario_name:
+                    if self.placement_name.startswith("front_of_eyes"):
+                        base_scenario_name = "front_of_eyes"
+                    elif self.placement_name.startswith("by_cheek"):
+                        base_scenario_name = "by_cheek"
+                    elif self.placement_name.startswith("by_belly"):
+                        base_scenario_name = "by_belly"
+                
+                # Get bounding box setting from config
+                bounding_box_setting = "default"
+                if base_scenario_name:
+                    scenario_config = placement_scenarios.get(base_scenario_name) or {}
+                    bounding_box_setting = scenario_config.get("bounding_box", "default")
+                else:
+                    # If we can't determine scenario, log a warning
+                    self._log(
+                        f"  - WARNING: Could not determine scenario name from placement '{self.placement_name}'. "
+                        "Using default placement-based logic.",
+                        log_type="warning",
+                    )
+                
+                # Determine SAR key based on bounding box setting
+                if bounding_box_setting == "whole_body":
+                    sar_key = "whole_body_sar"
+                elif bounding_box_setting == "head":
+                    sar_key = "head_SAR"
+                elif bounding_box_setting == "trunk":
+                    sar_key = "trunk_SAR"
+                else:  # "default" or not set - use placement-based logic
+                    if base_scenario_name in ["front_of_eyes", "by_cheek"]:
+                        sar_key = "head_SAR"
+                    elif base_scenario_name == "by_belly":
+                        sar_key = "trunk_SAR"
+                    else:
+                        # Fallback: try to infer from placement name
+                        if "eyes" in self.placement_name.lower() or "cheek" in self.placement_name.lower():
+                            sar_key = "head_SAR"
+                        else:
+                            sar_key = "trunk_SAR"
+                
                 self.results_data[sar_key] = float(mass_averaged_sar)
             else:
                 self.results_data["whole_body_sar"] = float(mass_averaged_sar)
@@ -272,38 +313,16 @@ class SarExtractor(LoggingMixin):
             Dict with 'weighted_avg_sar' and 'peak_sar' for each group. Groups with
             no matching tissues are skipped.
         """
-        self._log(
-            "[GROUP_SAR] Starting group SAR calculation",
-            log_type="info",
-        )
-        self._log(
-            f"[GROUP_SAR] DataFrame has {len(df)} rows, columns: {list(df.columns)}",
-            log_type="info",
-        )
-        self._log(
-            f"[GROUP_SAR] Available tissues in DataFrame: {sorted(df['Tissue'].unique())[:20]}",
-            log_type="info",
-        )
-
         group_sar_data = {}
         peak_sar_col = "Peak Spatial-Average SAR[IEEE/IEC62704-1] (10g)"
 
         for group_name, tissues in tissue_groups.items():
-            self._log(
-                f"[GROUP_SAR] Processing group '{group_name}' with {len(tissues)} tissues: {tissues}",
-                log_type="info",
-            )
-
             if not tissues:
                 # Return 0 SAR for empty groups (they should still appear in reports)
                 group_sar_data[group_name] = {
                     "weighted_avg_sar": 0.0,
                     "peak_sar": 0.0,
                 }
-                self._log(
-                    f"[GROUP_SAR]   -> Group '{group_name}' has no tissues, setting SAR to 0",
-                    log_type="info",
-                )
                 continue
 
             # Filter out "(not present)" entries for SAR calculation
@@ -315,23 +334,11 @@ class SarExtractor(LoggingMixin):
                     "weighted_avg_sar": 0.0,
                     "peak_sar": 0.0,
                 }
-                self._log(
-                    f"[GROUP_SAR]   -> All tissues in group '{group_name}' are not present, setting SAR to 0",
-                    log_type="info",
-                )
                 continue
 
             group_df = df[df["Tissue"].isin(present_tissues)]
-            self._log(
-                f"[GROUP_SAR]   -> Found {len(group_df)} matching rows in DataFrame (out of {len(present_tissues)} present tissues)",
-                log_type="info",
-            )
 
             if not group_df.empty:
-                self._log(
-                    f"[GROUP_SAR]   -> Matching tissues in DataFrame: {sorted(group_df['Tissue'].unique())}",
-                    log_type="info",
-                )
                 total_mass = group_df["Total Mass"].sum()
                 weighted_avg_sar = (group_df["Total Mass"] * group_df["Mass-Averaged SAR"]).sum() / total_mass if total_mass > 0 else 0
                 peak_sar = group_df[peak_sar_col].max() if peak_sar_col in group_df.columns else -1.0
@@ -339,31 +346,13 @@ class SarExtractor(LoggingMixin):
                     "weighted_avg_sar": weighted_avg_sar,
                     "peak_sar": peak_sar,
                 }
-                self._log(
-                    f"[GROUP_SAR]   -> Calculated: weighted_avg={weighted_avg_sar:.2e}, peak={peak_sar:.2e}",
-                    log_type="info",
-                )
             else:
-                self._log(
-                    f"[GROUP_SAR]   -> WARNING: No matching tissues found in DataFrame for group '{group_name}'",
-                    log_type="warning",
-                )
-                # Check which tissues are missing
-                missing = [t for t in present_tissues if t not in df["Tissue"].values]
-                self._log(
-                    f"[GROUP_SAR]   -> Missing tissues: {missing}",
-                    log_type="warning",
-                )
                 # Set SAR to 0 if no present tissues are found in DataFrame
                 group_sar_data[group_name] = {
                     "weighted_avg_sar": 0.0,
                     "peak_sar": 0.0,
                 }
 
-        self._log(
-            f"[GROUP_SAR] Final group SAR data: {list(group_sar_data.keys())}",
-            log_type="info",
-        )
         return group_sar_data
 
     def extract_peak_sar_details(self, em_sensor_extractor: "analysis.Extractor"):  # type: ignore

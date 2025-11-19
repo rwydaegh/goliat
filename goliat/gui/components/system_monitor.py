@@ -75,14 +75,14 @@ class SystemMonitor:
             # psutil is guaranteed to be available here due to PSUTIL_AVAILABLE check
             memory = psutil.virtual_memory()  # type: ignore[possibly-unbound]
             total_gb = memory.total / (1024**3)
-
+            
             # With cache: used / total
             percent_with_cache = memory.percent
-
+            
             # Without cache: (total - available) / total
             # This excludes cacheable memory that can be freed
             percent_without_cache = ((memory.total - memory.available) / memory.total) * 100
-
+            
             return (percent_with_cache, percent_without_cache, total_gb)
         except Exception:
             return (0.0, 0.0, 0.0)

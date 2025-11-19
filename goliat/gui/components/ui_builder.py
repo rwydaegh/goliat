@@ -167,15 +167,6 @@ class UIBuilder:
     """
 
     @staticmethod
-    def get_icon_path() -> str:
-        """Gets path to window icon.
-
-        Returns:
-            Absolute path to favicon.svg.
-        """
-        return os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "docs", "img", "favicon.svg")
-
-    @staticmethod
     def build(gui_instance: "ProgressGUI", status_manager: "StatusManager") -> None:
         """Builds complete UI for the GUI instance.
 
@@ -191,9 +182,8 @@ class UIBuilder:
         gui_instance.resize(800, 900)
 
         # Set window icon
-        icon_path = UIBuilder.get_icon_path()
-        if os.path.exists(icon_path):
-            gui_instance.setWindowIcon(QIcon(icon_path))
+        icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "favicon.svg")
+        gui_instance.setWindowIcon(QIcon(icon_path))
 
         gui_instance.setStyleSheet(UIBuilder.STYLESHEET)
 

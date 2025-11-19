@@ -28,13 +28,8 @@ class TrayManager:
         self.tray_icon: QSystemTrayIcon = QSystemTrayIcon(parent_widget)
 
         # Set icon
-        icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "docs", "img", "favicon.svg")
-        if os.path.exists(icon_path):
-            self.tray_icon.setIcon(QIcon(icon_path))
-        else:
-            style = parent_widget.style()
-            icon = style.standardIcon(style.StandardPixmap.SP_ComputerIcon)
-            self.tray_icon.setIcon(icon)
+        icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "favicon.svg")
+        self.tray_icon.setIcon(QIcon(icon_path))
         self.tray_icon.setToolTip("Simulation is running...")
 
         # Create menu

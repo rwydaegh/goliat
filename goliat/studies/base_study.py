@@ -183,8 +183,8 @@ class BaseStudy(LoggingMixin):
                 self.profiler,
                 self.verbose_logger,
                 self.progress_logger,
-                self.gui,
                 project_manager=self.project_manager,
+                gui=self.gui,
             )
             runner.run()
 
@@ -275,6 +275,14 @@ class BaseStudy(LoggingMixin):
             self._upload_results_if_assignment(project_dir)
         else:
             self._log(f"Deliverables for '{stage}' phase not found. Metadata not updated.", log_type="warning")
+
+    def _should_reupload_results(self) -> bool:
+        """Check if results should be reuploaded when cached.
+
+        Returns:
+            True if GOLIAT_REUPLOAD_RESULTS environment variable is set.
+        """
+        return os.environ.get("GOLIAT_REUPLOAD_RESULTS", "") == "1"
 
     def _upload_results_if_assignment(self, project_dir: str):
         """Upload results to web dashboard if running as part of an assignment.
