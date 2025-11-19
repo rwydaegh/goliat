@@ -222,7 +222,7 @@
   },
   "placement_scenarios": {
     "front_of_eyes": {
-      "bounding_box": "whole_body",
+      "bounding_box": "default",
       "positions": {
         "center": [0, 0, -40],
         "left": [-25, 0, -40],
@@ -241,7 +241,7 @@
       "phantom_reference": "nasion"
     },
     "by_cheek": {
-      "bounding_box": "whole_body",
+      "bounding_box": "default",
       "positions": {
         "tragus": [0, 0, 0]
       },
@@ -277,7 +277,7 @@
       "phantom_reference": "tragus"
     },
     "by_belly": {
-      "bounding_box": "whole_body",
+      "bounding_box": "default",
       "positions": {
         "center": [0, 0, 0],
         "left": [-150, 0, 0],
