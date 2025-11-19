@@ -25,6 +25,8 @@ This document provides a complete reference of every feature available in GOLIAT
 - Automatic configuration merging with child configs overriding parent values
 - Support for nested configuration paths using dot notation (e.g., `simulation_parameters.global_auto_termination`)
 - Config inheritance supports multiple levels of nesting
+- Config file synchronization scripts (`scripts/sync_configs.py`, `scripts/validate_config_sync.py`)
+- CI validation to ensure `configs/` and `goliat/config/defaults/` stay synchronized
 
 ## Study types
 
@@ -101,6 +103,9 @@ This document provides a complete reference of every feature available in GOLIAT
 - Configure point sensor placement order (8 corners of bounding box)
 - Select excitation type (Harmonic for single frequency, Gaussian for frequency sweep)
 - Configure Gaussian excitation bandwidth in MHz
+- Gaussian excitation for near-field antenna detuning detection
+- Custom Gaussian waveform support (k parameter) for faster pulses
+- Resonance frequency extraction from Gaussian pulse results
 - Set bounding box padding for far-field simulations (millimeters)
 - Configure free-space antenna bounding box expansion [x, y, z] in millimeters
 
@@ -144,6 +149,7 @@ This document provides a complete reference of every feature available in GOLIAT
 - Project file validation (checks for file locks and HDF5 structure)
 - File lock detection and handling (`.s4l_lock` files)
 - Automatic project file cleanup on corruption detection
+- Centralized project save logic with retry mechanism (`save_retry_count` config parameter)
 - Structured results directory organization (`results/{study_type}/{phantom}/{frequency}MHz/{scenario}/`)
 - Unique project file per simulation scenario
 - Project isolation for reliability
@@ -169,8 +175,10 @@ This document provides a complete reference of every feature available in GOLIAT
 
 - Direct invocation of Sim4Life `iSolve.exe` solver
 - Real-time solver output logging
+- Progress milestone logging (0%, 33%, 66% completion with time estimates)
 - Non-blocking reader thread for solver output capture
 - Manual iSolve execution (bypasses Ares scheduler)
+- Infinite retry mechanism for failed iSolve runs (retries until successful)
 - Support for GPU acceleration (Acceleware, CUDA kernels)
 - CPU fallback option (Software kernel)
 - Power normalization to 1W input for consistency
@@ -190,6 +198,7 @@ This document provides a complete reference of every feature available in GOLIAT
 - Paginated job fetching (50 jobs per page)
 - Cancel jobs by status (PENDING, PUBLISHED, WAITING_FOR_CLUSTER, WAITING_FOR_RESOURCES, STARTED, RETRYING)
 - Cost monitoring via oSPARC dashboard
+- Execution strategy pattern (ISolveManualStrategy, Sim4LifeAPIStrategy, OSPARCDirectStrategy)
 
 ## Results extraction
 
@@ -207,6 +216,11 @@ This document provides a complete reference of every feature available in GOLIAT
 - Generate point sensor plots (`point_sensor_data.png`)
 - Extract tissue-specific SAR statistics
 - Tissue group aggregation (eyes, head, skin, genitals) via material name mapping
+- Explicit configuration-based tissue matching (no keyword fallbacks)
+- Preservation of original Sim4Life tissue names (e.g., "Eye (Cornea)" vs "Eye (Lens)")
+- Phantom suffix handling in tissue name display
+- Resonance frequency extraction from Gaussian pulse results (ResonanceExtractor)
+- Antenna detuning detection (frequency shift relative to nominal frequency)
 
 ## Analysis and visualization
 
@@ -237,10 +251,13 @@ This document provides a complete reference of every feature available in GOLIAT
 - Unique session hash for timing file identification
 - Progress tracking CSV files (time_remaining, overall_progress)
 - Timing data visualization (pie charts, tables)
+- System utilization monitoring (CPU, RAM, GPU, VRAM) with real-time plots
+- System utilization data export to CSV for analysis
 - System tray integration for background operation
 - Responsive GUI (multiprocessing architecture prevents freezing)
 - Headless mode option (`use_gui: false` for console-only operation)
 - Window title customization via `--title` command-line argument
+- GUI screenshot streaming to web dashboard for remote monitoring (1 FPS)
 
 ## Logging system
 
@@ -310,6 +327,8 @@ This document provides a complete reference of every feature available in GOLIAT
 - Cost estimation and monitoring
 - Per-second billing support
 - Instance stopping when not in use
+- Cloud setup validation (NVIDIA GPU driver checks, computer name validation)
+- Pre-flight checks before simulation execution
 
 ## Data management
 

@@ -115,8 +115,10 @@ These settings control the core behavior of the FDTD solver.
 | `simulation_time_multiplier` | number | `3.5` | A multiplier used to determine the total simulation time. The time is calculated as the duration it takes for a wave to traverse the simulation bounding box diagonal, multiplied by this value. |
 | `number_of_point_sensors` | number | `8` | The number of point sensors to place at the corners of the simulation bounding box. These sensors monitor the electric field over time. |
 | `point_source_order` | array | `["lower_left_bottom", ...]` | Defines the specific order and location of the point sensors at the 8 corners of the bounding box. |
-| `excitation_type` | string | `"Harmonic"` | The type of excitation source. `"Harmonic"` is used for single-frequency simulations (standard for SAR). `"Gaussian"` is used for a frequency sweep, typically for antenna characterization in free-space. |
-| `bandwidth_mhz` | number | `50.0` | The bandwidth in MHz for a Gaussian excitation. |
+| `excitation_type` | string | `"Harmonic"` | The type of excitation source. `"Harmonic"` is used for single-frequency simulations (standard for SAR). `"Gaussian"` is used for frequency-domain analysis, typically for antenna characterization or near-field detuning detection. |
+| `bandwidth_mhz` | number | `50.0` | The bandwidth in MHz for a Gaussian excitation. Typical values are 50-150 MHz. Narrower bandwidths provide better frequency resolution but require longer simulation times. |
+| `target_freq_resolution_mhz` | number | `10.0` | Target frequency resolution for Gaussian excitation simulations. Smaller values provide finer frequency resolution but increase simulation time. |
+| `gaussian_pulse_k` | number | `3` | Gaussian pulse k parameter. When set to 5, uses Sim4Life's built-in Gaussian excitation. Values other than 5 use custom UserDefined waveforms. Lower k values create faster pulses. |
 | `bbox_padding_mm` | number | `50` | **(Far-Field)** Padding in millimeters to add around the phantom's bounding box to define the simulation domain. |
 | `freespace_antenna_bbox_expansion_mm` | array | `[20, 20, 20]` | **(Near-Field)** Padding in [x, y, z] millimeters to add around the antenna for free-space simulations. |
 

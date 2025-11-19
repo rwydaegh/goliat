@@ -43,7 +43,7 @@ The core logic of your simulation is managed by specialized **Study** classes (`
 -   **Near-Field Example**: If you're running a near-field study, the `NearFieldStudy` class will systematically loop through all defined phantoms, frequencies, and antenna placements. For instance, it might process "thelonious" phantom at 700 MHz with an antenna placed "by_cheek" (e.g., 8mm from the cheek).
 -   **Far-Field Example**: For far-field studies, the `FarFieldStudy` class iterates through phantoms, frequencies, incident directions (e.g., x_pos, y_neg), and polarizations (e.g., theta, phi).
 -   **Project Management**: For each unique simulation scenario, GOLIAT creates a dedicated Sim4Life project file (`.smash`) within a structured `results/` directory. The directory structure follows the pattern `results/{study_type}/{phantom}/{frequency}MHz/{scenario}/`, where `scenario` identifies the specific simulation configuration. For a near-field study, this might be `results/near_field/thelonious/700MHz/by_cheek_tragus_cheek_base/`. For a far-field study, it would be `results/far_field/thelonious/700MHz/environmental_x_pos_theta/`. Each simulation gets its own directory and project file, providing isolation and reliability.
--   **Progress Tracking**: The GUI provides real-time progress updates and an estimate for the Time Remaining, which becomes more accurate as the current session progresses. 
+-   **Progress Tracking**: The GUI provides real-time progress updates and an estimate for the Time Remaining, which becomes more accurate as the current session progresses. The GUI also tracks system resource utilization (CPU, RAM, GPU, VRAM) and displays time-series plots of these metrics. 
 
 ### 3. Setup scene in Sim4Life
 
@@ -113,6 +113,8 @@ While the core GOLIAT workflow remains consistent, the specifics of scene setup 
   4.  **Results Analysis**: Concentrates on localized SAR values (e.g., head SAR, trunk SAR) and peak spatial-average SAR (psSAR10g) in sensitive tissues like the eyes, brain, and skin.
 
 -   **Free-Space Mode**: GOLIAT supports a "freespace" phantom option, allowing you to run simulations of the antenna in isolation (without a body). This is useful for antenna characterization and validation.
+
+-   **Gaussian Excitation**: For near-field studies, you can use Gaussian pulse excitation instead of harmonic. This enables frequency-domain analysis and antenna resonance detection. Set `"excitation_type": "Gaussian"` in your config and configure `bandwidth_mhz` (typically 50-150 MHz). Gaussian excitation requires longer simulation times due to frequency resolution requirements.
 
 ### Far-field workflow (environmental exposure)
 
