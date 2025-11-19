@@ -253,6 +253,7 @@ class NearFieldStudy(BaseStudy):
                             return
 
                     # Always ensure metadata is written, even if setup is skipped
+                    # But preserve setup_timestamp if setup wasn't done
                     surgical_config = self.config.build_simulation_config(
                         phantom_name=phantom_name,
                         frequency_mhz=freq,
@@ -264,6 +265,7 @@ class NearFieldStudy(BaseStudy):
                         self.project_manager.write_simulation_metadata(
                             os.path.join(os.path.dirname(self.project_manager.project_path), "config.json"),
                             surgical_config,
+                            update_setup_timestamp=needs_setup,  # Update timestamp only if setup was done
                         )
 
                     # Update do_run and do_extract based on verification
