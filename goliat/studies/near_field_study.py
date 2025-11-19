@@ -35,36 +35,14 @@ class NearFieldStudy(BaseStudy):
             log_type="header",
         )
 
-        do_setup = self.config["execution_control.do_setup"]
-        if do_setup is None:
-            do_setup = True
-        do_run = self.config["execution_control.do_run"]
-        if do_run is None:
-            do_run = True
-        do_extract = self.config["execution_control.do_extract"]
-        if do_extract is None:
-            do_extract = True
+        do_setup, do_run, do_extract = self._get_execution_control_flags()
         auto_cleanup = self.config.get_auto_cleanup_previous_results()
 
-        # Warn about common misconfiguration
-        if self.config.get_only_write_input_file() and not do_run:
-            self._log(
-                "WARNING: 'only_write_input_file' is set to true, but 'do_run' is false. "
-                "The input file will NOT be written because the run phase is disabled. "
-                "Set 'do_run: true' to write the input file.",
-                level="progress",
-                log_type="warning",
-            )
-
-        if not do_setup and not do_run and not do_extract:
-            self._log(
-                "All execution phases (setup, run, extract) are disabled. Nothing to do.",
-                log_type="warning",
-            )
+        if not self._validate_execution_control(do_setup, do_run, do_extract):
             return
 
         # Sanity check for auto_cleanup_previous_results
-        self._validate_auto_cleanup_config(do_setup, do_run, do_extract, auto_cleanup)  # type: ignore
+        self._validate_auto_cleanup_config(do_setup, do_run, do_extract, auto_cleanup)
 
         phantoms = self.config["phantoms"] or []
         if not isinstance(phantoms, list):
@@ -72,7 +50,23 @@ class NearFieldStudy(BaseStudy):
         frequencies = (self.config["antenna_config"] or {}).keys()  # type: ignore
         all_scenarios = self.config["placement_scenarios"] or {}
 
-        # Calculate total number of simulations for the profiler
+        total_simulations = self._calculate_total_simulations(phantoms, frequencies, all_scenarios)
+        self.profiler.set_total_simulations(total_simulations)
+        self._set_initial_profiler_phase(do_setup, do_run, do_extract)
+
+        self._iterate_near_field_simulations(phantoms, frequencies, all_scenarios, total_simulations, do_setup, do_run, do_extract)
+
+    def _calculate_total_simulations(self, phantoms: list, frequencies, all_scenarios: dict) -> int:
+        """Calculates total number of simulations for the profiler.
+
+        Args:
+            phantoms: List of phantom names.
+            frequencies: Iterable of frequency strings.
+            all_scenarios: Dictionary of placement scenarios.
+
+        Returns:
+            Total number of simulations.
+        """
         total_simulations = 0
         for phantom_name in phantoms:
             phantom_definition = (self.config["phantom_definitions"] or {}).get(phantom_name, {})  # type: ignore
@@ -84,8 +78,16 @@ class NearFieldStudy(BaseStudy):
                     positions = scenario_details.get("positions", {})
                     orientations = scenario_details.get("orientations", {})
                     total_simulations += len(list(frequencies)) * len(positions) * len(orientations)  # type: ignore
+        return total_simulations
 
-        self.profiler.set_total_simulations(total_simulations)
+    def _set_initial_profiler_phase(self, do_setup: bool, do_run: bool, do_extract: bool):
+        """Sets the initial profiler phase based on execution control flags.
+
+        Args:
+            do_setup: Whether setup phase is enabled.
+            do_run: Whether run phase is enabled.
+            do_extract: Whether extract phase is enabled.
+        """
         if do_setup:
             self.profiler.current_phase = "setup"
         elif do_run:
@@ -93,6 +95,20 @@ class NearFieldStudy(BaseStudy):
         elif do_extract:
             self.profiler.current_phase = "extract"
 
+    def _iterate_near_field_simulations(
+        self, phantoms: list, frequencies, all_scenarios: dict, total_simulations: int, do_setup: bool, do_run: bool, do_extract: bool
+    ):
+        """Iterates through all near-field simulation combinations.
+
+        Args:
+            phantoms: List of phantom names.
+            frequencies: Iterable of frequency strings.
+            all_scenarios: Dictionary of placement scenarios.
+            total_simulations: Total number of simulations.
+            do_setup: Whether setup phase is enabled.
+            do_run: Whether run phase is enabled.
+            do_extract: Whether extract phase is enabled.
+        """
         simulation_count = 0
         for phantom_name in phantoms:
             phantom_definition = (self.config["phantom_definitions"] or {}).get(phantom_name, {})  # type: ignore
@@ -102,102 +118,113 @@ class NearFieldStudy(BaseStudy):
 
             for freq_str in frequencies:
                 freq = int(freq_str)
-                for scenario_name, scenario_details in all_scenarios.items():  # type: ignore
-                    if placements_config.get(f"do_{scenario_name}"):
-                        positions = scenario_details.get("positions", {})
-                        orientations = scenario_details.get("orientations", {})
-                        for pos_name in positions.keys():  # type: ignore
-                            for orient_name in orientations.keys():  # type: ignore
-                                self._check_for_stop_signal()
-                                simulation_count += 1
-                                placement_name = f"{scenario_name}_{pos_name}_{orient_name}"
-                                self._log(
-                                    f"\n--- Processing Simulation {simulation_count}/{total_simulations}: "
-                                    f"{phantom_name}, {freq}MHz, {placement_name} ---",
-                                    level="progress",
-                                    log_type="header",
-                                )
-                                if self.gui:
-                                    self.gui.update_simulation_details(
-                                        simulation_count,
-                                        total_simulations,
-                                        f"{phantom_name}, {freq}MHz, {placement_name}",
-                                    )
-                                self._run_placement(
-                                    phantom_name,  # type: ignore
-                                    freq,
-                                    scenario_name,
-                                    pos_name,
-                                    orient_name,
-                                    do_setup,  # type: ignore
-                                    do_run,  # type: ignore
-                                    do_extract,  # type: ignore
-                                )
-                                self.profiler.simulation_completed()
-                                if self.gui:
-                                    self.gui.update_overall_progress(simulation_count, total_simulations)
+                simulation_count = self._iterate_scenarios_for_frequency(
+                    phantom_name, freq, placements_config, all_scenarios, simulation_count, total_simulations, do_setup, do_run, do_extract
+                )
 
-    def _validate_auto_cleanup_config(self, do_setup: bool, do_run: bool, do_extract: bool, auto_cleanup: list):
-        """Validates the auto_cleanup_previous_results configuration.
+    def _iterate_scenarios_for_frequency(
+        self,
+        phantom_name: str,
+        freq: int,
+        placements_config: dict,
+        all_scenarios: dict,
+        simulation_count: int,
+        total_simulations: int,
+        do_setup: bool,
+        do_run: bool,
+        do_extract: bool,
+    ) -> int:
+        """Iterates through scenarios for a specific phantom and frequency.
 
         Args:
+            phantom_name: Name of the phantom.
+            freq: Frequency in MHz.
+            placements_config: Placements configuration for the phantom.
+            all_scenarios: Dictionary of placement scenarios.
+            simulation_count: Current simulation count.
+            total_simulations: Total number of simulations.
             do_setup: Whether setup phase is enabled.
             do_run: Whether run phase is enabled.
             do_extract: Whether extract phase is enabled.
-            auto_cleanup: List of file types to clean up.
+
+        Returns:
+            Updated simulation count.
         """
-        if not auto_cleanup:
-            return
+        for scenario_name, scenario_details in all_scenarios.items():  # type: ignore
+            if not placements_config.get(f"do_{scenario_name}"):
+                continue
+            positions = scenario_details.get("positions", {})
+            orientations = scenario_details.get("orientations", {})
+            for pos_name in positions.keys():  # type: ignore
+                for orient_name in orientations.keys():  # type: ignore
+                    simulation_count += 1
+                    self._process_single_near_field_simulation(
+                        phantom_name,
+                        freq,
+                        scenario_name,
+                        pos_name,
+                        orient_name,
+                        simulation_count,
+                        total_simulations,
+                        do_setup,
+                        do_run,
+                        do_extract,
+                    )
+        return simulation_count
 
-        # Check if this is a proper serial workflow (all phases enabled)
-        if not (do_setup and do_run and do_extract):
-            self._log(
-                "WARNING: 'auto_cleanup_previous_results' is enabled, but not all phases "
-                "(setup, run, extract) are active. This may cause data loss if you're running "
-                "phases separately!",
-                level="progress",
-                log_type="warning",
-            )
-            self._log(
-                "  Recommendation: Only use auto_cleanup when running complete serial workflows "
-                "where do_setup=true, do_run=true, and do_extract=true.",
-                level="progress",
-                log_type="info",
-            )
+    def _process_single_near_field_simulation(
+        self,
+        phantom_name: str,
+        freq: int,
+        scenario_name: str,
+        pos_name: str,
+        orient_name: str,
+        simulation_count: int,
+        total_simulations: int,
+        do_setup: bool,
+        do_run: bool,
+        do_extract: bool,
+    ):
+        """Processes a single near-field simulation.
 
-        # Check for batch/parallel run mode
-        batch_run = self.config["execution_control.batch_run"] or False
-        if batch_run:
-            self._log(
-                "ERROR: 'auto_cleanup_previous_results' is enabled alongside 'batch_run'. "
-                "This combination can cause data corruption in parallel execution!",
-                level="progress",
-                log_type="error",
+        Args:
+            phantom_name: Name of the phantom.
+            freq: Frequency in MHz.
+            scenario_name: Name of the scenario.
+            pos_name: Name of the position.
+            orient_name: Name of the orientation.
+            simulation_count: Current simulation count.
+            total_simulations: Total number of simulations.
+            do_setup: Whether setup phase is enabled.
+            do_run: Whether run phase is enabled.
+            do_extract: Whether extract phase is enabled.
+        """
+        self._check_for_stop_signal()
+        placement_name = f"{scenario_name}_{pos_name}_{orient_name}"
+        self._log(
+            f"\n--- Processing Simulation {simulation_count}/{total_simulations}: {phantom_name}, {freq}MHz, {placement_name} ---",
+            level="progress",
+            log_type="header",
+        )
+        if self.gui:
+            self.gui.update_simulation_details(
+                simulation_count,
+                total_simulations,
+                f"{phantom_name}, {freq}MHz, {placement_name}",
             )
-            self._log(
-                "  Auto-cleanup will be DISABLED for safety. Please set "
-                "'auto_cleanup_previous_results' to [] in your config when using batch mode.",
-                level="progress",
-                log_type="warning",
-            )
-            # Force disable auto-cleanup to prevent data corruption
-            self.config.config["execution_control"]["auto_cleanup_previous_results"] = []
-
-        # Inform user that auto-cleanup is active
-        cleanup_types = self.config.get_auto_cleanup_previous_results()
-        if cleanup_types:
-            file_type_names = {
-                "output": "output files (*_Output.h5)",
-                "input": "input files (*_Input.h5)",
-                "smash": "project files (*.smash)",
-            }
-            cleanup_descriptions = [file_type_names.get(t, t) for t in cleanup_types]  # type: ignore
-            self._log(
-                f"Auto-cleanup enabled: {', '.join(filter(None, cleanup_descriptions))} will be "
-                "deleted after each simulation's results are extracted to save disk space.",
-                level="progress",
-                log_type="info",
-            )
+        self._run_placement(
+            phantom_name,  # type: ignore
+            freq,
+            scenario_name,
+            pos_name,
+            orient_name,
+            do_setup,  # type: ignore
+            do_run,  # type: ignore
+            do_extract,  # type: ignore
+        )
+        self.profiler.simulation_completed()
+        if self.gui:
+            self.gui.update_overall_progress(simulation_count, total_simulations)
 
     def _run_placement(
         self,
