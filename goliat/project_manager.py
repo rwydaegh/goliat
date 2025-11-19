@@ -135,6 +135,8 @@ class ProjectManager(LoggingMixin):
         Important safeguards:
         - Only considers H5 files larger than 8MB (iSolve sometimes creates incomplete
           files that are smaller)
+        - Output.h5 must be at least 10% bigger than the corresponding Input.h5 file
+          (if Input.h5 exists) to ensure the simulation completed successfully
         - Files must be newer than setup_timestamp to ensure they're from this run,
           not an old run
         - All extract deliverables must exist (not just some) to mark extract as done
@@ -173,7 +175,29 @@ class ProjectManager(LoggingMixin):
                 h5_file_path = max(output_files, key=os.path.getmtime)
 
         # TODO: iSolve somehow still produces small _Output.h5 files. 8 MB limit is arbitrary...
+        # Also check that Output.h5 is at least 10% bigger than corresponding Input.h5
+        is_valid_output = False
         if h5_file_path and os.path.getsize(h5_file_path) > 8 * 1024 * 1024 and os.path.getmtime(h5_file_path) > setup_timestamp:
+            # Extract hash from Output.h5 filename and check corresponding Input.h5 size
+            output_filename = os.path.basename(h5_file_path)
+            if output_filename.endswith("_Output.h5"):
+                hash_prefix = output_filename[:-10]  # Remove "_Output.h5" suffix
+                input_file_path = os.path.join(results_dir, f"{hash_prefix}_Input.h5")
+                
+                if os.path.exists(input_file_path):
+                    output_size = os.path.getsize(h5_file_path)
+                    input_size = os.path.getsize(input_file_path)
+                    # Check if Output.h5 is at least 10% bigger than Input.h5
+                    if output_size >= input_size * 1.1:
+                        is_valid_output = True
+                else:
+                    # If Input.h5 doesn't exist, fall back to just size check (>8MB)
+                    is_valid_output = True
+            else:
+                # Fallback: if filename doesn't match expected pattern, use original check
+                is_valid_output = True
+        
+        if is_valid_output:
             status["run_done"] = True
         else:
             # _Output.h5 is missing or invalid, but check if it was intentionally cleaned up
@@ -517,8 +541,13 @@ class ProjectManager(LoggingMixin):
         verification_status = self.verify_simulation_metadata(os.path.join(project_dir, "config.json"), surgical_config)
 
         if verification_status["setup_done"]:
-            self._log("Verified existing project. Opening.", log_type="info")
-            self.open()
+            # Only open the file if we need to run or extract phases
+            # If everything is done, skip opening to avoid unnecessary file access
+            if not verification_status["run_done"] or not verification_status["extract_done"]:
+                self._log("Verified existing project. Opening.", log_type="info")
+                self.open()
+            else:
+                self._log("Project completely done, skipping file open.", log_type="info")
             return verification_status
 
         if os.path.exists(project_dir):
