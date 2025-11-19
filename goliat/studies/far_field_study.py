@@ -152,6 +152,10 @@ class FarFieldStudy(BaseStudy):
                         sim_log_handlers = add_simulation_log_handlers(project_dir)
                     needs_setup = not verification_status["setup_done"]
 
+                    # Mark profiler if setup was cached/skipped
+                    if not needs_setup:
+                        self.profiler.phase_skipped = True
+
                     if needs_setup:
                         self.project_manager.create_new()
 
@@ -204,6 +208,10 @@ class FarFieldStudy(BaseStudy):
                     if verification_status["extract_done"]:
                         do_extract = False
                         self._log("Skipping extract phase, deliverables found.", log_type="info")
+                        # Upload results if reupload flag is set and running as assignment
+                        if self._should_reupload_results() and self.project_manager.project_path:
+                            project_dir = os.path.dirname(self.project_manager.project_path)
+                            self._upload_results_if_assignment(project_dir)
 
                     if self.gui:
                         self.gui.update_stage_progress("Setup", 1, 1)
@@ -220,21 +228,24 @@ class FarFieldStudy(BaseStudy):
                     project_dir = os.path.dirname(self.project_manager.project_path)
                     sim_log_handlers = add_simulation_log_handlers(project_dir)
 
-            import s4l_v1.document
+            # Get a fresh simulation handle from the document if we need to run or extract
+            # If everything is done, we don't need the simulation handle
+            if do_run or do_extract:
+                import s4l_v1.document
 
-            if s4l_v1.document.AllSimulations:
-                sim_name = f"EM_FDTD_{phantom_name}_{freq}MHz_{direction_name}_{polarization_name}"
-                simulation = next(
-                    (s for s in s4l_v1.document.AllSimulations if s.Name == sim_name),
-                    None,
-                )
+                if s4l_v1.document.AllSimulations:
+                    sim_name = f"EM_FDTD_{phantom_name}_{freq}MHz_{direction_name}_{polarization_name}"
+                    simulation = next(
+                        (s for s in s4l_v1.document.AllSimulations if s.Name == sim_name),
+                        None,
+                    )
 
-            if not simulation:
-                self._log(
-                    f"ERROR: No simulation found for {direction_name}_{polarization_name}.",
-                    log_type="error",
-                )
-                return
+                if not simulation:
+                    self._log(
+                        f"ERROR: No simulation found for {direction_name}_{polarization_name}.",
+                        log_type="error",
+                    )
+                    return
 
             # 2. Run Phase
             if do_run:
