@@ -279,12 +279,12 @@ class "ISolveManualStrategy" as goliat.runners.isolve_manual_strategy.ISolveManu
   __init__()
   _check_for_memory_error_and_exit(detected_errors: list, stderr_output: str) -> None
   _cleanup() -> None
-  _handle_execution_exception(e: Exception, process_manager: ISolveProcessManager | None, detected_errors: list, retry_handler: RetryHandler, output_parser: ISolveOutputParser, keep_awake_handler: KeepAwakeHandler) -> bool
-  _handle_process_failure(process_manager: ISolveProcessManager, return_code: int, detected_errors: list, stderr_output: str, retry_handler: RetryHandler, output_parser: ISolveOutputParser, keep_awake_handler: KeepAwakeHandler) -> bool
-  _monitor_running_process(process_manager: ISolveProcessManager, output_parser: ISolveOutputParser, keep_awake_handler: KeepAwakeHandler, detected_errors: list) -> None
-  _prepare_for_retry(retry_handler: RetryHandler, output_parser: ISolveOutputParser, keep_awake_handler: KeepAwakeHandler) -> None
+  _handle_execution_exception(e: Exception, process_manager: ISolveProcessManager | None, detected_errors: list, retry_handler: RetryHandler, output_parser: ISolveOutputParser) -> bool
+  _handle_process_failure(process_manager: ISolveProcessManager, return_code: int, detected_errors: list, stderr_output: str, retry_handler: RetryHandler, output_parser: ISolveOutputParser) -> bool
+  _monitor_running_process(process_manager: ISolveProcessManager, output_parser: ISolveOutputParser, detected_errors: list) -> None
+  _prepare_for_retry(retry_handler: RetryHandler, output_parser: ISolveOutputParser) -> None
   _prepare_isolve_command() -> list[str]
-  _process_output_line(line: str, output_parser: ISolveOutputParser, keep_awake_handler: KeepAwakeHandler, detected_errors: list) -> None
+  _process_output_line(line: str, output_parser: ISolveOutputParser, detected_errors: list) -> None
   _process_remaining_output(process_manager: ISolveProcessManager, output_parser: ISolveOutputParser, detected_errors: list) -> None
   run() -> None
 }
@@ -321,14 +321,6 @@ class "ISolveProcessManager" as goliat.runners.isolve_process_manager.ISolveProc
   read_stderr() -> str
   start() -> None
   terminate(timeout: float) -> None
-}
-class "KeepAwakeHandler" as goliat.runners.keep_awake_handler.KeepAwakeHandler {
-  config : str
-  triggered : bool
-  __init__(config: 'Config')
-  reset() -> None
-  trigger_before_retry() -> None
-  trigger_on_progress() -> None
 }
 class "LoggingMixin" as goliat.logging_manager.LoggingMixin {
   gui : Optional['QueueGUI']
@@ -1231,8 +1223,6 @@ package "goliat.runners.isolve_output_parser" as goliat.runners.isolve_output_pa
 }
 package "goliat.runners.isolve_process_manager" as goliat.runners.isolve_process_manager {
 }
-package "goliat.runners.keep_awake_handler" as goliat.runners.keep_awake_handler {
-}
 package "goliat.runners.osparc_direct_strategy" as goliat.runners.osparc_direct_strategy {
 }
 package "goliat.runners.post_simulation_handler" as goliat.runners.post_simulation_handler {
@@ -1392,7 +1382,6 @@ goliat.results_extractor --> goliat.logging_manager
 goliat.runners.isolve_manual_strategy --> goliat.runners.execution_strategy
 goliat.runners.isolve_manual_strategy --> goliat.runners.isolve_output_parser
 goliat.runners.isolve_manual_strategy --> goliat.runners.isolve_process_manager
-goliat.runners.isolve_manual_strategy --> goliat.runners.keep_awake_handler
 goliat.runners.isolve_manual_strategy --> goliat.runners.post_simulation_handler
 goliat.runners.isolve_manual_strategy --> goliat.runners.retry_handler
 goliat.runners.osparc_direct_strategy --> goliat.runners.execution_strategy
