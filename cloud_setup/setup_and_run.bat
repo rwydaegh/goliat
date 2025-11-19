@@ -1,19 +1,42 @@
 @echo off
 
 :: ============================================================================
+:: Check NVIDIA GPU Drivers (nvidia-smi)
+:: ============================================================================
+nvidia-smi >nul 2>&1
+if %errorlevel% neq 0 (
+    echo ============================================================================
+    echo ERROR: NVIDIA GPU drivers not detected!
+    echo ============================================================================
+    echo nvidia-smi failed to run. This indicates that NVIDIA GPU drivers
+    echo are not installed or not working properly.
+    echo.
+    echo Please install NVIDIA GPU drivers manually before running this script.
+    echo You can download the latest drivers from:
+    echo https://www.nvidia.com/Download/index.aspx
+    echo.
+    echo After installing the drivers, restart your computer and try again.
+    echo ============================================================================
+    pause
+    exit /b 1
+)
+
+:: ============================================================================
 :: Check Computer Name
 :: ============================================================================
-if not "%COMPUTERNAME%"=="YOUR_COMPUTER_NAME" (
+if /i "%COMPUTERNAME%" neq "MYGCLOUDPC" if /i "%COMPUTERNAME%" neq "WIN10-NEW" (
     echo ============================================================================
     echo ERROR: Computer name mismatch!
     echo ============================================================================
     echo Current computer name: %COMPUTERNAME%
-    echo Required computer name: YOUR_COMPUTER_NAME
+    echo Required computer name: MYGCLOUDPC or WIN10-NEW
     echo.
-    echo You must rename this computer to "YOUR_COMPUTER_NAME" and restart before running this script.
+    echo You must rename this computer to "MYGCLOUDPC" or "WIN10-NEW" and restart before running this script.
     echo.
     echo To rename the computer from Administrator Command Prompt, run:
-    echo     wmic computersystem where name="%COMPUTERNAME%" call rename name="YOUR_COMPUTER_NAME"
+    echo     wmic computersystem where name="%COMPUTERNAME%" call rename name="MYGCLOUDPC"
+    echo     OR
+    echo     wmic computersystem where name="%COMPUTERNAME%" call rename name="WIN10-NEW"
     echo.
     echo After renaming, you MUST restart the computer for the change to take effect.
     echo ============================================================================

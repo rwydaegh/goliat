@@ -61,7 +61,7 @@ class ProjectManager(LoggingMixin):
         config_string = json.dumps(config_dict, sort_keys=True)
         return hashlib.sha256(config_string.encode("utf-8")).hexdigest()
 
-    def write_simulation_metadata(self, meta_path: str, surgical_config: dict):
+    def write_simulation_metadata(self, meta_path: str, surgical_config: dict, update_setup_timestamp: bool = False):
         """Writes config metadata and hash to disk for verification/resume.
 
         Creates a metadata file that tracks the config hash and completion status
@@ -70,12 +70,26 @@ class ProjectManager(LoggingMixin):
         Args:
             meta_path: Full path where metadata should be saved.
             surgical_config: The minimal config snapshot for this simulation.
+            update_setup_timestamp: If True, updates setup_timestamp to now (use when setup was done).
+                                    If False, preserves existing timestamp if metadata exists.
         """
         config_hash = self._generate_config_hash(surgical_config)
+
+        # Preserve existing setup_timestamp unless we're updating it (setup was done)
+        setup_timestamp = datetime.now().isoformat()
+        if not update_setup_timestamp and os.path.exists(meta_path):
+            try:
+                with open(meta_path, "r") as f:
+                    existing_metadata = json.load(f)
+                    if "setup_timestamp" in existing_metadata:
+                        setup_timestamp = existing_metadata["setup_timestamp"]
+            except (json.JSONDecodeError, KeyError, ValueError):
+                pass  # Use new timestamp if we can't read existing
+
         metadata = {
             "config_hash": config_hash,
             "config_snapshot": surgical_config,
-            "setup_timestamp": datetime.now().isoformat(),
+            "setup_timestamp": setup_timestamp,
             "run_done": False,
             "extract_done": False,
         }
@@ -124,6 +138,8 @@ class ProjectManager(LoggingMixin):
         - Files must be newer than setup_timestamp to ensure they're from this run,
           not an old run
         - All extract deliverables must exist (not just some) to mark extract as done
+        - If auto_cleanup_previous_results includes "output" and extract deliverables exist,
+          run phase is considered done even if _Output.h5 is missing (it was intentionally deleted)
 
         Args:
             project_dir: Directory containing the project file.
@@ -134,6 +150,18 @@ class ProjectManager(LoggingMixin):
             Dict with 'run_done' and 'extract_done' boolean flags.
         """
         status = {"run_done": False, "extract_done": False}
+
+        # Check for extract deliverables first (needed for auto-cleanup logic)
+        deliverable_filenames = ResultsExtractor.get_deliverable_filenames()
+        extract_files = [os.path.join(project_dir, filename) for filename in deliverable_filenames.values()]
+
+        # All deliverables must exist and be fresher than the setup timestamp.
+        are_all_deliverables_fresh = all(
+            os.path.exists(file_path) and os.path.getmtime(file_path) > setup_timestamp for file_path in extract_files
+        )
+
+        if are_all_deliverables_fresh:
+            status["extract_done"] = True
 
         # Check for run deliverables
         results_dir = os.path.join(project_dir, project_filename + "_Results")
@@ -147,18 +175,18 @@ class ProjectManager(LoggingMixin):
         # TODO: iSolve somehow still produces small _Output.h5 files. 8 MB limit is arbitrary...
         if h5_file_path and os.path.getsize(h5_file_path) > 8 * 1024 * 1024 and os.path.getmtime(h5_file_path) > setup_timestamp:
             status["run_done"] = True
-
-        # Check for extract deliverables
-        deliverable_filenames = ResultsExtractor.get_deliverable_filenames()
-        extract_files = [os.path.join(project_dir, filename) for filename in deliverable_filenames.values()]
-
-        # All deliverables must exist and be fresher than the setup timestamp.
-        are_all_deliverables_fresh = all(
-            os.path.exists(file_path) and os.path.getmtime(file_path) > setup_timestamp for file_path in extract_files
-        )
-
-        if are_all_deliverables_fresh:
-            status["extract_done"] = True
+        else:
+            # _Output.h5 is missing or invalid, but check if it was intentionally cleaned up
+            auto_cleanup = self.config.get_auto_cleanup_previous_results()
+            if "output" in auto_cleanup and status["extract_done"]:
+                # Output file was cleaned up, but extraction is complete, so run phase is considered done
+                status["run_done"] = True
+                self._log(
+                    "WARNING: _Output.h5 file not found, but extract deliverables exist and "
+                    "'auto_cleanup_previous_results' includes 'output'. Skipping run phase "
+                    "(output file was intentionally deleted after extraction).",
+                    log_type="warning",
+                )
 
         return status
 
@@ -602,7 +630,13 @@ class ProjectManager(LoggingMixin):
 
         for attempt in range(1, retry_count + 1):
             try:
-                self.document.SaveAs(self.project_path)
+                # Use Save() if document is already saved to the same path
+                # This avoids the ARES error about connection to running jobs
+                current_path = self.document.FilePath
+                if current_path and os.path.normpath(current_path) == os.path.normpath(self.project_path):
+                    self.document.Save()
+                else:
+                    self.document.SaveAs(self.project_path)
                 if attempt > 1:
                     self._log(f"Project saved successfully on attempt {attempt}.", log_type="success")
                 else:

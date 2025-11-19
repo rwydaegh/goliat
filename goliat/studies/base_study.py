@@ -184,6 +184,7 @@ class BaseStudy(LoggingMixin):
                 self.verbose_logger,
                 self.progress_logger,
                 self.gui,
+                project_manager=self.project_manager,
             )
             runner.run()
 

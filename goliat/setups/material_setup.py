@@ -132,9 +132,9 @@ class MaterialSetup(BaseSetup):
     def _assign_antenna_materials(self, antenna_components: dict):
         """Assigns materials to antenna components from config.
 
-        Handles special case: forces PEC for Copper in free-space Gaussian
-        excitation (Sim4Life limitation). Otherwise uses IT'IS or Generic
-        database based on material name.
+        Handles special case: forces PEC for Copper in Gaussian excitation
+        (Sim4Life limitation). Otherwise uses IT'IS or Generic database based
+        on material name.
 
         Args:
             antenna_components: Dict mapping component names to entities.
@@ -150,7 +150,9 @@ class MaterialSetup(BaseSetup):
                 excitation_type = self.config["simulation_parameters.excitation_type"]
                 if excitation_type is None:
                     excitation_type = "Harmonic"
-                if "Copper" in mat_name and self.free_space and isinstance(excitation_type, str) and excitation_type.lower() == "gaussian":
+                excitation_type_lower = excitation_type.lower() if isinstance(excitation_type, str) else "harmonic"
+
+                if "Copper" in mat_name and excitation_type_lower == "gaussian":
                     material_settings.Type = "PEC"
                     self.simulation.Add(material_settings, [entity])
                     self._log("\n" + "=" * 80, log_type="warning")

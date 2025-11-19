@@ -7,6 +7,7 @@ from .extraction.cleaner import Cleaner
 from .extraction.json_encoder import NumpyArrayEncoder
 from .extraction.power_extractor import PowerExtractor
 from .extraction.reporter import Reporter
+from .extraction.resonance_extractor import ResonanceExtractor
 from .extraction.sar_extractor import SarExtractor
 from .extraction.sensor_extractor import SensorExtractor
 from .logging_manager import LoggingMixin
@@ -164,6 +165,15 @@ class ResultsExtractor(LoggingMixin):
         # --- Extraction Steps (orchestrated by extraction modules) ---
         power_extractor = PowerExtractor(self, results_data)
         power_extractor.extract_input_power(simulation_extractor)
+
+        # Extract resonance frequency for Gaussian excitation
+        excitation_type = self.config["simulation_parameters.excitation_type"] or "Harmonic"
+        excitation_type_lower = excitation_type.lower() if isinstance(excitation_type, str) else "harmonic"
+        if excitation_type_lower == "gaussian":
+            resonance_extractor = ResonanceExtractor(self, results_data)
+            resonance_data = resonance_extractor.extract_resonance_frequency(simulation_extractor)
+            if resonance_data:
+                results_data.update(resonance_data)
 
         if not self.free_space:
             sar_extractor = SarExtractor(self, results_data)
