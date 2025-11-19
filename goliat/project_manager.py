@@ -602,7 +602,13 @@ class ProjectManager(LoggingMixin):
 
         for attempt in range(1, retry_count + 1):
             try:
-                self.document.SaveAs(self.project_path)
+                # Use Save() if document is already saved to the same path
+                # This avoids the ARES error about connection to running jobs
+                current_path = self.document.FilePath
+                if current_path and os.path.normpath(current_path) == os.path.normpath(self.project_path):
+                    self.document.Save()
+                else:
+                    self.document.SaveAs(self.project_path)
                 if attempt > 1:
                     self._log(f"Project saved successfully on attempt {attempt}.", log_type="success")
                 else:

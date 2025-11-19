@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from .config import Config
     from .gui_manager import QueueGUI
     from .profiler import Profiler
+    from .project_manager import ProjectManager
 
 
 class SimulationRunner(LoggingMixin):
@@ -32,6 +33,7 @@ class SimulationRunner(LoggingMixin):
         verbose_logger: "Logger",
         progress_logger: "Logger",
         gui: "Optional[QueueGUI]" = None,
+        project_manager: "Optional[ProjectManager]" = None,
     ):
         """Sets up the simulation runner.
 
@@ -43,6 +45,7 @@ class SimulationRunner(LoggingMixin):
             verbose_logger: Logger for detailed output.
             progress_logger: Logger for high-level updates.
             gui: Optional GUI proxy for updates.
+            project_manager: Optional ProjectManager instance. If provided, uses its save() method.
         """
         self.config = config
         self.project_path = project_path
@@ -51,6 +54,7 @@ class SimulationRunner(LoggingMixin):
         self.verbose_logger = verbose_logger
         self.progress_logger = progress_logger
         self.gui = gui
+        self.project_manager = project_manager
         import s4l_v1.document
 
         self.document = s4l_v1.document
@@ -82,33 +86,44 @@ class SimulationRunner(LoggingMixin):
                 )
                 with self.profiler.subtask("run_write_input_file"):
                     self.simulation.WriteInputFile()
-                    # Force a save to flush files, with retry logic
-                    retry_count = self.config["save_retry_count"]
-                    if retry_count is None:
-                        retry_count = 4
-                    if not isinstance(retry_count, int):
-                        retry_count = 4
-                    for attempt in range(1, retry_count + 1):
-                        try:
-                            self.document.SaveAs(self.project_path)
-                            if attempt > 1:
-                                self._log(
-                                    f"WARNING: Save succeeded on retry attempt {attempt}.",
-                                    log_type="warning",
-                                )
-                            break
-                        except Exception as e:
-                            if attempt < retry_count:
-                                self._log(
-                                    f"WARNING: Save attempt {attempt} failed: {e}. Retrying ({attempt + 1}/{retry_count})...",
-                                    log_type="warning",
-                                )
-                            else:
-                                self._log(
-                                    f"ERROR: All {retry_count} save attempts failed. Last error: {e}",
-                                    log_type="error",
-                                )
-                                raise
+                    # Force a save to flush files
+                    # Use ProjectManager.save() if available, otherwise fall back to direct save
+                    if self.project_manager:
+                        self.project_manager.save()
+                    else:
+                        # Fallback for backward compatibility (e.g., in tests)
+                        retry_count = self.config["save_retry_count"]
+                        if retry_count is None:
+                            retry_count = 4
+                        if not isinstance(retry_count, int):
+                            retry_count = 4
+                        for attempt in range(1, retry_count + 1):
+                            try:
+                                # Use Save() if document is already saved to the same path
+                                # This avoids the ARES error about connection to running jobs
+                                current_path = self.document.FilePath
+                                if current_path and os.path.normpath(current_path) == os.path.normpath(self.project_path):
+                                    self.document.Save()
+                                else:
+                                    self.document.SaveAs(self.project_path)
+                                if attempt > 1:
+                                    self._log(
+                                        f"WARNING: Save succeeded on retry attempt {attempt}.",
+                                        log_type="warning",
+                                    )
+                                break
+                            except Exception as e:
+                                if attempt < retry_count:
+                                    self._log(
+                                        f"WARNING: Save attempt {attempt} failed: {e}. Retrying ({attempt + 1}/{retry_count})...",
+                                        log_type="warning",
+                                    )
+                                else:
+                                    self._log(
+                                        f"ERROR: All {retry_count} save attempts failed. Last error: {e}",
+                                        log_type="error",
+                                    )
+                                    raise
                 elapsed = self.profiler.subtask_times["run_write_input_file"][-1]
                 self._log(f"      - Subtask 'run_write_input_file' done in {elapsed:.2f}s", log_type="verbose")
                 self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
