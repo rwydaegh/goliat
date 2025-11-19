@@ -159,6 +159,137 @@ class BaseStudy(LoggingMixin):
             if self.gui:
                 self.gui.update_profiler()  # Send final profiler state
 
+    def _get_execution_control_flags(self) -> tuple[bool, bool, bool]:
+        """Reads execution control flags from config with defaults.
+
+        Returns:
+            Tuple of (do_setup, do_run, do_extract) boolean flags.
+        """
+        do_setup = self.config["execution_control.do_setup"]
+        do_setup = True if do_setup is None else bool(do_setup)
+        do_run = self.config["execution_control.do_run"]
+        do_run = True if do_run is None else bool(do_run)
+        do_extract = self.config["execution_control.do_extract"]
+        do_extract = True if do_extract is None else bool(do_extract)
+        return do_setup, do_run, do_extract
+
+    def _set_initial_profiler_phase(self, do_setup: bool, do_run: bool, do_extract: bool):
+        """Sets the initial profiler phase based on execution control flags.
+
+        Args:
+            do_setup: Whether setup phase is enabled.
+            do_run: Whether run phase is enabled.
+            do_extract: Whether extract phase is enabled.
+        """
+        if do_setup:
+            self.profiler.current_phase = "setup"
+        elif do_run:
+            self.profiler.current_phase = "run"
+        elif do_extract:
+            self.profiler.current_phase = "extract"
+
+    def _validate_execution_control(self, do_setup: bool, do_run: bool, do_extract: bool) -> bool:
+        """Validates execution control settings and logs warnings.
+
+        Args:
+            do_setup: Whether setup phase is enabled.
+            do_run: Whether run phase is enabled.
+            do_extract: Whether extract phase is enabled.
+
+        Returns:
+            True if execution should continue, False if all phases are disabled.
+        """
+        if self.config.get_only_write_input_file() and not do_run:
+            self._log(
+                "WARNING: 'only_write_input_file' is set to true, but 'do_run' is false. "
+                "The input file will NOT be written because the run phase is disabled. "
+                "Set 'do_run: true' to write the input file.",
+                level="progress",
+                log_type="warning",
+            )
+
+        if not do_setup and not do_run and not do_extract:
+            self._log(
+                "All execution phases (setup, run, extract) are disabled. Nothing to do.",
+                log_type="warning",
+            )
+            return False
+
+        return True
+
+    def _validate_auto_cleanup_config(self, do_setup: bool, do_run: bool, do_extract: bool, auto_cleanup: list):
+        """Validates the auto_cleanup_previous_results configuration.
+
+        Uses the more comprehensive validation from near_field_study as the base.
+
+        Args:
+            do_setup: Whether setup phase is enabled.
+            do_run: Whether run phase is enabled.
+            do_extract: Whether extract phase is enabled.
+            auto_cleanup: List of file types to clean up.
+        """
+        if not auto_cleanup:
+            return
+
+        # Check if this is a proper serial workflow (all phases enabled)
+        if not (do_setup and do_run and do_extract):
+            self._log(
+                "WARNING: 'auto_cleanup_previous_results' is enabled, but not all phases "
+                "(setup, run, extract) are active. This may cause data loss if you're running "
+                "phases separately!",
+                level="progress",
+                log_type="warning",
+            )
+            self._log(
+                "  Recommendation: Only use auto_cleanup when running complete serial workflows "
+                "where do_setup=true, do_run=true, and do_extract=true.",
+                level="progress",
+                log_type="info",
+            )
+
+        # Check for batch/parallel run mode
+        batch_run = self.config["execution_control.batch_run"] or False
+        if batch_run:
+            self._log(
+                "ERROR: 'auto_cleanup_previous_results' is enabled alongside 'batch_run'. "
+                "This combination can cause data corruption in parallel execution!",
+                level="progress",
+                log_type="error",
+            )
+            self._log(
+                "  Auto-cleanup will be DISABLED for safety. Please set "
+                "'auto_cleanup_previous_results' to [] in your config when using batch mode.",
+                level="progress",
+                log_type="warning",
+            )
+            # Force disable auto-cleanup to prevent data corruption
+            self.config.config["execution_control"]["auto_cleanup_previous_results"] = []
+
+        # Inform user that auto-cleanup is active
+        cleanup_types = self.config.get_auto_cleanup_previous_results()
+        if cleanup_types:
+            file_type_names = {
+                "output": "output files (*_Output.h5)",
+                "input": "input files (*_Input.h5)",
+                "smash": "project files (*.smash)",
+            }
+            cleanup_descriptions = [file_type_names.get(t, t) for t in cleanup_types]  # type: ignore
+            self._log(
+                f"Auto-cleanup enabled: {', '.join(filter(None, cleanup_descriptions))} will be "
+                "deleted after each simulation's results are extracted to save disk space.",
+                level="progress",
+                log_type="info",
+            )
+
+    def _should_reupload_results(self) -> bool:
+        """Checks if results should be reuploaded.
+
+        Returns:
+            True if results should be reuploaded, False otherwise.
+        """
+        # Default implementation - can be overridden by subclasses if needed
+        return False
+
     def _run_study(self):
         """Executes the study logic. Must be implemented by subclasses.
 
@@ -184,7 +315,7 @@ class BaseStudy(LoggingMixin):
                 self.verbose_logger,
                 self.progress_logger,
                 self.gui,
-                project_manager=self.project_manager,
+                project_manager=self.project_manager,  # type: ignore[call-arg]
             )
             runner.run()
 
@@ -276,29 +407,15 @@ class BaseStudy(LoggingMixin):
         else:
             self._log(f"Deliverables for '{stage}' phase not found. Metadata not updated.", log_type="warning")
 
-    def _upload_results_if_assignment(self, project_dir: str):
-        """Upload results to web dashboard if running as part of an assignment.
-
-        Collects deliverable files and uploads them to the monitoring dashboard.
-        Only runs if GOLIAT_ASSIGNMENT_ID environment variable is set.
+    def _collect_result_files(self, project_dir: str) -> dict:
+        """Collects result files to upload.
 
         Args:
-            project_dir: Path to the simulation results directory
+            project_dir: Path to the simulation results directory.
+
+        Returns:
+            Dictionary mapping filename to file content (bytes).
         """
-        assignment_id = os.environ.get("GOLIAT_ASSIGNMENT_ID", "")
-        if not assignment_id:
-            return  # Not running as part of an assignment
-
-        if not REQUESTS_AVAILABLE or requests is None:
-            self._log("WARNING: requests library not available, cannot upload results", log_type="warning")
-            return
-
-        # Get monitoring server URL from environment (set by run_worker.py)
-        server_url = "https://goliat.waves-ugent.be"
-
-        self._log("Uploading results to web dashboard...", log_type="info")
-
-        # Define files to upload with their expected names
         files_to_upload = [
             "config.json",
             "verbose.log",
@@ -308,7 +425,6 @@ class BaseStudy(LoggingMixin):
             "sar_stats_all_tissues.html",
         ]
 
-        # Collect files that exist
         files = {}
         for filename in files_to_upload:
             file_path = os.path.join(project_dir, filename)
@@ -318,14 +434,20 @@ class BaseStudy(LoggingMixin):
                         files[filename] = f.read()
                 except Exception as e:
                     self._log(f"WARNING: Could not read {filename}: {e}", log_type="warning")
+        return files
 
-        if not files:
-            self._log("WARNING: No result files found to upload", log_type="warning")
-            return
+    def _normalize_relative_path(self, project_dir: str) -> str:
+        """Normalizes the relative path from results/ root.
 
-        # Get relative path from results/ root for directory structure
-        # Example: results/near_field/thelonious/700MHz/by_belly_up_vertical
-        # Should extract: near_field/thelonious/700MHz/by_belly_up_vertical
+        Example: results/near_field/thelonious/700MHz/by_belly_up_vertical
+        Should extract: near_field/thelonious/700MHz/by_belly_up_vertical
+
+        Args:
+            project_dir: Path to the simulation results directory.
+
+        Returns:
+            Normalized relative path with forward slashes.
+        """
         # Find the results/ directory in the path
         if "results" + os.sep in project_dir or "results" + os.altsep in project_dir:
             # Extract path after results/
@@ -348,9 +470,17 @@ class BaseStudy(LoggingMixin):
                 relative_path = ""
 
         # Normalize path separators to forward slashes for cross-platform compatibility
-        relative_path = relative_path.replace(os.sep, "/").replace(os.altsep, "/")
+        return relative_path.replace(os.sep, "/").replace(os.altsep, "/")
 
-        # Upload files
+    def _upload_files_to_server(self, files: dict, relative_path: str, assignment_id: str, server_url: str):
+        """Uploads files to the monitoring server.
+
+        Args:
+            files: Dictionary mapping filename to file content.
+            relative_path: Relative path from results/ root.
+            assignment_id: Assignment ID from environment.
+            server_url: Server URL for uploads.
+        """
         try:
             # Prepare multipart form data
             upload_files = []
@@ -370,6 +500,34 @@ class BaseStudy(LoggingMixin):
                 self._log(f"WARNING: Results upload failed (status {response.status_code}): {response.text[:100]}", log_type="warning")
         except Exception as e:
             self._log(f"WARNING: Error uploading results: {e}", log_type="warning")
+
+    def _upload_results_if_assignment(self, project_dir: str):
+        """Upload results to web dashboard if running as part of an assignment.
+
+        Collects deliverable files and uploads them to the monitoring dashboard.
+        Only runs if GOLIAT_ASSIGNMENT_ID environment variable is set.
+
+        Args:
+            project_dir: Path to the simulation results directory
+        """
+        assignment_id = os.environ.get("GOLIAT_ASSIGNMENT_ID", "")
+        if not assignment_id:
+            return  # Not running as part of an assignment
+
+        if not REQUESTS_AVAILABLE or requests is None:
+            self._log("WARNING: requests library not available, cannot upload results", log_type="warning")
+            return
+
+        server_url = "https://goliat.waves-ugent.be"
+        self._log("Uploading results to web dashboard...", log_type="info")
+
+        files = self._collect_result_files(project_dir)
+        if not files:
+            self._log("WARNING: No result files found to upload", log_type="warning")
+            return
+
+        relative_path = self._normalize_relative_path(project_dir)
+        self._upload_files_to_server(files, relative_path, assignment_id, server_url)
 
     def _setup_line_profiler_if_needed(self, subtask_name: str, instance) -> tuple:
         """Sets up line profiler if configured for this subtask.

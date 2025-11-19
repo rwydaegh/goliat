@@ -33,32 +33,10 @@ class FarFieldStudy(BaseStudy):
             log_type="header",
         )
 
-        do_setup = self.config["execution_control.do_setup"]
-        if do_setup is None:
-            do_setup = True
-        do_run = self.config["execution_control.do_run"]
-        if do_run is None:
-            do_run = True
-        do_extract = self.config["execution_control.do_extract"]
-        if do_extract is None:
-            do_extract = True
+        do_setup, do_run, do_extract = self._get_execution_control_flags()
         auto_cleanup = self.config.get_auto_cleanup_previous_results()
 
-        # Warn about common misconfiguration
-        if self.config.get_only_write_input_file() and not do_run:
-            self._log(
-                "WARNING: 'only_write_input_file' is set to true, but 'do_run' is false. "
-                "The input file will NOT be written because the run phase is disabled. "
-                "Set 'do_run: true' to write the input file.",
-                level="progress",
-                log_type="warning",
-            )
-
-        if not do_setup and not do_run and not do_extract:
-            self._log(
-                "All execution phases (setup, run, extract) are disabled in the config. Nothing to do.",
-                log_type="warning",
-            )
+        if not self._validate_execution_control(do_setup, do_run, do_extract):
             return
 
         if not do_setup and do_run:
@@ -68,58 +46,117 @@ class FarFieldStudy(BaseStudy):
             )
 
         # Sanity check for auto_cleanup_previous_results
-        self._validate_auto_cleanup_config(do_setup, do_run, do_extract, auto_cleanup)  # type: ignore
+        self._validate_auto_cleanup_config(do_setup, do_run, do_extract, auto_cleanup)
 
         phantoms = self.config["phantoms"] or []
+        if not isinstance(phantoms, list):
+            phantoms = [phantoms]
         frequencies = self.config["frequencies_mhz"] or []
+        if not isinstance(frequencies, list):
+            frequencies = [frequencies]
         far_field_params = self.config["far_field_setup.environmental"] or {}
         incident_directions = far_field_params.get("incident_directions", []) if far_field_params else []
         polarizations = far_field_params.get("polarizations", []) if far_field_params else []
 
         total_simulations = len(phantoms) * len(frequencies) * len(incident_directions) * len(polarizations)
-
-        # Inform the profiler about the total number of simulations for accurate ETA
         self.profiler.set_total_simulations(total_simulations)
+        self._set_initial_profiler_phase(do_setup, do_run, do_extract)
 
-        # Give the profiler a hint about the first phase to avoid an initial "N/A" for ETA
-        if do_setup:
-            self.profiler.current_phase = "setup"
-        elif do_run:
-            self.profiler.current_phase = "run"
-        elif do_extract:
-            self.profiler.current_phase = "extract"
+        self._iterate_far_field_simulations(
+            phantoms, frequencies, incident_directions, polarizations, total_simulations, do_setup, do_run, do_extract
+        )
 
+    def _iterate_far_field_simulations(
+        self,
+        phantoms: list,
+        frequencies: list,
+        incident_directions: list,
+        polarizations: list,
+        total_simulations: int,
+        do_setup: bool,
+        do_run: bool,
+        do_extract: bool,
+    ):
+        """Iterates through all far-field simulation combinations.
+
+        Args:
+            phantoms: List of phantom names.
+            frequencies: List of frequencies in MHz.
+            incident_directions: List of incident direction names.
+            polarizations: List of polarization names.
+            total_simulations: Total number of simulations.
+            do_setup: Whether setup phase is enabled.
+            do_run: Whether run phase is enabled.
+            do_extract: Whether extract phase is enabled.
+        """
         simulation_count = 0
         for phantom_name in phantoms:  # type: ignore
             for freq in frequencies:  # type: ignore
                 for direction_name in incident_directions:
                     for polarization_name in polarizations:
-                        self._check_for_stop_signal()
                         simulation_count += 1
-                        self._log(
-                            f"\n--- Processing Simulation {simulation_count}/{total_simulations}: "
-                            f"{phantom_name}, {freq}MHz, {direction_name}, {polarization_name} ---",
-                            level="progress",
-                            log_type="header",
-                        )
-                        if self.gui:
-                            self.gui.update_simulation_details(
-                                simulation_count,
-                                total_simulations,
-                                f"{phantom_name}, {freq}MHz, {direction_name}, {polarization_name}",
-                            )
-                        self._run_single_simulation(
+                        self._process_single_far_field_simulation(
                             phantom_name,
                             freq,
                             direction_name,
                             polarization_name,
-                            do_setup,  # type: ignore
-                            do_run,  # type: ignore
-                            do_extract,  # type: ignore
+                            simulation_count,
+                            total_simulations,
+                            do_setup,
+                            do_run,
+                            do_extract,
                         )
-                        self.profiler.simulation_completed()
-                        if self.gui:
-                            self.gui.update_overall_progress(simulation_count, total_simulations)
+
+    def _process_single_far_field_simulation(
+        self,
+        phantom_name: str,
+        freq: int,
+        direction_name: str,
+        polarization_name: str,
+        simulation_count: int,
+        total_simulations: int,
+        do_setup: bool,
+        do_run: bool,
+        do_extract: bool,
+    ):
+        """Processes a single far-field simulation.
+
+        Args:
+            phantom_name: Name of the phantom.
+            freq: Frequency in MHz.
+            direction_name: Name of the incident direction.
+            polarization_name: Name of the polarization.
+            simulation_count: Current simulation count.
+            total_simulations: Total number of simulations.
+            do_setup: Whether setup phase is enabled.
+            do_run: Whether run phase is enabled.
+            do_extract: Whether extract phase is enabled.
+        """
+        self._check_for_stop_signal()
+        self._log(
+            f"\n--- Processing Simulation {simulation_count}/{total_simulations}: "
+            f"{phantom_name}, {freq}MHz, {direction_name}, {polarization_name} ---",
+            level="progress",
+            log_type="header",
+        )
+        if self.gui:
+            self.gui.update_simulation_details(
+                simulation_count,
+                total_simulations,
+                f"{phantom_name}, {freq}MHz, {direction_name}, {polarization_name}",
+            )
+        self._run_single_simulation(
+            phantom_name,
+            freq,
+            direction_name,
+            polarization_name,
+            do_setup,  # type: ignore
+            do_run,  # type: ignore
+            do_extract,  # type: ignore
+        )
+        self.profiler.simulation_completed()
+        if self.gui:
+            self.gui.update_overall_progress(simulation_count, total_simulations)
 
     def _run_single_simulation(
         self,
@@ -302,26 +339,3 @@ class FarFieldStudy(BaseStudy):
                 remove_simulation_log_handlers(sim_log_handlers)
             if self.project_manager and hasattr(self.project_manager.document, "IsOpen") and self.project_manager.document.IsOpen():  # type: ignore
                 self.project_manager.close()
-
-    def _validate_auto_cleanup_config(self, do_setup: bool, do_run: bool, do_extract: bool, auto_cleanup: list):
-        """Validates the auto_cleanup_previous_results configuration."""
-        if not auto_cleanup:
-            return
-
-        if not (do_setup and do_run and do_extract):
-            self._log(
-                "WARNING: 'auto_cleanup_previous_results' is enabled, but not all phases are active.",
-                log_type="warning",
-            )
-
-        batch_run = self.config["execution_control.batch_run"] or False
-        if batch_run:
-            self._log(
-                "ERROR: 'auto_cleanup_previous_results' is not compatible with 'batch_run'. Disabling.",
-                log_type="error",
-            )
-            self.config.config["execution_control"]["auto_cleanup_previous_results"] = []
-
-        cleanup_types = self.config.get_auto_cleanup_previous_results()
-        if cleanup_types:
-            self._log(f"Auto-cleanup enabled for: {', '.join(cleanup_types)}", log_type="info")
