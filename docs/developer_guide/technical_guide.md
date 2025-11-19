@@ -128,6 +128,42 @@ This section details GOLIAT's core classes and their roles within the framework.
 
 - **API Reference**: [goliat.config.Config](../reference/api_reference.md#goliat.config.Config)
 
+#### Tissue Grouping
+
+GOLIAT groups individual tissues into logical categories (e.g., eyes, brain, skin) for aggregated SAR analysis. The grouping process occurs during SAR extraction and uses explicit mappings defined in `material_name_mapping.json`.
+
+**How it works:**
+
+1. **Tissue Name Extraction**: Sim4Life returns tissue names that may include phantom suffixes (e.g., `"Cornea  (Thelonious_6y_V6)"`). These original names are preserved in the SAR DataFrame without cleaning or normalization.
+
+2. **Matching Process**: The `TissueGrouper` class matches tissues to groups by:
+   - Stripping phantom suffixes (e.g., `"Cornea  (Thelonious_6y_V6)"` → `"Cornea"`)
+   - Checking if the cleaned name matches an entity name directly in `material_name_mapping.json`
+   - If not found, checking if it matches a material name (using a reverse lookup)
+   - Once the entity is identified, checking which group(s) it belongs to in `_tissue_groups`
+
+3. **Configuration**: Tissue groups are defined per phantom in `material_name_mapping.json` under the `_tissue_groups` key:
+   ```json
+   {
+     "thelonious": {
+       "_tissue_groups": {
+         "eyes_group": ["Cornea", "Eye_lens", "Eye_Sclera", "Eye_vitreous_humor"],
+         "brain_group": ["Brain_grey_matter", "Brain_white_matter", ...],
+         ...
+       },
+       "Cornea": "Eye (Cornea)",
+       "Eye_lens": "Eye (Lens)",
+       ...
+     }
+   }
+   ```
+
+4. **Output**: The grouping returns a dictionary mapping group names to lists of matched tissue names (with original phantom suffixes preserved). This ensures consistency between the DataFrame and the grouping results.
+
+**Note**: Far-field analysis uses keyword-based substring matching for plotting (defined in `Analyzer.tissue_group_definitions`), which is separate from the extraction-phase grouping. This works because tissue names in pickle files contain the keywords (e.g., `"Cornea"` matches `"Cornea  (Thelonious_6y_V6)"` via substring search).
+
+- **API Reference**: [goliat.extraction.tissue_grouping.TissueGrouper](../reference/api_reference.md#goliat.extraction.tissue_grouping.TissueGrouper)
+
 #### `BaseStudy`, `NearFieldStudy`, `FarFieldStudy`
 - **Function**: Orchestrates the entire simulation workflow. `BaseStudy` provides the core structure, including the main `run()` method, logging, and profiling. `NearFieldStudy` and `FarFieldStudy` inherit from `BaseStudy` and implement the `_run_study()` method, which contains the specific logic for each study type. This inheritance-based design allows for code reuse and a clear separation of concerns.
 - **Some interesting methods**:

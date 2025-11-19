@@ -102,6 +102,57 @@ class HTTPClient(LoggingMixin):
             self._handle_exception(e, "heartbeat")
             return False
 
+    def post_gui_screenshots(self, screenshots: Dict[str, bytes]) -> bool:
+        """Send GUI screenshots to the API.
+
+        Sends screenshots as multipart/form-data for efficient binary transfer.
+        Each tab screenshot is sent as a separate file field.
+
+        Args:
+            screenshots: Dictionary mapping tab names to JPEG bytes.
+
+        Returns:
+            True if successful, False otherwise.
+        """
+        if not REQUESTS_AVAILABLE or requests is None:
+            return False
+
+        if not screenshots:
+            return False
+
+        try:
+            # Prepare multipart form data
+            files = []
+            for tab_name, jpeg_bytes in screenshots.items():
+                # Sanitize tab name for form field name (replace spaces with underscores)
+                field_name = tab_name.replace(" ", "_")
+                files.append((field_name, (f"{field_name}.jpg", jpeg_bytes, "image/jpeg")))
+
+            # Add machineId as form field
+            data = {"machineId": self.machine_id}
+
+            # Send with longer timeout for large payloads (up to 2MB for 6 tabs)
+            response = requests.post(  # type: ignore[attr-defined]
+                f"{self.server_url}/api/gui-screenshots",
+                data=data,
+                files=files,
+                timeout=30,  # Longer timeout for large payloads
+            )
+
+            if response.status_code == 200:
+                return True
+            else:
+                self._log(
+                    f"GUI screenshots returned status {response.status_code}: {response.text[:100]}",
+                    level="verbose",
+                    log_type="warning",
+                )
+                return False
+
+        except Exception as e:
+            self._handle_exception(e, "gui_screenshots")
+            return False
+
     def _handle_exception(self, e: Exception, message_type: str) -> None:
         """Handle HTTP exceptions with appropriate logging.
 

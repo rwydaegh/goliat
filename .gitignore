@@ -41,6 +41,8 @@ configs/*
 !configs/far_field_sim4life_web.json
 !configs/near_field_config.json
 !configs/near_field_config_no_subgrid.json
+!configs/near_field_harmonic.json
+!configs/near_field_gaussian.json
 !configs/tutorial_*.json
 
 # Generated files
@@ -55,6 +57,9 @@ configs/*
 # Local environment
 #.bashrc
 .env
+
+# Scripts
+goliat/utils/scripts/keep_awake.py
 
 # Cloud setup - credentials and documentation
 cloud_setup/tensordock_documentation.md

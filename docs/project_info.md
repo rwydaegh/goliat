@@ -6,7 +6,7 @@
 
 The primary objectives of the project include:
 
--   **Automated Dosimetry**: Creating a Python-based framework to automate simulations using the Sim4Life platform.
+-   **Transfer function matrix**: Creating a transfer function (from input powers of phones to impinging field values) to SAR values inside humans, in a large array (or matrix) of conditions.
 -   **Child Phantom Analysis**: Performing simulations on detailed child phantoms, such as "Thelonious" and "Eartha," to understand age-dependent effects.
 -   **SAR Analysis**: Calculating Specific Absorption Rate (SAR) metrics, including whole-body, head, trunk, and peak spatial-average SAR (psSAR10g) in sensitive tissues like the skin, eyes, and brain.
 -   **Varied Exposure Scenarios**: Investigating numerous exposure conditions, including different frequencies, antenna types, and device positions (e.g., by the cheek, in front of the eyes, near the belly).
