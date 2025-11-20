@@ -314,8 +314,8 @@ class BaseStudy(LoggingMixin):
                 self.profiler,
                 self.verbose_logger,
                 self.progress_logger,
-                self.gui,
-                project_manager=self.project_manager,  # type: ignore[call-arg]
+                self.project_manager,
+                gui=self.gui,
             )
             runner.run()
 

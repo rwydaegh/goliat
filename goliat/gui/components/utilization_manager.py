@@ -91,9 +91,12 @@ class UtilizationManager:
         current_time = datetime.now(timezone.utc)  # Always use UTC for consistency across VMs
 
         # Write to CSV (includes RAM and GPU VRAM)
-        self.gui.data_manager.write_system_utilization(
-            self._last_cpu_percent, self._last_ram_percent, self._last_gpu_percent, self._last_gpu_vram_percent
-        )
+        try:
+            self.gui.data_manager.write_system_utilization(
+                self._last_cpu_percent, self._last_ram_percent, self._last_gpu_percent, self._last_gpu_vram_percent
+            )
+        except Exception as e:
+            self.gui.verbose_logger.error(f"[UtilizationPlot] CSV write failed: {e}")
 
         # Add to plot (includes RAM and GPU VRAM)
         if hasattr(self.gui, "system_utilization_plot"):
@@ -111,14 +114,19 @@ class UtilizationManager:
             if vram_info is not None:
                 _, total_gpu_vram_gb = vram_info
 
-            self.gui.system_utilization_plot.add_data_point(
-                timestamp=current_time,
-                cpu_percent=self._last_cpu_percent,
-                ram_percent=self._last_ram_percent,
-                gpu_percent=self._last_gpu_percent,
-                gpu_vram_percent=self._last_gpu_vram_percent,
-                cpu_cores=cpu_cores,
-                total_ram_gb=total_ram_gb,
-                gpu_name=gpu_name,
-                total_gpu_vram_gb=total_gpu_vram_gb,
-            )
+            try:
+                self.gui.system_utilization_plot.add_data_point(
+                    timestamp=current_time,
+                    cpu_percent=self._last_cpu_percent,
+                    ram_percent=self._last_ram_percent,
+                    gpu_percent=self._last_gpu_percent,
+                    gpu_vram_percent=self._last_gpu_vram_percent,
+                    cpu_cores=cpu_cores,
+                    total_ram_gb=total_ram_gb,
+                    gpu_name=gpu_name,
+                    total_gpu_vram_gb=total_gpu_vram_gb,
+                )
+            except Exception as e:
+                self.gui.verbose_logger.error(f"[UtilizationPlot] Failed to add plot data point: {e}")
+        else:
+            self.gui.verbose_logger.warning("[UtilizationPlot] system_utilization_plot attribute not found on GUI")

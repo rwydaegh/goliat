@@ -182,6 +182,11 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
         self.utilization_timer.timeout.connect(self.update_utilization)
         self.utilization_timer.start(1000)
 
+        # System utilization plot update timer (every 2 seconds)
+        self.utilization_plot_timer: _QTimer = _QTimer(self)
+        self.utilization_plot_timer.timeout.connect(self.update_utilization_plot)
+        self.utilization_plot_timer.start(2000)
+
         # Progress sync timer (every 2 seconds) - send actual progress bar values to web
         self.progress_sync_timer: _QTimer = _QTimer(self)
         self.progress_sync_timer.timeout.connect(self.web_bridge_manager.sync_progress)
@@ -277,6 +282,10 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
         """Updates CPU, RAM, and GPU utilization displays."""
         self.utilization_manager.update()
 
+    def update_utilization_plot(self) -> None:
+        """Updates the system utilization plot with current values."""
+        self.utilization_manager.update_plot()
+
     def update_clock(self) -> None:
         """Updates elapsed time, ETA labels, and window title."""
         self.clock_manager.update()
@@ -331,6 +340,7 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
         self.queue_timer.stop()
         self.graph_timer.stop()
         self.utilization_timer.stop()
+        self.utilization_plot_timer.stop()
         self.progress_sync_timer.stop()
         self.progress_animation.stop()
         if not error:
