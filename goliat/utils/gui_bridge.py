@@ -308,6 +308,10 @@ class WebGUIBridge(LoggingMixin):
             sequence = self._sequence_counter
             self._sequence_counter += 1
 
+        # Add per-message index within batch to preserve order when timestamps are identical
+        for idx, msg in enumerate(log_messages):
+            msg["batch_index"] = idx
+
         batch_message = {
             "type": "log_batch",
             "logs": log_messages,
