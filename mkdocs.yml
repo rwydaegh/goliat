@@ -78,6 +78,7 @@ extra_javascript:
 
 nav:
 - Home: index.md
+- Installation: installation.md
 - User Guide:
   - Quick Start: user_guide/quick_start.md
   - User Guide: user_guide/user_guide.md
@@ -90,6 +91,7 @@ nav:
   - 5. Parallel and Cloud Execution: tutorials/05_parallel_and_cloud_execution.ipynb
 - Developer Guide:
   - Overview: developer_guide/developer_guide.md
+  - System Architecture: developer_guide/system_architecture.md
   - Technical Guide: developer_guide/technical_guide.md
   - Advanced Features: developer_guide/advanced_features.md
   - Configuration: developer_guide/configuration.md
