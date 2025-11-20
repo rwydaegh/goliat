@@ -173,7 +173,7 @@ class UIBuilder:
         Returns:
             Absolute path to favicon.svg.
         """
-        return os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "docs", "img", "favicon.svg")
+        return os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "favicon.svg")
 
     @staticmethod
     def build(gui_instance: "ProgressGUI", status_manager: "StatusManager") -> None:

@@ -108,7 +108,7 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
 
         # Auto-detect machine ID
         self.machine_id = MachineIdDetector.detect(self.verbose_logger)
-        self.server_url = "https://goliat.waves-ugent.be"
+        self.server_url = "https://monitor.goliat.waves-ugent.be"
 
         # Build UI
         UIBuilder.build(self, self.status_manager)

@@ -79,3 +79,10 @@ class ProgressManager:
         self.gui.total_simulations = total_sims
         self.gui.sim_counter_label.setText(f"Simulation: {sim_count} / {total_sims}")
         self.gui.sim_details_label.setText(f"Current Case: {details}")
+
+        # Send simulation details to web dashboard
+        if hasattr(self.gui, "web_bridge_manager") and self.gui.web_bridge_manager is not None:
+            if self.gui.web_bridge_manager.web_bridge is not None:
+                self.gui.web_bridge_manager.web_bridge.enqueue(
+                    {"type": "simulation_details", "simulation_count": sim_count, "total_simulations": total_sims, "current_case": details}
+                )
