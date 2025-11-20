@@ -94,13 +94,6 @@ GOLIAT is an automated Python framework for near-field and far-field dosimetric 
 
     [:octicons-arrow-right-24: Coloring Rules](developer_guide/coloring_rules.md)
 
--   :material-graph-outline:{ .lg .middle } **UML**
-
-    ---
-
-    Class relationships and package structure. Visual overview of the codebase.
-
-    [:octicons-arrow-right-24: View UML](developer_guide/uml.md)
 
 -   :material-help-circle-outline:{ .lg .middle } **Troubleshooting**
 
@@ -166,5 +159,3 @@ Start with the [Quick Start](user_guide/quick_start.md) to run your first simula
 For issues, see [Troubleshooting](troubleshooting.md). Contribute via [Technical Guide](developer_guide/technical_guide.md).
 
 For a complete list of all available features, see the [Full List of Features](reference/full_features_list.md).
-
----

@@ -14,6 +14,7 @@ theme:
   logo: img/goliat.svg
   favicon: img/favicon.svg
   language: en
+  custom_dir: docs/overrides
   features:
   - announce.dismiss
   - content.action.edit
@@ -75,6 +76,8 @@ extra_css:
 
 extra_javascript:
 - javascripts/ansi-to-html.js
+- javascripts/footer-width-match.js
+- javascripts/code-block-enhancements.js
 
 nav:
 - Home: index.md
@@ -96,7 +99,6 @@ nav:
   - Advanced Features: developer_guide/advanced_features.md
   - Configuration: developer_guide/configuration.md
   - Coloring Rules: developer_guide/coloring_rules.md
-  - UML: developer_guide/uml.md
 - Cloud:
   - Overview: cloud/overview.md
   - oSPARC: cloud/osparc.md
@@ -119,9 +121,12 @@ plugins:
     minify_css: true
     htmlmin_opts:
       remove_comments: true
-- kroki:
-    HttpMethod: POST
+# kroki disabled - using pre-generated images instead
+# - kroki:
+#     HttpMethod: POST
+#     FailFast: false
 - mermaid2: {}
+- panzoom: {}
 - mknotebooks:
     execute: false
 - mkdocstrings:
@@ -192,6 +197,7 @@ markdown_extensions:
     - name: mermaid
       class: mermaid
       format: !!python/name:mermaid2.fence_mermaid_custom
+    preserve_tabs: true
 - pymdownx.emoji:
     emoji_index: !!python/name:material.extensions.emoji.twemoji
     emoji_generator: !!python/name:material.extensions.emoji.to_svg

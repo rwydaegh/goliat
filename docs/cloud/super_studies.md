@@ -156,10 +156,10 @@ POST /api/assignments/{id}/claim
 
 1. **Set Environment Variables (optional):**
 
-        ```bash
-        export GOLIAT_MONITORING_URL=https://your-dashboard.com
-        export GOLIAT_WEBGUI_ENABLED=true
-        ```
+   ```bash
+   export GOLIAT_MONITORING_URL=https://your-dashboard.com
+   export GOLIAT_WEBGUI_ENABLED=true
+   ```
    
    If `GOLIAT_MONITORING_URL` is not set, the default dashboard URL `https://monitor.goliat.waves-ugent.be` will be used.
 
