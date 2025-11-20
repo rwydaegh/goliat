@@ -33,5 +33,20 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e .[docs]
 
+    - name: Build docs
+      run: mkdocs build
+
+    - name: Add CNAME
+      run: echo "docs.goliat.waves-ugent.be" > ./site/CNAME
+
     - name: Deploy docs
-      run: mkdocs gh-deploy --force
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+        cd site
+        git init
+        git add -A
+        git commit -m "Deploy docs from commit ${{ github.sha }}"
+        git branch -M gh-pages
+        git push -f https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git gh-pages
