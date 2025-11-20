@@ -261,13 +261,13 @@ def main():
         "--server-url",
         type=str,
         default=None,
-        help="URL of the monitoring server (default: https://goliat.waves-ugent.be).",
+        help="URL of the monitoring server (default: https://monitor.goliat.waves-ugent.be).",
     )
 
     args = parser.parse_args()
 
     # Get server URL: command arg > env var > hardcoded default
-    server_url = args.server_url or os.getenv("GOLIAT_MONITORING_URL") or "https://goliat.waves-ugent.be"
+    server_url = args.server_url or os.getenv("GOLIAT_MONITORING_URL") or "https://monitor.goliat.waves-ugent.be"
     server_url = server_url.rstrip("/")
 
     if args.num_splits < 1:

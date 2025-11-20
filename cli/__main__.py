@@ -122,7 +122,7 @@ def create_parser():
         "--server-url",
         type=str,
         default=None,
-        help="URL of the monitoring server (default: https://goliat.waves-ugent.be).",
+        help="URL of the monitoring server (default: https://monitor.goliat.waves-ugent.be).",
     )
 
     # worker command
@@ -149,20 +149,49 @@ def create_parser():
         help="If set, redo simulations even if the configuration matches a completed run.",
     )
     worker_parser.add_argument(
+        "--reupload-results",
+        action="store_true",
+        help="When caching skips simulations, upload extraction results that appear valid.",
+    )
+    worker_parser.add_argument(
         "--server-url",
         type=str,
         default=None,
-        help="URL of the monitoring server (default: https://goliat.waves-ugent.be).",
+        help="URL of the monitoring server (default: https://monitor.goliat.waves-ugent.be).",
     )
 
     return parser
 
 
 def _print_ascii_art():
-    """Print GOLIAT ASCII art banner."""
+    """Print GOLIAT ASCII art banner if terminal is wide enough, otherwise print simple text."""
+    import shutil
+
     from cli.ascii_art import GOLIAT_BANNER
 
-    print(GOLIAT_BANNER)
+    # Get terminal width
+    try:
+        terminal_width = shutil.get_terminal_size().columns
+    except (OSError, AttributeError):
+        # Fallback if terminal size can't be determined (e.g., piped output)
+        terminal_width = 80
+
+    # Find the widest line in the ASCII art
+    lines = [line for line in GOLIAT_BANNER.split("\n") if line.strip()]
+    if not lines:
+        print("\nGOLIAT\n")
+        return
+
+    max_width = max(len(line) for line in lines)
+
+    # Only print ASCII art if it uses less than 120% of terminal width
+    if max_width < terminal_width * 1.2:
+        print(GOLIAT_BANNER)
+    else:
+        # Print simple replacement when terminal is too narrow
+        print("\n" + "=" * min(terminal_width - 2, 60))
+        print("GOLIAT".center(min(terminal_width - 2, 60)))
+        print("=" * min(terminal_width - 2, 60) + "\n")
 
 
 def main():
@@ -295,6 +324,8 @@ def main():
             sys.argv.extend(["--title", args.title])
         if args.no_cache:
             sys.argv.append("--no-cache")
+        if args.reupload_results:
+            sys.argv.append("--reupload-results")
         if args.server_url:
             sys.argv.extend(["--server-url", args.server_url])
         try:

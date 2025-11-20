@@ -17,7 +17,7 @@ A Super Study:
 On your control machine:
 
 ```bash
-# Optional: set custom dashboard URL (defaults to https://goliat.waves-ugent.be)
+# Optional: set custom dashboard URL (defaults to https://monitor.goliat.waves-ugent.be)
 export GOLIAT_MONITORING_URL=https://your-dashboard.com
 goliat super_study configs/near_field_config.json --name my_study --num-splits 8
 ```
@@ -32,7 +32,7 @@ This will:
 On each worker machine:
 
 ```bash
-# Optional: set custom dashboard URL (defaults to https://goliat.waves-ugent.be)
+# Optional: set custom dashboard URL (defaults to https://monitor.goliat.waves-ugent.be)
 export GOLIAT_MONITORING_URL=https://your-dashboard.com
 export GOLIAT_WEBGUI_ENABLED=true
 
@@ -66,7 +66,7 @@ goliat super_study <config> --name <name> [options]
 - `--name`: Name for the super study (used by workers)
 - `--description`: Optional description
 - `--num-splits`: Number of assignments to create (default: 4)
-- `--server-url`: Dashboard URL (default: from `GOLIAT_MONITORING_URL` env var, or `https://goliat.waves-ugent.be`)
+- `--server-url`: Dashboard URL (default: from `GOLIAT_MONITORING_URL` env var, or `https://monitor.goliat.waves-ugent.be`)
 
 **Example:**
 ```bash
@@ -89,7 +89,7 @@ goliat worker <assignment_index> <super_study_name> [options]
 - `super_study_name`: Name of the super study
 - `--title`: GUI window title
 - `--no-cache`: Force re-running even if cached
-- `--server-url`: Dashboard URL (default: from `GOLIAT_MONITORING_URL` env var, or `https://goliat.waves-ugent.be`)
+- `--server-url`: Dashboard URL (default: from `GOLIAT_MONITORING_URL` env var, or `https://monitor.goliat.waves-ugent.be`)
 
 **Example:**
 ```bash
@@ -161,7 +161,7 @@ POST /api/assignments/{id}/claim
         export GOLIAT_WEBGUI_ENABLED=true
         ```
    
-   If `GOLIAT_MONITORING_URL` is not set, the default dashboard URL `https://goliat.waves-ugent.be` will be used.
+   If `GOLIAT_MONITORING_URL` is not set, the default dashboard URL `https://monitor.goliat.waves-ugent.be` will be used.
 
 2. **Name Studies Clearly:** Use descriptive names like `full_9freq_2phantoms_2025`
 
