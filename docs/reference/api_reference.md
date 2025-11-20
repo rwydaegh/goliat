@@ -2,8 +2,6 @@
 
 Complete API documentation for GOLIAT, organized by module category.
 
-For Sim4Life Python API examples and patterns, see [Sim4Life API snippets](useful_s4l_snippets.md).
-
 ## Core Modules
 
 Core functionality for configuration, logging, and utilities.
@@ -19,14 +17,6 @@ Core functionality for configuration, logging, and utilities.
 ### Colors
 
 ::: goliat.colors
-    options:
-      show_root_heading: true
-      show_source: true
-
-
-### Configuration
-
-::: goliat.config.Config
     options:
       show_root_heading: true
       show_source: true
@@ -59,14 +49,6 @@ Core functionality for configuration, logging, and utilities.
 ### Project Management
 
 ::: goliat.project_manager
-    options:
-      show_root_heading: true
-      show_source: true
-
-
-### Utilities
-
-::: goliat.utils
     options:
       show_root_heading: true
       show_source: true
@@ -182,6 +164,43 @@ Classes responsible for building the Sim4Life simulation scene.
 ## Simulation Execution
 
 ::: goliat.simulation_runner.SimulationRunner
+    options:
+      show_root_heading: true
+      show_source: true
+
+---
+
+## Execution Strategies
+
+Strategy pattern implementations for different simulation execution methods.
+
+### Base Strategy
+
+::: goliat.runners.execution_strategy
+    options:
+      show_root_heading: true
+      show_source: true
+
+
+### iSolve Manual Strategy
+
+::: goliat.runners.isolve_manual_strategy
+    options:
+      show_root_heading: true
+      show_source: true
+
+
+### oSPARC Direct Strategy
+
+::: goliat.runners.osparc_direct_strategy
+    options:
+      show_root_heading: true
+      show_source: true
+
+
+### Sim4Life API Strategy
+
+::: goliat.runners.sim4life_api_strategy
     options:
       show_root_heading: true
       show_source: true
@@ -306,12 +325,44 @@ Graphical user interface for monitoring simulation progress.
 
 ### GUI Components
 
+::: goliat.gui.components.clock_manager
+    options:
+      show_root_heading: true
+      show_source: true
+
 ::: goliat.gui.components.data_manager
     options:
       show_root_heading: true
       show_source: true
 
-::: goliat.gui.components.plots
+::: goliat.gui.components.graph_manager
+    options:
+      show_root_heading: true
+      show_source: true
+
+::: goliat.gui.components.machine_id_detector
+    options:
+      show_root_heading: true
+      show_source: true
+
+### Plot Components
+
+::: goliat.gui.components.plots.overall_progress_plot
+    options:
+      show_root_heading: true
+      show_source: true
+
+::: goliat.gui.components.plots.pie_charts_manager
+    options:
+      show_root_heading: true
+      show_source: true
+
+::: goliat.gui.components.plots.system_utilization_plot
+    options:
+      show_root_heading: true
+      show_source: true
+
+::: goliat.gui.components.plots.time_remaining_plot
     options:
       show_root_heading: true
       show_source: true
@@ -321,12 +372,32 @@ Graphical user interface for monitoring simulation progress.
       show_root_heading: true
       show_source: true
 
+::: goliat.gui.components.progress_animation
+    options:
+      show_root_heading: true
+      show_source: true
+
+::: goliat.gui.components.progress_manager
+    options:
+      show_root_heading: true
+      show_source: true
+
 ::: goliat.gui.components.queue_handler
     options:
       show_root_heading: true
       show_source: true
 
+::: goliat.gui.components.screenshot_capture
+    options:
+      show_root_heading: true
+      show_source: true
+
 ::: goliat.gui.components.status_manager
+    options:
+      show_root_heading: true
+      show_source: true
+
+::: goliat.gui.components.system_monitor
     options:
       show_root_heading: true
       show_source: true
@@ -346,6 +417,16 @@ Graphical user interface for monitoring simulation progress.
       show_root_heading: true
       show_source: true
 
+::: goliat.gui.components.utilization_manager
+    options:
+      show_root_heading: true
+      show_source: true
+
+::: goliat.gui.components.web_bridge_manager
+    options:
+      show_root_heading: true
+      show_source: true
+
 ---
 
 ## Scripts
@@ -359,11 +440,7 @@ Entry point scripts for running studies and analysis.
 - `goliat analyze` - Entry point for post-processing analysis
 - `goliat parallel` - Script for running parallel study batches
 - `goliat free-space` - Script for free-space validation runs
-- `goliat init` - Initialize GOLIAT environment (verify setup, download data files)
+- `goliat init` - Initialize GOLIAT environment (install dependencies, setup)
 - `goliat status` - Show setup status and environment information
 - `goliat validate` - Validate configuration files
 - `goliat version` - Show GOLIAT version information
-
----
-
-For a complete list of all user-facing features, see the [Full List of Features](full_features_list.md).

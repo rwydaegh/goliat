@@ -103,7 +103,16 @@ CATEGORY_MAPPING = {
                     "ui_builder.py",
                     "progress_animation.py",
                     "tray_manager.py",
-                    "plots.py",
+                ],
+            },
+            "plots": {
+                "name": "Plot Components",
+                "description": None,
+                "modules": [
+                    "overall_progress_plot.py",
+                    "pie_charts_manager.py",
+                    "system_utilization_plot.py",
+                    "time_remaining_plot.py",
                 ],
             },
         },
@@ -181,9 +190,16 @@ def scan_goliat_directory(src_root: Path) -> Dict[str, List[Tuple[Path, str]]]:
                 # Unknown package, add to core
                 categories.setdefault("core", []).append((file_path, str(relative_path)))
         elif len(parts) == 3:
-            # Nested package (e.g., gui/components)
+            # Nested package (e.g., gui/components, gui/components/plots)
             package = parts[0]
             if package == "gui" and parts[1] == "components":
+                categories.setdefault("gui", []).append((file_path, str(relative_path)))
+            else:
+                categories.setdefault(package, []).append((file_path, str(relative_path)))
+        elif len(parts) == 4:
+            # Deeply nested (e.g., gui/components/plots)
+            package = parts[0]
+            if package == "gui" and parts[1] == "components" and parts[2] == "plots":
                 categories.setdefault("gui", []).append((file_path, str(relative_path)))
             else:
                 categories.setdefault(package, []).append((file_path, str(relative_path)))
@@ -290,13 +306,17 @@ def generate_section(category_key: str, files: List[Tuple[Path, str]], src_root:
         progress_gui = None
         queue_gui = None
         components = []
+        plots = []
         for file_path, relative_path in files:
             filename = os.path.basename(relative_path)
+            relative_str = str(relative_path)
             if filename == "progress_gui.py":
                 progress_gui = (file_path, relative_path)
             elif filename == "queue_gui.py":
                 queue_gui = (file_path, relative_path)
-            elif "components" in str(relative_path):
+            elif "components/plots" in relative_str:
+                plots.append((file_path, relative_path))
+            elif "components" in relative_str:
                 components.append((file_path, relative_path))
 
         if progress_gui:
@@ -335,8 +355,23 @@ def generate_section(category_key: str, files: List[Tuple[Path, str]], src_root:
                 if class_name and filename.replace(".py", "").lower() in class_name.lower():
                     output_lines.append(generate_mkdocstrings_directive(f"{module_path}.{class_name}"))
                 else:
-                    # For plots.py which has multiple classes
                     output_lines.append(generate_mkdocstrings_directive(module_path))
+                output_lines.append("")
+
+        if plots:
+            output_lines.append("### Plot Components")
+            output_lines.append("")
+            # Use module paths (document entire module) - matches pattern for other GUI components
+            for file_path, relative_path in sorted(plots):
+                filename = os.path.basename(relative_path)
+                # Skip __init__.py and private modules
+                if filename.startswith("_") or filename == "__init__.py":
+                    continue
+                # Use module path only (most reliable for mkdocstrings)
+                # Document the entire module instead of specific class
+                # This matches the pattern used for other GUI components
+                module_path = get_module_path(file_path, src_root)
+                output_lines.append(generate_mkdocstrings_directive(module_path))
                 output_lines.append("")
 
     elif category_key in ["studies", "setups", "analysis", "runners"]:
@@ -378,7 +413,7 @@ def generate_section(category_key: str, files: List[Tuple[Path, str]], src_root:
     output_lines.append("")
 
 
-def generate_api_reference(src_root: Path = Path("goliat"), output_path: Path = Path("docs/api_reference.md")):
+def generate_api_reference(src_root: Path = Path("goliat"), output_path: Path = Path("docs/reference/api_reference.md")):
     """Generate organized API reference markdown."""
     src_root = Path(src_root)
     output_path = Path(output_path)
