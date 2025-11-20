@@ -518,7 +518,7 @@ class BaseStudy(LoggingMixin):
             self._log("WARNING: requests library not available, cannot upload results", log_type="warning")
             return
 
-        server_url = "https://goliat.waves-ugent.be"
+        server_url = "https://monitor.goliat.waves-ugent.be"
         self._log("Uploading results to web dashboard...", log_type="info")
 
         files = self._collect_result_files(project_dir)
