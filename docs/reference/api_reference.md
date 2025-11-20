@@ -345,7 +345,10 @@ Graphical user interface for monitoring simulation progress.
       show_root_heading: true
       show_source: true
 
-### Plot Components
+::: goliat.gui.components.plots._matplotlib_imports
+    options:
+      show_root_heading: true
+      show_source: true
 
 ::: goliat.gui.components.plots.overall_progress_plot
     options:
@@ -367,7 +370,7 @@ Graphical user interface for monitoring simulation progress.
       show_root_heading: true
       show_source: true
 
-::: goliat.gui.components.progress_animation
+::: goliat.gui.components.plots.utils
     options:
       show_root_heading: true
       show_source: true

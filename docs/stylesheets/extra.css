@@ -14,6 +14,129 @@
   font-weight: 700;
 }
 
+/* Bash code block indicators - works with Material theme structure */
+/* Target both direct language classes and code elements with language classes */
+.highlight.language-bash,
+.highlight.language-sh,
+.highlight.language-shell,
+.highlight.language-bash-session,
+.highlight.language-console,
+.highlighttable.language-bash,
+.highlighttable.language-sh,
+.highlighttable.language-shell,
+.highlighttable.language-bash-session,
+.highlighttable.language-console,
+.highlight.shell-code-block,
+.highlighttable.shell-code-block,
+.highlight:has(code.language-bash),
+.highlight:has(code.language-sh),
+.highlight:has(code.language-shell),
+.highlight:has(code.language-bash-session),
+.highlight:has(code.language-console),
+.highlighttable:has(code.language-bash),
+.highlighttable:has(code.language-sh),
+.highlighttable:has(code.language-shell),
+.highlighttable:has(code.language-bash-session),
+.highlighttable:has(code.language-console) {
+  position: relative;
+}
+
+/* Badge indicator for bash/shell code blocks - refined Material theme style */
+.highlight.language-bash::before,
+.highlight.language-sh::before,
+.highlight.language-shell::before,
+.highlight.language-bash-session::before,
+.highlight.language-console::before,
+.highlighttable.language-bash::before,
+.highlighttable.language-sh::before,
+.highlighttable.language-shell::before,
+.highlighttable.language-bash-session::before,
+.highlighttable.language-console::before,
+.highlight.shell-code-block::before,
+.highlighttable.shell-code-block::before,
+.highlight:has(code.language-bash)::before,
+.highlight:has(code.language-sh)::before,
+.highlight:has(code.language-shell)::before,
+.highlight:has(code.language-bash-session)::before,
+.highlight:has(code.language-console)::before,
+.highlighttable:has(code.language-bash)::before,
+.highlighttable:has(code.language-sh)::before,
+.highlighttable:has(code.language-shell)::before,
+.highlighttable:has(code.language-bash-session)::before,
+.highlighttable:has(code.language-console)::before {
+  content: "bash";
+  position: absolute;
+  top: 0.5rem;
+  right: 3.5rem;
+  font-size: 0.6rem;
+  font-weight: 500;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.1rem;
+  background-color: var(--md-default-fg-color--lighter);
+  color: var(--md-default-fg-color--light);
+  z-index: 5;
+  font-family: var(--md-code-font, "Roboto Mono", monospace);
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  line-height: 1.3;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+/* Slightly more visible on hover */
+.highlight.language-bash:hover::before,
+.highlight.language-sh:hover::before,
+.highlight.language-shell:hover::before,
+.highlight.language-bash-session:hover::before,
+.highlight.language-console:hover::before,
+.highlighttable.language-bash:hover::before,
+.highlighttable.language-sh:hover::before,
+.highlighttable.language-shell:hover::before,
+.highlighttable.language-bash-session:hover::before,
+.highlighttable.language-console:hover::before,
+.highlight.shell-code-block:hover::before,
+.highlighttable.shell-code-block:hover::before {
+  opacity: 0.85;
+}
+
+/* Dark mode adjustments */
+[data-md-color-scheme="slate"] .highlight.language-bash::before,
+[data-md-color-scheme="slate"] .highlight.language-sh::before,
+[data-md-color-scheme="slate"] .highlight.language-shell::before,
+[data-md-color-scheme="slate"] .highlight.language-bash-session::before,
+[data-md-color-scheme="slate"] .highlight.language-console::before,
+[data-md-color-scheme="slate"] .highlighttable.language-bash::before,
+[data-md-color-scheme="slate"] .highlighttable.language-sh::before,
+[data-md-color-scheme="slate"] .highlighttable.language-shell::before,
+[data-md-color-scheme="slate"] .highlighttable.language-bash-session::before,
+[data-md-color-scheme="slate"] .highlighttable.language-console::before,
+[data-md-color-scheme="slate"] .highlight.shell-code-block::before,
+[data-md-color-scheme="slate"] .highlighttable.shell-code-block::before {
+  background-color: var(--md-default-fg-color--lightest);
+  color: var(--md-default-fg-color--light);
+  opacity: 0.6;
+}
+
+[data-md-color-scheme="slate"] .highlight.language-bash:hover::before,
+[data-md-color-scheme="slate"] .highlight.language-sh:hover::before,
+[data-md-color-scheme="slate"] .highlight.language-shell:hover::before,
+[data-md-color-scheme="slate"] .highlight.language-bash-session:hover::before,
+[data-md-color-scheme="slate"] .highlight.language-console:hover::before,
+[data-md-color-scheme="slate"] .highlighttable.language-bash:hover::before,
+[data-md-color-scheme="slate"] .highlighttable.language-sh:hover::before,
+[data-md-color-scheme="slate"] .highlighttable.language-shell:hover::before,
+[data-md-color-scheme="slate"] .highlighttable.language-bash-session:hover::before,
+[data-md-color-scheme="slate"] .highlighttable.language-console:hover::before,
+[data-md-color-scheme="slate"] .highlight.shell-code-block:hover::before,
+[data-md-color-scheme="slate"] .highlighttable.shell-code-block:hover::before {
+  opacity: 0.75;
+}
+
+/* Ensure code block container has proper spacing - no extra padding needed with subtle badge */
+
+/* Badge positioned to not interfere with copy button - no adjustment needed */
+
 /* Admonition customization */
 .md-typeset .admonition.tip {
   border-color: #00bfa5;
@@ -186,4 +309,216 @@
 .jp-OutputArea-output::-webkit-scrollbar-thumb:hover,
 .jp-Cell-outputWrapper::-webkit-scrollbar-thumb:hover {
   background: var(--md-default-fg-color--light);
+}
+
+/* Footer styling - Unified banner with navigation, logos and monitoring link */
+/* Match Material theme footer background color - always dark for readability */
+.md-footer-meta {
+  background-color: #212121;
+}
+
+.md-footer-content-wrapper {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: 1.5rem 0;
+  min-height: 120px;
+}
+
+/* Navigation arrows on left and right */
+.md-footer-nav-left,
+.md-footer-nav-right {
+  flex: 0 0 auto;
+  min-width: 200px;
+  max-width: 300px;
+}
+
+.md-footer-nav-left .md-footer__link,
+.md-footer-nav-right .md-footer__link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.7);
+  transition: background-color 0.2s ease, color 0.2s ease;
+  border-radius: 0.25rem;
+}
+
+.md-footer-nav-left .md-footer__link:hover,
+.md-footer-nav-right .md-footer__link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.md-footer-nav-left .md-footer__title,
+.md-footer-nav-right .md-footer__title {
+  flex: 1;
+  min-width: 0;
+}
+
+.md-footer-nav-left .md-footer__direction,
+.md-footer-nav-right .md-footer__direction {
+  display: block;
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 0.25rem;
+}
+
+.md-footer-nav-left .md-ellipsis,
+.md-footer-nav-right .md-ellipsis {
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Center content: logos and monitoring link */
+.md-footer-custom {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.footer-logos {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  background-color: white;
+  border-radius: 0.4rem;
+  padding: 1rem 1.2rem;
+  margin: 0 auto;
+  box-sizing: border-box;
+  min-width: fit-content;
+}
+
+.footer-monitoring {
+  text-align: center;
+  width: 100%;
+}
+
+.footer-logo-link {
+  display: inline-block;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  opacity: 0.85;
+}
+
+.footer-logo-link:hover {
+  opacity: 1;
+  transform: translateY(-2px);
+}
+
+.footer-logo {
+  height: 65px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.waves-logo {
+  max-height: 60px;
+}
+
+.ugent-logo {
+  max-height: 80px;
+}
+
+.imec-logo {
+  max-height: 60px;
+}
+
+.footer-monitoring {
+  text-align: center;
+}
+
+.monitoring-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.4rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  font-weight: 500;
+  width: fit-content;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.monitoring-link:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Ensure footer meta inner uses flex layout */
+.md-footer-meta__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* Responsive design for footer */
+@media screen and (max-width: 1024px) {
+  .md-footer-content-wrapper {
+    flex-direction: column;
+    gap: 1.5rem;
+    min-height: auto;
+  }
+  
+  .md-footer-nav-left,
+  .md-footer-nav-right {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+  }
+  
+  .md-footer-nav-left .md-footer__link,
+  .md-footer-nav-right .md-footer__link {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .footer-logos {
+    gap: 1.5rem;
+  }
+  
+  .footer-logo {
+    height: 50px;
+  }
+  
+  .waves-logo {
+    max-height: 45px;
+  }
+  
+  .ugent-logo {
+    max-height: 65px;
+  }
+  
+  .imec-logo {
+    max-height: 45px;
+  }
+  
+  .monitoring-link {
+    font-size: 0.65rem;
+    padding: 0.4rem 0.8rem;
+  }
+  
+  .md-footer-nav-left .md-ellipsis,
+  .md-footer-nav-right .md-ellipsis {
+    font-size: 0.75rem;
+  }
 }

@@ -28,30 +28,30 @@ For development, use editable installation from the repository. Users can instal
 
 1. Clone the repository:
 
-        ```bash
-        git clone https://github.com/rwydaegh/goliat.git
-        cd goliat
-        ```
+   ```bash
+   git clone https://github.com/rwydaegh/goliat.git
+   cd goliat
+   ```
 
 2. Set up Sim4Life Python environment:
 
-        ```bash
-        source .bashrc
-        ```
+   ```bash
+   source .bashrc
+   ```
 
 3. Install GOLIAT package in editable mode (or in a venv):
 
-        ```bash
-        python -m pip install -e .
-        ```
+   ```bash
+   python -m pip install -e .
+   ```
 
    > **Always use `python -m pip`**: Always use `python -m pip` instead of `pip` directly. This ensures you're using the pip associated with Sim4Life's Python interpreter. The same applies to other Python commands: use `python -m <module>` when possible.
 
 4. Run the initialization command:
 
-        ```bash
-        goliat init
-        ```
+   ```bash
+   goliat init
+   ```
 
 This will:
 - Verify Sim4Life Python interpreter is being used
@@ -99,10 +99,10 @@ With the interpreter set, run the full test suite from the terminal.
 1.  **First-time Setup**: Run `goliat init` to install dependencies and set up the environment. Alternatively, run any command (e.g., `goliat --help`) and accept the dependency installation prompt when asked.
 2.  **Run Pytest**:
 
-        ```bash
-        # This executes all tests, including those skipped by CI
-        pytest tests/ -v
-        ```
+   ```bash
+   # This executes all tests, including those skipped by CI
+   pytest tests/ -v
+   ```
 
 ### Adding new tests
 
@@ -176,8 +176,6 @@ mkdocs serve  # Local server at http://127.0.0.1:8000
 # Build the static site
 mkdocs build  # Outputs to site/
 ```
-
-For UML (classes.puml and packages_GOLIAT.puml): Use PlantUML viewer or VS Code extension.
 
 ## Code style
 
