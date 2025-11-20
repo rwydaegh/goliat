@@ -51,6 +51,10 @@ class WebGUIBridge(LoggingMixin):
         self._system_info: Optional[Dict[str, Any]] = None
         self.executor: Optional[ThreadPoolExecutor] = None
 
+        # Sequence number for ordering batches (thread-safe)
+        self._sequence_lock = threading.Lock()
+        self._sequence_counter = 0
+
         # HTTP client for API calls
         self.http_client = HTTPClient(self.server_url, self.machine_id, self.verbose_logger)
 
@@ -244,9 +248,15 @@ class WebGUIBridge(LoggingMixin):
         Args:
             log_messages: List of status/log message dictionaries
         """
+        # Get next sequence number (thread-safe) for ordering batches
+        with self._sequence_lock:
+            sequence = self._sequence_counter
+            self._sequence_counter += 1
+
         batch_message = {
             "type": "log_batch",
             "logs": log_messages,
+            "sequence": sequence,  # Sequence number for proper ordering when batches arrive out of order
         }
         success = self.http_client.post_gui_update(batch_message)
         if success:

@@ -1,6 +1,6 @@
 """System utilization plot component for GUI."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Tuple
 
 from ._matplotlib_imports import Figure, FigureCanvas, mdates  # type: ignore
@@ -181,7 +181,8 @@ class SystemUtilizationPlot:
                 self.ax.set_xlim(earliest_time - padding, earliest_time + padding)  # type: ignore[arg-type]
 
         if mdates is not None:
-            self.ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M:%S"))
+            utc_plus_one_tz = timezone(timedelta(hours=1))
+            self.ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M:%S", tz=utc_plus_one_tz))
         self.figure.autofmt_xdate(rotation=45)
 
         self.ax.grid(True, alpha=0.2, color="#f0f0f0")

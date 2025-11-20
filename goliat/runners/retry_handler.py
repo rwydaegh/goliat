@@ -6,18 +6,21 @@ from ..logging_manager import LoggingMixin
 
 if TYPE_CHECKING:
     from logging import Logger
+    from ..gui_manager import QueueGUI
 
 
 class RetryHandler(LoggingMixin):
     """Manages retry logic and attempt tracking."""
 
-    def __init__(self, progress_logger: "Logger"):
+    def __init__(self, progress_logger: "Logger", gui: Optional["QueueGUI"] = None):
         """Initialize retry handler.
 
         Args:
             progress_logger: Logger for progress-level messages.
+            gui: Optional GUI proxy for sending progress messages.
         """
         self.progress_logger = progress_logger
+        self.gui = gui
         self.attempt_number = 0
 
     def should_retry(self, return_code: Optional[int], detected_errors: list) -> bool:
