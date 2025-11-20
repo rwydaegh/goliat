@@ -1,6 +1,6 @@
 """Overall progress plot component for GUI."""
 
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from typing import List, Tuple
 
 from ._matplotlib_imports import Figure, FigureCanvas, mdates  # type: ignore
@@ -88,7 +88,8 @@ class OverallProgressPlot:
         self.ax.set_ylim(0, 100)
 
         if mdates is not None:
-            self.ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M:%S"))
+            utc_plus_one_tz = timezone(timedelta(hours=1))
+            self.ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M:%S", tz=utc_plus_one_tz))
         self.figure.autofmt_xdate(rotation=45)
 
         self.ax.grid(True, alpha=0.2, color="#f0f0f0")

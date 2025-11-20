@@ -54,7 +54,16 @@ class QueueGUI(LoggingMixin):
             log_type: Type for color coding in GUI.
         """
         if level == "progress":
-            self.queue.put({"type": "status", "message": message, "log_type": log_type})
+            import time
+
+            self.queue.put(
+                {
+                    "type": "status",
+                    "message": message,
+                    "log_type": log_type,
+                    "timestamp": time.time(),  # Add timestamp when message is created for proper ordering
+                }
+            )
 
     def update_simulation_details(self, sim_count: int, total_sims: int, details: str) -> None:
         """Sends current simulation case details to GUI.

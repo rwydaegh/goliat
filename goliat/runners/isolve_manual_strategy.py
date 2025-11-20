@@ -397,9 +397,9 @@ class ISolveManualStrategy(ExecutionStrategy, LoggingMixin):
         try:
             self._log("    - Execute iSolve...", level="progress", log_type="progress")
             with self.profiler.subtask("run_isolve_execution"):
-                output_parser = ISolveOutputParser(self.verbose_logger, self.progress_logger)
+                output_parser = ISolveOutputParser(self.verbose_logger, self.progress_logger, self.gui)
                 keep_awake_handler = KeepAwakeHandler(self.config)
-                retry_handler = RetryHandler(self.progress_logger)
+                retry_handler = RetryHandler(self.progress_logger, self.gui)
 
                 # Call keep_awake before first attempt
                 keep_awake_handler.trigger_before_retry()

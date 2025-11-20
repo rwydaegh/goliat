@@ -8,6 +8,7 @@ from ..logging_manager import LoggingMixin
 
 if TYPE_CHECKING:
     from logging import Logger
+    from ..gui_manager import QueueGUI
 
 
 @dataclass
@@ -33,15 +34,17 @@ class ParsedLine:
 class ISolveOutputParser(LoggingMixin):
     """Parses iSolve stdout output for errors and progress milestones."""
 
-    def __init__(self, verbose_logger: "Logger", progress_logger: "Logger"):
+    def __init__(self, verbose_logger: "Logger", progress_logger: "Logger", gui: Optional["QueueGUI"] = None):
         """Initialize parser.
 
         Args:
             verbose_logger: Logger for verbose output.
             progress_logger: Logger for progress output.
+            gui: Optional GUI proxy for sending progress messages.
         """
         self.verbose_logger = verbose_logger
         self.progress_logger = progress_logger
+        self.gui = gui
         self.logged_milestones: Set[int] = set()
         self.progress_pattern = re.compile(
             r"\[PROGRESS\]:\s*(\d+)%\s*\[.*?\]\s*Time Update[^@]*estimated remaining time\s+([^@]+?)\s+@\s+([\d.]+)\s+MCells/s"
