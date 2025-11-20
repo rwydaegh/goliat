@@ -2,6 +2,29 @@
 setlocal
 
 :: ============================================================================
+:: Detect Username and Change to Desktop
+:: ============================================================================
+:: Automatically detect the current username
+set "CURRENT_USER=%USERNAME%"
+if "%CURRENT_USER%"=="" (
+    echo ERROR: Could not detect username. USERNAME environment variable is not set.
+    pause
+    exit /b 1
+)
+
+:: Change to the user's Desktop directory
+set "DESKTOP_PATH=C:\Users\%CURRENT_USER%\Desktop"
+if not exist "%DESKTOP_PATH%" (
+    echo ERROR: Desktop directory not found at: %DESKTOP_PATH%
+    pause
+    exit /b 1
+)
+
+cd /d "%DESKTOP_PATH%"
+echo Changed to Desktop directory: %CD%
+echo.
+
+:: ============================================================================
 :: Check NVIDIA GPU Drivers (nvidia-smi)
 :: ============================================================================
 nvidia-smi >nul 2>&1
@@ -61,21 +84,21 @@ if %errorlevel% neq 0 (
 )
 
 :: Check if VPN config exists
-if not exist "%~dp0certs\Intec-iGent.ovpn" (
-    echo ERROR: Intec-iGent.ovpn not found in the 'certs' directory.
+if not exist "%DESKTOP_PATH%\certs\Intec-iGent.ovpn" (
+    echo ERROR: Intec-iGent.ovpn not found in the 'certs' directory on Desktop.
     pause
     exit /b 1
 )
 
 :: Create credentials file
-set "AUTH_FILE=%~dp0certs\openvpn_auth.txt"
+set "AUTH_FILE=%DESKTOP_PATH%\certs\openvpn_auth.txt"
 (
     echo YOUR_VPN_USERNAME
     echo YOUR_VPN_PASSWORD
 ) > "%AUTH_FILE%"
 
 :: Launch OpenVPN
-cd /d "%~dp0certs"
+cd /d "%DESKTOP_PATH%\certs"
 start "OpenVPN" "C:\Program Files\OpenVPN\bin\openvpn.exe" --config "Intec-iGent.ovpn" --auth-user-pass "openvpn_auth.txt"
 
 echo VPN connection initiated. Check connection status with: ipconfig /all

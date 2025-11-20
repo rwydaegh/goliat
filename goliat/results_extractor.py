@@ -201,14 +201,14 @@ class ResultsExtractor(LoggingMixin):
             cleaner.cleanup_simulation_files()
 
     def _save_json_results(self, results_data: dict):
-        """Saves final results to JSON, excluding temporary helper data."""
+        """Saves final results to JSON, excluding temporary helper data and point_sensor_data."""
         reporter = Reporter(self)
         results_dir = reporter._get_results_dir()
         os.makedirs(results_dir, exist_ok=True)
         deliverables = self.get_deliverable_filenames()
         results_filepath = os.path.join(results_dir, deliverables["json"])
 
-        final_results_data = {k: v for k, v in results_data.items() if not k.startswith("_temp")}
+        final_results_data = {k: v for k, v in results_data.items() if not k.startswith("_temp") and k != "point_sensor_data"}
 
         with open(results_filepath, "w") as f:
             json.dump(final_results_data, f, indent=4, cls=NumpyArrayEncoder)
