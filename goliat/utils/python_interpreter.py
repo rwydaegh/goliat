@@ -14,29 +14,25 @@ from .bashrc import update_bashrc
 
 def find_sim4life_python_executables():
     """
-    Scans all drives for Sim4Life Python directories (versions 8.2 and 9.0).
+    Scans all drives for Sim4Life Python directories (version 8.2).
     Windows-only function - should not be called on Linux/AWS.
     """
     if sys.platform != "win32":
-        return []  # Not on Windows, return empty list
+        return []
 
-    drive_letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    drives = [f"{d}:\\" for d in drive_letters if os.path.exists(f"{d}:\\")]
-
+    drives = [f"{d}:\\" for d in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" if os.path.exists(f"{d}:\\")]
     found_python_dirs = []
 
     for drive in drives:
-        for version in ["8.2", "9.0"]:
-            # Construct a glob pattern to find the Python directory
-            search_pattern = os.path.join(drive, "Program Files", f"Sim4Life_{version}*", "Python")
-
-            # Use glob to find matching directories
-            matches = glob.glob(search_pattern)
-            for match in matches:
-                if os.path.isdir(match):
-                    found_python_dirs.append(match)
+        pattern = os.path.join(drive, "Program Files", "Sim4Life_8.2*", "Python")
+        found_python_dirs.extend(m for m in glob.glob(pattern) if os.path.isdir(m))
 
     return found_python_dirs
+
+
+def _verify_s4l_root(path):
+    """Verify that a path is a valid Sim4Life root directory."""
+    return path and os.path.exists(os.path.join(path, "Solvers", "iSolve.exe"))
 
 
 def find_sim4life_root():
@@ -54,62 +50,21 @@ def find_sim4life_root():
     """
     # Method 1: If sys.executable is directly Sim4Life Python, go up two directories
     if "Sim4Life" in sys.executable:
-        python_dir = os.path.dirname(sys.executable)
-        s4l_root = os.path.dirname(python_dir)
-        # Verify Solvers directory exists
-        if os.path.exists(os.path.join(s4l_root, "Solvers", "iSolve.exe")):
+        s4l_root = os.path.dirname(os.path.dirname(sys.executable))
+        if _verify_s4l_root(s4l_root):
             return s4l_root
 
     # Method 2: If in a venv, check sys.base_prefix (points to original Python that created venv)
-    # This is the most accurate way to find which Sim4Life Python was used for the venv
     if hasattr(sys, "base_prefix") and sys.base_prefix != sys.prefix:
-        # We're in a venv - sys.base_prefix points to the original Python installation
         base_prefix = os.path.normpath(sys.base_prefix)
         if "Sim4Life" in base_prefix:
-            # base_prefix is typically the Python directory (e.g., C:\Program Files\Sim4Life_8.2.0.16876\Python)
-            # Check if it's the Python directory by checking if "Python" is the last component
-            if os.path.basename(base_prefix) == "Python":
-                s4l_root = os.path.dirname(base_prefix)
-            else:
-                # Try current directory as root, or go up one level
-                s4l_root = base_prefix
-                # Check if current is root, otherwise try parent
-                if not os.path.exists(os.path.join(s4l_root, "Solvers", "iSolve.exe")):
-                    s4l_root = os.path.dirname(base_prefix)
-            # Verify we found the correct root
-            if s4l_root and os.path.exists(os.path.join(s4l_root, "Solvers", "iSolve.exe")):
-                return s4l_root
-
-    # Method 3: Try to infer from s4l_v1 module location (if available)
-    # This is accurate because it finds the actual Sim4Life installation being used
-    try:
-        import s4l_v1
-
-        # s4l_v1 is typically in Python/Lib/site-packages or similar
-        # Try to find Sim4Life root by going up from module location
-        if hasattr(s4l_v1, "__file__") and s4l_v1.__file__ is not None:
-            module_path = os.path.dirname(os.path.abspath(s4l_v1.__file__))
-            # Navigate up from site-packages to find Sim4Life root
-            # Path structure: Sim4Life_X.X.X/Python/Lib/site-packages/s4l_v1/...
-            # We need to go up: s4l_v1 -> site-packages -> Lib -> Python -> Sim4Life root
-            current = module_path
-            for _ in range(6):  # Increased depth to handle nested paths
-                current = os.path.dirname(current)
-                if os.path.exists(os.path.join(current, "Solvers", "iSolve.exe")):
-                    return current
-    except ImportError:
-        pass
-
-    # Method 4: Find Sim4Life Python directories and use the first one found
-    # This is a fallback - less accurate if multiple installations exist
-    viable_pythons = find_sim4life_python_executables()
-    if viable_pythons:
-        # Go up one directory from Python directory to get Sim4Life root
-        python_dir = viable_pythons[0]
-        s4l_root = os.path.dirname(python_dir)
-        # Verify Solvers directory exists
-        if os.path.exists(os.path.join(s4l_root, "Solvers", "iSolve.exe")):
-            return s4l_root
+            # Try parent directory if base_prefix is Python directory, otherwise try both
+            candidates = (
+                [os.path.dirname(base_prefix)] if os.path.basename(base_prefix) == "Python" else [base_prefix, os.path.dirname(base_prefix)]
+            )
+            for s4l_root in candidates:
+                if _verify_s4l_root(s4l_root):
+                    return s4l_root
 
     raise FileNotFoundError("Could not find Sim4Life installation root directory. Please ensure Sim4Life is installed and accessible.")
 
@@ -139,29 +94,25 @@ def check_python_interpreter(base_dir=None):
     except ImportError:
         s4l_v1_available = False
 
-    # Normalize paths for comparison
-    normalized_viable_python_dirs = [os.path.normpath(p) for p in viable_pythons]
-    normalized_sys_executable_dir = os.path.normpath(os.path.dirname(sys.executable))
-
     if "Sim4Life" in sys.executable:
-        if normalized_sys_executable_dir in normalized_viable_python_dirs:
+        sys_executable_dir = os.path.normpath(os.path.dirname(sys.executable))
+        viable_dirs = [os.path.normpath(p) for p in viable_pythons]
+        if sys_executable_dir in viable_dirs:
             logging.info("Correct Sim4Life Python interpreter detected.")
             return
-        else:
-            logging.warning(f"You are using an unsupported Sim4Life Python interpreter: {sys.executable}")
-            logging.warning("This project requires Sim4Life version 8.2 or 9.0.")
+        logging.warning(f"You are using an unsupported Sim4Life Python interpreter: {sys.executable}")
+        logging.warning("This project requires Sim4Life version 8.2.")
     elif s4l_v1_available:
-        # Venv created with Sim4Life Python (--system-site-packages) can import s4l_v1
         logging.info("Sim4Life Python packages detected (venv with system-site-packages).")
         return
     else:
         logging.warning("You are not using a Sim4Life Python interpreter.")
 
     if not viable_pythons:
-        logging.error("No viable Sim4Life Python executables (v8.2, v9.0) found on this system.")
+        logging.error("No viable Sim4Life Python executables (v8.2) found on this system.")
         sys.exit(1)
 
-    print("Found the following supported Sim4Life Python executables (8.2 or 9.0):")
+    print("Found the following supported Sim4Life Python executables (8.2):")
     for i, p in enumerate(viable_pythons):
         print(f"  [{i + 1}] {p}")
 
