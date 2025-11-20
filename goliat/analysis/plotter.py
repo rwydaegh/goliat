@@ -2,6 +2,11 @@ import logging
 import os
 from typing import cast
 
+import matplotlib
+
+# Set non-interactive backend before importing pyplot to avoid GUI hangs
+matplotlib.use("Agg")
+
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np

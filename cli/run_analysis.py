@@ -4,14 +4,15 @@ import os
 
 import matplotlib
 
+# Set non-interactive backend BEFORE importing any modules that use matplotlib
+matplotlib.use("Agg")
+
 from goliat.utils.setup import initial_setup
 from goliat.analysis.analyzer import Analyzer
 from goliat.analysis.far_field_strategy import FarFieldAnalysisStrategy
 from goliat.analysis.near_field_strategy import NearFieldAnalysisStrategy
 from goliat.config import Config
 from goliat.logging_manager import setup_loggers
-
-matplotlib.use("Agg")  # Use non-interactive backend before importing pyplot
 
 # Base directory for config files
 from cli.utils import get_base_dir
