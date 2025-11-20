@@ -121,23 +121,23 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
                 )
         return result_entry, organ_entries
 
-    # def apply_bug_fixes(self, result_entry: dict) -> dict:
-    #     """Applies a workaround for Head SAR being miscategorized as Trunk SAR.
-    #
-    #     Args:
-    #         result_entry: The data entry for a single simulation result.
-    #
-    #     Returns:
-    #         The corrected result entry.
-    #     """
-    #     placement = result_entry.get("placement", "").lower()
-    #     if placement.startswith("front_of_eyes") or placement.startswith("by_cheek"):
-    #         sar_head = result_entry.get("SAR_head")
-    #         sar_trunk = result_entry.get("SAR_trunk")
-    #         if bool(pd.isna(sar_head)) and bool(pd.notna(sar_trunk)):
-    #             result_entry["SAR_head"] = sar_trunk
-    #             result_entry["SAR_trunk"] = pd.NA
-    #     return result_entry
+    def apply_bug_fixes(self, result_entry: dict) -> dict:
+        """Applies a workaround for Head SAR being miscategorized as Trunk SAR.
+
+        Args:
+            result_entry: The data entry for a single simulation result.
+
+        Returns:
+            The corrected result entry.
+        """
+        placement = result_entry.get("placement", "").lower()
+        if placement.startswith("front_of_eyes") or placement.startswith("by_cheek"):
+            sar_head = result_entry.get("SAR_head")
+            sar_trunk = result_entry.get("SAR_trunk")
+            if bool(pd.isna(sar_head)) and bool(pd.notna(sar_trunk)):
+                result_entry["SAR_head"] = sar_trunk
+                result_entry["SAR_trunk"] = pd.NA
+        return result_entry
 
     def calculate_summary_stats(self, results_df: pd.DataFrame) -> pd.DataFrame:
         """Calculates summary statistics, including completion progress.
