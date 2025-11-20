@@ -35,7 +35,7 @@ class FarFieldSetup(BaseSetup):
         profiler: "Profiler",
         gui=None,
     ):
-        super().__init__(config, verbose_logger, progress_logger)
+        super().__init__(config, verbose_logger, progress_logger, gui)
         self.phantom_name = phantom_name
         self.frequency_mhz = frequency_mhz
         self.direction_name = direction_name

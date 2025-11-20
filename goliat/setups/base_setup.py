@@ -1,6 +1,6 @@
 import os
 import pickle
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 
@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     import s4l_v1.simulation.emfdtd as emfdtd
 
     from ..config import Config
+    from ..gui_manager import QueueGUI
     from ..project_manager import ProjectManager
 
 # Define a dummy 'profile' decorator if the script is not run with kernprof
@@ -33,17 +34,19 @@ class BaseSetup(LoggingMixin):
     run_full_setup() for specific setup logic.
     """
 
-    def __init__(self, config: "Config", verbose_logger: "Logger", progress_logger: "Logger"):
+    def __init__(self, config: "Config", verbose_logger: "Logger", progress_logger: "Logger", gui: Optional["QueueGUI"] = None):
         """Sets up the base setup.
 
         Args:
             config: Configuration object.
             verbose_logger: Logger for detailed output.
             progress_logger: Logger for progress updates.
+            gui: Optional GUI instance for forwarding progress messages.
         """
         self.config = config
         self.verbose_logger = verbose_logger
         self.progress_logger = progress_logger
+        self.gui = gui
         import s4l_v1
 
         self.s4l_v1 = s4l_v1
