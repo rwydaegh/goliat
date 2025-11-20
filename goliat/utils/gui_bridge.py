@@ -68,10 +68,16 @@ class WebGUIBridge(LoggingMixin):
             message: GUI message dictionary with 'type' and other fields
         """
         if not self.running:
+            self._log(f"WebGUIBridge not running, dropping message: {message.get('type', 'unknown')}", level="verbose", log_type="warning")
             return
 
         try:
             self.internal_queue.put_nowait(message)
+            # Debug: Log enqueued messages
+            msg_type = message.get("type", "unknown")
+            if msg_type == "status":
+                msg_text = message.get("message", "")[:50]  # First 50 chars
+                self._log(f"[DEBUG] Enqueued status: {msg_text}", level="verbose")
         except Exception as e:
             self._log(f"Failed to enqueue message: {e}", level="verbose", log_type="warning")
 
@@ -137,12 +143,35 @@ class WebGUIBridge(LoggingMixin):
         self._send_heartbeat(system_info)
 
     def stop(self) -> None:
-        """Stop the forwarding thread."""
+        """Stop the forwarding thread and flush any pending batches."""
         self.running = False
+
+        # Flush any remaining messages in the queue before stopping
+        # Give the thread a moment to process remaining messages
         if self.thread:
             self.thread.join(timeout=2.0)
+
+        # Flush any remaining messages from internal queue
+        remaining = []
+        try:
+            while True:
+                msg = self.internal_queue.get_nowait()
+                remaining.append(msg)
+        except Exception:
+            pass
+
+        if remaining:
+            self._log(f"Flushing {len(remaining)} remaining messages on stop", level="verbose")
+            # Try to send remaining messages synchronously
+            status_msgs = [m for m in remaining if m.get("type") == "status"]
+            if status_msgs:
+                try:
+                    self._send_log_batch_sync(status_msgs)
+                except Exception as e:
+                    self._log(f"Failed to flush final batch: {e}", level="verbose", log_type="warning")
+
         if self.executor:
-            self.executor.shutdown(wait=False, cancel_futures=True)
+            self.executor.shutdown(wait=True, cancel_futures=False)  # Wait for pending requests
         self._log("WebGUIBridge stopped", level="verbose")
 
     def _forward_loop(self) -> None:
@@ -175,6 +204,7 @@ class WebGUIBridge(LoggingMixin):
 
                 # Send batched logs if enough time has passed
                 if log_batch and (current_time - last_batch_send >= batch_interval):
+                    self._log(f"[DEBUG] Sending batch of {len(log_batch)} messages (timeout)", level="verbose")
                     self._send_log_batch(log_batch)
                     message_counts["status_batched"] = message_counts.get("status_batched", 0) + len(log_batch)
                     log_batch = []
@@ -198,8 +228,10 @@ class WebGUIBridge(LoggingMixin):
                 # Batch status (log) messages, send others immediately
                 if message_type == "status":
                     log_batch.append(message)
+                    self._log(f"[DEBUG] Added to batch (size={len(log_batch)}): {message.get('message', '')[:50]}", level="verbose")
                     # If batch is getting large, send immediately
                     if len(log_batch) >= 20:
+                        self._log(f"[DEBUG] Sending batch of {len(log_batch)} messages (size limit)", level="verbose")
                         self._send_log_batch(log_batch)
                         message_counts["status_batched"] = message_counts.get("status_batched", 0) + len(log_batch)
                         log_batch = []
@@ -228,7 +260,23 @@ class WebGUIBridge(LoggingMixin):
 
             except Exception as e:
                 self._log(f"Error in forward loop: {e}", level="verbose", log_type="error")
+                # Try to flush batch even on error
+                if log_batch:
+                    self._log(f"[DEBUG] Flushing {len(log_batch)} messages after error", level="verbose")
+                    try:
+                        self._send_log_batch(log_batch)
+                        log_batch = []
+                    except Exception as flush_error:
+                        self._log(f"Failed to flush batch after error: {flush_error}", level="verbose", log_type="error")
                 time.sleep(1.0)  # Wait before retrying
+
+        # Flush any remaining batch when loop exits
+        if log_batch:
+            self._log(f"[DEBUG] Flushing {len(log_batch)} messages on loop exit", level="verbose")
+            try:
+                self._send_log_batch_sync(log_batch)
+            except Exception as e:
+                self._log(f"Failed to flush final batch on exit: {e}", level="verbose", log_type="error")
 
     def _send_log_batch(self, log_messages: list[Dict[str, Any]]) -> None:
         """Send a batch of log messages to the dashboard API (async).
@@ -248,6 +296,9 @@ class WebGUIBridge(LoggingMixin):
         Args:
             log_messages: List of status/log message dictionaries
         """
+        if not log_messages:
+            return
+
         # Get next sequence number (thread-safe) for ordering batches
         with self._sequence_lock:
             sequence = self._sequence_counter
@@ -258,9 +309,17 @@ class WebGUIBridge(LoggingMixin):
             "logs": log_messages,
             "sequence": sequence,  # Sequence number for proper ordering when batches arrive out of order
         }
+
+        # Debug: Log what we're sending
+        msg_previews = [f"{m.get('message', '')[:30]}..." for m in log_messages[:3]]
+        self._log(f"[DEBUG] Sending batch seq={sequence} with {len(log_messages)} messages: {msg_previews}", level="verbose")
+
         success = self.http_client.post_gui_update(batch_message)
         if success:
             self.is_connected = True
+            self._log(f"[DEBUG] Batch seq={sequence} sent successfully", level="verbose")
+        else:
+            self._log(f"[DEBUG] Batch seq={sequence} FAILED to send", level="verbose", log_type="warning")
 
     def _send_message(self, message: Dict[str, Any]) -> None:
         """Send a single message to the dashboard API (async).

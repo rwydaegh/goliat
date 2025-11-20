@@ -410,6 +410,8 @@ class Plotter:
         pssar_columns = [col for col in scenario_results_df.columns if col.startswith("psSAR10g")]
         sar_metrics_for_boxplot = ["SAR_head", "SAR_trunk", "SAR_whole_body"] + pssar_columns
         for metric in sar_metrics_for_boxplot:
+            if metric not in scenario_results_df.columns:
+                continue
             if not scenario_results_df[metric].dropna().empty:
                 fig, ax = plt.subplots(figsize=(12, 7))
                 sns.boxplot(
