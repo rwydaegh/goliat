@@ -42,8 +42,9 @@ class WebGUIBridge(LoggingMixin):
         self.internal_queue: Queue = Queue()
         self.running = False
         self.thread: Optional[threading.Thread] = None
-        self.verbose_logger = logging.getLogger("web_gui_bridge")
-        self.progress_logger = logging.getLogger("web_gui_bridge")
+        # Use the main verbose/progress loggers so messages appear in log files
+        self.verbose_logger = logging.getLogger("verbose")
+        self.progress_logger = logging.getLogger("progress")
         self.gui = None
         self.is_connected = False
         self.last_heartbeat_success = False
@@ -202,9 +203,12 @@ class WebGUIBridge(LoggingMixin):
                     self._send_heartbeat(self._system_info)
                     last_heartbeat_time = current_time
 
-                # Send batched logs if enough time has passed
-                if log_batch and (current_time - last_batch_send >= batch_interval):
-                    self._log(f"[DEBUG] Sending batch of {len(log_batch)} messages (timeout)", level="verbose")
+                # Send batched logs if enough time has passed OR if we've been waiting too long
+                time_since_last_batch = current_time - last_batch_send
+                if log_batch and (time_since_last_batch >= batch_interval or time_since_last_batch >= 1.0):
+                    # If we've been waiting more than 1 second, send immediately (don't wait for 300ms)
+                    reason = "timeout (1s)" if time_since_last_batch >= 1.0 else "timeout (300ms)"
+                    self._log(f"[DEBUG] Sending batch of {len(log_batch)} messages ({reason})", level="verbose")
                     self._send_log_batch(log_batch)
                     message_counts["status_batched"] = message_counts.get("status_batched", 0) + len(log_batch)
                     log_batch = []
@@ -314,12 +318,35 @@ class WebGUIBridge(LoggingMixin):
         msg_previews = [f"{m.get('message', '')[:30]}..." for m in log_messages[:3]]
         self._log(f"[DEBUG] Sending batch seq={sequence} with {len(log_messages)} messages: {msg_previews}", level="verbose")
 
-        success = self.http_client.post_gui_update(batch_message)
-        if success:
-            self.is_connected = True
-            self._log(f"[DEBUG] Batch seq={sequence} sent successfully", level="verbose")
-        else:
-            self._log(f"[DEBUG] Batch seq={sequence} FAILED to send", level="verbose", log_type="warning")
+        # Retry logic for failed requests (up to 3 attempts)
+        max_retries = 3
+        retry_delay = 0.5  # Start with 500ms delay
+        success = False
+
+        for attempt in range(max_retries):
+            success = self.http_client.post_gui_update(batch_message)
+            if success:
+                self.is_connected = True
+                self._log(f"[DEBUG] Batch seq={sequence} sent successfully (attempt {attempt + 1})", level="verbose")
+                break
+            else:
+                if attempt < max_retries - 1:
+                    self._log(
+                        f"[DEBUG] Batch seq={sequence} failed (attempt {attempt + 1}/{max_retries}), retrying in {retry_delay}s...",
+                        level="verbose",
+                        log_type="warning",
+                    )
+                    time.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
+                else:
+                    self._log(
+                        f"[DEBUG] Batch seq={sequence} FAILED after {max_retries} attempts - MESSAGES LOST",
+                        level="verbose",
+                        log_type="error",
+                    )
+                    # Log the lost messages for debugging
+                    for i, msg in enumerate(log_messages[:5]):  # Log first 5 messages
+                        self._log(f"[DEBUG] Lost message {i + 1}: {msg.get('message', '')[:50]}", level="verbose", log_type="error")
 
     def _send_message(self, message: Dict[str, Any]) -> None:
         """Send a single message to the dashboard API (async).
