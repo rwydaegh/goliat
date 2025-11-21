@@ -218,6 +218,10 @@ class SarExtractor(LoggingMixin):
     def _store_all_regions_sar(self, df: pd.DataFrame) -> None:
         """Stores all-regions SAR results (head/trunk/whole-body and peak SAR).
 
+        For near-field simulations, the SAR key depends on the bounding_box setting:
+        - If bounding_box is "whole_body", stores as "whole_body_sar"
+        - Otherwise, stores as "head_SAR" or "trunk_SAR" based on placement scenario
+
         Args:
             df: DataFrame with SAR statistics per tissue.
         """
@@ -225,8 +229,33 @@ class SarExtractor(LoggingMixin):
         if not all_regions_row.empty:
             mass_averaged_sar = all_regions_row["Mass-Averaged SAR"].iloc[0]  # type: ignore
             if self.parent.study_type == "near_field":
-                sar_key = "head_SAR" if self.placement_name.lower() in ["front_of_eyes", "by_cheek"] else "trunk_SAR"
-                self.results_data[sar_key] = float(mass_averaged_sar)
+                # Get bounding_box setting from config
+                scenario_name = getattr(self.parent, "scenario_name", None)
+                bounding_box_setting = "default"
+
+                if scenario_name:
+                    placement_scenarios = self.config["placement_scenarios"] or {}
+                    if isinstance(placement_scenarios, dict):
+                        placement_scenario_config = placement_scenarios.get(scenario_name) or {}
+                        bounding_box_setting = placement_scenario_config.get("bounding_box", "default")
+
+                # If whole_body, store as whole_body_sar (like far-field)
+                if bounding_box_setting == "whole_body":
+                    self.results_data["whole_body_sar"] = float(mass_averaged_sar)
+                else:
+                    # For "default", "head", or "trunk", use placement-based logic
+                    # "default" resolves to head for eye/cheek, trunk for belly
+                    placement_lower = self.placement_name.lower()
+                    if bounding_box_setting == "default":
+                        sar_key = "head_SAR" if placement_lower.startswith(("front_of_eyes", "by_cheek")) else "trunk_SAR"
+                    elif bounding_box_setting == "head":
+                        sar_key = "head_SAR"
+                    elif bounding_box_setting == "trunk":
+                        sar_key = "trunk_SAR"
+                    else:
+                        # Fallback to placement-based logic
+                        sar_key = "head_SAR" if placement_lower.startswith(("front_of_eyes", "by_cheek")) else "trunk_SAR"
+                    self.results_data[sar_key] = float(mass_averaged_sar)
             else:
                 self.results_data["whole_body_sar"] = float(mass_averaged_sar)
 

@@ -43,7 +43,32 @@ def create_parser():
 
     # analyze command
     analyze_parser = subparsers.add_parser("analyze", help="Run analysis for near-field or far-field studies")
-    analyze_parser.add_argument("--config", type=str, required=True, help="Path to the configuration file.")
+    analyze_parser.add_argument(
+        "config",
+        type=str,
+        nargs="?",
+        default="near_field_config",
+        help="Path or name of the configuration file (e.g., near_field_config or configs/near_field_config.json).",
+    )
+    analyze_parser.add_argument(
+        "--format",
+        type=str,
+        choices=["pdf", "png"],
+        default="pdf",
+        help="Output format for plots (default: pdf).",
+    )
+    analyze_parser.add_argument(
+        "--analysis",
+        type=str,
+        default=None,
+        help="Path to analysis configuration file (JSON) specifying which plots to generate.",
+    )
+    analyze_parser.add_argument(
+        "--generate-paper",
+        action="store_true",
+        default=False,
+        help="Generate LaTeX paper after analysis completes.",
+    )
 
     # parallel command
     parallel_parser = subparsers.add_parser("parallel", help="Split a config file and run studies in parallel")
@@ -265,7 +290,15 @@ def main():
         from cli.run_analysis import main as analyze_main
 
         original_argv = sys.argv[:]
-        sys.argv = ["goliat-analyze", "--config", args.config]
+        sys.argv = ["goliat-analyze"]
+        if args.config:
+            sys.argv.append(args.config)
+        if hasattr(args, "format"):
+            sys.argv.extend(["--format", args.format])
+        if hasattr(args, "analysis") and args.analysis:
+            sys.argv.extend(["--analysis", args.analysis])
+        if hasattr(args, "generate_paper") and args.generate_paper:
+            sys.argv.append("--generate-paper")
         try:
             analyze_main()
         finally:

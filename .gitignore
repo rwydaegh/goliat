@@ -13,8 +13,9 @@ __pycache__/
 
 # Build and results
 results/
-/plots/
+plots/
 paper/
+!paper/IEEEtran.cls
 site/
 analysis/cpw/data/
 analysis/cpw/plots/
@@ -44,6 +45,7 @@ configs/*
 !configs/near_field_harmonic.json
 !configs/near_field_gaussian.json
 !configs/tutorial_*.json
+!configs/analysis.json
 
 # Generated files
 *.csv
