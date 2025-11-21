@@ -1,6 +1,6 @@
 # Analysis system
 
-GOLIAT's analysis system processes simulation results and generates comprehensive reports, plots, and publications. This document covers both user-facing usage and internal architecture.
+GOLIAT's analysis system processes simulation results and generates reports, plots, and publications. This document covers user-facing usage and internal architecture.
 
 ## User guide
 
@@ -125,16 +125,45 @@ Check out the [auto-generated first draft paper (only results)](https://github.c
 
 The analysis system uses a strategy pattern to handle different study types:
 
-```
-Analyzer (orchestrator)
-    ├── BaseAnalysisStrategy (interface)
-    │   ├── NearFieldAnalysisStrategy
-    │   └── FarFieldAnalysisStrategy
-    └── Plotter (delegates to specialized plotters)
-        ├── BarPlotter
-        ├── LinePlotter
-        ├── HeatmapPlotter
-        └── ... (13 specialized plot modules)
+```mermaid
+graph TB
+    CLI[goliat analyze CLI]
+    Analyzer[Analyzer<br/>orchestrator]
+    
+    subgraph "Strategy Pattern"
+        BaseStrategy[BaseAnalysisStrategy<br/>interface]
+        NearStrategy[NearFieldAnalysisStrategy]
+        FarStrategy[FarFieldAnalysisStrategy]
+    end
+    
+    subgraph "Plotter Composition"
+        Plotter[Plotter<br/>delegator]
+        BarPlotter[BarPlotter]
+        LinePlotter[LinePlotter]
+        HeatmapPlotter[HeatmapPlotter]
+        SpatialPlotter[SpatialPlotter]
+        OtherPlotters[11 other specialized plotters]
+    end
+    
+    Results[Result Files<br/>JSON + PKL]
+    CSV[CSV Reports]
+    Plots[Plot Files<br/>PDF/PNG]
+    Paper[LaTeX Paper]
+    
+    CLI --> Analyzer
+    Analyzer --> BaseStrategy
+    BaseStrategy --> NearStrategy
+    BaseStrategy --> FarStrategy
+    Analyzer --> Plotter
+    Plotter --> BarPlotter
+    Plotter --> LinePlotter
+    Plotter --> HeatmapPlotter
+    Plotter --> SpatialPlotter
+    Plotter --> OtherPlotters
+    Results --> Analyzer
+    Analyzer --> CSV
+    Analyzer --> Plots
+    Analyzer --> Paper
 ```
 
 ### Core components

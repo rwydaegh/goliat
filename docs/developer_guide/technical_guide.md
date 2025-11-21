@@ -32,8 +32,9 @@ graph TB
     end
 
     subgraph "Analysis Layer"
-        Analyzer[Analyzer]
-        Plotter[Plotter]
+        Analyzer[Analyzer<br/>orchestrator]
+        Strategy[Analysis Strategies<br/>NearField / FarField]
+        Plotter[Plotter<br/>13 specialized modules]
     end
     
     subgraph "External Services"
@@ -51,6 +52,7 @@ graph TB
     Study --> Extractor
     Runner --> Strategies
     Extractor --> Analyzer
+    Analyzer --> Strategy
     Analyzer --> Plotter
     Strategies --> S4L
     Strategies --> oSPARC
@@ -79,6 +81,7 @@ sequenceDiagram
     participant Setup
     participant Runner
     participant Extractor
+    participant Analyzer
     participant Files
     
     User->>GUI: Start Study
@@ -92,6 +95,10 @@ sequenceDiagram
     Study->>Extractor: Process Results
     Extractor->>Files: Read Output
     Extractor->>Files: Save Reports
+    User->>Analyzer: Run Analysis
+    Analyzer->>Files: Load Results
+    Analyzer->>Files: Generate Plots
+    Analyzer->>Files: Export CSV
     Study->>GUI: Update Progress
     GUI->>User: Show Completion
 ```
