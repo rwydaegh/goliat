@@ -130,7 +130,23 @@ upload_to_release = true
 version_variables = []
 
 [tool.setuptools]
-packages = {find = {exclude = ["scripts*", "tests*", "cloud_setup*"]}}
+packages = [
+  "cli",
+  "goliat",
+  "goliat.analysis",
+  "goliat.analysis.plots",
+  "goliat.config",
+  "goliat.extraction",
+  "goliat.gui",
+  "goliat.gui.components",
+  "goliat.gui.components.plots",
+  "goliat.osparc_batch",
+  "goliat.runners",
+  "goliat.setups",
+  "goliat.studies",
+  "goliat.utils",
+  "goliat.utils.scripts",
+]
 
 [tool.setuptools.package-data]
 goliat = [
