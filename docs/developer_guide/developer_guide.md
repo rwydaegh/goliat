@@ -211,9 +211,13 @@ Run: `pre-commit run`.
 - Changelog: Update CHANGELOG.md for releases.
 - **Version management**: Version is stored in `pyproject.toml` (`[project] version`) as the single source of truth. The package reads it via `importlib.metadata` when installed, or from `pyproject.toml` directly when running from source.
 
-## Paper generation
+## Analysis system
 
-GOLIAT includes automated LaTeX paper generation for near-field analysis results. The `goliat generate-paper` command scans the plots directory and generates a structured LaTeX document with all figures organized by section and subsection.
+GOLIAT's analysis system processes simulation results and generates comprehensive reports, plots, and publications. See the [Analysis Guide](analysis.md) for detailed documentation covering:
+
+- User-facing usage (commands, configuration, output structure)
+- Developer-facing architecture (components, data flow, extending the system)
+- Paper generation workflow
 
 Check out the auto-generated first draft paper (only results):
 - [Results PDF](https://github.com/rwydaegh/goliat/raw/feat/analysis-improvements-and-paper-generation/paper/near_field/pure_results/results.pdf) - Download the compiled PDF

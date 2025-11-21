@@ -62,6 +62,14 @@ GOLIAT is an automated Python framework for near-field and far-field dosimetric 
 
     [:octicons-arrow-right-24: Configure](developer_guide/configuration.md)
 
+-   :material-chart-line:{ .lg .middle } **Analysis system**
+
+    ---
+
+    Process results, generate plots, and create publications. User guide and developer documentation.
+
+    [:octicons-arrow-right-24: Analysis Guide](developer_guide/analysis.md)
+
 -   :material-cloud-upload-outline:{ .lg .middle } **oSPARC**
 
     ---
