@@ -12,7 +12,7 @@ GOLIAT's architecture separates concerns:
 - **goliat/project_manager.py**: Handles .smash files (create/open/save/close), including a "Verify and Resume" feature to avoid re-running simulations with unchanged configurations.
 - **goliat/simulation_runner.py**: Executes simulations (local iSolve or oSPARC cloud).
 - **goliat/results_extractor.py**: Extracts SAR/power data post-simulation.
-- **goliat/analysis/**: Aggregates results (Analyzer with strategies for near/far-field).
+- **goliat/analysis/**: Aggregates results (Analyzer with strategies for near/far-field). Includes paper generation via `cli/generate_paper.py`.
 - **goliat/gui_manager.py**: Multiprocessing GUI for progress/ETA.
 - **goliat/logging_manager.py**: Dual loggers (progress/verbose) with colors.
 - **goliat/profiler.py**: Tracks phases (setup/run/extract) for ETAs.
@@ -210,6 +210,14 @@ Run: `pre-commit run`.
 - License: Apache-2.0 - see LICENSE.
 - Changelog: Update CHANGELOG.md for releases.
 - **Version management**: Version is stored in `pyproject.toml` (`[project] version`) as the single source of truth. The package reads it via `importlib.metadata` when installed, or from `pyproject.toml` directly when running from source.
+
+## Paper generation
+
+GOLIAT includes automated LaTeX paper generation for near-field analysis results. The `goliat generate-paper` command scans the plots directory and generates a structured LaTeX document with all figures organized by section and subsection.
+
+Results are available in the repository:
+- [Results PDF](https://github.com/rwydaegh/goliat/raw/master/paper/near_field/pure_results/results.pdf) - Download the compiled PDF
+- [Results LaTeX Source](https://github.com/rwydaegh/goliat/raw/master/paper/near_field/pure_results/results.tex) - Download the LaTeX source
 
 For more, see [Contributing](https://github.com/rwydaegh/goliat/blob/master/.github/CONTRIBUTING.md). For a deep dive into all available parameters, refer to the [Configuration Guide](configuration.md). For a complete reference of all features, see the [Full List of Features](../reference/full_features_list.md).
 
