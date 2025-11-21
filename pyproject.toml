@@ -130,7 +130,6 @@ upload_to_release = true
 version_variables = []
 
 [tool.setuptools]
-package-dir = {"" = "goliat", "cli" = "cli"}
 packages = [
   "cli",
   "goliat",
