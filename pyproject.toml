@@ -130,8 +130,7 @@ upload_to_release = true
 version_variables = []
 
 [tool.setuptools]
-package-dir = {"" = "goliat"}
-packages = {find = {where = ["goliat"], exclude = ["scripts*", "tests*", "cloud_setup*"]}}
+packages = {find = {exclude = ["scripts*", "tests*", "cloud_setup*"]}}
 
 [tool.setuptools.package-data]
 goliat = [
