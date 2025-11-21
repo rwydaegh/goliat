@@ -215,7 +215,7 @@ Run: `pre-commit run`.
 
 GOLIAT includes automated LaTeX paper generation for near-field analysis results. The `goliat generate-paper` command scans the plots directory and generates a structured LaTeX document with all figures organized by section and subsection.
 
-Results are available in the repository:
+Check out the auto-generated first draft paper (only results):
 - [Results PDF](https://github.com/rwydaegh/goliat/raw/master/paper/near_field/pure_results/results.pdf) - Download the compiled PDF
 - [Results LaTeX Source](https://github.com/rwydaegh/goliat/raw/master/paper/near_field/pure_results/results.tex) - Download the LaTeX source
 

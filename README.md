@@ -265,7 +265,7 @@ This project is licensed under the **Apache 2.0 License** – see [LICENSE](LICE
 
 ## Results
 
-Wanna see the results? Check out the near-field analysis results paper:
+Check out the auto-generated first draft paper (only results):
 - [Results PDF](https://github.com/rwydaegh/goliat/raw/master/paper/near_field/pure_results/results.pdf) - Download the compiled PDF
 - [Results LaTeX Source](https://github.com/rwydaegh/goliat/raw/master/paper/near_field/pure_results/results.tex) - Download the LaTeX source
 

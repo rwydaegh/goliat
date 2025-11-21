@@ -88,7 +88,7 @@ After the simulation, GOLIAT's `ResultsExtractor` and `Analyzer` components take
   -   `sar_results.json`: A JSON file containing the primary normalized SAR values.
   -   `sar_stats_all_tissues.pkl`: A Python pickle file with detailed, tissue-specific SAR data.
   -   **Plots**: GOLIAT automatically generates a suite of visualizations, including SAR heatmaps (showing SAR distribution by tissue and frequency), bar charts (comparing SAR in different regions), and boxplots (illustrating SAR distributions).
--   **Aggregated Analysis**: You can run the dedicated analysis script (`goliat analyze --config your_config.json`) to aggregate results across multiple simulations and generate CSV reports and additional plots.
+-   **Aggregated Analysis**: You can run the dedicated analysis script (`goliat analyze --config your_config.json`) to aggregate results across multiple simulations and generate CSV reports and additional plots. Check out the [auto-generated first draft paper (only results)](https://github.com/rwydaegh/goliat/raw/master/paper/near_field/pure_results/results.pdf) to see an example of compiled analysis output.
 -   **Log Files**: For debugging and detailed tracking, GOLIAT generates two types of log files in the `logs/` directory for each run: a `.progress.log` for high-level updates and a `.log` for verbose, detailed information. The system automatically manages these files, keeping a maximum of 15 pairs to prevent excessive disk usage.
 
 **Example output interpretation**: For a near-field 700MHz simulation with an antenna by the cheek, you might observe:
