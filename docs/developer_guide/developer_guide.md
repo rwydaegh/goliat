@@ -213,7 +213,18 @@ Run: `pre-commit run`.
 
 ## Analysis system
 
-GOLIAT's analysis system processes simulation results and generates comprehensive reports, plots, and publications. See the [Analysis Guide](analysis.md) for detailed documentation covering:
+GOLIAT's analysis system aggregates results from multiple simulations and generates reports, plots, and publications. The `goliat analyze` command processes all simulation outputs in a study, computes statistics, and creates visualizations.
+
+**What it does:**
+- Loads SAR data from all completed simulations in a study
+- Aggregates metrics by frequency, scenario, and tissue group
+- Generates statistical summaries (mean, median, percentiles, correlations)
+- Creates publication-ready plots (heatmaps, bar charts, boxplots, 3D visualizations)
+- Exports CSV files with detailed and summary data
+- Optionally generates LaTeX papers with all figures organized by section
+
+**How it works:**
+The system uses a strategy pattern (`BaseAnalysisStrategy`) with separate implementations for near-field and far-field analysis. The `Analyzer` coordinates data loading and processing, while specialized `Plotter` modules handle visualization. Results are cached to speed up re-plotting. See the [Analysis Guide](analysis.md) for detailed documentation covering:
 
 - User-facing usage (commands, configuration, output structure)
 - Developer-facing architecture (components, data flow, extending the system)

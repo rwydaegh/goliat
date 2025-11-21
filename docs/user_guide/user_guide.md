@@ -88,7 +88,13 @@ After the simulation, GOLIAT's `ResultsExtractor` and `Analyzer` components take
   -   `sar_results.json`: A JSON file containing the primary normalized SAR values.
   -   `sar_stats_all_tissues.pkl`: A Python pickle file with detailed, tissue-specific SAR data.
   -   **Plots**: GOLIAT automatically generates a suite of visualizations, including SAR heatmaps (showing SAR distribution by tissue and frequency), bar charts (comparing SAR in different regions), and boxplots (illustrating SAR distributions).
--   **Aggregated Analysis**: You can run the dedicated analysis script (`goliat analyze --config your_config.json`) to aggregate results across multiple simulations and generate CSV reports and additional plots. Check out the [auto-generated first draft paper (only results)](https://github.com/rwydaegh/goliat/raw/feat/analysis-improvements-and-paper-generation/paper/near_field/pure_results/results.pdf) to see an example of compiled analysis output.
+-   **Aggregated Analysis**: After running multiple simulations, use `goliat analyze --config your_config.json` to aggregate results across all runs. This command:
+    - Collects SAR data from all simulations in your study
+    - Generates statistical summaries (mean, median, percentiles) grouped by frequency and scenario
+    - Creates publication-ready plots (heatmaps, bar charts, boxplots, correlation matrices, and more)
+    - Exports CSV files with detailed and summary statistics
+    - Optionally generates a LaTeX paper with all figures organized by section
+    This is useful for comparing results across frequencies, placements, or other parameters. Check out the [auto-generated first draft paper (only results)](https://github.com/rwydaegh/goliat/raw/feat/analysis-improvements-and-paper-generation/paper/near_field/pure_results/results.pdf) to see an example of compiled analysis output. For details, see the [Analysis Guide](../developer_guide/analysis.md).
 -   **Log Files**: For debugging and detailed tracking, GOLIAT generates two types of log files in the `logs/` directory for each run: a `.progress.log` for high-level updates and a `.log` for verbose, detailed information. The system automatically manages these files, keeping a maximum of 15 pairs to prevent excessive disk usage.
 
 **Example output interpretation**: For a near-field 700MHz simulation with an antenna by the cheek, you might observe:
