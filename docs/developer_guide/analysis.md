@@ -101,7 +101,7 @@ results/
 
 **Caching:**
 
-Processed results are cached in `results/<study_type>/<phantom>/analysis_cache.pkl`. Set `"load_data": false` in analysis config to skip re-processing and load from cache.
+Processed results are cached in `results/<study_type>/<phantom>/aggregated_results.pkl`. Set `"load_data": false` in analysis config to skip re-processing and load from cache.
 
 ### Paper generation
 
@@ -117,7 +117,7 @@ This generates `paper/near_field/pure_results/results.tex` with:
 - Captions extracted from plot metadata files
 - IEEE format document structure
 
-Check out the [auto-generated first draft paper (only results)](https://github.com/rwydaegh/goliat/raw/feat/analysis-improvements-and-paper-generation/paper/near_field/pure_results/results.pdf) to see an example.
+Check out the [auto-generated first draft paper (only results)](https://github.com/rwydaegh/goliat/raw/master/paper/near_field/pure_results/results.pdf) to see an example.
 
 ## Developer guide
 
@@ -302,8 +302,8 @@ normalized_sar = raw_sar * normalization_factor
 
 Processed results are cached to avoid re-processing:
 
-- **Cache location**: `results/<study_type>/<phantom>/analysis_cache.pkl`
-- **Cache contents**: Tuple of `(results_df, all_organ_results_df)`
+- **Cache location**: `results/<study_type>/<phantom>/aggregated_results.pkl`
+- **Cache contents**: Dictionary with `{"summary_results": results_df, "organ_results": all_organ_results_df}`
 - **Cache invalidation**: Manual deletion or set `load_data: true`
 
 **Usage:**
@@ -331,16 +331,16 @@ The analysis system handles missing files gracefully:
 
 ### Testing
 
-Analysis components are tested in `tests/analysis/`:
+Analysis components are tested in `tests/test_analysis_*.py`:
 
-- Strategy implementations
-- Plot generation
-- Data extraction and normalization
-- CSV export functionality
+- Strategy implementations (`test_analysis_strategies.py`)
+- Analyzer class (`test_analysis_analyzer.py`)
+- Base strategy interface (`test_analysis_base_strategy.py`)
+- CLI integration (`test_cli_run_analysis.py`)
 
 Run tests:
 
 ```bash
-pytest tests/analysis/
+pytest tests/test_analysis_*.py
 ```
 

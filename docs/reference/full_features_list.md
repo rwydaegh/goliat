@@ -235,7 +235,7 @@ This document provides a complete reference of every feature available in GOLIAT
 - Per-simulation detailed data export
 - Summary statistics by frequency and scenario
 - Plot generation in dedicated plots directory
-- Automated LaTeX paper generation (`goliat generate-paper`) - Check out the [auto-generated first draft paper (only results)](https://github.com/rwydaegh/goliat/raw/feat/analysis-improvements-and-paper-generation/paper/near_field/pure_results/results.pdf)
+- Automated LaTeX paper generation (`goliat generate-paper`) - Check out the [auto-generated first draft paper (only results)](https://github.com/rwydaegh/goliat/raw/master/paper/near_field/pure_results/results.pdf)
 
 ## GUI and monitoring
 
