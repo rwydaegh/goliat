@@ -13,7 +13,7 @@ __pycache__/
 
 # Build and results
 results/
-plots/
+/plots/
 paper/
 !paper/IEEEtran.cls
 !paper/near_field/pure_results/results.pdf
