@@ -96,6 +96,7 @@ nav:
   - Overview: developer_guide/developer_guide.md
   - System Architecture: developer_guide/system_architecture.md
   - Technical Guide: developer_guide/technical_guide.md
+  - Analysis: developer_guide/analysis.md
   - Advanced Features: developer_guide/advanced_features.md
   - Configuration: developer_guide/configuration.md
   - Coloring Rules: developer_guide/coloring_rules.md

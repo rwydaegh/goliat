@@ -12,7 +12,7 @@ GOLIAT's architecture separates concerns:
 - **goliat/project_manager.py**: Handles .smash files (create/open/save/close), including a "Verify and Resume" feature to avoid re-running simulations with unchanged configurations.
 - **goliat/simulation_runner.py**: Executes simulations (local iSolve or oSPARC cloud).
 - **goliat/results_extractor.py**: Extracts SAR/power data post-simulation.
-- **goliat/analysis/**: Aggregates results (Analyzer with strategies for near/far-field).
+- **goliat/analysis/**: Aggregates results (Analyzer with strategies for near/far-field). Includes paper generation via `cli/generate_paper.py`.
 - **goliat/gui_manager.py**: Multiprocessing GUI for progress/ETA.
 - **goliat/logging_manager.py**: Dual loggers (progress/verbose) with colors.
 - **goliat/profiler.py**: Tracks phases (setup/run/extract) for ETAs.
@@ -210,6 +210,29 @@ Run: `pre-commit run`.
 - License: Apache-2.0 - see LICENSE.
 - Changelog: Update CHANGELOG.md for releases.
 - **Version management**: Version is stored in `pyproject.toml` (`[project] version`) as the single source of truth. The package reads it via `importlib.metadata` when installed, or from `pyproject.toml` directly when running from source.
+
+## Analysis system
+
+GOLIAT's analysis system aggregates results from multiple simulations and generates reports, plots, and publications. The `goliat analyze` command processes all simulation outputs in a study, computes statistics, and creates visualizations.
+
+**What it does:**
+- Loads SAR data from all completed simulations in a study
+- Aggregates metrics by frequency, scenario, and tissue group
+- Generates statistical summaries (mean, median, percentiles, correlations)
+- Creates publication-ready plots (heatmaps, bar charts, boxplots, 3D visualizations)
+- Exports CSV files with detailed and summary data
+- Optionally generates LaTeX papers with all figures organized by section
+
+**How it works:**
+The system uses a strategy pattern (`BaseAnalysisStrategy`) with separate implementations for near-field and far-field analysis. The `Analyzer` coordinates data loading and processing, while specialized `Plotter` modules handle visualization. Results are cached to speed up re-plotting. See the [Analysis Guide](analysis.md) for detailed documentation covering:
+
+- User-facing usage (commands, configuration, output structure)
+- Developer-facing architecture (components, data flow, extending the system)
+- Paper generation workflow
+
+Check out the auto-generated first draft paper (only results):
+- [Results PDF](https://github.com/rwydaegh/goliat/raw/feat/analysis-improvements-and-paper-generation/paper/near_field/pure_results/results.pdf) - Download the compiled PDF
+- [Results LaTeX Source](https://github.com/rwydaegh/goliat/raw/feat/analysis-improvements-and-paper-generation/paper/near_field/pure_results/results.tex) - Download the LaTeX source
 
 For more, see [Contributing](https://github.com/rwydaegh/goliat/blob/master/.github/CONTRIBUTING.md). For a deep dive into all available parameters, refer to the [Configuration Guide](configuration.md). For a complete reference of all features, see the [Full List of Features](../reference/full_features_list.md).
 
