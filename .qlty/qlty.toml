@@ -2,4 +2,5 @@ exclude_patterns = [
   "scripts/**",
   "analysis/**",
   "goliat/analysis/**",
+  "cli/generate_paper.py",
 ]
