@@ -94,7 +94,7 @@ After the simulation, GOLIAT's `ResultsExtractor` and `Analyzer` components take
     - Creates publication-ready plots (heatmaps, bar charts, boxplots, correlation matrices, and more)
     - Exports CSV files with detailed and summary statistics
     - Optionally generates a LaTeX paper with all figures organized by section
-    This is useful for comparing results across frequencies, placements, or other parameters. Check out the [auto-generated first draft paper (only results)](https://github.com/rwydaegh/goliat/raw/feat/analysis-improvements-and-paper-generation/paper/near_field/pure_results/results.pdf) to see an example of compiled analysis output. For details, see the [Analysis Guide](../developer_guide/analysis.md).
+    This is useful for comparing results across frequencies, placements, or other parameters. Check out the [auto-generated first draft paper (only results)](https://github.com/rwydaegh/goliat/raw/master/paper/near_field/pure_results/results.pdf) to see an example of compiled analysis output. For details, see the [Analysis Guide](../developer_guide/analysis.md).
 -   **Log Files**: For debugging and detailed tracking, GOLIAT generates two types of log files in the `logs/` directory for each run: a `.progress.log` for high-level updates and a `.log` for verbose, detailed information. The system automatically manages these files, keeping a maximum of 15 pairs to prevent excessive disk usage.
 
 **Example output interpretation**: For a near-field 700MHz simulation with an antenna by the cheek, you might observe:
