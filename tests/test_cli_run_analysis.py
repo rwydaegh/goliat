@@ -37,8 +37,8 @@ class TestRunAnalysis:
             mock_analyzer_instance = MagicMock()
             mock_analyzer.return_value = mock_analyzer_instance
 
-            # Mock argparse
-            with patch("sys.argv", ["run_analysis.py", "--config", "test_config.json"]):
+            # Mock argparse - config is now a positional argument
+            with patch("sys.argv", ["run_analysis.py", "test_config.json"]):
                 cli_run_analysis_module.main()
 
     def test_main_far_field(self, cli_run_analysis_module):
@@ -57,7 +57,7 @@ class TestRunAnalysis:
             mock_analyzer_instance = MagicMock()
             mock_analyzer.return_value = mock_analyzer_instance
 
-            with patch("sys.argv", ["run_analysis.py", "--config", "test_config.json"]):
+            with patch("sys.argv", ["run_analysis.py", "test_config.json"]):
                 cli_run_analysis_module.main()
 
     def test_main_no_phantoms(self, cli_run_analysis_module):
@@ -75,7 +75,7 @@ class TestRunAnalysis:
         ), patch("cli.run_analysis.logging") as mock_logging:
             mock_logging.getLogger.return_value = mock_logger
 
-            with patch("sys.argv", ["run_analysis.py", "--config", "test_config.json"]):
+            with patch("sys.argv", ["run_analysis.py", "test_config.json"]):
                 cli_run_analysis_module.main()
 
         # Should log error
@@ -96,7 +96,7 @@ class TestRunAnalysis:
         ), patch("cli.run_analysis.logging") as mock_logging:
             mock_logging.getLogger.return_value = mock_logger
 
-            with patch("sys.argv", ["run_analysis.py", "--config", "test_config.json"]):
+            with patch("sys.argv", ["run_analysis.py", "test_config.json"]):
                 cli_run_analysis_module.main()
 
         # Should log error

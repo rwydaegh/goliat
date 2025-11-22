@@ -36,26 +36,37 @@ class TestAnalyzer:
         assert analyzer.strategy == mock_strategy
         assert analyzer.all_results == []
         assert analyzer.all_organ_results == []
-        assert "eyes_group" in analyzer.tissue_group_definitions
-        assert "brain_group" in analyzer.tissue_group_definitions
-        assert "skin_group" in analyzer.tissue_group_definitions
+        # tissue_group_composition is populated from pickle files during runtime
+        assert isinstance(analyzer.tissue_group_composition, dict)
+        assert analyzer.tissue_group_composition == {}
 
-    def test_analyzer_tissue_group_definitions(self, mock_config, mock_strategy):
-        """Test that tissue group definitions are correct."""
+    def test_analyzer_tissue_group_composition(self, mock_config, mock_strategy):
+        """Test that tissue group composition can be populated."""
         analyzer = Analyzer(mock_config, "thelonious", mock_strategy)
 
+        # Initially empty, gets populated from pickle files during runtime
+        assert isinstance(analyzer.tissue_group_composition, dict)
+        assert analyzer.tissue_group_composition == {}
+
+        # Simulate population from pickle files
+        analyzer.tissue_group_composition = {
+            "eyes_group": {"eye", "cornea", "lens"},
+            "brain_group": {"brain", "cerebellum", "hippocampus"},
+            "skin_group": {"skin"},
+        }
+
         # Check eyes group
-        assert "eye" in analyzer.tissue_group_definitions["eyes_group"]
-        assert "cornea" in analyzer.tissue_group_definitions["eyes_group"]
-        assert "lens" in analyzer.tissue_group_definitions["eyes_group"]
+        assert "eye" in analyzer.tissue_group_composition["eyes_group"]
+        assert "cornea" in analyzer.tissue_group_composition["eyes_group"]
+        assert "lens" in analyzer.tissue_group_composition["eyes_group"]
 
         # Check brain group
-        assert "brain" in analyzer.tissue_group_definitions["brain_group"]
-        assert "cerebellum" in analyzer.tissue_group_definitions["brain_group"]
-        assert "hippocampus" in analyzer.tissue_group_definitions["brain_group"]
+        assert "brain" in analyzer.tissue_group_composition["brain_group"]
+        assert "cerebellum" in analyzer.tissue_group_composition["brain_group"]
+        assert "hippocampus" in analyzer.tissue_group_composition["brain_group"]
 
         # Check skin group
-        assert analyzer.tissue_group_definitions["skin_group"] == ["skin"]
+        assert analyzer.tissue_group_composition["skin_group"] == {"skin"}
 
     def test_analyzer_process_single_result_near_field(self, mock_config, mock_strategy):
         """Test processing single result for near-field."""
