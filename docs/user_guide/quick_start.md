@@ -136,7 +136,7 @@ Once the simulation is complete, GOLIAT will save all results in a structured di
 - `sar_stats_all_tissues.pkl`: A detailed Python pickle file with tissue-specific data.
 - **Plots**: Various plots, such as SAR heatmaps and bar charts, visualizing the results.
 
-You can also run the dedicated analysis script to aggregate and further process your results:
+You can also run the dedicated analysis script to aggregate and further process your results. Check out the [auto-generated first draft paper (only results)](https://github.com/rwydaegh/goliat/raw/feat/analysis-improvements-and-paper-generation/paper/near_field/pure_results/results.pdf) to see an example of compiled analysis output:
 
 ```bash
 goliat analyze --config my_first_near_field_study

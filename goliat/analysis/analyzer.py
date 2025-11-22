@@ -20,38 +20,26 @@ class Analyzer:
     generating plots. Handles unit conversion, caching, and report export.
     """
 
-    def __init__(self, config: "Config", phantom_name: str, strategy: "BaseAnalysisStrategy"):
+    def __init__(self, config: "Config", phantom_name: str, strategy: "BaseAnalysisStrategy", plot_format: str = "pdf"):
         """Sets up the analyzer with a strategy.
 
         Args:
             config: Configuration object.
             phantom_name: Phantom model name being analyzed.
             strategy: Strategy implementation for analysis logic.
+            plot_format: Output format for plots ('pdf' or 'png'), default 'pdf'.
         """
         self.config = config
         self.base_dir = config.base_dir
         self.phantom_name = phantom_name
         self.strategy = strategy
         self.results_base_dir = self.strategy.get_results_base_dir()
-        self.plotter = Plotter(self.strategy.get_plots_dir())
+        self.plotter = Plotter(self.strategy.get_plots_dir(), phantom_name=self.phantom_name, plot_format=plot_format)
         self.all_results = []
         self.all_organ_results = []
-        self.tissue_group_definitions = {
-            "eyes_group": ["eye", "cornea", "sclera", "lens", "vitreous"],
-            "skin_group": ["skin"],
-            "brain_group": [
-                "brain",
-                "commissura",
-                "midbrain",
-                "pineal",
-                "hypophysis",
-                "medulla",
-                "pons",
-                "thalamus",
-                "hippocampus",
-                "cerebellum",
-            ],
-        }
+        # Will be populated from pickle files - contains actual tissue names from extraction
+        # This is the authoritative source, computed during extraction using material_name_mapping.json
+        self.tissue_group_composition = {}
 
     def run_analysis(self):
         """Runs complete analysis pipeline using the selected strategy.
@@ -63,17 +51,35 @@ class Analyzer:
             f"--- Starting Results Analysis for Phantom: {self.phantom_name} ---",
             extra={"log_type": "header"},
         )
-        self.strategy.load_and_process_results(self)
 
-        if not self.all_results:
-            logging.getLogger("progress").info("--- No results found to analyze. ---", extra={"log_type": "warning"})
-            return
+        # Check if we should load data or use cache instead
+        load_data = self.strategy.analysis_config.get("load_data", True)
 
-        results_df = pd.DataFrame(self.all_results)
-        all_organ_results_df = pd.DataFrame(self.all_organ_results) if self.all_organ_results else pd.DataFrame()
+        if not load_data:
+            logging.getLogger("progress").info(
+                "--- Skipping data loading phase, loading from cache ---",
+                extra={"log_type": "info"},
+            )
+            results_df, all_organ_results_df = self._load_from_cache()
+            if results_df is None:
+                logging.getLogger("progress").error(
+                    "--- Failed to load cached results. Run analysis with load_data=True first. ---",
+                    extra={"log_type": "error"},
+                )
+                return
+        else:
+            self.strategy.load_and_process_results(self)
 
-        results_df = self._convert_units_and_cache(results_df, all_organ_results_df)
-        self._export_reports(results_df, all_organ_results_df)
+            if not self.all_results:
+                logging.getLogger("progress").info("--- No results found to analyze. ---", extra={"log_type": "warning"})
+                return
+
+            results_df = pd.DataFrame(self.all_results)
+            all_organ_results_df = pd.DataFrame(self.all_organ_results) if self.all_organ_results else pd.DataFrame()
+
+            results_df = self._convert_units_and_cache(results_df, all_organ_results_df)
+            self._export_reports(results_df, all_organ_results_df)
+
         self.strategy.generate_plots(self, self.plotter, results_df, all_organ_results_df)
 
         logging.getLogger("progress").info("--- Analysis Finished ---", extra={"log_type": "success"})
@@ -134,6 +140,27 @@ class Analyzer:
             if os.path.exists(pickle_path):
                 with open(pickle_path, "rb") as f:
                     pickle_data = pickle.load(f)
+
+                # Collect tissue_group_composition from pickle files
+                # This contains the actual tissue names that were matched during extraction
+                # Clean tissue names early to avoid repeated cleaning later
+                if "tissue_group_composition" in pickle_data:
+                    import re
+
+                    def clean_tissue_name(name: str) -> str:
+                        """Remove phantom identifiers from tissue names."""
+                        if not name:
+                            return name
+                        pattern = r"\s*\([^)]*\)\s*$"
+                        cleaned = re.sub(pattern, "", name).strip()
+                        return cleaned if cleaned else name
+
+                    for group_name, tissues in pickle_data["tissue_group_composition"].items():
+                        if group_name not in self.tissue_group_composition:
+                            self.tissue_group_composition[group_name] = set()
+                        # Clean tissue names and add to composition
+                        cleaned_tissues = {clean_tissue_name(t) for t in tissues}
+                        self.tissue_group_composition[group_name].update(cleaned_tissues)
             else:
                 # Create minimal pickle_data structure from JSON
                 pickle_data = {
@@ -174,8 +201,16 @@ class Analyzer:
                 scenario_name,
                 simulated_power_w,
                 normalization_factor,
+                sar_results=sar_results,
             )
             result_entry = self.strategy.apply_bug_fixes(result_entry)
+
+            # Store peak_sar_details for spatial plots
+            if "peak_sar_details" in pickle_data:
+                result_entry["peak_sar_details"] = pickle_data["peak_sar_details"]
+            elif "peak_sar_details" in sar_results:
+                result_entry["peak_sar_details"] = sar_results["peak_sar_details"]
+
             self.all_results.append(result_entry)
             if organ_entries:
                 self.all_organ_results.extend(organ_entries)
@@ -192,6 +227,38 @@ class Analyzer:
             import traceback
 
             logging.getLogger("progress").debug(traceback.format_exc(), extra={"log_type": "debug"})
+
+    def _load_from_cache(self) -> tuple[pd.DataFrame | None, pd.DataFrame | None]:
+        """Loads aggregated results from cached pickle file.
+
+        Returns:
+            Tuple of (results_df, organ_results_df) or (None, None) if cache not found.
+        """
+        output_pickle_path = os.path.join(self.results_base_dir, "aggregated_results.pkl")
+
+        if not os.path.exists(output_pickle_path):
+            return None, None
+
+        try:
+            with open(output_pickle_path, "rb") as f:
+                cached_data = pickle.load(f)
+
+            results_df = cached_data.get("summary_results")
+            organ_results_df = cached_data.get("organ_results")
+
+            if results_df is not None:
+                logging.getLogger("progress").info(
+                    f"--- Loaded {len(results_df)} cached results from: {output_pickle_path} ---",
+                    extra={"log_type": "success"},
+                )
+
+            return results_df, organ_results_df
+        except Exception as e:
+            logging.getLogger("progress").error(
+                f"--- Error loading cache: {e} ---",
+                extra={"log_type": "error"},
+            )
+            return None, None
 
     def _convert_units_and_cache(self, results_df: pd.DataFrame, organ_results_df: pd.DataFrame) -> pd.DataFrame:
         """Converts SAR units to mW/kg and caches summary and organ-level results."""

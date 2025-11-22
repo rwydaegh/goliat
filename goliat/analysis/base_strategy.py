@@ -16,16 +16,31 @@ class BaseAnalysisStrategy(ABC):
     and generating plots. Subclasses implement study-type specific logic.
     """
 
-    def __init__(self, config: "Config", phantom_name: str):
+    def __init__(self, config: "Config", phantom_name: str, analysis_config: dict | None = None):
         """Sets up the analysis strategy.
 
         Args:
             config: Configuration object.
             phantom_name: Phantom model name being analyzed.
+            analysis_config: Optional dictionary with plot names as keys and boolean values.
         """
         self.config = config
         self.phantom_name = phantom_name
         self.base_dir = config.base_dir
+        self.analysis_config = analysis_config or {}
+
+    def should_generate_plot(self, plot_name: str) -> bool:
+        """Checks if a plot should be generated based on the analysis config.
+
+        Args:
+            plot_name: Name of the plot to check.
+
+        Returns:
+            True if the plot should be generated (default if not in config), False otherwise.
+        """
+        if not self.analysis_config:
+            return True  # Generate all plots if no config provided
+        return self.analysis_config.get(plot_name, True)  # Default to True if not specified
 
     def get_results_base_dir(self) -> str:
         """Returns base directory path for results. Must be implemented by subclasses."""
@@ -69,6 +84,7 @@ class BaseAnalysisStrategy(ABC):
         scenario_name: str,
         sim_power: float,
         norm_factor: float,
+        sar_results: dict | None = None,
     ) -> tuple[dict, list]:
         """Extracts and structures data from a single simulation's result files.
 
@@ -79,6 +95,7 @@ class BaseAnalysisStrategy(ABC):
             scenario_name: General scenario name.
             sim_power: Simulated input power in Watts.
             norm_factor: Normalization factor to apply.
+            sar_results: Optional JSON results dict containing additional data like power balance.
 
         Returns:
             Tuple of (main result entry dict, list of organ-specific entries).

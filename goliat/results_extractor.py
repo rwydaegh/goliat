@@ -61,6 +61,7 @@ class ResultsExtractor(LoggingMixin):
         self.simulation = context.simulation
         self.phantom_name = context.phantom_name
         self.frequency_mhz = context.frequency_mhz
+        self.scenario_name = context.scenario_name
         self.placement_name = f"{context.scenario_name}_{context.position_name}_{context.orientation_name}"
         self.orientation_name = context.orientation_name
         self.study_type = context.study_type

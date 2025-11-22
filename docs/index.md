@@ -62,6 +62,14 @@ GOLIAT is an automated Python framework for near-field and far-field dosimetric 
 
     [:octicons-arrow-right-24: Configure](developer_guide/configuration.md)
 
+-   :material-chart-line:{ .lg .middle } **Analysis system**
+
+    ---
+
+    Process results, generate plots, and create publications. User guide and developer documentation.
+
+    [:octicons-arrow-right-24: Analysis Guide](developer_guide/analysis.md)
+
 -   :material-cloud-upload-outline:{ .lg .middle } **oSPARC**
 
     ---
@@ -157,5 +165,11 @@ Start with the [Quick Start](user_guide/quick_start.md) to run your first simula
 - **Accessible**: Plain-language docs for newcomers.
 
 For issues, see [Troubleshooting](troubleshooting.md). Contribute via [Technical Guide](developer_guide/technical_guide.md).
+
+## Results
+
+Check out the auto-generated first draft paper (only results):
+- [Results PDF](https://github.com/rwydaegh/goliat/raw/feat/analysis-improvements-and-paper-generation/paper/near_field/pure_results/results.pdf) - Download the compiled PDF
+- [Results LaTeX Source](https://github.com/rwydaegh/goliat/raw/feat/analysis-improvements-and-paper-generation/paper/near_field/pure_results/results.tex) - Download the LaTeX source
 
 For a complete list of all available features, see the [Full List of Features](reference/full_features_list.md).
