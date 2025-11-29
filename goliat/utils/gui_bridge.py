@@ -9,7 +9,6 @@ from typing import Dict, Any, Optional, Callable
 
 from goliat.logging_manager import LoggingMixin
 from goliat.utils.http_client import HTTPClient, REQUESTS_AVAILABLE
-from goliat.utils.message_sanitizer import MessageSanitizer
 
 try:
     import requests
@@ -42,15 +41,12 @@ class WebGUIBridge(LoggingMixin):
         self.internal_queue: Queue = Queue()
         self.running = False
         self.thread: Optional[threading.Thread] = None
-        # Use the main verbose/progress loggers so messages appear in log files
+        # Use the main verbose logger so messages appear in log files
         self.verbose_logger = logging.getLogger("verbose")
-        self.progress_logger = logging.getLogger("progress")
-        self.gui = None
         self.is_connected = False
         self.last_heartbeat_success = False
         self.connection_callback: Optional[Callable[[bool], None]] = None
         self._system_info: Optional[Dict[str, Any]] = None
-        self.executor: Optional[ThreadPoolExecutor] = None
         self.log_executor: Optional[ThreadPoolExecutor] = None
         self.request_executor: Optional[ThreadPoolExecutor] = None
 
@@ -213,7 +209,7 @@ class WebGUIBridge(LoggingMixin):
                     last_heartbeat_time = current_time
 
                 # Tight batching: send every 50ms or when batch reaches 10 messages
-                # Single-threaded executor ensures messages are sent in order
+                # Parallel executor (max_workers=3) with sequence numbers ensures correct ordering
                 if log_batch:
                     time_since_last_batch = current_time - last_batch_send
                     should_send = (
@@ -284,28 +280,26 @@ class WebGUIBridge(LoggingMixin):
             except Exception as e:
                 self._log(f"Failed to flush final batch on exit: {e}", level="verbose", log_type="error")
 
-    def _send_log_batch(self, log_messages: list[Dict[str, Any]], timeout: float = 10.0, max_retries: int = 1) -> None:
+    def _send_log_batch(self, log_messages: list[Dict[str, Any]], timeout: float = 10.0) -> None:
         """Send a batch of log messages to the dashboard API (async).
 
         Args:
             log_messages: List of status/log message dictionaries
-            timeout: Request timeout in seconds (default: 3.0)
-            max_retries: Max retries (default: 3)
+            timeout: Request timeout in seconds (default: 10.0)
         """
         if not hasattr(self, "log_executor") or not self.log_executor or not log_messages:
             return
 
-        # Submit to log executor for sequential processing (FIFO)
-        # Single-threaded executor ensures batches are sent in order
-        self.log_executor.submit(self._send_log_batch_sync, log_messages, timeout=timeout, max_retries=max_retries)
+        # Submit to log executor for parallel processing (max_workers=3)
+        # Sequence numbers ensure batches are ordered correctly on server side
+        self.log_executor.submit(self._send_log_batch_sync, log_messages, timeout=timeout)
 
-    def _send_log_batch_sync(self, log_messages: list[Dict[str, Any]], timeout: float = 10.0, max_retries: int = 1) -> None:
+    def _send_log_batch_sync(self, log_messages: list[Dict[str, Any]], timeout: float = 10.0) -> None:
         """Synchronous implementation of log batch sending (runs in thread pool).
 
         Args:
             log_messages: List of status/log message dictionaries
             timeout: Request timeout in seconds (default: 10.0 - longer for slow networks)
-            max_retries: Maximum number of retry attempts (default: 1 - no blocking retries)
         """
         if not log_messages:
             return
@@ -368,11 +362,12 @@ class WebGUIBridge(LoggingMixin):
         """Synchronous implementation of message sending (runs in thread pool).
 
         Args:
-            message: GUI message dictionary
+            message: GUI message dictionary (already sanitized upstream)
         """
-        sanitized_message = MessageSanitizer.sanitize(message)
         # Use short timeout (3s) for progress updates to avoid blocking queue
-        success = self.http_client.post_gui_update(sanitized_message, timeout=3.0)
+        # Messages are already sanitized: profiler_update is sanitized in queue_handler.py,
+        # all other messages are primitives (str, int, float, bool, dict, list)
+        success = self.http_client.post_gui_update(message, timeout=3.0)
         if success:
             self.is_connected = True
 

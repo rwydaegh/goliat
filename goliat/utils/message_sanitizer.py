@@ -18,14 +18,7 @@ class MessageSanitizer:
         """
         sanitized = {}
         for key, value in message.items():
-            if key == "profiler":
-                # Extract only serializable data from profiler
-                if hasattr(value, "eta_seconds"):
-                    sanitized[key] = {"eta_seconds": getattr(value, "eta_seconds", None)}
-                else:
-                    # Skip profiler object if we can't extract data
-                    continue
-            elif isinstance(value, (str, int, float, bool, type(None))):
+            if isinstance(value, (str, int, float, bool, type(None))):
                 sanitized[key] = value
             elif isinstance(value, (list, tuple)):
                 sanitized[key] = [
