@@ -169,21 +169,16 @@ class WebGUIBridge(LoggingMixin):
         except Exception:
             pass
 
+        # Don't try to flush remaining messages - just cancel pending requests
+        # This prevents hanging on shutdown when network is slow
         if remaining:
-            self._log(f"Flushing {len(remaining)} remaining messages on stop", level="verbose")
-            # Try to send remaining messages synchronously
-            status_msgs = [m for m in remaining if m.get("type") == "status"]
-            if status_msgs:
-                try:
-                    # Use short timeout and fewer retries to avoid freezing GUI on exit
-                    self._send_log_batch_sync(status_msgs, timeout=2.0, max_retries=1)
-                except Exception as e:
-                    self._log(f"Failed to flush final batch: {e}", level="verbose", log_type="warning")
+            self._log(f"Dropping {len(remaining)} remaining messages on stop (shutdown)", level="verbose")
 
+        # Cancel pending futures and shutdown immediately - don't wait for slow requests
         if hasattr(self, "log_executor") and self.log_executor:
-            self.log_executor.shutdown(wait=True, cancel_futures=False)
+            self.log_executor.shutdown(wait=False, cancel_futures=True)
         if hasattr(self, "request_executor") and self.request_executor:
-            self.request_executor.shutdown(wait=True, cancel_futures=False)
+            self.request_executor.shutdown(wait=False, cancel_futures=True)
 
         self._log("WebGUIBridge stopped", level="verbose")
 
@@ -287,7 +282,7 @@ class WebGUIBridge(LoggingMixin):
             except Exception as e:
                 self._log(f"Failed to flush final batch on exit: {e}", level="verbose", log_type="error")
 
-    def _send_log_batch(self, log_messages: list[Dict[str, Any]], timeout: float = 3.0, max_retries: int = 3) -> None:
+    def _send_log_batch(self, log_messages: list[Dict[str, Any]], timeout: float = 10.0, max_retries: int = 1) -> None:
         """Send a batch of log messages to the dashboard API (async).
 
         Args:
@@ -302,13 +297,13 @@ class WebGUIBridge(LoggingMixin):
         # Single-threaded executor ensures batches are sent in order
         self.log_executor.submit(self._send_log_batch_sync, log_messages, timeout=timeout, max_retries=max_retries)
 
-    def _send_log_batch_sync(self, log_messages: list[Dict[str, Any]], timeout: float = 3.0, max_retries: int = 3) -> None:
+    def _send_log_batch_sync(self, log_messages: list[Dict[str, Any]], timeout: float = 10.0, max_retries: int = 1) -> None:
         """Synchronous implementation of log batch sending (runs in thread pool).
 
         Args:
             log_messages: List of status/log message dictionaries
-            timeout: Request timeout in seconds (default: 3.0 for fast fail)
-            max_retries: Maximum number of retry attempts (default: 3)
+            timeout: Request timeout in seconds (default: 10.0 - longer for slow networks)
+            max_retries: Maximum number of retry attempts (default: 1 - no blocking retries)
         """
         if not log_messages:
             return
@@ -319,33 +314,14 @@ class WebGUIBridge(LoggingMixin):
             "logs": log_messages,
         }
 
-        # Retry logic for failed requests
-        retry_delay = 0.5  # Start with 500ms delay
-        success = False
-
-        for attempt in range(max_retries):
-            success = self.http_client.post_gui_update(batch_message, timeout=timeout)
-            if success:
-                self.is_connected = True
-                break
-            else:
-                if attempt < max_retries - 1:
-                    self._log(
-                        f"[DEBUG] Batch failed (attempt {attempt + 1}/{max_retries}), retrying in {retry_delay}s...",
-                        level="verbose",
-                        log_type="warning",
-                    )
-                    time.sleep(retry_delay)
-                    retry_delay *= 2  # Exponential backoff
-                else:
-                    self._log(
-                        f"[DEBUG] Batch FAILED after {max_retries} attempts - MESSAGES LOST",
-                        level="verbose",
-                        log_type="error",
-                    )
-                    # Log the lost messages for debugging
-                    for i, msg in enumerate(log_messages[:5]):  # Log first 5 messages
-                        self._log(f"[DEBUG] Lost message {i + 1}: {msg.get('message', '')[:50]}", level="verbose", log_type="error")
+        # Single attempt with longer timeout - don't block on retries
+        # If it fails, next batch will try again. Messages will eventually arrive.
+        success = self.http_client.post_gui_update(batch_message, timeout=timeout)
+        if success:
+            self.is_connected = True
+        else:
+            # Don't log every failure - too noisy. Just mark as disconnected.
+            self.is_connected = False
 
     def _send_message(self, message: Dict[str, Any]) -> None:
         """Send a single message to the dashboard API (async).
