@@ -51,6 +51,8 @@ class WebGUIBridge(LoggingMixin):
         self.connection_callback: Optional[Callable[[bool], None]] = None
         self._system_info: Optional[Dict[str, Any]] = None
         self.executor: Optional[ThreadPoolExecutor] = None
+        self.log_executor: Optional[ThreadPoolExecutor] = None
+        self.request_executor: Optional[ThreadPoolExecutor] = None
 
         # Sequence number for ordering batches (thread-safe)
         self._sequence_lock = threading.Lock()
@@ -88,18 +90,31 @@ class WebGUIBridge(LoggingMixin):
             return
 
         self.running = True
-        # Start thread pool for async HTTP requests
-        self.executor = ThreadPoolExecutor(max_workers=10, thread_name_prefix="web_bridge_http")
+        # Start thread pools for async HTTP requests
+        # log_executor: Single thread to ensure FIFO order for logs and status updates (prevents race conditions)
+        self.log_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="web_bridge_log")
+        # request_executor: Multiple threads for independent requests like screenshots and heartbeats
+        self.request_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="web_bridge_req")
+
         self.thread = threading.Thread(target=self._forward_loop, daemon=True)
         self.thread.start()
         self._log(f"WebGUIBridge started: {self.server_url}, machine_id={self.machine_id}", level="verbose")
 
         # Send initial heartbeat to register worker
         # Wait a bit for it to complete and call callback with initial status
-        self._send_heartbeat(self._system_info)
+        self._send_heartbeat_async(self._system_info)
         # Also trigger callback with current status (even if unchanged) so GUI gets initial state
         if self.connection_callback:
             self.connection_callback(self.is_connected)
+
+    def _send_heartbeat_async(self, system_info: Optional[Dict[str, Any]] = None) -> None:
+        """Send a heartbeat asynchronously via request executor.
+
+        Args:
+            system_info: Optional system information dict
+        """
+        if self.request_executor:
+            self.request_executor.submit(self._send_heartbeat, system_info)
 
     def _send_heartbeat(self, system_info: Optional[Dict[str, Any]] = None) -> None:
         """Send a heartbeat to register/update worker status.
@@ -171,8 +186,11 @@ class WebGUIBridge(LoggingMixin):
                 except Exception as e:
                     self._log(f"Failed to flush final batch: {e}", level="verbose", log_type="warning")
 
-        if self.executor:
-            self.executor.shutdown(wait=True, cancel_futures=False)  # Wait for pending requests
+        if hasattr(self, "log_executor") and self.log_executor:
+            self.log_executor.shutdown(wait=True, cancel_futures=False)
+        if hasattr(self, "request_executor") and self.request_executor:
+            self.request_executor.shutdown(wait=True, cancel_futures=False)
+
         self._log("WebGUIBridge stopped", level="verbose")
 
     def _forward_loop(self) -> None:
@@ -200,7 +218,7 @@ class WebGUIBridge(LoggingMixin):
 
                 # Send periodic heartbeat
                 if current_time - last_heartbeat_time >= heartbeat_interval:
-                    self._send_heartbeat(self._system_info)
+                    self._send_heartbeat_async(self._system_info)
                     last_heartbeat_time = current_time
 
                 # Send batched logs if enough time has passed OR if we've been waiting too long
@@ -288,11 +306,11 @@ class WebGUIBridge(LoggingMixin):
         Args:
             log_messages: List of status/log message dictionaries
         """
-        if not self.executor or not log_messages:
+        if not hasattr(self, "log_executor") or not self.log_executor or not log_messages:
             return
 
-        # Submit to thread pool for async execution (non-blocking)
-        self.executor.submit(self._send_log_batch_sync, log_messages)
+        # Submit to log executor for sequential processing (FIFO)
+        self.log_executor.submit(self._send_log_batch_sync, log_messages)
 
     def _send_log_batch_sync(self, log_messages: list[Dict[str, Any]]) -> None:
         """Synchronous implementation of log batch sending (runs in thread pool).
@@ -358,11 +376,11 @@ class WebGUIBridge(LoggingMixin):
         Args:
             message: GUI message dictionary
         """
-        if not self.executor:
+        if not hasattr(self, "log_executor") or not self.log_executor:
             return
 
-        # Submit to thread pool for async execution (non-blocking)
-        self.executor.submit(self._send_message_sync, message)
+        # Submit to log executor for sequential processing (FIFO)
+        self.log_executor.submit(self._send_message_sync, message)
 
     def _send_screenshots(self, message: Dict[str, Any]) -> None:
         """Send screenshots to the dashboard API (async).
@@ -370,11 +388,11 @@ class WebGUIBridge(LoggingMixin):
         Args:
             message: Message dictionary with 'screenshots' key containing tab name -> bytes mapping
         """
-        if not self.executor or "screenshots" not in message:
+        if not hasattr(self, "request_executor") or not self.request_executor or "screenshots" not in message:
             return
 
-        # Submit to thread pool for async execution (non-blocking)
-        self.executor.submit(self._send_screenshots_sync, message.get("screenshots", {}))
+        # Submit to request executor (can be parallel)
+        self.request_executor.submit(self._send_screenshots_sync, message.get("screenshots", {}))
 
     def _send_screenshots_sync(self, screenshots: Dict[str, bytes]) -> None:
         """Synchronous implementation of screenshot sending (runs in thread pool).

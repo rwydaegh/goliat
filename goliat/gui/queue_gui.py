@@ -56,12 +56,23 @@ class QueueGUI(LoggingMixin):
         if level == "progress":
             import time
 
+            # Use monotonic time with a small increment to ensure unique timestamps
+            # even for messages sent in rapid succession
+            if not hasattr(self, "_last_timestamp"):
+                self._last_timestamp = 0.0
+            current_time = time.time()
+            # Ensure timestamp is always increasing, even if system clock jumps backward
+            if current_time <= self._last_timestamp:
+                self._last_timestamp += 0.000001  # 1 microsecond increment
+            else:
+                self._last_timestamp = current_time
+
             self.queue.put(
                 {
                     "type": "status",
                     "message": message,
                     "log_type": log_type,
-                    "timestamp": time.time(),  # Add timestamp when message is created for proper ordering
+                    "timestamp": self._last_timestamp,  # Add timestamp when message is created for proper ordering
                 }
             )
 
