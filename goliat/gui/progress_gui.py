@@ -187,10 +187,10 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
         self.utilization_plot_timer.timeout.connect(self.update_utilization_plot)
         self.utilization_plot_timer.start(2000)
 
-        # Progress sync timer (every 2 seconds) - send actual progress bar values to web
+        # Progress sync timer (every 200ms) - send actual progress bar values to web
         self.progress_sync_timer: _QTimer = _QTimer(self)
         self.progress_sync_timer.timeout.connect(self.web_bridge_manager.sync_progress)
-        self.progress_sync_timer.start(2000)
+        self.progress_sync_timer.start(200)
 
     def _initialize_system_monitoring(self) -> None:
         """Initializes system monitoring (GPU availability, CPU measurement)."""
