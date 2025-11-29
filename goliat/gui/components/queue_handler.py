@@ -117,9 +117,26 @@ class QueueHandler:
                         if msg_type == "profiler_update" and "profiler" in msg:
                             profiler = msg.get("profiler")
                             # Extract only serializable data from profiler
+                            # Calculate eta_seconds using get_time_remaining() method
+                            eta_seconds = None
+                            if profiler and hasattr(profiler, "get_time_remaining"):
+                                try:
+                                    # Get current stage progress ratio from GUI if available
+                                    current_stage_progress = 0.0
+                                    if hasattr(self.gui, "stage_progress_bar"):
+                                        stage_value = self.gui.stage_progress_bar.value()
+                                        stage_max = self.gui.stage_progress_bar.maximum()
+                                        if stage_max > 0:
+                                            current_stage_progress = stage_value / stage_max
+                                    # Call get_time_remaining() to get ETA in seconds
+                                    eta_seconds = profiler.get_time_remaining(current_stage_progress=current_stage_progress)
+                                except Exception as e:
+                                    # If calculation fails, log but don't crash
+                                    if hasattr(self.gui, "verbose_logger"):
+                                        self.gui.verbose_logger.debug(f"Failed to calculate ETA: {e}")
                             sanitized_msg = {
                                 "type": "profiler_update",
-                                "eta_seconds": getattr(profiler, "eta_seconds", None) if profiler else None,
+                                "eta_seconds": eta_seconds,
                             }
                             self.gui.web_bridge_manager.web_bridge.enqueue(sanitized_msg)
                         else:
