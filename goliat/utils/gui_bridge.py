@@ -54,6 +54,10 @@ class WebGUIBridge(LoggingMixin):
         self.log_executor: Optional[ThreadPoolExecutor] = None
         self.request_executor: Optional[ThreadPoolExecutor] = None
 
+        # Smart Batching state
+        self.last_log_future = None
+        self.max_buffered_batch_size = 100  # Emergency send limit
+
         # Sequence number for ordering batches (thread-safe)
         self._sequence_lock = threading.Lock()
         self._sequence_counter = 0
@@ -221,11 +225,31 @@ class WebGUIBridge(LoggingMixin):
                     self._send_heartbeat_async(self._system_info)
                     last_heartbeat_time = current_time
 
-                # Send batched logs if enough time has passed OR if we've been waiting too long
-                time_since_last_batch = current_time - last_batch_send
-                if log_batch and (time_since_last_batch >= batch_interval or time_since_last_batch >= 1.0):
-                    # If we've been waiting more than 1 second, send immediately (don't wait for 300ms)
-                    reason = "timeout (1s)" if time_since_last_batch >= 1.0 else "timeout (300ms)"
+                # Smart Batching Logic:
+                # Only send if previous request is done OR we have a huge backlog.
+                # This automatically adapts batch size to network latency.
+                can_send = False
+                is_backlog_critical = len(log_batch) >= self.max_buffered_batch_size
+                reason = "unknown"  # Default reason
+
+                # Check if previous future is done (or never started)
+                is_executor_free = self.last_log_future is None or self.last_log_future.done()
+
+                if log_batch:
+                    if is_backlog_critical:
+                        can_send = True  # Force send if too many messages
+                        reason = "size limit (critical)"
+                    elif is_executor_free:
+                        # Only check time limits if executor is free
+                        time_since_last_batch = current_time - last_batch_send
+                        if time_since_last_batch >= batch_interval or time_since_last_batch >= 1.0:
+                            can_send = True
+                            reason = "timeout (1s)" if time_since_last_batch >= 1.0 else "timeout (300ms)"
+                        elif len(log_batch) >= 20:
+                            can_send = True
+                            reason = "size limit (20)"
+
+                if can_send:
                     self._log(f"[DEBUG] Sending batch of {len(log_batch)} messages ({reason})", level="verbose")
                     self._send_log_batch(log_batch)
                     message_counts["status_batched"] = message_counts.get("status_batched", 0) + len(log_batch)
@@ -236,8 +260,12 @@ class WebGUIBridge(LoggingMixin):
                 try:
                     message = self.internal_queue.get(timeout=0.01)
                 except Empty:
-                    # No message, but check if we should flush batch anyway
-                    if log_batch and (current_time - last_batch_send >= batch_interval):
+                    # No message, but check if we should flush batch anyway (if executor just freed up)
+                    if (
+                        log_batch
+                        and (self.last_log_future is None or self.last_log_future.done())
+                        and (current_time - last_batch_send >= batch_interval)
+                    ):
                         continue  # Will send batch on next iteration
                     time.sleep(0.01)
                     continue
@@ -251,13 +279,9 @@ class WebGUIBridge(LoggingMixin):
                 if message_type == "status":
                     log_batch.append(message)
                     self._log(f"[DEBUG] Added to batch (size={len(log_batch)}): {message.get('message', '')[:50]}", level="verbose")
-                    # If batch is getting large, send immediately
-                    if len(log_batch) >= 20:
-                        self._log(f"[DEBUG] Sending batch of {len(log_batch)} messages (size limit)", level="verbose")
-                        self._send_log_batch(log_batch)
-                        message_counts["status_batched"] = message_counts.get("status_batched", 0) + len(log_batch)
-                        log_batch = []
-                        last_batch_send = current_time
+
+                    # Check if we should send immediately due to size (only if executor free or critical)
+                    # We re-evaluate send condition at top of loop, so just continue
                 elif message_type == "gui_screenshots":
                     # Send screenshots immediately via dedicated endpoint (don't batch)
                     self._send_screenshots(message)
@@ -310,7 +334,8 @@ class WebGUIBridge(LoggingMixin):
             return
 
         # Submit to log executor for sequential processing (FIFO)
-        self.log_executor.submit(self._send_log_batch_sync, log_messages)
+        # Store the future to track completion
+        self.last_log_future = self.log_executor.submit(self._send_log_batch_sync, log_messages)
 
     def _send_log_batch_sync(self, log_messages: list[Dict[str, Any]]) -> None:
         """Synchronous implementation of log batch sending (runs in thread pool).
