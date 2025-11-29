@@ -54,13 +54,7 @@ class WebGUIBridge(LoggingMixin):
         self.log_executor: Optional[ThreadPoolExecutor] = None
         self.request_executor: Optional[ThreadPoolExecutor] = None
 
-        # Smart Batching state
-        self.last_log_future = None
-        self.max_buffered_batch_size = 100  # Emergency send limit
-
-        # Sequence number for ordering batches (thread-safe)
-        self._sequence_lock = threading.Lock()
-        self._sequence_counter = 0
+        # Simple batching - no need to track futures, executor handles ordering
 
         # HTTP client for API calls
         self.http_client = HTTPClient(self.server_url, self.machine_id, self.verbose_logger)
@@ -80,11 +74,6 @@ class WebGUIBridge(LoggingMixin):
 
         try:
             self.internal_queue.put_nowait(message)
-            # Debug: Log enqueued messages
-            msg_type = message.get("type", "unknown")
-            if msg_type == "status":
-                msg_text = message.get("message", "")[:50]  # First 50 chars
-                self._log(f"[DEBUG] Enqueued status: {msg_text}", level="verbose")
         except Exception as e:
             self._log(f"Failed to enqueue message: {e}", level="verbose", log_type="warning")
 
@@ -210,7 +199,7 @@ class WebGUIBridge(LoggingMixin):
 
         # Batching for log messages
         log_batch = []
-        batch_interval = 0.3  # Send batched logs every 300ms
+        batch_interval = 0.2  # Send batched logs every 200ms for faster updates
         last_batch_send = time.time()
 
         # Debug counters
@@ -226,48 +215,25 @@ class WebGUIBridge(LoggingMixin):
                     self._send_heartbeat_async(self._system_info)
                     last_heartbeat_time = current_time
 
-                # Smart Batching Logic:
-                # Only send if previous request is done OR we have a huge backlog.
-                # This automatically adapts batch size to network latency.
-                can_send = False
-                is_backlog_critical = len(log_batch) >= self.max_buffered_batch_size
-                reason = "unknown"  # Default reason
-
-                # Check if previous future is done (or never started)
-                is_executor_free = self.last_log_future is None or self.last_log_future.done()
-
+                # Simple batching: send every 200ms or when batch reaches 20 messages
+                # Single-threaded executor ensures messages are sent in order
                 if log_batch:
-                    if is_backlog_critical:
-                        can_send = True  # Force send if too many messages
-                        reason = "size limit (critical)"
-                    elif is_executor_free:
-                        # Only check time limits if executor is free
-                        time_since_last_batch = current_time - last_batch_send
-                        if time_since_last_batch >= batch_interval or time_since_last_batch >= 1.0:
-                            can_send = True
-                            reason = "timeout (1s)" if time_since_last_batch >= 1.0 else "timeout (300ms)"
-                        elif len(log_batch) >= 20:
-                            can_send = True
-                            reason = "size limit (20)"
+                    time_since_last_batch = current_time - last_batch_send
+                    should_send = (
+                        len(log_batch) >= 20  # Size limit
+                        or time_since_last_batch >= batch_interval  # Time limit (200ms)
+                    )
 
-                if can_send:
-                    self._log(f"[DEBUG] Sending batch of {len(log_batch)} messages ({reason})", level="verbose")
-                    self._send_log_batch(log_batch)
-                    message_counts["status_batched"] = message_counts.get("status_batched", 0) + len(log_batch)
-                    log_batch = []
-                    last_batch_send = current_time
+                    if should_send:
+                        self._send_log_batch(log_batch)
+                        message_counts["status_batched"] = message_counts.get("status_batched", 0) + len(log_batch)
+                        log_batch = []
+                        last_batch_send = current_time
 
                 # Try to get a message (non-blocking)
                 try:
                     message = self.internal_queue.get(timeout=0.01)
                 except Empty:
-                    # No message, but check if we should flush batch anyway (if executor just freed up)
-                    if (
-                        log_batch
-                        and (self.last_log_future is None or self.last_log_future.done())
-                        and (current_time - last_batch_send >= batch_interval)
-                    ):
-                        continue  # Will send batch on next iteration
                     time.sleep(0.01)
                     continue
 
@@ -279,10 +245,6 @@ class WebGUIBridge(LoggingMixin):
                 # Batch status (log) messages, send others immediately
                 if message_type == "status":
                     log_batch.append(message)
-                    self._log(f"[DEBUG] Added to batch (size={len(log_batch)}): {message.get('message', '')[:50]}", level="verbose")
-
-                    # Check if we should send immediately due to size (only if executor free or critical)
-                    # We re-evaluate send condition at top of loop, so just continue
                 elif message_type == "gui_screenshots":
                     # Send screenshots immediately via dedicated endpoint (don't batch)
                     self._send_screenshots(message)
@@ -337,8 +299,8 @@ class WebGUIBridge(LoggingMixin):
             return
 
         # Submit to log executor for sequential processing (FIFO)
-        # Store the future to track completion
-        self.last_log_future = self.log_executor.submit(self._send_log_batch_sync, log_messages, timeout=timeout, max_retries=max_retries)
+        # Single-threaded executor ensures batches are sent in order
+        self.log_executor.submit(self._send_log_batch_sync, log_messages, timeout=timeout, max_retries=max_retries)
 
     def _send_log_batch_sync(self, log_messages: list[Dict[str, Any]], timeout: float = 3.0, max_retries: int = 3) -> None:
         """Synchronous implementation of log batch sending (runs in thread pool).
@@ -351,24 +313,11 @@ class WebGUIBridge(LoggingMixin):
         if not log_messages:
             return
 
-        # Get next sequence number (thread-safe) for ordering batches
-        with self._sequence_lock:
-            sequence = self._sequence_counter
-            self._sequence_counter += 1
-
-        # Add per-message index within batch to preserve order when timestamps are identical
-        for idx, msg in enumerate(log_messages):
-            msg["batch_index"] = idx
-
+        # Simple batch message - single-threaded executor ensures order
         batch_message = {
             "type": "log_batch",
             "logs": log_messages,
-            "sequence": sequence,  # Sequence number for proper ordering when batches arrive out of order
         }
-
-        # Debug: Log what we're sending
-        msg_previews = [f"{m.get('message', '')[:30]}..." for m in log_messages[:3]]
-        self._log(f"[DEBUG] Sending batch seq={sequence} with {len(log_messages)} messages: {msg_previews}", level="verbose")
 
         # Retry logic for failed requests
         retry_delay = 0.5  # Start with 500ms delay
@@ -378,12 +327,11 @@ class WebGUIBridge(LoggingMixin):
             success = self.http_client.post_gui_update(batch_message, timeout=timeout)
             if success:
                 self.is_connected = True
-                self._log(f"[DEBUG] Batch seq={sequence} sent successfully (attempt {attempt + 1})", level="verbose")
                 break
             else:
                 if attempt < max_retries - 1:
                     self._log(
-                        f"[DEBUG] Batch seq={sequence} failed (attempt {attempt + 1}/{max_retries}), retrying in {retry_delay}s...",
+                        f"[DEBUG] Batch failed (attempt {attempt + 1}/{max_retries}), retrying in {retry_delay}s...",
                         level="verbose",
                         log_type="warning",
                     )
@@ -391,7 +339,7 @@ class WebGUIBridge(LoggingMixin):
                     retry_delay *= 2  # Exponential backoff
                 else:
                     self._log(
-                        f"[DEBUG] Batch seq={sequence} FAILED after {max_retries} attempts - MESSAGES LOST",
+                        f"[DEBUG] Batch FAILED after {max_retries} attempts - MESSAGES LOST",
                         level="verbose",
                         log_type="error",
                     )
