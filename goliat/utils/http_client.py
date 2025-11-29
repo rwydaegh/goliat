@@ -32,11 +32,12 @@ class HTTPClient(LoggingMixin):
         self.progress_logger = logger
         self.gui = None
 
-    def post_gui_update(self, message: Dict[str, Any]) -> bool:
+    def post_gui_update(self, message: Dict[str, Any], timeout: float = 5.0) -> bool:
         """Send a GUI update message to the API.
 
         Args:
             message: Message dictionary to send (will be wrapped in payload).
+            timeout: Request timeout in seconds (default: 5.0).
 
         Returns:
             True if successful, False otherwise.
@@ -56,7 +57,7 @@ class HTTPClient(LoggingMixin):
             response = requests.post(  # type: ignore[attr-defined]
                 f"{self.server_url}/api/gui-update",
                 json=payload,
-                timeout=10,
+                timeout=timeout,
             )
 
             if response.status_code == 200:
@@ -73,11 +74,12 @@ class HTTPClient(LoggingMixin):
             self._handle_exception(e, message_type)
             return False
 
-    def post_heartbeat(self, system_info: Optional[Dict[str, Any]] = None) -> bool:
+    def post_heartbeat(self, system_info: Optional[Dict[str, Any]] = None, timeout: float = 5.0) -> bool:
         """Send a heartbeat to the API.
 
         Args:
             system_info: Optional system information dictionary.
+            timeout: Request timeout in seconds (default: 5.0).
 
         Returns:
             True if successful, False otherwise.
@@ -93,7 +95,7 @@ class HTTPClient(LoggingMixin):
             response = requests.post(
                 f"{self.server_url}/api/heartbeat",
                 json=payload,
-                timeout=10,
+                timeout=timeout,
             )
 
             return response.status_code == 200
