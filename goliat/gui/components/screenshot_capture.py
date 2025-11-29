@@ -118,12 +118,12 @@ class ScreenshotCapture:
 
         return screenshots
 
-    def _compress_to_jpeg(self, pixmap: Any, quality: int = 95) -> Optional[bytes]:
+    def _compress_to_jpeg(self, pixmap: Any, quality: int = 70) -> Optional[bytes]:
         """Convert QPixmap to JPEG bytes.
 
         Args:
             pixmap: QPixmap to compress.
-            quality: JPEG quality (0-100), default 95 for minimal compression.
+            quality: JPEG quality (0-100), default 70 for balanced compression/quality.
 
         Returns:
             JPEG bytes, or None if compression fails.

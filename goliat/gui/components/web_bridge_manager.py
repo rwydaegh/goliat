@@ -131,14 +131,14 @@ class WebBridgeManager:
 
             self.screenshot_capture = ScreenshotCapture(self.gui)
 
-            # Create timer for screenshot capture (1 FPS = every 1000ms)
+            # Create timer for screenshot capture (0.2 FPS = every 5000ms)
             if QTimer is not None:
                 timer = QTimer(self.gui)
                 timer.timeout.connect(self._capture_and_send_screenshots)
-                timer.start(1000)  # 1 second interval
+                timer.start(5000)  # 5 seconds interval
                 self.screenshot_timer = timer
 
-            self.gui.verbose_logger.info("Screenshot capture initialized (1 FPS)")
+            self.gui.verbose_logger.info("Screenshot capture initialized (0.2 FPS)")
 
         except Exception as e:
             self.gui.verbose_logger.warning(f"Failed to initialize screenshot capture: {e}. Continuing without screenshots.")
