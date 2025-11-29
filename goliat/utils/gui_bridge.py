@@ -54,7 +54,9 @@ class WebGUIBridge(LoggingMixin):
         self.log_executor: Optional[ThreadPoolExecutor] = None
         self.request_executor: Optional[ThreadPoolExecutor] = None
 
-        # Simple batching - no need to track futures, executor handles ordering
+        # Sequence number for ordering batches when sent in parallel
+        self._sequence_lock = threading.Lock()
+        self._sequence_counter = 0
 
         # HTTP client for API calls
         self.http_client = HTTPClient(self.server_url, self.machine_id, self.verbose_logger)
@@ -84,8 +86,8 @@ class WebGUIBridge(LoggingMixin):
 
         self.running = True
         # Start thread pools for async HTTP requests
-        # log_executor: Single thread to ensure FIFO order for logs and status updates (prevents race conditions)
-        self.log_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="web_bridge_log")
+        # log_executor: Multiple threads for parallel batch sending (order maintained via sequence numbers)
+        self.log_executor = ThreadPoolExecutor(max_workers=3, thread_name_prefix="web_bridge_log")
         # request_executor: Multiple threads for independent requests like screenshots and heartbeats
         self.request_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="web_bridge_req")
 
@@ -308,10 +310,15 @@ class WebGUIBridge(LoggingMixin):
         if not log_messages:
             return
 
-        # Simple batch message - single-threaded executor ensures order
+        # Get sequence number for ordering (batches sent in parallel, server sorts by sequence)
+        with self._sequence_lock:
+            sequence = self._sequence_counter
+            self._sequence_counter += 1
+
         batch_message = {
             "type": "log_batch",
             "logs": log_messages,
+            "sequence": sequence,  # Server uses this to sort batches that arrive out of order
         }
 
         # Single attempt with longer timeout - don't block on retries
