@@ -58,10 +58,8 @@ class WebBridgeManager:
 
                 # Set callback to update GUI indicator BEFORE starting
                 self.web_bridge.set_connection_callback(self.gui._update_web_status)
+                # start() already sends initial heartbeat, no need to send again
                 self.web_bridge.start()
-
-                # Send initial heartbeat with system info
-                self.web_bridge.send_heartbeat_with_system_info(system_info)
 
                 # Initialize screenshot capture
                 self._initialize_screenshot_capture()
