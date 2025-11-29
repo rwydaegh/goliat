@@ -194,9 +194,9 @@ class WebGUIBridge(LoggingMixin):
         heartbeat_interval = 30.0  # Send heartbeat every 30 seconds
         throttle_interval_fast = 0.02  # 50 Hz for progress updates
 
-        # Batching for log messages
+        # Batching for log messages - tighter batching for more real-time updates
         log_batch = []
-        batch_interval = 0.2  # Send batched logs every 200ms for faster updates
+        batch_interval = 0.05  # Send batched logs every 50ms for very fast updates
         last_batch_send = time.time()
 
         # Debug counters
@@ -212,13 +212,13 @@ class WebGUIBridge(LoggingMixin):
                     self._send_heartbeat_async(self._system_info)
                     last_heartbeat_time = current_time
 
-                # Simple batching: send every 200ms or when batch reaches 20 messages
+                # Tight batching: send every 50ms or when batch reaches 10 messages
                 # Single-threaded executor ensures messages are sent in order
                 if log_batch:
                     time_since_last_batch = current_time - last_batch_send
                     should_send = (
-                        len(log_batch) >= 20  # Size limit
-                        or time_since_last_batch >= batch_interval  # Time limit (200ms)
+                        len(log_batch) >= 10  # Size limit (reduced from 20 to 10)
+                        or time_since_last_batch >= batch_interval  # Time limit (50ms, reduced from 200ms)
                     )
 
                     if should_send:
