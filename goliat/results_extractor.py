@@ -176,6 +176,16 @@ class ResultsExtractor(LoggingMixin):
             if resonance_data:
                 results_data.update(resonance_data)
 
+                # Update detuning file if calibration write is enabled
+                if self.config.detuning_write_during_calibration and not self.free_space:
+                    detuning_mhz = resonance_data.get("detuning_mhz", 0.0)
+                    self.config.update_detuning_file(
+                        self.phantom_name,
+                        self.frequency_mhz,
+                        self.placement_name,
+                        detuning_mhz,
+                    )
+
         if not self.free_space:
             sar_extractor = SarExtractor(self, results_data)
             sar_extractor.extract_sar_statistics(simulation_extractor)

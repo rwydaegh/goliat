@@ -66,6 +66,35 @@ class Config:
         # Load or initialize profiling config
         self.profiling_config = load_or_create_profiling_config(self.profiling_config_path)
 
+        # Load detuning config if enabled
+        self.detuning_data = None
+        self.detuning_enabled = self.config.get("detuning_enabled", False)
+        self.detuning_write_during_calibration = self.config.get("detuning_write_during_calibration", False)
+
+        if self.detuning_enabled:
+            # Validate study type
+            study_type = self.config.get("study_type")
+            if study_type == "far_field":
+                raise ValueError("Detuning feature is only supported for near_field studies, not far_field")
+
+            detuning_config_path = self.config.get("detuning_config")
+            if detuning_config_path:
+                resolved_path = self._resolve_path_relative_to_config(self.config_path, detuning_config_path)
+                self.detuning_data = self._load_detuning_config(resolved_path)
+            else:
+                import logging
+
+                logging.getLogger("progress").warning(
+                    "detuning_enabled is true but detuning_config not specified. Detuning will default to 0.", extra={"log_type": "warning"}
+                )
+        elif self.config.get("detuning_config"):
+            # Warn if config provided but disabled
+            import logging
+
+            logging.getLogger("progress").warning(
+                "detuning_config provided but detuning_enabled is false, ignoring detuning config", extra={"log_type": "warning"}
+            )
+
     def _resolve_config_path(self, config_filename: str, base_path: str) -> str:
         """Resolves the absolute path to a config file.
 
@@ -86,6 +115,28 @@ class Config:
             config_filename += ".json"
 
         return os.path.join(self.base_dir, "configs", config_filename)
+
+    def _resolve_path_relative_to_config(self, config_file_path: str, relative_path: str) -> str:
+        """Resolves a path relative to a config file's directory.
+
+        Args:
+            config_file_path: Absolute path to the config file (e.g., self.config_path).
+            relative_path: Relative path string (e.g., "../data/file.json").
+
+        Returns:
+            Absolute resolved path.
+        """
+        if os.path.isabs(relative_path):
+            return relative_path
+
+        # Get directory of the config file
+        config_dir = os.path.dirname(config_file_path)
+
+        # Resolve relative to config file's directory
+        resolved = os.path.normpath(os.path.join(config_dir, relative_path))
+
+        # Convert to absolute path
+        return os.path.abspath(resolved)
 
     def __getitem__(self, path: str):
         """Allows dictionary-style access to config settings with dot-notation support.
@@ -305,3 +356,203 @@ class Config:
             build_far_field_simulation_config(self, surgical_config, phantom_name, direction_name, polarization_name)
 
         return surgical_config
+
+    def _load_detuning_config(self, detuning_config_path: str) -> dict:
+        """Loads detuning configuration from JSON file.
+
+        Creates empty structure if file doesn't exist and write mode is enabled.
+
+        Args:
+            detuning_config_path: Absolute path to detuning config file.
+
+        Returns:
+            Dictionary with detuning_data structure, or empty structure if file doesn't exist.
+        """
+        if os.path.exists(detuning_config_path):
+            try:
+                detuning_config = self._load_json(detuning_config_path)
+                return detuning_config.get("detuning_data", {})
+            except (json.JSONDecodeError, FileNotFoundError) as e:
+                import logging
+
+                logging.getLogger("progress").warning(
+                    f"Failed to load detuning config from {detuning_config_path}: {e}. Using empty structure.",
+                    extra={"log_type": "warning"},
+                )
+                return {}
+        elif self.detuning_write_during_calibration:
+            # Create empty structure if file doesn't exist and write mode enabled
+            return {}
+        else:
+            # File doesn't exist and write mode disabled
+            import logging
+
+            logging.getLogger("progress").warning(
+                f"Detuning config file not found at {detuning_config_path}. Using empty structure.", extra={"log_type": "warning"}
+            )
+            return {}
+
+    def get_detuning_mhz(
+        self,
+        phantom_name: str,
+        frequency_mhz: int,
+        placement_name: str,
+    ) -> float:
+        """Gets detuning value in MHz for a specific simulation.
+
+        Args:
+            phantom_name: Name of the phantom (will be normalized to lowercase).
+            frequency_mhz: Frequency in MHz.
+            placement_name: Placement name (format: {scenario}_{position}_{orientation}).
+
+        Returns:
+            Detuning value in MHz. Returns 0.0 if not found or detuning disabled.
+        """
+        if not self.detuning_enabled or not self.detuning_data:
+            return 0.0
+
+        # Normalize phantom name to lowercase
+        phantom_lower = phantom_name.lower()
+
+        # Convert frequency to string format
+        freq_str = f"{frequency_mhz}MHz"
+
+        # Lookup in nested structure
+        try:
+            detuning_value = self.detuning_data.get(phantom_lower, {}).get(freq_str, {}).get(placement_name)
+            if detuning_value is None:
+                # Missing entry - warn and return 0
+                import logging
+
+                logging.getLogger("progress").warning(
+                    f"No detuning data for {phantom_name}/{freq_str}/{placement_name}, using 0 MHz", extra={"log_type": "warning"}
+                )
+                return 0.0
+            return float(detuning_value)
+        except (AttributeError, TypeError):
+            # Invalid structure - warn and return 0
+            import logging
+
+            logging.getLogger("progress").warning(
+                f"Invalid detuning data structure for {phantom_name}/{freq_str}/{placement_name}, using 0 MHz",
+                extra={"log_type": "warning"},
+            )
+            return 0.0
+
+    def update_detuning_file(
+        self,
+        phantom_name: str,
+        frequency_mhz: int,
+        placement_name: str,
+        detuning_mhz: float,
+    ) -> None:
+        """Updates detuning file with a new detuning value.
+
+        Args:
+            phantom_name: Name of the phantom (will be normalized to lowercase).
+            frequency_mhz: Frequency in MHz.
+            placement_name: Placement name (format: {scenario}_{position}_{orientation}).
+            detuning_mhz: Detuning value in MHz to write.
+        """
+        if not self.detuning_enabled or not self.detuning_write_during_calibration:
+            return
+
+        detuning_config_path = self.config.get("detuning_config")
+        if not detuning_config_path:
+            return
+
+        resolved_path = self._resolve_path_relative_to_config(self.config_path, detuning_config_path)
+
+        # Normalize phantom name to lowercase
+        phantom_lower = phantom_name.lower()
+        freq_str = f"{frequency_mhz}MHz"
+
+        # Load existing data or create empty structure
+        if os.path.exists(resolved_path):
+            try:
+                detuning_config = self._load_json(resolved_path)
+                detuning_data = detuning_config.get("detuning_data", {})
+            except (json.JSONDecodeError, FileNotFoundError):
+                detuning_data = {}
+        else:
+            detuning_data = {}
+
+        # Initialize nested structure if needed
+        if phantom_lower not in detuning_data:
+            detuning_data[phantom_lower] = {}
+        if freq_str not in detuning_data[phantom_lower]:
+            detuning_data[phantom_lower][freq_str] = {}
+
+        # Only write if entry doesn't exist (never overwrite)
+        if placement_name not in detuning_data[phantom_lower][freq_str]:
+            detuning_data[phantom_lower][freq_str][placement_name] = detuning_mhz
+
+            # Save updated file
+            detuning_config = {"detuning_data": detuning_data}
+            os.makedirs(os.path.dirname(resolved_path), exist_ok=True)
+            with open(resolved_path, "w") as f:
+                json.dump(detuning_config, f, indent=2)
+
+            # Update in-memory data
+            self.detuning_data = detuning_data
+
+    def initialize_missing_detuning_entries(self) -> None:
+        """Initializes missing detuning entries for all simulations in the study.
+
+        Called at the end of a calibration run to ensure all simulation entries exist
+        in the detuning file (with value 0) before manual calibration values are added.
+        """
+        if not self.detuning_enabled or not self.detuning_write_during_calibration:
+            return
+
+        detuning_config_path = self.config.get("detuning_config")
+        if not detuning_config_path:
+            return
+
+        resolved_path = self._resolve_path_relative_to_config(self.config_path, detuning_config_path)
+
+        # Load existing data or create empty structure
+        if os.path.exists(resolved_path):
+            try:
+                detuning_config = self._load_json(resolved_path)
+                detuning_data = detuning_config.get("detuning_data", {})
+            except (json.JSONDecodeError, FileNotFoundError):
+                detuning_data = {}
+        else:
+            detuning_data = {}
+
+        # Get study parameters
+        phantoms = self.config.get("phantoms", [])
+        frequencies = self.config.get("frequencies", [])
+        scenarios = self.config.get("scenarios", {})
+
+        # Initialize entries for all combinations
+        for phantom in phantoms:
+            phantom_lower = phantom.lower()
+            if phantom_lower not in detuning_data:
+                detuning_data[phantom_lower] = {}
+
+            for freq_mhz in frequencies:
+                freq_str = f"{freq_mhz}MHz"
+                if freq_str not in detuning_data[phantom_lower]:
+                    detuning_data[phantom_lower][freq_str] = {}
+
+                for scenario_name, scenario_data in scenarios.items():
+                    positions = scenario_data.get("positions", [])
+                    orientations = scenario_data.get("orientations", [])
+
+                    for position in positions:
+                        for orientation in orientations:
+                            placement_name = f"{scenario_name}_{position}_{orientation}"
+                            # Only add if missing (never overwrite)
+                            if placement_name not in detuning_data[phantom_lower][freq_str]:
+                                detuning_data[phantom_lower][freq_str][placement_name] = 0.0
+
+        # Save updated file
+        detuning_config = {"detuning_data": detuning_data}
+        os.makedirs(os.path.dirname(resolved_path), exist_ok=True)
+        with open(resolved_path, "w") as f:
+            json.dump(detuning_config, f, indent=2)
+
+        # Update in-memory data
+        self.detuning_data = detuning_data
