@@ -139,6 +139,10 @@ class MaterialSetup(BaseSetup):
         Args:
             antenna_components: Dict mapping component names to entities.
         """
+        CHANGE_MATERIAL = True
+        if CHANGE_MATERIAL:
+            CHANGE_MATERIAL = False
+
         antenna_config = self.antenna.get_config_for_frequency()
         material_mappings = antenna_config.get("materials", {})
 
