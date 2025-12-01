@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 
@@ -25,12 +25,16 @@ class SourceSetup(BaseSetup):
         verbose_logger: "Logger",
         progress_logger: "Logger",
         free_space: bool = False,
+        phantom_name: Optional[str] = None,
+        placement_name: Optional[str] = None,
     ):
         super().__init__(config, verbose_logger, progress_logger)
         self.simulation = simulation
         self.frequency_mhz = frequency_mhz
         self.antenna = antenna
         self.free_space = free_space
+        self.phantom_name = phantom_name
+        self.placement_name = placement_name
 
         import s4l_v1.units
 
@@ -90,16 +94,18 @@ class SourceSetup(BaseSetup):
                 sigma = 0.94 / (np.pi * bandwidth_hz)
                 t0 = float(k) * sigma
 
-                # Create Gaussian-modulated pulse expression: A * exp(-(t-t₀)²/(2σ²)) * cos(2π·f₀·t)
-                # Using Sim4Life expression syntax with 't' as time variable
+                # Create Gaussian-modulated pulse expression: A * exp(-(_t-t₀)²/(2σ²)) * cos(2π·f₀·_t)
+                # Using Sim4Life expression syntax with '_t' as time variable
+                # Note: Using ** for exponentiation (Python-style) instead of ^
                 amplitude = 1.0
-                expression = f"{amplitude} * exp(-(t - {t0})^2 / (2 * {sigma}^2)) * cos(2 * pi * {center_freq_hz} * t)"
+                expression = f"{amplitude} * exp(-(_t - {t0})**2 / (2 * {sigma}**2)) * cos(2 * pi * {center_freq_hz} * _t)"
                 edge_source_settings.UserExpression = expression
 
                 # Set center frequency for reference (used by post-processing)
                 edge_source_settings.CenterFrequency = self.frequency_mhz, self.units.MHz
         else:
             self._log("  - Using Harmonic source.", log_type="info")
+            # Frequency already has detuning applied in NearFieldSetup if enabled
             edge_source_settings.ExcitationType = excitation_enum.Harmonic
             edge_source_settings.Frequency = self.frequency_mhz, self.units.MHz
             edge_source_settings.CenterFrequency = self.frequency_mhz, self.units.MHz

@@ -48,6 +48,8 @@ class NearFieldSetup(BaseSetup):
         self.profiler = profiler
         self.gui = gui
         self.free_space = free_space
+        # Will be set in _setup_simulation_entity if detuning is enabled
+        self.final_frequency_mhz = frequency_mhz
 
         # S4L modules
         import XCoreModeling
@@ -174,14 +176,18 @@ class NearFieldSetup(BaseSetup):
             boundary_setup = BoundarySetup(self.config, simulation, self.verbose_logger, self.progress_logger)
             boundary_setup.setup_boundary_conditions()
 
+            # Use final frequency (with detuning applied) for source setup
+            source_frequency = getattr(self, "final_frequency_mhz", self.frequency_mhz)
             source_setup = SourceSetup(
                 self.config,
                 simulation,
-                self.frequency_mhz,
+                source_frequency,
                 self.antenna,
                 self.verbose_logger,
                 self.progress_logger,
                 self.free_space,
+                self.phantom_name,
+                self.placement_name,
             )
             source_setup.setup_source_and_sensors(antenna_components)
 
@@ -496,6 +502,20 @@ class NearFieldSetup(BaseSetup):
             for sim in list(self.document.AllSimulations):
                 self.document.AllSimulations.Remove(sim)
 
+        # Calculate detuned frequency if detuning is enabled
+        self.final_frequency_mhz = self.frequency_mhz
+        if self.config.detuning_enabled and not self.free_space:
+            detuning_mhz = self.config.get_detuning_mhz(
+                self.phantom_name,
+                self.frequency_mhz,
+                self.placement_name,
+            )
+            if detuning_mhz != 0.0:
+                self.final_frequency_mhz = self.frequency_mhz + detuning_mhz
+                self._log(
+                    f"  - Applied detuning: {self.frequency_mhz} MHz + {detuning_mhz} MHz = {self.final_frequency_mhz} MHz", log_type="info"
+                )
+
         sim_name = f"EM_FDTD_{self.phantom_name}_{self.frequency_mhz}MHz_{self.placement_name}"
         if self.free_space:
             sim_name += "_freespace"
@@ -504,7 +524,7 @@ class NearFieldSetup(BaseSetup):
 
         import s4l_v1.units
 
-        simulation.Frequency = self.frequency_mhz, s4l_v1.units.MHz
+        simulation.Frequency = self.final_frequency_mhz, s4l_v1.units.MHz
 
         self.document.AllSimulations.Add(simulation)
 
