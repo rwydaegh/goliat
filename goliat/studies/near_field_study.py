@@ -56,6 +56,12 @@ class NearFieldStudy(BaseStudy):
 
         self._iterate_near_field_simulations(phantoms, frequencies, all_scenarios, total_simulations, do_setup, do_run, do_extract)
 
+        # Initialize missing detuning entries at end of calibration run
+        excitation_type = self.config["simulation_parameters.excitation_type"] or "Harmonic"
+        excitation_type_lower = excitation_type.lower() if isinstance(excitation_type, str) else "harmonic"
+        if excitation_type_lower == "gaussian" and self.config.detuning_write_during_calibration:
+            self.config.initialize_missing_detuning_entries()
+
     def _calculate_total_simulations(self, phantoms: list, frequencies, all_scenarios: dict) -> int:
         """Calculates total number of simulations for the profiler.
 
