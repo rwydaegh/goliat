@@ -68,12 +68,6 @@ class WebBridgeManager:
                 self.gui.verbose_logger.info(
                     f"System info: GPU={gpu_name or 'N/A'}, CPU={cpu_cores} cores, RAM={total_ram_gb:.1f} GB, Hostname={hostname}"
                 )
-            except ImportError:
-                self.gui.verbose_logger.warning(
-                    "Web GUI bridge requested but 'requests' library not available. Install with: pip install requests"
-                )
-                if hasattr(self.gui, "error_counter_label") and hasattr(self.gui, "status_manager"):
-                    self.gui._update_web_status(False)
             except Exception as e:
                 self.gui.verbose_logger.warning(f"Failed to initialize web GUI bridge: {e}. Continuing without web monitoring.")
                 if hasattr(self.gui, "error_counter_label") and hasattr(self.gui, "status_manager"):
