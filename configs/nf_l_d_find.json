@@ -5,9 +5,9 @@
       "do_setup": true,
       "only_write_input_file": false,
       "do_run": true,
-      "do_extract": true,
+      "do_extract": false,
       "batch_run": false,
-      "auto_cleanup_previous_results": ["output"]
+      "auto_cleanup_previous_results": []
   },
   "keep_awake": true,
   "phantoms": [
@@ -24,10 +24,10 @@
       20
     ],
     "global_auto_termination": "GlobalAutoTerminationNone",
-    "simulation_time_multiplier": 1.5,
+    "simulation_time_multiplier": 3.5,
     "number_of_point_sensors": 0
   },
-  "detuning_config": "../data/detuning_calibration_nf_l_nd_f.json",
+  "detuning_config": "../data/detuning_calibration_nf_l_nd_f_minimal.json",
   "detuning_write_during_calibration": true,
   "gridding_parameters": {
     "global_gridding": {
@@ -106,27 +106,7 @@
         "cheek_base": [{
           "rotate_phantom_to_cheek": true,
           "angle_offset_deg": 0
-        }],
-        "cheek_up": [{
-          "rotate_phantom_to_cheek": true,
-          "angle_offset_deg": 0
-        }, {"axis": "X", "angle_deg": 10}],
-        "cheek_down": [{
-          "rotate_phantom_to_cheek": true,
-          "angle_offset_deg": 0
-        }, {"axis": "X", "angle_deg": -10}],
-        "tilt_base": [{
-          "rotate_phantom_to_cheek": true,
-          "angle_offset_deg": 15
-        }],
-        "tilt_up": [{
-          "rotate_phantom_to_cheek": true,
-          "angle_offset_deg": 15
-        }, {"axis": "X", "angle_deg": 10}],
-        "tilt_down": [{
-          "rotate_phantom_to_cheek": true,
-          "angle_offset_deg": 15
-        }, {"axis": "X", "angle_deg": -10}]
+        }]
       },
       "antenna_reference": {
         "distance_from_top": 10
@@ -136,16 +116,10 @@
     "front_of_eyes": {
       "bounding_box": "whole_body",
       "positions": {
-        "center": [0, 0, -40],
-        "left": [-25, 0, -40],
-        "right": [25, 0, -40],
-        "down": [0, 0, -100]
+        "center": [0, 0, -40]
       },
       "orientations": {
-        "vertical": [],
-        "horizontal": [
-          {"axis": "Y", "angle_deg": 90}
-        ]
+        "vertical": []
       },
       "antenna_reference": {
         "distance_from_top": 10
@@ -155,16 +129,10 @@
     "by_belly": {
       "bounding_box": "whole_body",
       "positions": {
-        "center": [0, 0, 0],
-        "left": [-150, 0, 0],
-        "right": [150, 0, 0],
-        "up": [0, 0, 100]
+        "center": [0, 0, 0]
       },
       "orientations": {
-        "vertical": [],
-        "horizontal": [
-          {"axis": "Y", "angle_deg": 90}
-        ]
+        "vertical": []
       },
       "antenna_reference": {
         "distance_from_top": 10
@@ -210,10 +178,10 @@
       }
     },
     "duke": {
-        "lips": [4, 106, 736]
+      "lips": [4, 106, 736]
     },
     "ella": {
-        "lips": [53, 121, 550]
+      "lips": [53, 121, 550]
     }
   }
 }
