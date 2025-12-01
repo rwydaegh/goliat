@@ -88,12 +88,14 @@ class Config:
                     "detuning_enabled is true but detuning_config not specified. Detuning will default to 0.", extra={"log_type": "warning"}
                 )
         elif self.config.get("detuning_config"):
-            # Warn if config provided but disabled
-            import logging
+            # Only warn if config provided but both enabled and write are false
+            # If write_during_calibration is true, we're in calibration mode (writing), so no warning needed
+            if not self.detuning_write_during_calibration:
+                import logging
 
-            logging.getLogger("progress").warning(
-                "detuning_config provided but detuning_enabled is false, ignoring detuning config", extra={"log_type": "warning"}
-            )
+                logging.getLogger("progress").warning(
+                    "detuning_config provided but detuning_enabled is false, ignoring detuning config", extra={"log_type": "warning"}
+                )
 
     def _resolve_config_path(self, config_filename: str, base_path: str) -> str:
         """Resolves the absolute path to a config file.
