@@ -32,12 +32,12 @@ class HTTPClient(LoggingMixin):
         self.progress_logger = logger
         self.gui = None
 
-    def post_gui_update(self, message: Dict[str, Any], timeout: float = 5.0) -> bool:
+    def post_gui_update(self, message: Dict[str, Any], timeout: float = 10.0) -> bool:
         """Send a GUI update message to the API.
 
         Args:
             message: Message dictionary to send (will be wrapped in payload).
-            timeout: Request timeout in seconds (default: 5.0).
+            timeout: Request timeout in seconds (default: 10.0).
 
         Returns:
             True if successful, False otherwise.
@@ -71,15 +71,15 @@ class HTTPClient(LoggingMixin):
                 return False
 
         except Exception as e:
-            self._handle_exception(e, message_type)
+            self._handle_exception(e, message_type, timeout=timeout)
             return False
 
-    def post_heartbeat(self, system_info: Optional[Dict[str, Any]] = None, timeout: float = 5.0) -> bool:
+    def post_heartbeat(self, system_info: Optional[Dict[str, Any]] = None, timeout: float = 10.0) -> bool:
         """Send a heartbeat to the API.
 
         Args:
             system_info: Optional system information dictionary.
-            timeout: Request timeout in seconds (default: 5.0).
+            timeout: Request timeout in seconds (default: 10.0).
 
         Returns:
             True if successful, False otherwise.
@@ -101,7 +101,7 @@ class HTTPClient(LoggingMixin):
             return response.status_code == 200
 
         except Exception as e:
-            self._handle_exception(e, "heartbeat")
+            self._handle_exception(e, "heartbeat", timeout=timeout)
             return False
 
     def post_gui_screenshots(self, screenshots: Dict[str, bytes]) -> bool:
@@ -152,19 +152,21 @@ class HTTPClient(LoggingMixin):
                 return False
 
         except Exception as e:
-            self._handle_exception(e, "gui_screenshots")
+            self._handle_exception(e, "gui_screenshots", timeout=30)
             return False
 
-    def _handle_exception(self, e: Exception, message_type: str) -> None:
+    def _handle_exception(self, e: Exception, message_type: str, timeout: Optional[float] = None) -> None:
         """Handle HTTP exceptions with appropriate logging.
 
         Args:
             e: Exception that occurred.
             message_type: Type of message being sent.
+            timeout: Timeout value that was used (optional, for logging).
         """
         error_type = str(type(e).__name__)
         if "Timeout" in error_type:
-            self._log(f"{message_type} timeout", level="verbose", log_type="warning")
+            timeout_msg = f" (timeout: {timeout}s)" if timeout is not None else ""
+            self._log(f"HTTP request timeout for {message_type}{timeout_msg}", level="verbose", log_type="warning")
         elif "ConnectionError" in error_type:
             self._log(f"{message_type} connection error", level="verbose", log_type="warning")
         else:

@@ -48,8 +48,8 @@ configs/*
 !configs/near_field_gaussian.json
 !configs/tutorial_*.json
 !configs/analysis.json
-!configs/nf_h_nd_f*.json
-!configs/nf_l_nd_f*.json
+!configs/nf_h_d_f*.json
+!configs/nf_l_d_f*.json
 
 # Generated files
 *.csv
