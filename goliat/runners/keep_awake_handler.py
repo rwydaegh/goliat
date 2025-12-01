@@ -27,8 +27,8 @@ class KeepAwakeHandler:
             return
 
         try:
-            # Path: goliat/goliat/runners/keep_awake_handler.py -> goliat/scripts/
-            script_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "scripts")
+            # Path: goliat/goliat/runners/keep_awake_handler.py -> goliat/goliat/utils/scripts/
+            script_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils", "scripts")
             if script_dir not in sys.path:
                 sys.path.insert(0, script_dir)
             from keep_awake import keep_awake  # type: ignore
@@ -46,7 +46,7 @@ class KeepAwakeHandler:
         if self.triggered:
             return
 
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "scripts", "keep_awake.py")
+        script_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils", "scripts", "keep_awake.py")
         if os.path.exists(script_path):
             subprocess.Popen([sys.executable, script_path])
         self.triggered = True

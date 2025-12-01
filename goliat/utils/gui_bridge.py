@@ -8,7 +8,7 @@ from queue import Queue, Empty
 from typing import Dict, Any, Optional, Callable
 
 from goliat.logging_manager import LoggingMixin
-from goliat.utils.http_client import HTTPClient, REQUESTS_AVAILABLE
+from goliat.utils.http_client import HTTPClient
 
 try:
     import requests
@@ -32,9 +32,6 @@ class WebGUIBridge(LoggingMixin):
             machine_id: Unique identifier for this machine (typically IP address)
             throttle_hz: Maximum message rate in Hz (default: 10 messages/second)
         """
-        if not REQUESTS_AVAILABLE:
-            raise ImportError("requests library is required for WebGUIBridge. Install with: pip install requests")
-
         self.server_url = server_url.rstrip("/")
         self.machine_id = machine_id
         self.throttle_interval = 1.0 / throttle_hz
@@ -195,10 +192,6 @@ class WebGUIBridge(LoggingMixin):
         batch_interval = 0.05  # Send batched logs every 50ms for very fast updates
         last_batch_send = time.time()
 
-        # Debug counters
-        message_counts = {}
-        last_debug_time = time.time()
-
         while self.running:
             try:
                 current_time = time.time()
@@ -219,7 +212,6 @@ class WebGUIBridge(LoggingMixin):
 
                     if should_send:
                         self._send_log_batch(log_batch)
-                        message_counts["status_batched"] = message_counts.get("status_batched", 0) + len(log_batch)
                         log_batch = []
                         last_batch_send = current_time
 
@@ -231,9 +223,6 @@ class WebGUIBridge(LoggingMixin):
                     continue
 
                 message_type = message.get("type", "")
-
-                # Debug logging: count messages by type
-                message_counts[message_type] = message_counts.get(message_type, 0) + 1
 
                 # Batch status (log) messages, send others immediately
                 if message_type == "status":
@@ -251,20 +240,10 @@ class WebGUIBridge(LoggingMixin):
                         last_throttled_send_time = time.time()
                     self._send_message(message)
 
-                # Debug: Print message stats every 10 seconds
-                if current_time - last_debug_time > 10.0:
-                    if log_batch:
-                        self._log(f"WebGUI stats (last 10s): {message_counts}, pending logs: {len(log_batch)}", level="verbose")
-                    else:
-                        self._log(f"WebGUI stats (last 10s): {message_counts}", level="verbose")
-                    message_counts = {}
-                    last_debug_time = current_time
-
             except Exception as e:
                 self._log(f"Error in forward loop: {e}", level="verbose", log_type="error")
                 # Try to flush batch even on error
                 if log_batch:
-                    self._log(f"[DEBUG] Flushing {len(log_batch)} messages after error", level="verbose")
                     try:
                         self._send_log_batch(log_batch)
                         log_batch = []
@@ -274,7 +253,6 @@ class WebGUIBridge(LoggingMixin):
 
         # Flush any remaining batch when loop exits
         if log_batch:
-            self._log(f"[DEBUG] Flushing {len(log_batch)} messages on loop exit", level="verbose")
             try:
                 self._send_log_batch_sync(log_batch)
             except Exception as e:

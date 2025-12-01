@@ -139,7 +139,7 @@ class MaterialSetup(BaseSetup):
         Args:
             antenna_components: Dict mapping component names to entities.
         """
-        CHANGE_MATERIAL = True
+        CHANGE_MATERIAL = False
 
         antenna_config = self.antenna.get_config_for_frequency()
         material_mappings = antenna_config.get("materials", {})
@@ -156,7 +156,7 @@ class MaterialSetup(BaseSetup):
 
                 if "Copper" in mat_name and excitation_type_lower == "gaussian":
                     if CHANGE_MATERIAL:
-                        material_settings.Type = "PEC"
+                        material_settings.MaterialType = "PEC"
                         self.simulation.Add(material_settings, [entity])
                         self._log("\n" + "=" * 80, log_type="warning")
                         self._log(
@@ -172,9 +172,8 @@ class MaterialSetup(BaseSetup):
                             log_type="warning",
                         )
                         self._log("=" * 80 + "\n", log_type="warning")
-                    CHANGE_MATERIAL = False
                 elif mat_name.lower() == "pec":
-                    material_settings.Type = "PEC"
+                    material_settings.MaterialType = "PEC"
                     self.simulation.Add(material_settings, [entity])
                     self._log(f"  - Assigned 'PEC' to '{comp_name}'.", log_type="info")
                 else:
