@@ -99,7 +99,17 @@ set "AUTH_FILE=%DESKTOP_PATH%\certs\openvpn_auth.txt"
 
 :: Launch OpenVPN
 cd /d "%DESKTOP_PATH%\certs"
-start "OpenVPN" "C:\Program Files\OpenVPN\bin\openvpn.exe" --config "Intec-iGent.ovpn" --auth-user-pass "openvpn_auth.txt"
+
+:: Verify OpenVPN is installed before launching
+set "OPENVPN_EXE=C:\Program Files\OpenVPN\bin\openvpn.exe"
+if not exist "%OPENVPN_EXE%" (
+    echo ERROR: OpenVPN executable not found at: %OPENVPN_EXE%
+    echo OpenVPN is not installed. Please install OpenVPN first.
+    pause
+    exit /b 1
+)
+
+start "OpenVPN" "%OPENVPN_EXE%" --config "Intec-iGent.ovpn" --auth-user-pass "openvpn_auth.txt"
 
 echo VPN connection initiated. Check connection status with: ipconfig /all
 pause

@@ -320,9 +320,9 @@ This document provides a complete reference of every feature available in GOLIAT
 - Automatic Sim4Life download and installation
 - VPN configuration file download from Google Drive
 - VPN connection automation
-- Sim4Life license installer GUI launch
+- Parallel launch of Sim4Life license installer and Git Bash
 - Automatic GOLIAT repository cloning
-- Automatic study launch after setup
+- Automatic Git Bash initialization (pip install, git config, goliat init)
 - Python script for API-based VM deployment (`deploy_windows_vm.py`)
 - Support for multiple cloud providers (TensorDock, AWS, GCP, Azure)
 - Cost estimation and monitoring
@@ -330,6 +330,7 @@ This document provides a complete reference of every feature available in GOLIAT
 - Instance stopping when not in use
 - Cloud setup validation (NVIDIA GPU driver checks, computer name validation)
 - Pre-flight checks before simulation execution
+- Error handling and safeguards to prevent premature execution
 
 ## Data management
 

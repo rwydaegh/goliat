@@ -76,9 +76,10 @@ The `setup_and_run.bat` script automates the following steps:
 6. Downloads and installs Sim4Life
 7. Downloads VPN configuration files (if needed)
 8. Installs OpenVPN and connects to VPN (if required for Sim4Life license access)
-9. Installs Sim4Life license (prompts for manual GUI installation)
-10. Installs Git and clones the GOLIAT repository
-11. Launches Git Bash in the repository directory
+9. Installs Git and clones the GOLIAT repository
+10. Launches Sim4Life license installer and Git Bash in parallel
+
+The script includes error handling to prevent premature execution and verifies that required files exist before launching processes.
 
 ### Running the script
 
@@ -99,12 +100,12 @@ The `setup_and_run.bat` script automates the following steps:
 
 4. **Wait ~10 minutes** while the script installs everything
 
-5. **Install the Sim4Life license** when prompted:
-   - The script will open the license installer GUI
-   - Follow the on-screen instructions
-   - Press any key to continue after installation
+5. **Both windows launch simultaneously**:
+   - The Sim4Life license installer opens automatically
+   - Git Bash launches in the GOLIAT repository directory with initialization commands already executed
+   - You can install the license while working in Git Bash
 
-6. **Git Bash will launch** in the GOLIAT repository directory, ready for you to run your study manually
+6. **Git Bash is ready to use**: The script automatically runs initialization commands from `start.sh` (pip install, git config, goliat init), so the terminal is ready for immediate use
 
 ## VPN reconnection
 
@@ -120,10 +121,14 @@ Right-click connect_vpn.bat → Run as administrator
 
 The `cloud_setup/` directory contains:
 
-- **`setup_and_run.bat`**: Complete automated setup (template with placeholders)
-- **`connect_vpn.bat`**: VPN reconnection script
-- **`deploy_windows_vm.py`**: Python script for API-based VM deployment
-- **`my_*.bat`** and **`my_*.py`**: Personal copies with real credentials (gitignored)
+- **`setup_and_run.bat`**: Complete automated setup (template with placeholders for open source use)
+- **`my_setup_and_run.bat`**: Personal copy with actual credentials (gitignored)
+- **`connect_vpn.bat`**: VPN reconnection script (template)
+- **`my_connect_vpn.bat`**: Personal VPN script with credentials (gitignored)
+- **`deploy_windows_vm.py`**: Python script for API-based VM deployment (template)
+- **`my_deploy_windows_vm.py`**: Personal deployment script with credentials (gitignored)
+
+The `my_*` versions contain actual credentials and are gitignored. The template versions use placeholders like `YOUR_VPN_USERNAME` for open source distribution.
 
 ## Cost estimation
 
