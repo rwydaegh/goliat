@@ -1,7 +1,8 @@
 """Graph update management component."""
 
-from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Optional
+
+from goliat.gui.components.plots.utils import get_ntp_utc_time
 
 if TYPE_CHECKING:
     from goliat.gui.progress_gui import ProgressGUI
@@ -41,13 +42,13 @@ class GraphManager:
 
         # Update time remaining data
         if eta_sec is not None:
-            current_time = datetime.now(timezone.utc)  # Always use UTC for consistency across VMs
+            current_time = get_ntp_utc_time()  # Use NTP time (bypasses system clock issues)
             hours_remaining = eta_sec / 3600.0
             self.gui.data_manager.write_time_remaining(hours_remaining)
             self.gui.time_remaining_plot.add_data_point(current_time, hours_remaining)
 
         # Update overall progress data
-        current_time = datetime.now(timezone.utc)  # Always use UTC for consistency across VMs
+        current_time = get_ntp_utc_time()  # Use NTP time (bypasses system clock issues)
         self.gui.data_manager.write_overall_progress(progress_percent)
         self.gui.overall_progress_plot.add_data_point(current_time, progress_percent)
 

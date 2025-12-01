@@ -4,7 +4,9 @@ import csv
 import hashlib
 import os
 import time
-from datetime import datetime, timezone
+from datetime import datetime
+
+from goliat.gui.components.plots.utils import get_ntp_utc_time
 from logging import Logger
 from typing import List, Optional
 
@@ -62,7 +64,7 @@ class DataManager:
             value_name: Name of the value for error messages.
         """
         try:
-            current_time = datetime.now(timezone.utc)  # Always use UTC for consistency across VMs
+            current_time = get_ntp_utc_time()  # Use NTP time (bypasses system clock issues)
             with open(file_path, "a", newline="") as f:
                 writer = csv.writer(f)
                 writer.writerow([current_time.isoformat(), value])
@@ -110,7 +112,7 @@ class DataManager:
             gpu_vram_percent: GPU VRAM utilization percentage (0-100), or None if unavailable.
         """
         try:
-            current_time = datetime.now(timezone.utc)  # Always use UTC for consistency across VMs
+            current_time = get_ntp_utc_time()  # Use NTP time (bypasses system clock issues)
             with open(self.system_utilization_file, "a", newline="") as f:
                 writer = csv.writer(f)
                 writer.writerow(

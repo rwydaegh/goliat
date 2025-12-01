@@ -1,8 +1,8 @@
 """System utilization management component."""
 
-from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Optional
 
+from goliat.gui.components.plots.utils import get_ntp_utc_time
 from goliat.gui.components.system_monitor import SystemMonitor
 
 if TYPE_CHECKING:
@@ -88,7 +88,7 @@ class UtilizationManager:
         Called less frequently (every 2 seconds) to avoid excessive plot updates.
         Writes to CSV and adds data point to plot.
         """
-        current_time = datetime.now(timezone.utc)  # Always use UTC for consistency across VMs
+        current_time = get_ntp_utc_time()  # Use NTP time (bypasses system clock issues)
 
         # Write to CSV (includes RAM and GPU VRAM)
         try:
