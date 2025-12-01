@@ -140,8 +140,6 @@ class MaterialSetup(BaseSetup):
             antenna_components: Dict mapping component names to entities.
         """
         CHANGE_MATERIAL = True
-        if CHANGE_MATERIAL:
-            CHANGE_MATERIAL = False
 
         antenna_config = self.antenna.get_config_for_frequency()
         material_mappings = antenna_config.get("materials", {})
@@ -157,22 +155,24 @@ class MaterialSetup(BaseSetup):
                 excitation_type_lower = excitation_type.lower() if isinstance(excitation_type, str) else "harmonic"
 
                 if "Copper" in mat_name and excitation_type_lower == "gaussian":
-                    material_settings.Type = "PEC"
-                    self.simulation.Add(material_settings, [entity])
-                    self._log("\n" + "=" * 80, log_type="warning")
-                    self._log(
-                        f"  WARNING: Forcing material for '{comp_name}' to PEC.",
-                        log_type="warning",
-                    )
-                    self._log(
-                        "           This is a required workaround because Sim4Life does not yet support",
-                        log_type="warning",
-                    )
-                    self._log(
-                        "           Gaussian excitation with dispersive materials like Copper.",
-                        log_type="warning",
-                    )
-                    self._log("=" * 80 + "\n", log_type="warning")
+                    if CHANGE_MATERIAL:
+                        material_settings.Type = "PEC"
+                        self.simulation.Add(material_settings, [entity])
+                        self._log("\n" + "=" * 80, log_type="warning")
+                        self._log(
+                            f"  WARNING: Forcing material for '{comp_name}' to PEC.",
+                            log_type="warning",
+                        )
+                        self._log(
+                            "           This is a required workaround because Sim4Life does not yet support",
+                            log_type="warning",
+                        )
+                        self._log(
+                            "           Gaussian excitation with dispersive materials like Copper.",
+                            log_type="warning",
+                        )
+                        self._log("=" * 80 + "\n", log_type="warning")
+                    CHANGE_MATERIAL = False
                 elif mat_name.lower() == "pec":
                     material_settings.Type = "PEC"
                     self.simulation.Add(material_settings, [entity])
