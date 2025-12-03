@@ -26,6 +26,11 @@ analysis/sensitivity_analysis/plots/
 # Data
 data/
 !data/material_name_mapping.json
+!data/detuning_0.json
+!data/detuning_10.json
+!data/detuning_20.json
+!data/detuning_40.json
+!data/detuning_80.json
 
 # Logs
 logs/
@@ -50,6 +55,11 @@ configs/*
 !configs/analysis.json
 !configs/nf_h_d_f*.json
 !configs/nf_l_d_f*.json
+!configs/detuning_0.json
+!configs/detuning_10.json
+!configs/detuning_20.json
+!configs/detuning_40.json
+!configs/detuning_80.json
 
 # Generated files
 *.csv
