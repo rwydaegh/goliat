@@ -68,8 +68,8 @@ class Config:
 
         # Load detuning config if enabled
         self.detuning_data = None
-        self.detuning_enabled = self.config["detuning_enabled"] or False
-        self.detuning_write_during_calibration = self.config["detuning_write_during_calibration"] or False
+        self.detuning_enabled = self.config.get("detuning_enabled", "") or False
+        self.detuning_write_during_calibration = self.config.get("detuning_write_during_calibration", "") or False
 
         if self.detuning_enabled:
             # Validate study type
