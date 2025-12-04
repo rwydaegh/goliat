@@ -38,8 +38,9 @@ class WebGUIBridge(LoggingMixin):
         self.internal_queue: Queue = Queue()
         self.running = False
         self.thread: Optional[threading.Thread] = None
-        # Use the main verbose logger so messages appear in log files
+        # Use the main loggers so messages appear in log files
         self.verbose_logger = logging.getLogger("verbose")
+        self.progress_logger = logging.getLogger("progress")
         self.is_connected = False
         self.last_heartbeat_success = False
         self.connection_callback: Optional[Callable[[bool], None]] = None
