@@ -27,7 +27,7 @@
     "simulation_time_multiplier": 3.5,
     "number_of_point_sensors": 2
   },
-  "detuning_config": "../data/detuning_10.json",
+  "detuning_config": "../data/detuning_-80.json",
   "detuning_enabled": true,
   "detuning_write_during_calibration": false,
   "gridding_parameters": {

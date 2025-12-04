@@ -69,21 +69,18 @@
     }
   },
   "placement_scenarios": {
-    "by_cheek": {
+    "front_of_eyes": {
       "bounding_box": "whole_body",
       "positions": {
-        "tragus": [0, 0, 0]
+        "center": [0, 0, -40]
       },
       "orientations": {
-        "cheek_base": [{
-          "rotate_phantom_to_cheek": true,
-          "angle_offset_deg": 0
-        }]
+        "vertical": []
       },
       "antenna_reference": {
         "distance_from_top": 10
       },
-      "phantom_reference": "tragus"
+      "phantom_reference": "nasion"
     }
   },
   "phantom_definitions": {
@@ -97,8 +94,8 @@
       "belly_button": [-5, 0, -140],
       "nasion": [-1, 0, 0],
       "placements": {
-        "do_by_cheek": true,
-        "distance_from_cheek": 8
+        "do_front_of_eyes": true,
+        "distance_from_eye": 200
       }
     }
   }
