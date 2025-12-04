@@ -36,7 +36,7 @@
       "manual_fallback_max_step_mm": 3.0
     },
     "global_gridding_per_frequency": {
-      "700": 2.5
+      "1450": 2.5
     },
     "padding": {
       "padding_mode": "manual",
@@ -45,25 +45,25 @@
     }
   },
   "antenna_config": {
-    "700": {
-      "center_frequency": 700,
-      "target_power_mW": 267,
-      "model_type": "PIFA",
-      "source_name": "Lines 1",
+    "1450": {
+      "center_frequency": 1450,
+      "target_power_mW": 106,
+      "model_type": "IFA",
+      "source_name": "Feed",
       "materials": {
-        "Extrude 1": "Copper",
-        "component1:Battery": "Copper",
-        "component1:Patch": "Copper",
-        "component1:ShortingPin": "Copper",
-        "component1:Substrate": "Rogers RT/duroid 5880"
+        "Antenna": "Copper",
+        "Battery": "Copper",
+        "Ground": "Copper"
       },
       "gridding": {
-        "automatic": ["component1:Substrate", "Lines 1"],
-        "subgridding": {
-          "components": ["component1:Battery", "component1:Patch", "Extrude 1", "component1:ShortingPin"],
-          "SubGridMode": "Box",
-          "SubGridLevel": "x9",
-          "AutoRefinement": "AutoRefinementVeryFine"
+        "automatic": ["Feed"],
+        "manual": {
+          "group1": ["Antenna"],
+          "group2": ["Battery", "Ground"]
+        },
+        "manual_grid_step": {
+          "group1": [0.1, 0.1, 0.1],
+          "group2": [0.3, 1, 1]
         }
       }
     }
