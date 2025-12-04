@@ -77,7 +77,7 @@ class Config:
             if study_type == "far_field":
                 raise ValueError("Detuning feature is only supported for near_field studies, not far_field")
 
-            detuning_config_path = self.config["detuning_config"]
+            detuning_config_path = self.config.get("detuning_config", "")
             if detuning_config_path:
                 resolved_path = self._resolve_path_relative_to_config(self.config_path, detuning_config_path)
                 self.detuning_data = self._load_detuning_config(resolved_path)
@@ -87,7 +87,7 @@ class Config:
                 logging.getLogger("progress").warning(
                     "detuning_enabled is true but detuning_config not specified. Detuning will default to 0.", extra={"log_type": "warning"}
                 )
-        elif self.config["detuning_config"]:
+        elif self.config.get("detuning_config", ""):
             # Only warn if config provided but both enabled and write are false
             # If write_during_calibration is true, we're in calibration mode (writing), so no warning needed
             if not self.detuning_write_during_calibration:
