@@ -19,17 +19,19 @@ class WebBridgeManager:
     bridge lifecycle. Keeps web bridge code exactly as is per requirements.
     """
 
-    def __init__(self, gui: "ProgressGUI", server_url: str, machine_id: Optional[str]) -> None:
+    def __init__(self, gui: "ProgressGUI", server_url: str, machine_id: Optional[str], use_web: bool = True) -> None:
         """Initializes web bridge manager.
 
         Args:
             gui: ProgressGUI instance.
             server_url: Web dashboard server URL.
             machine_id: Machine ID for identification.
+            use_web: Whether to enable web bridge (default: True).
         """
         self.gui = gui
         self.server_url = server_url
         self.machine_id = machine_id
+        self.use_web = use_web
         self.web_bridge: Optional[Any] = None
         self.screenshot_timer: Optional[Any] = None
         self.screenshot_capture: Optional[Any] = None
@@ -40,6 +42,12 @@ class WebBridgeManager:
         Sets up connection to web dashboard, collects system info, and starts
         the bridge. Handles errors gracefully to allow GUI to continue without web monitoring.
         """
+        if not self.use_web:
+            # Web bridge disabled via config
+            if hasattr(self.gui, "error_counter_label") and hasattr(self.gui, "status_manager"):
+                self.gui._update_web_status(False)
+            return
+
         if self.machine_id:
             try:
                 from goliat.utils.gui_bridge import WebGUIBridge
