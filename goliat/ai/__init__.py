@@ -16,12 +16,20 @@ Quick start:
 """
 
 from .assistant import GOLIATAssistant, get_assistant
+from .config import AIConfig, get_default_config, set_default_config
 from .error_advisor import ErrorAdvisor, diagnose_on_error, setup_log_monitoring
+from .types import BackendType, ComplexityType, SeverityType
 
 __all__ = [
     "GOLIATAssistant",
     "get_assistant",
+    "AIConfig",
+    "get_default_config",
+    "set_default_config",
     "ErrorAdvisor",
     "diagnose_on_error",
     "setup_log_monitoring",
+    "BackendType",
+    "ComplexityType",
+    "SeverityType",
 ]

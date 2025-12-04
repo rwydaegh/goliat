@@ -120,9 +120,9 @@ class GOLIATAssistant:
         # Short queries are usually simple lookups
         # Long queries usually need more reasoning
         word_count = len(query.split())
-        if word_count <= 10:
+        if word_count <= self.config.query_classification.simple_word_threshold:
             return "simple"
-        elif word_count >= 25:
+        elif word_count >= self.config.query_classification.complex_word_threshold:
             return "complex"
 
         # Default to simple for cost efficiency
@@ -207,7 +207,7 @@ class GOLIATAssistant:
             pricing[model] = pricing[model].copy()
 
         # Try to load from config file
-        config_path = os.path.join(self.base_dir, "data", ".goliat_pricing.json")
+        config_path = os.path.join(self.base_dir, self.config.indexing.pricing_config_file)
         if os.path.exists(config_path):
             try:
                 with open(config_path, encoding="utf-8") as f:
@@ -290,7 +290,7 @@ class GOLIATAssistant:
         if self._index_ready:
             return
 
-        cache_path = os.path.join(self.base_dir, "data", ".goliat_ai_cache.json")
+        cache_path = os.path.join(self.base_dir, self.config.indexing.cache_file)
         current_hash = self._compute_codebase_hash()
 
         # Check if cached index exists and can be loaded
@@ -375,15 +375,16 @@ class GOLIATAssistant:
                     break
                 except Exception as e:
                     error_str = str(e)
-                    if "rate_limit" in error_str.lower() or "429" in error_str:
-                        wait_time = (attempt + 1) * 2
+                    rate_limit_code = str(self.config.processing.rate_limit_status_code)
+                    if "rate_limit" in error_str.lower() or rate_limit_code in error_str:
+                        wait_time = (attempt + 1) * self.config.processing.rate_limit_wait_multiplier
                         if attempt < self.config.processing.max_retries - 1:
                             time.sleep(wait_time)
                             continue
                     print(f"  Warning: Embedding batch failed: {e}")
                     break
 
-            if (i + batch_size) % 100 == 0:
+            if (i + batch_size) % self.config.processing.progress_print_interval == 0:
                 print(f"  Processed {min(i + batch_size, len(chunks))}/{len(chunks)}")
 
     def _compute_codebase_hash(self) -> str:
@@ -401,46 +402,40 @@ class GOLIATAssistant:
         return hasher.hexdigest()[: self.config.processing.hash_length]
 
     def _collect_files_for_indexing(self) -> list[str]:
-        """Collect all files to index."""
+        """Collect all files to index based on configuration."""
         files = []
+        exclude_dirs_set = set(self.config.indexing.exclude_dirs)
 
-        # Python files in goliat/
-        goliat_dir = os.path.join(self.base_dir, "goliat")
-        if os.path.exists(goliat_dir):
-            for root, _, filenames in os.walk(goliat_dir):
-                if "__pycache__" in root or ".git" in root:
+        # Process configured directories
+        for dir_name in self.config.indexing.index_directories:
+            dir_path = os.path.join(self.base_dir, dir_name)
+            if not os.path.exists(dir_path):
+                continue
+
+            for root, _, filenames in os.walk(dir_path):
+                # Skip excluded directories
+                if any(excluded in root for excluded in exclude_dirs_set):
                     continue
-                for filename in filenames:
-                    if filename.endswith(".py"):
-                        files.append(os.path.join(root, filename))
 
-        # Python files in cli/
-        cli_dir = os.path.join(self.base_dir, "cli")
-        if os.path.exists(cli_dir):
-            for root, _, filenames in os.walk(cli_dir):
-                if "__pycache__" in root:
-                    continue
                 for filename in filenames:
-                    if filename.endswith(".py"):
-                        files.append(os.path.join(root, filename))
+                    file_path = os.path.join(root, filename)
 
-        # Markdown docs
-        docs_dir = os.path.join(self.base_dir, "docs")
-        if os.path.exists(docs_dir):
-            for root, _, filenames in os.walk(docs_dir):
-                for filename in filenames:
-                    if filename.endswith(".md"):
-                        files.append(os.path.join(root, filename))
+                    # Check Python patterns
+                    if any(filename.endswith(pattern.replace("*", "")) for pattern in self.config.indexing.python_patterns):
+                        files.append(file_path)
+                    # Check Markdown patterns
+                    elif any(filename.endswith(pattern.replace("*", "")) for pattern in self.config.indexing.markdown_patterns):
+                        files.append(file_path)
 
-        # Config examples
+        # Add specific config files
         configs_dir = os.path.join(self.base_dir, "configs")
         if os.path.exists(configs_dir):
-            for filename in ["base_config.json", "near_field_config.json", "far_field_config.json"]:
+            for filename in self.config.indexing.config_files:
                 path = os.path.join(configs_dir, filename)
                 if os.path.exists(path):
                     files.append(path)
 
-        # README
+        # Add README if it exists
         readme = os.path.join(self.base_dir, "README.md")
         if os.path.exists(readme):
             files.append(readme)
