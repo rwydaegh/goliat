@@ -184,6 +184,14 @@ class WebBridgeManager:
         Args:
             error: Whether study finished with errors.
         """
+        # Stop screenshot timer first to prevent new screenshots from being queued
+        if self.screenshot_timer is not None:
+            try:
+                self.screenshot_timer.stop()
+            except Exception as e:
+                if hasattr(self.gui, "verbose_logger"):
+                    self.gui.verbose_logger.warning(f"Error stopping screenshot timer: {e}")
+
         if self.web_bridge is not None:
             try:
                 import time
