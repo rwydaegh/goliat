@@ -22,7 +22,7 @@ site/
 analysis/cpw/data/
 analysis/cpw/plots/
 analysis/sensitivity_analysis/plots/
-resultsdetuning/
+resultsdetuning_*/
 
 # Data
 data/

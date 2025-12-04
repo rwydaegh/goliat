@@ -196,9 +196,17 @@ class WebBridgeManager:
             try:
                 import time
 
+                # Check if bridge is still running before sending messages
+                if not self.web_bridge.running:
+                    # Bridge already stopped, just ensure screenshot timer is stopped
+                    return
+
                 # Send multiple 100% progress updates with delays to ensure cloud receives them
                 # Cloud is often lagging behind, so we send updates multiple times
                 for i in range(5):  # Send 5 times to ensure at least one gets through
+                    # Check if bridge is still running before each enqueue
+                    if not self.web_bridge.running:
+                        break
                     self.web_bridge.enqueue({"type": "overall_progress", "current": 100, "total": 100})
                     # Also send stage progress at 100% if we have a stage name
                     if hasattr(self.gui, "stage_label"):
@@ -208,13 +216,16 @@ class WebBridgeManager:
                     if i < 4:  # Don't sleep after the last iteration
                         time.sleep(0.5)  # 500ms delay between updates
 
-                # Send finished message
-                self.web_bridge.enqueue(
-                    {"type": "finished", "message": "Study finished successfully" if not error else "Study finished with errors"}
-                )
+                # Send finished message only if bridge is still running
+                if self.web_bridge.running:
+                    self.web_bridge.enqueue(
+                        {"type": "finished", "message": "Study finished successfully" if not error else "Study finished with errors"}
+                    )
 
-                # Wait longer for final messages to send (cloud might be processing previous updates)
-                time.sleep(3)  # Increased from 1s to 3s to give cloud more time
+                    # Wait longer for final messages to send (cloud might be processing previous updates)
+                    time.sleep(3)  # Increased from 1s to 3s to give cloud more time
+
+                # Stop the bridge (safe to call even if already stopped)
                 self.web_bridge.stop()
             except Exception as e:
                 if hasattr(self.gui, "verbose_logger"):
