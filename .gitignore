@@ -22,15 +22,12 @@ site/
 analysis/cpw/data/
 analysis/cpw/plots/
 analysis/sensitivity_analysis/plots/
+resultsdetuning/
 
 # Data
 data/
 !data/material_name_mapping.json
-!data/detuning_0.json
-!data/detuning_10.json
-!data/detuning_20.json
-!data/detuning_40.json
-!data/detuning_80.json
+!data/detuning*.json
 
 # Logs
 logs/
@@ -55,11 +52,7 @@ configs/*
 !configs/analysis.json
 !configs/nf_h_d_f*.json
 !configs/nf_l_d_f*.json
-!configs/detuning_0.json
-!configs/detuning_10.json
-!configs/detuning_20.json
-!configs/detuning_40.json
-!configs/detuning_80.json
+!configs/detuning*.json
 
 # Generated files
 *.csv
