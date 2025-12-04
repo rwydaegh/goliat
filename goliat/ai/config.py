@@ -37,6 +37,7 @@ class LLMConfig:
     temperature_simple: float = 0.2
     temperature_complex: float = 0.1
     max_output_tokens: int = 4000
+    temperature_default_gpt5: float = 1.0  # GPT-5 only supports default temperature
 
 
 @dataclass
@@ -47,6 +48,13 @@ class ProcessingConfig:
     max_retries: int = 3
     chat_history_messages: int = 6
     hash_length: int = 16
+
+    # Rate limiting and retry behavior
+    rate_limit_wait_multiplier: int = 2  # Wait time = (attempt + 1) * multiplier seconds
+    rate_limit_status_code: int = 429  # HTTP status code for rate limits
+
+    # Progress reporting
+    progress_print_interval: int = 100  # Print progress every N chunks
 
 
 @dataclass
@@ -68,6 +76,10 @@ class PricingConfig:
 @dataclass
 class QueryClassificationConfig:
     """Configuration for query complexity classification."""
+
+    # Word count thresholds for auto-classification
+    simple_word_threshold: int = 10  # Queries with <= this many words are simple
+    complex_word_threshold: int = 25  # Queries with >= this many words are complex
 
     complex_indicators: list[str] = field(
         default_factory=lambda: [
@@ -160,6 +172,28 @@ class ErrorAdvisorConfig:
 
 
 @dataclass
+class IndexingConfig:
+    """Configuration for codebase indexing."""
+
+    # Directories to index
+    index_directories: list[str] = field(default_factory=lambda: ["goliat", "cli", "docs", "configs"])
+
+    # File patterns to include
+    python_patterns: list[str] = field(default_factory=lambda: ["*.py"])
+    markdown_patterns: list[str] = field(default_factory=lambda: ["*.md"])
+    config_files: list[str] = field(default_factory=lambda: ["base_config.json", "near_field_config.json", "far_field_config.json"])
+
+    # Directories/files to exclude
+    exclude_dirs: list[str] = field(default_factory=lambda: ["__pycache__", ".git"])
+
+    # Cache file location (relative to base_dir)
+    cache_file: str = "data/.goliat_ai_cache.json"
+
+    # Pricing config file location (relative to base_dir)
+    pricing_config_file: str = "data/.goliat_pricing.json"
+
+
+@dataclass
 class AIConfig:
     """Main configuration class for GOLIAT AI module.
 
@@ -175,6 +209,7 @@ class AIConfig:
     pricing: PricingConfig = field(default_factory=PricingConfig)
     query_classification: QueryClassificationConfig = field(default_factory=QueryClassificationConfig)
     error_advisor: ErrorAdvisorConfig = field(default_factory=ErrorAdvisorConfig)
+    indexing: IndexingConfig = field(default_factory=IndexingConfig)
 
     system_prompt: str = """You are an expert assistant for GOLIAT, a Python framework for
 electromagnetic field (EMF) dosimetry simulations using Sim4Life.
@@ -251,9 +286,13 @@ You have access to relevant code snippets from the GOLIAT codebase."""
         if "query_classification" in data:
             qc_data = data["query_classification"]
             config.query_classification = QueryClassificationConfig(
+                simple_word_threshold=qc_data.get("simple_word_threshold", 10),
+                complex_word_threshold=qc_data.get("complex_word_threshold", 25),
                 complex_indicators=qc_data.get("complex_indicators", []),
                 simple_indicators=qc_data.get("simple_indicators", []),
             )
+        if "indexing" in data:
+            config.indexing = IndexingConfig(**data["indexing"])
         if "error_advisor" in data:
             config.error_advisor = ErrorAdvisorConfig(**data["error_advisor"])
         if "system_prompt" in data:
@@ -292,8 +331,19 @@ You have access to relevant code snippets from the GOLIAT codebase."""
             },
             "pricing": {"models": self.pricing.models},
             "query_classification": {
+                "simple_word_threshold": self.query_classification.simple_word_threshold,
+                "complex_word_threshold": self.query_classification.complex_word_threshold,
                 "complex_indicators": self.query_classification.complex_indicators,
                 "simple_indicators": self.query_classification.simple_indicators,
+            },
+            "indexing": {
+                "index_directories": self.indexing.index_directories,
+                "python_patterns": self.indexing.python_patterns,
+                "markdown_patterns": self.indexing.markdown_patterns,
+                "config_files": self.indexing.config_files,
+                "exclude_dirs": self.indexing.exclude_dirs,
+                "cache_file": self.indexing.cache_file,
+                "pricing_config_file": self.indexing.pricing_config_file,
             },
             "error_advisor": {
                 "default_monitoring_interval_seconds": self.error_advisor.default_monitoring_interval_seconds,
