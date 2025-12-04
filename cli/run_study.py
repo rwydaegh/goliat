@@ -171,7 +171,7 @@ class ConsoleLogger(LoggingMixin):
             # Stage completed
             if stage_name != self.current_stage:
                 self.current_stage = stage_name
-                message = f"✓ {stage_name} Complete"
+                message = f"[OK] {stage_name} Complete"
                 formatted = self._format_box(message, "success")
                 self.progress_logger.info(formatted)
 
