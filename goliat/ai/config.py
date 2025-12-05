@@ -75,76 +75,10 @@ class PricingConfig:
 
 @dataclass
 class QueryClassificationConfig:
-    """Configuration for query complexity classification."""
+    """Configuration for query complexity classification.
 
-    # Word count thresholds for auto-classification
-    simple_word_threshold: int = 10  # Queries with <= this many words are simple
-    complex_word_threshold: int = 25  # Queries with >= this many words are complex
-
-    complex_indicators: list[str] = field(
-        default_factory=lambda: [
-            # Debugging/errors
-            "error",
-            "exception",
-            "traceback",
-            "bug",
-            "fix",
-            "debug",
-            "fails",
-            "broken",
-            "not working",
-            "issue",
-            "problem",
-            # Code tasks
-            "implement",
-            "write code",
-            "create function",
-            "refactor",
-            "optimize",
-            "modify",
-            "change the code",
-            "add feature",
-            # Analysis
-            "explain the code",
-            "how does.*work",
-            "architecture",
-            "design",
-            "why does",
-            "what causes",
-            # Multi-step
-            "step by step",
-            "walkthrough",
-            "guide me",
-            "help me understand",
-        ]
-    )
-
-    simple_indicators: list[str] = field(
-        default_factory=lambda: [
-            # Quick lookups
-            "what is",
-            "where is",
-            "which file",
-            "what file",
-            "list",
-            "show me",
-            "find",
-            # Yes/no questions
-            "does goliat",
-            "can goliat",
-            "is there",
-            "are there",
-            # Simple definitions
-            "define",
-            "meaning of",
-            "what does.*mean",
-            # Config questions
-            "config",
-            "setting",
-            "parameter",
-            "option",
-        ]
-    )
+    Classification is done by AI model itself, not by heuristics.
+    """
 
 
 @dataclass
@@ -154,6 +88,7 @@ class ErrorAdvisorConfig:
     default_monitoring_interval_seconds: int = 60
     thread_join_timeout_seconds: int = 5
     print_separator_length: int = 60
+    max_log_chars: int = 3000
 
     warning_keywords: list[str] = field(
         default_factory=lambda: [
@@ -284,13 +219,8 @@ You have access to relevant code snippets from the GOLIAT codebase."""
         if "pricing" in data:
             config.pricing = PricingConfig(models=data["pricing"].get("models", {}))
         if "query_classification" in data:
-            qc_data = data["query_classification"]
-            config.query_classification = QueryClassificationConfig(
-                simple_word_threshold=qc_data.get("simple_word_threshold", 10),
-                complex_word_threshold=qc_data.get("complex_word_threshold", 25),
-                complex_indicators=qc_data.get("complex_indicators", []),
-                simple_indicators=qc_data.get("simple_indicators", []),
-            )
+            # Query classification config is empty now (AI-based), but keep for backwards compatibility
+            config.query_classification = QueryClassificationConfig()
         if "indexing" in data:
             config.indexing = IndexingConfig(**data["indexing"])
         if "error_advisor" in data:
@@ -330,12 +260,7 @@ You have access to relevant code snippets from the GOLIAT codebase."""
                 "hash_length": self.processing.hash_length,
             },
             "pricing": {"models": self.pricing.models},
-            "query_classification": {
-                "simple_word_threshold": self.query_classification.simple_word_threshold,
-                "complex_word_threshold": self.query_classification.complex_word_threshold,
-                "complex_indicators": self.query_classification.complex_indicators,
-                "simple_indicators": self.query_classification.simple_indicators,
-            },
+            "query_classification": {},
             "indexing": {
                 "index_directories": self.indexing.index_directories,
                 "python_patterns": self.indexing.python_patterns,
@@ -349,6 +274,7 @@ You have access to relevant code snippets from the GOLIAT codebase."""
                 "default_monitoring_interval_seconds": self.error_advisor.default_monitoring_interval_seconds,
                 "thread_join_timeout_seconds": self.error_advisor.thread_join_timeout_seconds,
                 "print_separator_length": self.error_advisor.print_separator_length,
+                "max_log_chars": self.error_advisor.max_log_chars,
                 "warning_keywords": self.error_advisor.warning_keywords,
             },
             "system_prompt": self.system_prompt,

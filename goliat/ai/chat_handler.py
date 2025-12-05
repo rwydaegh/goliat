@@ -60,9 +60,8 @@ class ChatHandler:
                 self._show_cost_summary()
                 continue
 
-            # Select model and show which one is being used
-            model = self.query_processor.select_model(user_input)
-            complexity = self.query_processor.classify_complexity(user_input)
+            # Select model and show which one is being used (single call to avoid duplicate classification)
+            model, complexity = self.query_processor.select_model_with_complexity(user_input)
             print(f"\n[{complexity} query → {model}]")
             print("Assistant: ", end="", flush=True)
 
