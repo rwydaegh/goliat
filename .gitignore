@@ -28,6 +28,7 @@ resultsdetuning_*/
 data/
 !data/material_name_mapping.json
 !data/detuning*.json
+!data/.goliat_pricing.json
 
 # Logs
 logs/
@@ -50,9 +51,9 @@ configs/*
 !configs/near_field_gaussian.json
 !configs/tutorial_*.json
 !configs/analysis.json
-!configs/nf_h_d_f*.json
-!configs/nf_l_d_f*.json
+!configs/nf_*.json
 !configs/detuning*.json
+!configs/ai_config.json
 
 # Generated files
 *.csv

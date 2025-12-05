@@ -202,11 +202,13 @@ class ErrorAdvisor:
 
 # Convenience functions for integration with logging system
 
+_global_advisor: Optional[ErrorAdvisor] = None
+
 
 def get_advisor() -> ErrorAdvisor:
     """Get or create a global ErrorAdvisor instance."""
     global _global_advisor
-    if "_global_advisor" not in globals():
+    if _global_advisor is None:
         _global_advisor = ErrorAdvisor()
     return _global_advisor
 

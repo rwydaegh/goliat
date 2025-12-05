@@ -1,0 +1,95 @@
+{
+  "backend": "openai",
+  "models": {
+    "simple": "gpt-5-mini",
+    "complex": "gpt-5",
+    "embedding": "text-embedding-3-large"
+  },
+  "rag": {
+    "top_k_chunks": 15,
+    "chunk_size": 1500,
+    "chunk_overlap": 300
+  },
+  "llm": {
+    "temperature_simple": 0.2,
+    "temperature_complex": 0.1,
+    "max_output_tokens": 4000
+  },
+  "processing": {
+    "embedding_batch_size": 50,
+    "max_retries": 3,
+    "chat_history_messages": 6,
+    "hash_length": 16
+  },
+  "pricing": {
+    "models": {
+      "gpt-5-mini": {
+        "input": 0.25,
+        "output": 2.0
+      },
+      "gpt-5": {
+        "input": 1.25,
+        "output": 10.0
+      },
+      "gpt-4o-mini": {
+        "input": 0.15,
+        "output": 0.6
+      },
+      "gpt-4o": {
+        "input": 2.5,
+        "output": 10.0
+      },
+      "text-embedding-3-large": {
+        "input": 0.13
+      },
+      "text-embedding-3-small": {
+        "input": 0.02
+      }
+    }
+  },
+  "query_classification": {},
+  "indexing": {
+    "index_directories": [
+      "goliat",
+      "cli",
+      "docs",
+      "configs"
+    ],
+    "python_patterns": [
+      "*.py"
+    ],
+    "markdown_patterns": [
+      "*.md"
+    ],
+    "config_files": [
+      "base_config.json",
+      "near_field_config.json",
+      "far_field_config.json"
+    ],
+    "exclude_dirs": [
+      "__pycache__",
+      ".git"
+    ],
+    "cache_file": "data/.goliat_ai_cache.json",
+    "pricing_config_file": "data/.goliat_pricing.json"
+  },
+  "error_advisor": {
+    "default_monitoring_interval_seconds": 60,
+    "thread_join_timeout_seconds": 5,
+    "print_separator_length": 60,
+    "max_log_chars": 3000,
+    "warning_keywords": [
+      "ERROR",
+      "FATAL",
+      "Exception",
+      "Traceback",
+      "retry attempt",
+      "failed",
+      "timeout",
+      "memory",
+      "convergence",
+      "Power balance"
+    ]
+  },
+  "system_prompt": "You are an expert assistant for GOLIAT, a Python framework for\nelectromagnetic field (EMF) dosimetry simulations using Sim4Life.\n\nGOLIAT automates:\n- Near-field simulations: Device exposure (phones near head/body)\n- Far-field simulations: Environmental plane wave exposure\n- SAR (Specific Absorption Rate) extraction and analysis\n- Paper/report generation with plots\n\nKey concepts you understand:\n- Phantoms: Digital human models (thelonious=6yo boy, eartha=adult female)\n- Placements: by_cheek, front_of_eyes, by_belly\n- Tissue groups: eyes, brain, skin, genitals\n- SAR metrics: head_SAR, trunk_SAR, psSAR10g (peak spatial-average over 10g)\n- Power balance: Energy conservation check (~100% is good)\n- Config inheritance: study configs extend base_config.json\n\nWhen answering:\n1. Reference specific files and line numbers when relevant\n2. Provide code examples when helpful\n3. Explain *why* not just *what*\n4. For errors, suggest specific fixes\n5. Be concise but thorough\n\nYou have access to relevant code snippets from the GOLIAT codebase."
+}

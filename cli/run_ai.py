@@ -476,12 +476,36 @@ def create_debug_html(error_message: str, context: dict, response: str) -> str:
         # Links
         html = re.sub(r"\[([^\]]+)\]\(([^\)]+)\)", r'<a href="\2">\1</a>', html)
 
-        # Step 7: Restore inline code
+        # Step 7: Convert blockquote markers to HTML
+        # Process __BLOCKQUOTE_START__...__BLOCKQUOTE_END__ markers
+        def convert_blockquotes(text):
+            result = []
+            i = 0
+            while i < len(text):
+                start_marker = "__BLOCKQUOTE_START__"
+                end_marker = "__BLOCKQUOTE_END__"
+                start_idx = text.find(start_marker, i)
+                if start_idx == -1:
+                    result.append(text[i:])
+                    break
+                result.append(text[i:start_idx])
+                end_idx = text.find(end_marker, start_idx)
+                if end_idx == -1:
+                    result.append(text[start_idx:])
+                    break
+                quote_content = text[start_idx + len(start_marker) : end_idx]
+                result.append(f"<blockquote>{quote_content}</blockquote>")
+                i = end_idx + len(end_marker)
+            return "".join(result)
+
+        html = convert_blockquotes(html)
+
+        # Step 8: Restore inline code
         for idx, code in enumerate(inline_codes):
             code_content = code[1:-1]  # Remove backticks
             html = html.replace(f"__INLINE_CODE_{idx}__", f"<code>{escape_html(code_content)}</code>")
 
-        # Step 8: Process paragraphs (split by double newlines, but preserve lists, headers, etc.)
+        # Step 9: Process paragraphs (split by double newlines, but preserve lists, headers, etc.)
         def process_paragraphs(text):
             # Split by double newlines, but don't split inside block elements
             parts = re.split(r"\n\n+", text)
@@ -512,7 +536,7 @@ def create_debug_html(error_message: str, context: dict, response: str) -> str:
 
         html = process_paragraphs(html)
 
-        # Step 9: Restore code blocks (with proper formatting)
+        # Step 10: Restore code blocks (with proper formatting)
         for idx, code_block in enumerate(code_blocks):
             match = re.match(r"```(\w+)?\n(.*?)```", code_block, flags=re.DOTALL)
             if match:
@@ -1126,7 +1150,7 @@ Please help diagnose what went wrong based on the provided context."""
     else:  # --auto or default
         model_selection = "auto"
         # Determine model based on query complexity for display
-        complexity = assistant._classify_query_complexity(error_message)
+        complexity = assistant.query_processor.classify_complexity(error_message)
         if complexity == "simple":
             model_name = "gpt-5-mini (auto)"
         else:

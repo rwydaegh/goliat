@@ -81,7 +81,7 @@ class GOLIATAssistant:
         # Initialize components
         self.cost_tracker = CostTracker(self.config, self.base_dir)
         self.indexer = EmbeddingIndexer(self.config, self.base_dir, self.client)
-        self.query_processor = QueryProcessor(self.config)
+        self.query_processor = QueryProcessor(self.config, self.client)
         self.chat_handler = ChatHandler(self.config, self.indexer, self.query_processor, self.cost_tracker, self.client)
 
         # Build or load the index
@@ -150,9 +150,8 @@ class GOLIATAssistant:
         """
         self.indexer.ensure_index()
 
-        # Select model based on query complexity
-        model = self.query_processor.select_model(question, force_complex=force_complex)
-        complexity = self.query_processor.classify_complexity(question)
+        # Select model based on query complexity (single call to avoid duplicate classification)
+        model, complexity = self.query_processor.select_model_with_complexity(question, force_complex=force_complex)
 
         # Search for relevant chunks (cost tracking handled inside)
         relevant_chunks = self.indexer.search(question, cost_tracker=self.cost_tracker)
@@ -275,7 +274,7 @@ If shell context is provided, use it to understand what commands were run and wh
         question = f"""Analyze these GOLIAT logs and identify any issues that need attention:
 
 ```
-{log_output[-3000:]}
+{log_output[-self.config.error_advisor.max_log_chars :]}
 ```
 
 If there are concerning patterns (errors, excessive retries, warnings), explain what's wrong and how to fix it.
