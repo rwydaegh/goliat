@@ -1,4 +1,5 @@
 import os
+import re
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -117,10 +118,16 @@ class PlacementSetup(BaseSetup):
         # Find the "Ground" entity/entities ("PCB" of the phone excl. IFA antenna)
         ground_entities = [e for e in antenna_group.Entities if "Ground" in e.Name or "Substrate" in e.Name]  # type: ignore
 
+        # Normalize antenna group name to use requested frequency (in case fallback file was used)
+        # Replace any frequency in the name with the requested frequency
+        normalized_name = re.sub(r"\d+\s*MHz", f"{self.antenna.frequency_mhz} MHz", antenna_group.Name)
+
         # Rename the entities to include the placement name for uniqueness
-        antenna_group.Name = f"{antenna_group.Name} ({self.placement_name})"
+        antenna_group.Name = f"{normalized_name} ({self.placement_name})"
         if bbox_entity:
-            bbox_entity.Name = f"{bbox_entity.Name} ({self.placement_name})"
+            # Also normalize bounding box name if it contains frequency
+            normalized_bbox_name = re.sub(r"\d+\s*MHz", f"{self.antenna.frequency_mhz} MHz", bbox_entity.Name)
+            bbox_entity.Name = f"{normalized_bbox_name} ({self.placement_name})"
 
         entities_to_transform = [antenna_group, bbox_entity] if bbox_entity else [antenna_group]
 
