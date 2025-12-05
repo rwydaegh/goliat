@@ -70,6 +70,88 @@ def thinking_spinner(message: str = "Thinking"):
         sys.stdout.flush()
 
 
+def print_markdown(text: str) -> None:
+    """Print markdown text with nice formatting.
+
+    Uses `rich` library if available for beautiful rendering,
+    otherwise falls back to basic ANSI formatting.
+
+    Install rich for best results: pip install goliat[ai]
+    """
+    try:
+        from rich.console import Console
+        from rich.markdown import Markdown
+
+        console = Console()
+        console.print(Markdown(text))
+    except ImportError:
+        # Fallback: basic ANSI formatting
+        _print_markdown_simple(text)
+
+
+def _print_markdown_simple(text: str) -> None:
+    """Simple markdown formatter using ANSI codes (fallback when rich not installed)."""
+    # ANSI codes
+    BOLD = "\033[1m"
+    DIM = "\033[2m"
+    UNDERLINE = "\033[4m"
+    CYAN = "\033[36m"
+    GREEN = "\033[32m"
+    RESET = "\033[0m"
+
+    lines = text.split("\n")
+    in_code_block = False
+    code_lang = ""
+
+    for line in lines:
+        # Code blocks
+        if line.startswith("```"):
+            if not in_code_block:
+                in_code_block = True
+                code_lang = line[3:].strip()
+                if code_lang:
+                    print(f"{DIM}[{code_lang}]{RESET}")
+                print(f"{DIM}{'-' * 40}{RESET}")
+            else:
+                in_code_block = False
+                print(f"{DIM}{'-' * 40}{RESET}")
+            continue
+
+        if in_code_block:
+            print(f"{CYAN}  {line}{RESET}")
+            continue
+
+        # Headers
+        if line.startswith("### "):
+            print(f"\n{BOLD}{line[4:]}{RESET}")
+        elif line.startswith("## "):
+            print(f"\n{BOLD}{UNDERLINE}{line[3:]}{RESET}")
+        elif line.startswith("# "):
+            print(f"\n{BOLD}{UNDERLINE}{line[2:]}{RESET}\n")
+        # Bullet points (check before bold to handle bullets with bold)
+        elif line.strip().startswith("- "):
+            indent = len(line) - len(line.lstrip())
+            content = line.strip()[2:]
+            # Handle bold in bullet points
+            content = re.sub(r"\*\*(.+?)\*\*", f"{BOLD}\\1{RESET}", content)
+            # Handle inline code in bullet points
+            content = re.sub(r"`([^`]+)`", f"{CYAN}\\1{RESET}", content)
+            print(f"{' ' * indent}{GREEN}*{RESET} {content}")
+        # Bold
+        elif "**" in line:
+            # Replace **text** with bold
+            formatted = re.sub(r"\*\*(.+?)\*\*", f"{BOLD}\\1{RESET}", line)
+            # Also handle inline code
+            formatted = re.sub(r"`([^`]+)`", f"{CYAN}\\1{RESET}", formatted)
+            print(formatted)
+        # Inline code
+        elif "`" in line and not line.startswith("```"):
+            formatted = re.sub(r"`([^`]+)`", f"{CYAN}\\1{RESET}", line)
+            print(formatted)
+        else:
+            print(line)
+
+
 def _init_assistant():
     """Initialize and return the GOLIAT assistant."""
     try:
@@ -132,7 +214,7 @@ def main_ask():
         print()
         with thinking_spinner("Analyzing"):
             response = assistant.debug(args.debug, log_context, config_context)
-        print(response)
+        print_markdown(response)
         return
 
     # Handle question
@@ -174,7 +256,7 @@ def main_ask():
             response = assistant.ask(args.question, force_complex=force_complex)
         query_time = time.time() - start_time
 
-        print(response)
+        print_markdown(response)
 
         # Show cost and timing
         summary = assistant.get_cost_summary()
@@ -1301,17 +1383,23 @@ Please help diagnose what went wrong based on the provided context."""
             webbrowser.open(f"file://{html_path}")
             print("   (HTML file will remain available after browser closes)")
         else:
-            print(f"\n✅ Debug report saved to: {html_path}")
+            print(f"\nDebug report saved to: {html_path}")
             print("\n" + "=" * 70)
             print("AI Response:")
             print("=" * 70)
-            print(response if response else "(Empty response)")
+            if response:
+                print_markdown(response)
+            else:
+                print("(Empty response)")
     except Exception as e:
-        print(f"\n⚠️  Warning: Could not create HTML report: {e}")
+        print(f"\nWarning: Could not create HTML report: {e}")
         print("\n" + "=" * 70)
         print("AI Response:")
         print("=" * 70)
-        print(response if response else "(Empty response)")
+        if response:
+            print_markdown(response)
+        else:
+            print("(Empty response)")
 
 
 def main():
