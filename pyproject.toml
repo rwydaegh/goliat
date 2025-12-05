@@ -59,6 +59,10 @@ requires-python = ">=3.8"
 version = "1.2.3"
 
 [project.optional-dependencies]
+ai = [
+  "openai>=1.0.0",
+  "rich>=13.0.0",
+]
 docs = [
   "mkdocs",
   "mkdocs-material==9.5.3",
