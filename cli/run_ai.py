@@ -9,8 +9,10 @@ import re
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import webbrowser
+from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 
@@ -21,6 +23,51 @@ SHELL_HISTORY_LINES = 20  # Recent shell commands to capture
 SHELL_HISTORY_FALLBACK = 10  # Fallback if main history fails
 LOG_RECENCY_SECONDS = 3600  # Logs modified within this time (1 hour)
 MAX_LOG_FILES = 3  # Most recent log sessions to include (each session = 2 files: .log + .progress.log)
+SPINNER_FRAMES = ["   ", ".  ", ".. ", "..."]  # Simple dot animation (fixed width)
+SPINNER_INTERVAL = 0.3  # Seconds between frames
+
+
+@contextmanager
+def thinking_spinner(message: str = "Thinking"):
+    """Display a minimal thinking animation while processing.
+
+    Usage:
+        with thinking_spinner("Analyzing"):
+            result = slow_operation()
+    """
+    # Check if we're in an interactive terminal
+    is_tty = sys.stdout.isatty()
+
+    if not is_tty:
+        # Non-interactive: just print static message
+        print(f"{message}...")
+        yield
+        return
+
+    stop_event = threading.Event()
+    current_frame = [0]
+    line_length = len(message) + 4  # message + dots + buffer
+
+    def spin():
+        while not stop_event.is_set():
+            frame = SPINNER_FRAMES[current_frame[0] % len(SPINNER_FRAMES)]
+            # Build fixed-width output, return to start of line
+            sys.stdout.write(f"\r{message}{frame}")
+            sys.stdout.flush()
+            current_frame[0] += 1
+            stop_event.wait(SPINNER_INTERVAL)
+
+    spinner_thread = threading.Thread(target=spin, daemon=True)
+    spinner_thread.start()
+
+    try:
+        yield
+    finally:
+        stop_event.set()
+        spinner_thread.join(timeout=1)
+        # Clear the spinner line completely
+        sys.stdout.write(f"\r{' ' * line_length}\r")
+        sys.stdout.flush()
 
 
 def _init_assistant():
@@ -49,6 +96,11 @@ def main_ask():
     parser.add_argument("--backend", type=str, default="openai", help="AI backend to use (openai).")
     parser.add_argument("--reindex", action="store_true", help="Force rebuild of the codebase index.")
 
+    # Model selection group (mutually exclusive)
+    model_group = parser.add_mutually_exclusive_group()
+    model_group.add_argument("--simple", action="store_true", help="Force simple model (gpt-5-mini).")
+    model_group.add_argument("--complex", action="store_true", help="Force complex model (gpt-5).")
+
     args = parser.parse_args()
 
     assistant = _init_assistant()
@@ -61,8 +113,6 @@ def main_ask():
 
     # Handle debug mode
     if args.debug:
-        print("\n🔍 Analyzing error...\n")
-
         log_context = ""
         if args.logs:
             try:
@@ -79,21 +129,63 @@ def main_ask():
             except Exception as e:
                 print(f"Warning: Could not read config from {args.config}: {e}")
 
-        response = assistant.debug(args.debug, log_context, config_context)
+        print()
+        with thinking_spinner("Analyzing"):
+            response = assistant.debug(args.debug, log_context, config_context)
         print(response)
         return
 
     # Handle question
     if args.question:
-        print("\n🤖 Thinking...\n")
-        response = assistant.ask(args.question)
+        print()
+
+        # Determine model selection mode and classify if auto
+        if args.simple:
+            force_complex = False
+            mode_str = "forced"
+            model_name = assistant.config.models.simple
+            complexity = "simple"
+            classify_time = 0.0
+        elif args.complex:
+            force_complex = True
+            mode_str = "forced"
+            model_name = assistant.config.models.complex
+            complexity = "complex"
+            classify_time = 0.0
+        else:
+            mode_str = "auto"
+            # Classify with timing
+            start_time = time.time()
+            model_name, complexity = assistant.query_processor.select_model_with_complexity(args.question)
+            classify_time = time.time() - start_time
+            # Pass result to avoid re-classification in ask()
+            force_complex = complexity == "complex"
+
+        # Show process info
+        print(f"Mode: {mode_str} | Complexity: {complexity} | Model: {model_name}", end="")
+        if classify_time > 0:
+            print(f" | Classified in {classify_time:.2f}s")
+        else:
+            print()
+
+        # Run the query with spinner
+        start_time = time.time()
+        with thinking_spinner("Thinking"):
+            response = assistant.ask(args.question, force_complex=force_complex)
+        query_time = time.time() - start_time
+
         print(response)
 
-        # Show cost
+        # Show cost and timing
         summary = assistant.get_cost_summary()
         if summary["call_count"] > 0:
-            last_cost = summary["breakdown"][-1]["cost"]
-            print(f"\n[Cost] ${last_cost:.6f} | Total session: ${summary['total_cost']:.6f}")
+            last_call = summary["breakdown"][-1]
+            last_cost = last_call["cost"]
+            tokens_in = last_call.get("input_tokens", 0)
+            tokens_out = last_call.get("output_tokens", 0)
+            print(
+                f"\n[Cost: ${last_cost:.6f} | Tokens: {tokens_in} in / {tokens_out} out | Time: {query_time:.1f}s | Session: ${summary['total_cost']:.6f}]"
+            )
         return
 
     # No arguments
@@ -1159,17 +1251,18 @@ Please help diagnose what went wrong based on the provided context."""
     print("=" * 70 + "\n")
 
     # Show which model will be used
-    print("🤖 Calling AI assistant...")
-    print(f"   Model: {model_name}")
-    print("   This may take 10-30 seconds...\n")
+    print(f"Model: {model_name}\n")
 
-    # Call AI assistant
+    # Call AI assistant with spinner
     try:
-        response = assistant.debug(error_message, context_str, config_context if config_context else "", model_selection=model_selection)
+        with thinking_spinner("Analyzing"):
+            response = assistant.debug(
+                error_message, context_str, config_context if config_context else "", model_selection=model_selection
+            )
 
         # Check for empty response
         if not response or not response.strip():
-            print("⚠️  Warning: AI returned an empty response. This may indicate an API issue.")
+            print("Warning: AI returned an empty response. This may indicate an API issue.")
             response = (
                 "The AI assistant did not provide a response. This could be due to:\n"
                 "- API rate limiting\n"
@@ -1178,7 +1271,7 @@ Please help diagnose what went wrong based on the provided context."""
                 "Please try again or check your API key."
             )
     except Exception as e:
-        print(f"❌ Error calling AI assistant: {e}")
+        print(f"Error calling AI assistant: {e}")
         print("\nTroubleshooting:")
         print("  - Check your OPENAI_API_KEY is set correctly")
         print("  - Verify you have access to gpt-5 models")
