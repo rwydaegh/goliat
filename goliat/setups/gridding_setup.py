@@ -278,11 +278,7 @@ class GriddingSetup(BaseSetup):
 
     def _apply_subgridding(self, subgridding_config: dict, antenna_components: dict, subgridded_components: list):
         """Applies subgridding settings to specified components."""
-        # Exclude source entity from subgridding to avoid excitation overlap errors
-        source_name = self.antenna.get_source_entity_name() if self.antenna else None
-        components_to_subgrid = [
-            antenna_components[name] for name in subgridded_components if name in antenna_components and name != source_name
-        ]
+        components_to_subgrid = [antenna_components[name] for name in subgridded_components if name in antenna_components]
 
         if not components_to_subgrid:
             return
