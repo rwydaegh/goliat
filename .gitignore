@@ -54,6 +54,7 @@ configs/*
 !configs/nf_*.json
 !configs/detuning*.json
 !configs/ai_config.json
+!configs/investigate_detuning_low.json
 
 # Generated files
 *.csv
