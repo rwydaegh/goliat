@@ -53,11 +53,8 @@ configs/*
 !configs/nf_h_d_f*.json
 !configs/nf_l_d_f*.json
 !configs/detuning*.json
-<<<<<<< HEAD
-=======
 !configs/ai_config.json
 !configs/investigate_detuning_low.json
->>>>>>> 9b8447f (Add investigate_detuning_low.json config and update .gitignore)
 
 # Generated files
 *.csv
