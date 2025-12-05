@@ -490,6 +490,13 @@ class NearFieldSetup(BaseSetup):
                     entities_to_bound.append(self.model.AllEntities()[bbox_name])
 
             combined_bbox_min, combined_bbox_max = self.model.GetBoundingBox(entities_to_bound)
+
+            # Expand +Y face for low frequencies with whole_body to avoid subgrid boundary issues
+            if bounding_box_setting == "whole_body" and self.frequency_mhz < 700:
+                expansion_mm = 10.0
+                combined_bbox_max = self.model.Vec3(combined_bbox_max[0], combined_bbox_max[1] + expansion_mm, combined_bbox_max[2])
+                self._log(f"  - Expanded +Y face by {expansion_mm}mm for low frequency ({self.frequency_mhz} MHz)", log_type="info")
+
             sim_bbox = self.XCoreModeling.CreateWireBlock(combined_bbox_min, combined_bbox_max)
             sim_bbox.Name = f"{self.placement_name.lower()}_simulation_bbox"
             self._log(f"  - Combined BBox created for {self.placement_name}.", log_type="info")
