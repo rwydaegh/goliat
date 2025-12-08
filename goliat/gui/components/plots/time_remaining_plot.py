@@ -5,7 +5,7 @@ from typing import List, Tuple
 
 from goliat.constants import PLOT_Y_AXIS_BUFFER_MULTIPLIER
 from ._matplotlib_imports import Figure, FigureCanvas, mdates  # type: ignore
-from .utils import convert_to_utc_plus_one
+from .utils import convert_to_utc_plus_one, validate_timestamp, clean_plot_data
 
 
 class TimeRemainingPlot:
@@ -66,6 +66,13 @@ class TimeRemainingPlot:
             self.max_time_remaining_seen = hours_remaining
         # Convert timestamp to UTC+1
         utc_plus_one_timestamp = convert_to_utc_plus_one(timestamp)
+
+        # Validate timestamp: reject if it's anomalously far from the last timestamp
+        # This prevents spikes from corrupted timestamps (e.g., from NTP cache issues)
+        if self.data and not validate_timestamp(utc_plus_one_timestamp, self.data[-1][0]):
+            # Skip this data point - timestamp is anomalous
+            return
+
         self.data.append((utc_plus_one_timestamp, hours_remaining))
         self._refresh()
 
@@ -76,8 +83,10 @@ class TimeRemainingPlot:
 
         self.ax.clear()
 
-        times = [t for t, _ in self.data]
-        hours = [h for _, h in self.data]
+        # Clean data: sort, deduplicate, and filter anomalies
+        cleaned_data = clean_plot_data(self.data)
+        times = [t for t, _ in cleaned_data]
+        hours = [h for _, h in cleaned_data]
 
         # Determine if we should display in minutes (if max y-axis value < 1 hour)
         y_max = self.max_time_remaining_seen * PLOT_Y_AXIS_BUFFER_MULTIPLIER

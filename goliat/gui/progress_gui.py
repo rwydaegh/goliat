@@ -361,8 +361,10 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
 
         # Instead of auto-closing, show a message that user can close the window
         if not error:
+            self.progress_logger.info("All done! You may close this window now.", extra={"log_type": "success"})
             self.update_status("\n✓ All done! You may close this window now.", log_type="success")
         else:
+            self.progress_logger.info("Finished with errors. You may close this window now.", extra={"log_type": "warning"})
             self.update_status("\n✓ Finished with errors. You may close this window now.", log_type="warning")
 
     def closeEvent(self, event: Any) -> None:

@@ -4,7 +4,7 @@ from datetime import datetime, timezone, timedelta
 from typing import List, Tuple
 
 from ._matplotlib_imports import Figure, FigureCanvas, mdates  # type: ignore
-from .utils import convert_to_utc_plus_one
+from .utils import convert_to_utc_plus_one, validate_timestamp, clean_plot_data
 
 
 class OverallProgressPlot:
@@ -65,6 +65,13 @@ class OverallProgressPlot:
             self.max_progress_seen = progress_percent
         # Convert timestamp to UTC+1
         utc_plus_one_timestamp = convert_to_utc_plus_one(timestamp)
+
+        # Validate timestamp: reject if it's anomalously far from the last timestamp
+        # This prevents spikes from corrupted timestamps (e.g., from NTP cache issues)
+        if self.data and not validate_timestamp(utc_plus_one_timestamp, self.data[-1][0]):
+            # Skip this data point - timestamp is anomalous
+            return
+
         self.data.append((utc_plus_one_timestamp, progress_percent))
         self._refresh()
 
@@ -75,8 +82,10 @@ class OverallProgressPlot:
 
         self.ax.clear()
 
-        times = [t for t, _ in self.data]
-        progress = [p for _, p in self.data]
+        # Clean data: sort, deduplicate, and filter anomalies
+        cleaned_data = clean_plot_data(self.data)
+        times = [t for t, _ in cleaned_data]
+        progress = [p for _, p in cleaned_data]
 
         self.ax.plot(times, progress, "-", color="#28a745", linewidth=2.5, label="Overall Progress")  # type: ignore[arg-type]
 
