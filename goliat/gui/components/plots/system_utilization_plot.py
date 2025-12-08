@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Tuple
 
 from ._matplotlib_imports import Figure, FigureCanvas, mdates  # type: ignore
-from .utils import convert_to_utc_plus_one
+from .utils import convert_to_utc_plus_one, validate_timestamp, clean_plot_data
 
 
 class SystemUtilizationPlot:
@@ -105,6 +105,12 @@ class SystemUtilizationPlot:
         # Convert timestamp to UTC+1
         utc_plus_one_timestamp = convert_to_utc_plus_one(timestamp)
 
+        # Validate timestamp: reject if it's anomalously far from the last timestamp
+        # This prevents spikes from corrupted timestamps (e.g., from NTP cache issues)
+        if self.cpu_data and not validate_timestamp(utc_plus_one_timestamp, self.cpu_data[-1][0]):
+            # Skip this data point - timestamp is anomalous
+            return
+
         self.cpu_data.append((utc_plus_one_timestamp, cpu_percent))
         self.ram_data.append((utc_plus_one_timestamp, ram_percent))
 
@@ -125,18 +131,24 @@ class SystemUtilizationPlot:
 
         self.ax.clear()
 
-        # Extract times and values
-        times = [t for t, _ in self.cpu_data]
-        cpu_values = [v for _, v in self.cpu_data]
-        ram_values = [v for _, v in self.ram_data]
+        # Clean all data: sort, deduplicate, and filter anomalies
+        sorted_cpu_data = clean_plot_data(self.cpu_data)
+        sorted_ram_data = clean_plot_data(self.ram_data)
 
-        # Filter GPU data to only include non-None values (data points are aligned)
-        gpu_times_and_values = [(t, v) for (t, v) in self.gpu_data if v is not None]
+        # Filter GPU data to only include non-None values, then clean
+        gpu_times_and_values: List[Tuple[datetime, float]] = [(t, v) for (t, v) in self.gpu_data if v is not None]
+        gpu_times_and_values = clean_plot_data(gpu_times_and_values)
+
+        # Filter GPU VRAM data, then clean
+        gpu_vram_times_and_values: List[Tuple[datetime, float]] = [(t, v) for (t, v) in self.gpu_vram_data if v is not None]
+        gpu_vram_times_and_values = clean_plot_data(gpu_vram_times_and_values)
+
+        # Extract times and values
+        times = [t for t, _ in sorted_cpu_data]
+        cpu_values = [v for _, v in sorted_cpu_data]
+        ram_values = [v for _, v in sorted_ram_data]
         gpu_times = [t for t, _ in gpu_times_and_values]
         gpu_values = [v for _, v in gpu_times_and_values]
-
-        # Filter GPU VRAM data
-        gpu_vram_times_and_values = [(t, v) for (t, v) in self.gpu_vram_data if v is not None]
         gpu_vram_times = [t for t, _ in gpu_vram_times_and_values]
         gpu_vram_values = [v for _, v in gpu_vram_times_and_values]
 

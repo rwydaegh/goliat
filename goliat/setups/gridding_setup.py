@@ -243,7 +243,13 @@ class GriddingSetup(BaseSetup):
         """Sets up automatic gridding for antenna components."""
         automatic_components = [antenna_components[name] for name in gridding_config.get("automatic", []) if name in antenna_components]
         if automatic_components:
-            self.simulation.AddAutomaticGridSettings(automatic_components)
+            added_grid_settings = self.simulation.AddAutomaticGridSettings(automatic_components)
+            # Store the grid settings object for potential subgridding use
+            # If it doesn't have the "Automatic" name, rename it so subgridding can find it
+            if added_grid_settings and added_grid_settings.Name != "Automatic":
+                added_grid_settings.Name = "Automatic"
+            return added_grid_settings
+        return None
 
     def _setup_manual_component_grids(self, gridding_config: dict, antenna_components: dict, subgridded_components: list):
         """Sets up manual gridding for antenna components."""
@@ -276,7 +282,9 @@ class GriddingSetup(BaseSetup):
                     self.units.MilliMeters,
                 )
 
-    def _apply_subgridding(self, subgridding_config: dict, antenna_components: dict, subgridded_components: list):
+    def _apply_subgridding(
+        self, subgridding_config: dict, antenna_components: dict, subgridded_components: list, automatic_grid_settings_obj=None
+    ):
         """Applies subgridding settings to specified components."""
         components_to_subgrid = [antenna_components[name] for name in subgridded_components if name in antenna_components]
 
@@ -286,10 +294,28 @@ class GriddingSetup(BaseSetup):
         import s4l_v1.simulation.emfdtd as emfdtd
 
         self._log("  - Applying subgridding settings...", log_type="info")
-        automatic_grid_settings = next(
-            (x for x in self.simulation.AllSettings if isinstance(x, emfdtd.AutomaticGridSettings) and x.Name == "Automatic"),
-            None,
-        )
+
+        # First try to use the provided grid settings object
+        if automatic_grid_settings_obj:
+            automatic_grid_settings = automatic_grid_settings_obj
+        else:
+            # Fallback: search for "Automatic" named grid settings
+            automatic_grid_settings = next(
+                (x for x in self.simulation.AllSettings if isinstance(x, emfdtd.AutomaticGridSettings) and x.Name == "Automatic"),
+                None,
+            )
+
+        # If still not found, try to find ANY AutomaticGridSettings object
+        if not automatic_grid_settings:
+            automatic_grid_settings = next(
+                (x for x in self.simulation.AllSettings if isinstance(x, emfdtd.AutomaticGridSettings)),
+                None,
+            )
+            if automatic_grid_settings:
+                self._log(
+                    f"  - Found AutomaticGridSettings with name '{automatic_grid_settings.Name}', using it for subgridding.",
+                    log_type="verbose",
+                )
 
         if automatic_grid_settings:
             self.simulation.Add(automatic_grid_settings, components_to_subgrid)
@@ -322,8 +348,8 @@ class GriddingSetup(BaseSetup):
         antenna_config = self.antenna.get_config_for_frequency()
         gridding_config = antenna_config.get("gridding")
         if gridding_config:
-            # Automatic settings
-            self._setup_automatic_component_grids(gridding_config, antenna_components)
+            # Automatic settings - capture the returned grid settings object
+            automatic_grid_settings_obj = self._setup_automatic_component_grids(gridding_config, antenna_components)
 
             # Subgridding settings
             subgridding_config = gridding_config.get("subgridding", {})
@@ -332,9 +358,9 @@ class GriddingSetup(BaseSetup):
             # Manual settings
             self._setup_manual_component_grids(gridding_config, antenna_components, subgridded_components)
 
-            # Apply Subgridding settings
+            # Apply Subgridding settings - pass the grid settings object if we have it
             if subgridding_config:
-                self._apply_subgridding(subgridding_config, antenna_components, subgridded_components)
+                self._apply_subgridding(subgridding_config, antenna_components, subgridded_components, automatic_grid_settings_obj)
         else:
             source_entity = antenna_components[self.antenna.get_source_entity_name()]
             self.simulation.AddAutomaticGridSettings([source_entity])
