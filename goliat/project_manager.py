@@ -183,19 +183,31 @@ class ProjectManager(LoggingMixin):
         return True
 
     def _check_auto_cleanup_scenario(self, extract_done: bool) -> bool:
-        """Checks if run phase should be considered done due to auto-cleanup.
+        """Checks if run phase should be considered done due to auto-cleanup or trust setting.
 
         If auto_cleanup_previous_results includes "output" and extract deliverables exist,
         run phase is considered done even if _Output.h5 is missing (it was intentionally deleted).
+
+        Also respects 'trust_existing_extract' setting which forces trusting extract results
+        when _Output.h5 is missing (useful for one-off skips without changing auto_cleanup).
 
         Args:
             extract_done: Whether extract phase is complete.
 
         Returns:
-            True if auto-cleanup scenario applies, False otherwise.
+            True if auto-cleanup scenario applies or trust setting is enabled, False otherwise.
         """
         if not extract_done:
             return False
+
+        # Check for trust_existing_extract setting (one-off override)
+        trust_extract = self.config["execution_control.trust_existing_extract"] or False
+        if trust_extract:
+            self._log(
+                "_Output.h5 file not found, but extract deliverables exist and 'trust_existing_extract' is enabled. Skipping run phase.",
+                log_type="warning",
+            )
+            return True
 
         auto_cleanup = self.config.get_auto_cleanup_previous_results()
         if "output" in auto_cleanup:
