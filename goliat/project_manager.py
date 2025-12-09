@@ -183,34 +183,19 @@ class ProjectManager(LoggingMixin):
         return True
 
     def _check_auto_cleanup_scenario(self, extract_done: bool) -> bool:
-        """Checks if run phase should be considered done due to auto-cleanup or trust setting.
+        """Checks if run phase should be considered done due to auto-cleanup.
 
         If auto_cleanup_previous_results includes "output" and extract deliverables exist,
         run phase is considered done even if _Output.h5 is missing (it was intentionally deleted).
-
-        Also respects 'trust_existing_extract' setting which forces trusting extract results
-        when _Output.h5 is missing (useful for one-off skips without changing auto_cleanup).
 
         Args:
             extract_done: Whether extract phase is complete.
 
         Returns:
-            True if auto-cleanup scenario applies or trust setting is enabled, False otherwise.
+            True if auto-cleanup scenario applies, False otherwise.
         """
         if not extract_done:
             return False
-
-        # Check for trust_existing_extract setting (one-off override)
-        # Also check environment variable for worker scenarios where config is downloaded
-        trust_extract = self.config["execution_control.trust_existing_extract"] or False
-        if not trust_extract:
-            trust_extract = os.environ.get("GOLIAT_TRUST_EXISTING_EXTRACT", "").lower() in ("1", "true", "yes")
-        if trust_extract:
-            self._log(
-                "_Output.h5 file not found, but extract deliverables exist and 'trust_existing_extract' is enabled. Skipping run phase.",
-                log_type="warning",
-            )
-            return True
 
         auto_cleanup = self.config.get_auto_cleanup_previous_results()
         if "output" in auto_cleanup:
@@ -363,8 +348,7 @@ class ProjectManager(LoggingMixin):
     def _normalize_status(self, status: dict) -> dict:
         """Normalizes status to ensure consistency.
 
-        Ensures extract_done is False if run_done is False, unless
-        GOLIAT_TRUST_EXISTING_EXTRACT is set (then trust extract results).
+        Ensures extract_done is False if run_done is False.
 
         Args:
             status: Status dictionary with phase completion flags.
@@ -372,22 +356,7 @@ class ProjectManager(LoggingMixin):
         Returns:
             Normalized status dictionary.
         """
-        # Check for trust_existing_extract override (aggressive skip mode)
-        trust_extract = self.config["execution_control.trust_existing_extract"] or False
-        if not trust_extract:
-            trust_extract = os.environ.get("GOLIAT_TRUST_EXISTING_EXTRACT", "").lower() in ("1", "true", "yes")
-
-        # If trust mode is enabled and extract deliverables exist, force both to True
-        if trust_extract and status["extract_done"]:
-            if not status["run_done"]:
-                self._log(
-                    "GOLIAT_TRUST_EXISTING_EXTRACT: Forcing run_done=True because extract deliverables exist.",
-                    log_type="warning",
-                )
-                status["run_done"] = True
-            return status
-
-        # Normal behavior: Extract cannot possibly be done if the corresponding run is not done or invalid
+        # Extract cannot possibly be done if the corresponding run is not done or invalid
         if status["extract_done"] and not status["run_done"]:
             self._log("Extraction was done, but run not. Rerunning both.", log_type="warning")
             status["extract_done"] = False
@@ -653,6 +622,19 @@ class ProjectManager(LoggingMixin):
         os.makedirs(project_dir, exist_ok=True)
         self.project_path = os.path.join(project_dir, project_filename).replace("\\", "/")
         self._log(f"Project path set to: {self.project_path}", log_type="info")
+
+        # GOLIAT_SKIP_IF_EXISTS: Super aggressive skip mode - just check if extract deliverables exist
+        # No timestamp checks, no config hash checks, no nothing. Just skip if files are there.
+        if os.environ.get("GOLIAT_SKIP_IF_EXISTS", "").lower() in ("1", "true", "yes"):
+            deliverable_filenames = ResultsExtractor.get_deliverable_filenames()
+            all_exist = all(os.path.exists(os.path.join(project_dir, fname)) for fname in deliverable_filenames.values())
+            if all_exist:
+                self._log(
+                    "GOLIAT_SKIP_IF_EXISTS: Extract deliverables found, skipping entire simulation.",
+                    level="progress",
+                    log_type="success",
+                )
+                return {"setup_done": True, "run_done": True, "extract_done": True}
 
         if self.execution_control is None:
             self.execution_control = {}
