@@ -260,9 +260,22 @@ class Config:
         This setting determines which previous simulation files to automatically delete
         to preserve disk space. It should only be used in serial workflows.
 
+        Also checks GOLIAT_AUTO_CLEANUP environment variable for worker scenarios where
+        config is downloaded from cloud. Format: comma-separated values like "output,input".
+
         Returns:
             A list of file types to clean up (e.g., ["output", "input"]).
         """
+        # Check environment variable first (for worker scenarios)
+        env_cleanup = os.environ.get("GOLIAT_AUTO_CLEANUP", "").strip()
+        if env_cleanup:
+            # Parse comma-separated values
+            env_types = [t.strip().lower() for t in env_cleanup.split(",") if t.strip()]
+            valid_types = {"output", "input", "smash"}
+            valid_env_types = [t for t in env_types if t in valid_types]
+            if valid_env_types:
+                return valid_env_types
+
         cleanup_setting = self["execution_control.auto_cleanup_previous_results"] or []
 
         # Handle legacy boolean format for backwards compatibility
