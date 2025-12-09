@@ -201,7 +201,10 @@ class ProjectManager(LoggingMixin):
             return False
 
         # Check for trust_existing_extract setting (one-off override)
+        # Also check environment variable for worker scenarios where config is downloaded
         trust_extract = self.config["execution_control.trust_existing_extract"] or False
+        if not trust_extract:
+            trust_extract = os.environ.get("GOLIAT_TRUST_EXISTING_EXTRACT", "").lower() in ("1", "true", "yes")
         if trust_extract:
             self._log(
                 "_Output.h5 file not found, but extract deliverables exist and 'trust_existing_extract' is enabled. Skipping run phase.",
