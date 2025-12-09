@@ -363,7 +363,8 @@ class ProjectManager(LoggingMixin):
     def _normalize_status(self, status: dict) -> dict:
         """Normalizes status to ensure consistency.
 
-        Ensures extract_done is False if run_done is False.
+        Ensures extract_done is False if run_done is False, unless
+        GOLIAT_TRUST_EXISTING_EXTRACT is set (then trust extract results).
 
         Args:
             status: Status dictionary with phase completion flags.
@@ -371,7 +372,22 @@ class ProjectManager(LoggingMixin):
         Returns:
             Normalized status dictionary.
         """
-        # Extract cannot possibly be done if the corresponding run is not done or invalid
+        # Check for trust_existing_extract override (aggressive skip mode)
+        trust_extract = self.config["execution_control.trust_existing_extract"] or False
+        if not trust_extract:
+            trust_extract = os.environ.get("GOLIAT_TRUST_EXISTING_EXTRACT", "").lower() in ("1", "true", "yes")
+
+        # If trust mode is enabled and extract deliverables exist, force both to True
+        if trust_extract and status["extract_done"]:
+            if not status["run_done"]:
+                self._log(
+                    "GOLIAT_TRUST_EXISTING_EXTRACT: Forcing run_done=True because extract deliverables exist.",
+                    log_type="warning",
+                )
+                status["run_done"] = True
+            return status
+
+        # Normal behavior: Extract cannot possibly be done if the corresponding run is not done or invalid
         if status["extract_done"] and not status["run_done"]:
             self._log("Extraction was done, but run not. Rerunning both.", log_type="warning")
             status["extract_done"] = False
