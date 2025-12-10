@@ -69,6 +69,12 @@ def create_parser():
         default=False,
         help="Generate LaTeX paper after analysis completes.",
     )
+    analyze_parser.add_argument(
+        "--no-gui",
+        action="store_true",
+        default=False,
+        help="Disable the GUI window and run in terminal-only mode.",
+    )
 
     # parallel command
     parallel_parser = subparsers.add_parser("parallel", help="Split a config file and run studies in parallel")
@@ -185,6 +191,30 @@ def create_parser():
         help="URL of the monitoring server (default: https://monitor.goliat.waves-ugent.be).",
     )
 
+    # stats command - unified for both directory scanning and single-file parsing
+    stats_parser = subparsers.add_parser("stats", help="Analyze simulation statistics from verbose.log files")
+    stats_parser.add_argument(
+        "path",
+        nargs="?",
+        default="results",
+        help="Results directory to scan OR path to a single verbose.log file (default: results).",
+    )
+    stats_parser.add_argument(
+        "-o", "--output",
+        default="paper/simulation_stats",
+        help="Output directory for plots/data (directory mode) or JSON file path (single-file mode).",
+    )
+    stats_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Also save raw stats as JSON (directory mode only).",
+    )
+    stats_parser.add_argument(
+        "--pretty",
+        action="store_true",
+        help="Print metrics to console in pretty format (single-file mode only).",
+    )
+
     return parser
 
 
@@ -299,10 +329,44 @@ def main():
             sys.argv.extend(["--analysis", args.analysis])
         if hasattr(args, "generate_paper") and args.generate_paper:
             sys.argv.append("--generate-paper")
+        if hasattr(args, "no_gui") and args.no_gui:
+            sys.argv.append("--no-gui")
         try:
             analyze_main()
         finally:
             sys.argv = original_argv
+
+    elif args.command == "stats":
+        import os
+        # Determine if path is a single file or directory
+        if os.path.isfile(args.path) and args.path.endswith(".log"):
+            # Single-file mode: parse a single verbose.log file
+            from goliat.analysis.parse_verbose_log import main as parse_log_main
+
+            original_argv = sys.argv[:]
+            sys.argv = ["goliat-stats", args.path]
+            if args.output:
+                sys.argv.extend(["-o", args.output])
+            if args.pretty:
+                sys.argv.append("--pretty")
+            try:
+                parse_log_main()
+            finally:
+                sys.argv = original_argv
+        else:
+            # Directory mode: scan results directory and generate visualizations
+            from goliat.analysis.analyze_simulation_stats import main as stats_main
+
+            original_argv = sys.argv[:]
+            sys.argv = ["goliat-stats", args.path]
+            if args.output:
+                sys.argv.extend(["-o", args.output])
+            if args.json:
+                sys.argv.append("--json")
+            try:
+                stats_main()
+            finally:
+                sys.argv = original_argv
 
     elif args.command == "parallel":
         from cli.run_parallel_studies import main as parallel_main

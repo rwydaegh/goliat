@@ -65,9 +65,10 @@ class CdfPlotter(BasePlotter):
             if all(col in plot_df.columns for col in group_by):
                 groups = plot_df.groupby(group_by)
 
-                # Generate colors for each group using academic color palette
+                # Generate colors and linestyles for each group using academic palettes
                 n_groups = len(groups)
                 colors = self._get_academic_colors(n_groups)
+                linestyles = self._get_academic_linestyles(n_groups)
 
                 formatted_labels = []
                 handles_list = []
@@ -118,7 +119,7 @@ class CdfPlotter(BasePlotter):
                     n = len(sorted_values)
                     y = np.arange(1, n + 1) / n
 
-                    line = ax.plot(sorted_values, y, label=label, linewidth=2, color=color, alpha=0.8)
+                    line = ax.plot(sorted_values, y, label=label, linewidth=2, color=color, linestyle=linestyles[idx], alpha=0.8)
                     handles_list.append(line[0])
 
                 # Place legend below plot - use 2 columns for frequencies or when there are 4 items
