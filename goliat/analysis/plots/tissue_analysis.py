@@ -56,6 +56,46 @@ class TissueAnalysisPlotter(BasePlotter):
         if plot_df.empty:
             return
 
+        # Filter out extreme outliers in Max Local SAR (using iterative ratio method)
+        # This removes points where the max value is > 2x the average of the next 30 points
+        if len(plot_df) >= 6:
+            iteration = 0
+            original_count = len(plot_df)
+
+            while len(plot_df) >= 6:
+                iteration += 1
+                # Sort by Max Local SAR descending
+                plot_df = plot_df.sort_values("max_local_sar_mw_kg", ascending=False)
+
+                # Get the top value and the next 30
+                top_row = plot_df.iloc[0]
+                top_val = top_row["max_local_sar_mw_kg"]
+
+                next_n = plot_df.iloc[1:31]
+                avg_next_n = next_n["max_local_sar_mw_kg"].mean()
+
+                if avg_next_n <= 0:
+                    break
+
+                ratio = top_val / avg_next_n
+
+                if ratio > 2.0:
+                    # Found an outlier - remove the top row
+                    plot_df = plot_df.iloc[1:].copy()
+                else:
+                    # Ratio is acceptable, stop checking
+                    break
+
+            new_count = len(plot_df)
+            if new_count < original_count:
+                logging.getLogger("progress").info(
+                    f"  - Filtered {original_count - new_count} extreme outlier(s) using iterative ratio method (>2.0x avg of next 30).",
+                    extra={"log_type": "info"},
+                )
+
+        if plot_df.empty:
+            return
+
         # Check for outliers and dense clusters
         max_x = plot_df["max_local_sar_mw_kg"].max()
         max_y = plot_df["psSAR10g"].max()
@@ -109,33 +149,42 @@ class TissueAnalysisPlotter(BasePlotter):
         if x_p95 < max_x * 0.5 or y_p95 < max_y * 0.5:
             ax_inset = inset_axes(ax, width="40%", height="40%", loc="upper right", borderpad=2)
 
-            # Filter data for inset
-            inset_df = plot_df[(plot_df["max_local_sar_mw_kg"] <= x_p95 * 1.1) & (plot_df["psSAR10g"] <= y_p95 * 1.1)]
+            # Filter data for inset (include a bit more than p95)
+            inset_limit_x = x_p95 * 1.1
+            inset_limit_y = y_p95 * 1.1
 
-            if not inset_df.empty and "frequency_mhz" in inset_df.columns and len(inset_df["frequency_mhz"].unique()) > 1:
-                ax_inset.scatter(
-                    inset_df["max_local_sar_mw_kg"],
-                    inset_df["psSAR10g"],
-                    c=inset_df["frequency_mhz"],
-                    cmap="jet",
-                    alpha=0.6,
-                    s=20,
-                )
-            else:
-                ax_inset.scatter(inset_df["max_local_sar_mw_kg"], inset_df["psSAR10g"], alpha=0.6, s=20)
+            inset_df = plot_df[(plot_df["max_local_sar_mw_kg"] <= inset_limit_x) & (plot_df["psSAR10g"] <= inset_limit_y)]
 
-            ax_inset.plot([x_min_val, x_p95 * 1.1], [x_min_val, y_p95 * 1.1], "r--", linewidth=1, alpha=0.5)
-            # Set limits to start at 0 and show 0 as a tick
-            ax_inset.set_xlim(0, x_p95 * 1.1)
-            ax_inset.set_ylim(0, y_p95 * 1.1)
-            # Ensure 0 is shown as a tick
-            ax_inset.set_xticks([0] + list(ax_inset.get_xticks()[1:]))
-            ax_inset.set_yticks([0] + list(ax_inset.get_yticks()[1:]))
+            if not inset_df.empty:
+                if "frequency_mhz" in inset_df.columns and len(inset_df["frequency_mhz"].unique()) > 1:
+                    ax_inset.scatter(
+                        inset_df["max_local_sar_mw_kg"],
+                        inset_df["psSAR10g"],
+                        c=inset_df["frequency_mhz"],
+                        cmap="jet",
+                        alpha=0.6,
+                        s=20,
+                    )
+                else:
+                    ax_inset.scatter(inset_df["max_local_sar_mw_kg"], inset_df["psSAR10g"], alpha=0.6, s=20)
+
+            # Reference line in inset
+            min_val = 0
+            inset_max_ref = min(inset_limit_x, inset_limit_y)
+            ax_inset.plot([min_val, inset_max_ref], [min_val, inset_max_ref], "r--", linewidth=1, alpha=0.5)
+
+            # Set limits
+            ax_inset.set_xlim(0, inset_limit_x)
+            ax_inset.set_ylim(0, inset_limit_y)
+
+            # Ensure 0 is shown as a tick if possible, but rely mainly on limits
+            # Manual checking of tick labels can be fragile with tight layouts
+
             ax_inset.set_xlabel("Max Local SAR", fontsize=8)
             ax_inset.set_ylabel("psSAR10g", fontsize=8)
             ax_inset.tick_params(labelsize=7)
             ax_inset.grid(True, alpha=0.3)
-            ax_inset.set_title("Zoomed View\n(95th percentile)", fontsize=8)  # Subplot title - keep it
+            ax_inset.set_title("Zoomed View\n(95th percentile)", fontsize=8)
 
         plt.tight_layout()
 
@@ -206,7 +255,11 @@ class TissueAnalysisPlotter(BasePlotter):
 
         fig, ax = plt.subplots(figsize=(3.5, 2.5))  # IEEE single-column width
 
-        for col in available_cols:
+        colors = self._get_academic_colors(len(available_cols))
+        linestyles = self._get_academic_linestyles(len(available_cols))
+        markers = self._get_academic_markers(len(available_cols))
+
+        for idx, col in enumerate(available_cols):
             # Format label properly: remove "_mw_kg", preserve SAR acronym
             label_base = col.replace("_mw_kg", "").replace("_", " ")
             # Capitalize properly, preserving SAR acronym
@@ -218,7 +271,16 @@ class TissueAnalysisPlotter(BasePlotter):
                 else:
                     label_formatted.append(word.capitalize())
             label = " ".join(label_formatted)
-            ax.plot(freq_summary["frequency_mhz"], freq_summary[col], marker="o", label=label, linewidth=2, markersize=4)
+            ax.plot(
+                freq_summary["frequency_mhz"],
+                freq_summary[col],
+                marker=markers[idx],
+                linestyle=linestyles[idx],
+                color=colors[idx],
+                label=label,
+                linewidth=2,
+                markersize=4,
+            )
 
         ax.set_xlabel(self._format_axis_label("Frequency", "MHz"))
         ax.set_ylabel(self._format_axis_label("SAR", r"mW kg$^{-1}$"))
@@ -226,6 +288,7 @@ class TissueAnalysisPlotter(BasePlotter):
         # Rotate x-axis labels only for actual simulated frequencies
         # Rotate frequency labels (always rotate when x-axis is Frequency)
         plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
+        self._adjust_slanted_tick_labels(ax)
 
         # Clean tissue name and create title with phantom name
         tissue_clean = self._clean_tissue_name(tissue_name)

@@ -106,8 +106,18 @@ class PowerPlotter(BasePlotter):
 
         # Top plot: Efficiency
         ax1 = axes[0]
+        markers = self._get_academic_markers(1)
+        linestyles = self._get_academic_linestyles(1)
+        colors = self._get_academic_colors(1)
         ax1.plot(
-            freq_summary["frequency_mhz"], freq_summary["efficiency"], marker="o", linewidth=2, markersize=4, label="Antenna Efficiency"
+            freq_summary["frequency_mhz"],
+            freq_summary["efficiency"],
+            marker=markers[0],
+            linestyle=linestyles[0],
+            linewidth=2,
+            markersize=4,
+            label="Antenna Efficiency",
+            color=colors[0],
         )
         ax1.set_xlabel(self._format_axis_label("Frequency", "MHz"))
         ax1.set_ylabel(self._format_axis_label("Efficiency", "%"))
@@ -119,6 +129,7 @@ class PowerPlotter(BasePlotter):
         ax1.set_xlim(freq_min - freq_range * 0.05, freq_max + freq_range * 0.05)
         # Rotate x-axis labels for real number line frequencies
         plt.setp(ax1.get_xticklabels(), rotation=45, ha="right")
+        self._adjust_slanted_tick_labels(ax1)
         ax1.grid(True, alpha=0.3)
         ax1.legend()
         # Set y-axis to go up to 100%
@@ -145,10 +156,14 @@ class PowerPlotter(BasePlotter):
                 alpha=0.7,
                 color="purple",  # Purple instead of green
             )
+            # Use distinct markers for SIBC line
+            markers = self._get_academic_markers(2)  # Get 2 to pick a different one if needed, or just use index 1
+            linestyles = self._get_academic_linestyles(2)
             ax2_twin.plot(
                 freq_summary["frequency_mhz"],
                 freq_summary["sibc_loss_pct"],
-                marker="s",
+                marker=markers[1] if len(markers) > 1 else "s",
+                linestyle=linestyles[1] if len(linestyles) > 1 else "--",
                 label="SIBC Loss",
                 color="orange",
                 linewidth=2,
@@ -187,6 +202,7 @@ class PowerPlotter(BasePlotter):
         # Rotate x-axis labels only for actual simulated frequencies
         # Rotate frequency labels (always rotate when x-axis is Frequency)
         plt.setp(ax2.get_xticklabels(), rotation=45, ha="right")
+        self._adjust_slanted_tick_labels(ax2)
         ax2.set_ylim(0, 100)  # Already starts at 0, max is 100%
         ax2.grid(True, alpha=0.3)
 
@@ -361,7 +377,8 @@ class PowerPlotter(BasePlotter):
                 legend_new.get_frame().set_edgecolor("black")
                 fig.subplots_adjust(bottom=0.3)
             # Rotate frequency labels (always rotate when x-axis is Frequency)
-            ax2.tick_params(axis="x", rotation=45)
+            plt.setp(ax2.get_xticklabels(), rotation=45, ha="right")
+            self._adjust_slanted_tick_labels(ax2)
         else:
             ax2.text(0.5, 0.5, "Single frequency - use pie chart", ha="center", va="center", transform=ax2.transAxes)
             ax2.set_title("Power Absorption Distribution")
@@ -477,7 +494,8 @@ class PowerPlotter(BasePlotter):
             ax_loss.set_ylabel("Power Loss (mW)")
             ax_loss.legend(title="Loss Type", labels=["Dielectric", "SIBC"])
             ax_loss.set_ylim(bottom=0)  # Start at 0
-            ax_loss.tick_params(axis="x", rotation=45)
+            plt.setp(ax_loss.get_xticklabels(), rotation=45, ha="right")
+            self._adjust_slanted_tick_labels(ax_loss)
 
             base_title_loss = "power loss breakdown"
             title_full_loss = self._get_title_with_phantom(base_title_loss)

@@ -147,6 +147,7 @@ class LinePlotter(BasePlotter):
             simulated_freqs = [1450, 2140, 2450]
             if freq_values and any(isinstance(f, (int, float)) and f in simulated_freqs for f in freq_values):
                 plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
+                self._adjust_slanted_tick_labels(ax)
             ax.grid(True, which="both", linestyle="--", linewidth=0.5)
             # Set y-axis to start at 0 and go to max + 5%
             y_max = ax.get_ylim()[1]
@@ -187,8 +188,17 @@ class LinePlotter(BasePlotter):
         fig, ax = plt.subplots(figsize=(3.5, total_height))  # IEEE single-column width, dynamic height
         if pssar_columns:
             colors = self._get_academic_colors(len(pssar_columns))
+            linestyles = self._get_academic_linestyles(len(pssar_columns))
+            markers = self._get_academic_markers(len(pssar_columns))
             for idx, col in enumerate(pssar_columns):
-                avg_results[col].plot(kind="line", marker="o", ax=ax, color=colors[idx], label=LEGEND_LABELS.get(col, col))
+                avg_results[col].plot(
+                    kind="line",
+                    marker=markers[idx],
+                    linestyle=linestyles[idx],
+                    ax=ax,
+                    color=colors[idx],
+                    label=LEGEND_LABELS.get(col, col),
+                )
             # Don't set title on plot - will be in caption file
             ax.set_xlabel(self._format_axis_label("Frequency", "MHz"))
             ax.set_ylabel(self._format_axis_label("Normalized psSAR10g", r"mW kg$^{-1}$"))
@@ -200,6 +210,7 @@ class LinePlotter(BasePlotter):
             ax.set_xticks(avg_results.index)
             # Rotate frequency labels (always rotate when x-axis is Frequency)
             plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
+            self._adjust_slanted_tick_labels(ax)
             # Set y-axis to start at 0 and go to max + 5%
             y_max = ax.get_ylim()[1]
             ax.set_ylim(0, y_max * 1.05)
@@ -237,8 +248,17 @@ class LinePlotter(BasePlotter):
         fig, ax = plt.subplots(figsize=(3.5, total_height))  # IEEE single-column width, dynamic height
         if sar_columns:
             colors = self._get_academic_colors(len(sar_columns))
+            linestyles = self._get_academic_linestyles(len(sar_columns))
+            markers = self._get_academic_markers(len(sar_columns))
             for idx, col in enumerate(sar_columns):
-                avg_results[col].plot(kind="line", marker="o", ax=ax, color=colors[idx], label=LEGEND_LABELS.get(col, col))
+                avg_results[col].plot(
+                    kind="line",
+                    marker=markers[idx],
+                    linestyle=linestyles[idx],
+                    ax=ax,
+                    color=colors[idx],
+                    label=LEGEND_LABELS.get(col, col),
+                )
             # Don't set title on plot - will be in caption file
             ax.set_xlabel(self._format_axis_label("Frequency", "MHz"))
             ax.set_ylabel(self._format_axis_label("Normalized SAR", r"mW kg$^{-1}$"))
@@ -251,6 +271,7 @@ class LinePlotter(BasePlotter):
             ax.set_xticks(avg_results.index)
             # Rotate frequency labels (always rotate when x-axis is Frequency)
             plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
+            self._adjust_slanted_tick_labels(ax)
             # Set y-axis to start at 0 and go to max + 5%
             y_max = ax.get_ylim()[1]
             ax.set_ylim(0, y_max * 1.05)
@@ -332,6 +353,8 @@ class LinePlotter(BasePlotter):
         # Plot each placement as a separate line
 
         colors = self._get_academic_colors(len(placements))
+        linestyles = self._get_academic_linestyles(len(placements))
+        markers = self._get_academic_markers(len(placements))
         for idx, placement in enumerate(placements):
             if placement in pivot_data.columns:
                 # Format placement name to be human readable
@@ -341,7 +364,8 @@ class LinePlotter(BasePlotter):
                 ax.plot(
                     pivot_data.index,
                     pivot_data[placement],
-                    marker="o",
+                    marker=markers[idx],
+                    linestyle=linestyles[idx],
                     label=placement_formatted,
                     linewidth=1.5,
                     markersize=4,
@@ -364,6 +388,7 @@ class LinePlotter(BasePlotter):
 
         # Rotate frequency labels (always rotate when x-axis is Frequency)
         plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
+        self._adjust_slanted_tick_labels(ax)
 
         ax.grid(True, alpha=0.3)
         # Set y-axis to start at 0 and go to max + 5%
