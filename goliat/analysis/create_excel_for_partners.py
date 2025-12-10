@@ -5,7 +5,6 @@ import logging
 from pathlib import Path
 
 import pandas as pd
-from openpyxl.worksheet.table import Table, TableStyleInfo
 
 
 def _auto_size_columns(worksheet, df: pd.DataFrame):
@@ -38,6 +37,8 @@ def _add_table_formatting(worksheet, df: pd.DataFrame, table_name: str):
         df: DataFrame that was written to the worksheet
         table_name: Name for the table
     """
+    from openpyxl.worksheet.table import Table, TableStyleInfo
+
     if df.empty:
         return
 
