@@ -64,6 +64,9 @@ Plug-and-play components for phantoms, materials, gridding, and sources. Extend 
 ### 📊 Built-in Analysis
 Extract whole-body SAR, localized peaks (10g), and tissue-specific metrics. Auto-generate heatmaps and statistical reports.
 
+### 📝 Automated Reporting
+Turn results into a draft paper instantly. Generates a fully compiled LaTeX PDF with all plots, tables, and statistics organized for peer review.
+
 </td>
 <td width="50%">
 
