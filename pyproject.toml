@@ -36,6 +36,7 @@ dependencies = [
   "psutil",
   "h5py",
   "requests",
+  "openpyxl",
   "pywin32; sys_platform == 'win32'",
 ]
 description = "A Python framework for dosimetric assessments using Sim4Life."
