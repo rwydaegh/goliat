@@ -136,7 +136,7 @@ def main():
         # GUI Mode Execution
         app = QApplication(sys.argv)
         
-        # 1. Create strategies and estimate total items (placeholder: ~100 items per phantom)
+        # 1. Create strategies for each phantom
         strategies = []
         for phantom_name in phantoms:
             if study_type == "near_field":
@@ -145,8 +145,31 @@ def main():
                 strategy = FarFieldAnalysisStrategy(config, phantom_name, analysis_config=analysis_config)
             strategies.append((phantom_name, strategy))
         
-        # Estimate total items for progress bar (placeholder value)
-        total_items = len(phantoms) * 100
+        # Calculate estimated total items based on config structure
+        # Items = (num_frequencies × num_placements) per phantom + estimated plots
+        antenna_config = config["antenna_config"] or {}
+        placement_scenarios = config["placement_scenarios"] or {}
+        
+        num_frequencies = len(antenna_config)
+        num_placements = 0
+        for scenario_def in placement_scenarios.values():
+            if scenario_def:
+                positions = scenario_def.get("positions", {})
+                orientations = scenario_def.get("orientations", {})
+                num_placements += len(positions) * max(len(orientations), 1)
+        
+        # Items per phantom: processing + plotting (roughly 2x for plots)
+        items_per_phantom = num_frequencies * num_placements * 2  # *2 for plots
+        # Add buffer for additional plots (heatmaps, summaries, etc.)
+        items_per_phantom += 50
+        
+        total_items = len(phantoms) * items_per_phantom
+        
+        logging.getLogger("progress").debug(
+            f"Progress bar estimate: {num_frequencies} freqs × {num_placements} placements × 2 + 50 = "
+            f"{items_per_phantom}/phantom × {len(phantoms)} phantoms = {total_items} total items",
+            extra={"log_type": "verbose"},
+        )
 
         # 2. Create GUI
         window_title = f"{phantoms[0]} ({len(phantoms)} phantoms)" if len(phantoms) > 1 else phantoms[0]
@@ -177,6 +200,17 @@ def main():
                     stats_main()
                 finally:
                     sys.argv = original_argv
+
+            # Generate Excel file if enabled (default: True for near_field)
+            if analysis_config.get("generate_excel", True) and study_type == "near_field":
+                from goliat.analysis.create_excel_for_partners import main as excel_main
+                logging.getLogger("progress").info("Generating Excel file for partners...", extra={"log_type": "info"})
+                try:
+                    excel_main()
+                except Exception as e:
+                    logging.getLogger("progress").warning(
+                        f"Failed to generate Excel file: {e}", extra={"log_type": "warning"}
+                    )
 
         # 4. Start Analysis in Background
         gui.start_analysis(run_analysis_task)
@@ -213,6 +247,17 @@ def main():
                 stats_main()
             finally:
                 sys.argv = original_argv
+
+        # Generate Excel file if enabled (default: True for near_field)
+        if analysis_config.get("generate_excel", True) and study_type == "near_field":
+            from goliat.analysis.create_excel_for_partners import main as excel_main
+            logging.getLogger("progress").info("Generating Excel file for partners...", extra={"log_type": "info"})
+            try:
+                excel_main()
+            except Exception as e:
+                logging.getLogger("progress").warning(
+                    f"Failed to generate Excel file: {e}", extra={"log_type": "warning"}
+                )
 
 
 if __name__ == "__main__":
