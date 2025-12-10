@@ -75,30 +75,6 @@ def create_parser():
         default=False,
         help="Disable the GUI window and run in terminal-only mode.",
     )
-    analyze_parser.add_argument(
-        "--compare",
-        action="store_true",
-        default=False,
-        help="Run UGent vs CNR comparison plots instead of normal analysis.",
-    )
-    analyze_parser.add_argument(
-        "--compare-ugent-file",
-        type=str,
-        default="results/near_field/Final_Data_UGent.xlsx",
-        help="Path to UGent Excel file for comparison (used with --compare).",
-    )
-    analyze_parser.add_argument(
-        "--compare-cnr-file",
-        type=str,
-        default="results/near_field/Final_Data_CNR.xlsx",
-        help="Path to CNR Excel file for comparison (used with --compare).",
-    )
-    analyze_parser.add_argument(
-        "--compare-output",
-        type=str,
-        default="plots/comparison",
-        help="Output directory for comparison plots (used with --compare).",
-    )
 
     # parallel command
     parallel_parser = subparsers.add_parser("parallel", help="Split a config file and run studies in parallel")
@@ -224,7 +200,8 @@ def create_parser():
         help="Results directory to scan OR path to a single verbose.log file (default: results).",
     )
     stats_parser.add_argument(
-        "-o", "--output",
+        "-o",
+        "--output",
         default="paper/simulation_stats",
         help="Output directory for plots/data (directory mode) or JSON file path (single-file mode).",
     )
@@ -341,40 +318,26 @@ def main():
             sys.argv = original_argv
 
     elif args.command == "analyze":
-        # Check if compare mode is requested
-        if hasattr(args, "compare") and args.compare:
-            from goliat.analysis.compare import run_comparison
-            from goliat.logging_manager import setup_loggers
-            
-            setup_loggers()
-            run_comparison(
-                args.compare_ugent_file,
-                args.compare_cnr_file,
-                args.compare_output,
-                args.format if hasattr(args, "format") else "pdf",
-            )
-        else:
-            from cli.run_analysis import main as analyze_main
+        from cli.run_analysis import main as analyze_main
 
-            original_argv = sys.argv[:]
-            sys.argv = ["goliat-analyze"]
-            if args.config:
-                sys.argv.append(args.config)
-            if hasattr(args, "format"):
-                sys.argv.extend(["--format", args.format])
-            if hasattr(args, "analysis") and args.analysis:
-                sys.argv.extend(["--analysis", args.analysis])
-            if hasattr(args, "generate_paper") and args.generate_paper:
-                sys.argv.append("--generate-paper")
-            if hasattr(args, "no_gui") and args.no_gui:
-                sys.argv.append("--no-gui")
-            try:
-                analyze_main()
-            finally:
-                sys.argv = original_argv
+        original_argv = sys.argv[:]
+        sys.argv = ["goliat-analyze"]
+        if args.config:
+            sys.argv.append(args.config)
+        if hasattr(args, "format"):
+            sys.argv.extend(["--format", args.format])
+        if hasattr(args, "analysis") and args.analysis:
+            sys.argv.extend(["--analysis", args.analysis])
+        if hasattr(args, "generate_paper") and args.generate_paper:
+            sys.argv.append("--generate-paper")
+        if hasattr(args, "no_gui") and args.no_gui:
+            sys.argv.append("--no-gui")
+        try:
+            analyze_main()
+        finally:
+            sys.argv = original_argv
 
     elif args.command == "stats":
-        import os
         # Determine if path is a single file or directory
         if os.path.isfile(args.path) and args.path.endswith(".log"):
             # Single-file mode: parse a single verbose.log file

@@ -29,5 +29,11 @@
   "plot_peak_sar_line": true,
   "plot_far_field_distribution_boxplot": true,
   "run_stats": true,
-  "generate_excel": true
+  "generate_excel": true,
+  "compare": {
+    "enabled": true,
+    "ugent_file": "results/near_field/Final_Data_UGent.xlsx",
+    "cnr_file": "results/near_field/Final_Data_CNR.xlsx",
+    "output_dir": "plots/comparison"
+  }
 }
