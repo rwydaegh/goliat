@@ -75,6 +75,7 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
         stop_event: Event,
         process: Process,
         init_window_title: str = "",
+        use_web: bool = True,
     ) -> None:
         """Sets up the GUI window and all components.
 
@@ -87,6 +88,7 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
             stop_event: Event to signal termination to worker process.
             process: Worker process running the study.
             init_window_title: Initial window title.
+            use_web: Whether to enable web bridge for remote monitoring.
         """
         super().__init__()
         self.queue: Queue = queue
@@ -114,7 +116,7 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
         UIBuilder.build(self, self.status_manager)
 
         # Initialize managers
-        self.web_bridge_manager = WebBridgeManager(self, self.server_url, self.machine_id)
+        self.web_bridge_manager = WebBridgeManager(self, self.server_url, self.machine_id, use_web=use_web)
         self.progress_manager = ProgressManager(self)
         self.clock_manager = ClockManager(self)
         self.utilization_manager = UtilizationManager(self)

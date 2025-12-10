@@ -42,7 +42,7 @@ class CustomFormatter(logging.Formatter):
         return base_message
 
 
-def setup_loggers(process_id: Optional[str] = None) -> tuple[logging.Logger, logging.Logger, str]:
+def setup_loggers(process_id: Optional[str] = None, session_timestamp: Optional[str] = None) -> tuple[logging.Logger, logging.Logger, str]:
     """Sets up dual logging system with rotation.
 
     Creates 'progress' and 'verbose' loggers with file and console handlers.
@@ -51,6 +51,8 @@ def setup_loggers(process_id: Optional[str] = None) -> tuple[logging.Logger, log
 
     Args:
         process_id: Optional ID to make log filenames unique for parallel runs.
+        session_timestamp: Optional timestamp to use for log filenames. If not provided,
+            generates a new timestamp. Useful for ensuring multiple processes use the same log file.
 
     Returns:
         Tuple of (progress_logger, verbose_logger, session_timestamp).
@@ -61,8 +63,12 @@ def setup_loggers(process_id: Optional[str] = None) -> tuple[logging.Logger, log
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
-    session_timestamp = datetime.now().strftime("%d-%m_%H-%M-%S")
-    if process_id:
+    if session_timestamp is None:
+        session_timestamp = datetime.now().strftime("%d-%m_%H-%M-%S")
+        if process_id:
+            session_timestamp = f"{session_timestamp}_{process_id}"
+    elif process_id:
+        # If both are provided, append process_id to the existing timestamp
         session_timestamp = f"{session_timestamp}_{process_id}"
 
     lock_file_path = os.path.join(log_dir, "log_rotation.lock")

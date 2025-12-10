@@ -116,6 +116,88 @@ def create_parser():
     # version command
     subparsers.add_parser("version", help="Show GOLIAT version information")
 
+    # AI assistant commands
+    ask_parser = subparsers.add_parser("ask", help="Ask AI assistant about GOLIAT")
+    ask_parser.add_argument("question", type=str, nargs="?", help="Question to ask")
+    ask_parser.add_argument("--debug", type=str, metavar="ERROR", help="Debug an error message")
+    ask_parser.add_argument("--logs", type=str, metavar="FILE", help="Log file for context")
+    ask_parser.add_argument("--config", type=str, metavar="FILE", help="Config file for context")
+    ask_parser.add_argument("--backend", type=str, choices=["openai", "local"], default="openai")
+    ask_parser.add_argument("--reindex", action="store_true", help="Force reindex codebase")
+
+    chat_parser = subparsers.add_parser("chat", help="Interactive chat with AI assistant")
+    chat_parser.add_argument("--backend", type=str, choices=["openai", "local"], default="openai")
+
+    debug_parser = subparsers.add_parser(
+        "debug",
+        help="Debug errors and analyze GOLIAT logs with AI assistance",
+        description="Automatically gathers context from logs, shell history, and environment, "
+        "then uses GPT-5 to diagnose issues and suggest fixes.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  %(prog)s                                    # Auto-detect from recent logs
+  %(prog)s "simulation failed"                # Debug specific error
+  %(prog)s --question "Why did SAR extraction fail?"
+  %(prog)s --logs logs/session.log --log-count 5
+  %(prog)s --no-shell-context                 # Skip shell history gathering
+        """,
+    )
+    debug_parser.add_argument(
+        "error",
+        type=str,
+        nargs="?",
+        metavar="ERROR_MESSAGE",
+        help="The error message to debug. If not provided, will try to infer from context.",
+    )
+    debug_parser.add_argument(
+        "--question",
+        "--query",
+        "-q",
+        type=str,
+        dest="question",
+        help="Natural language question about the error or logs. "
+        "Example: 'Why did the simulation fail?' or 'What caused the power balance issue?'",
+    )
+    debug_parser.add_argument(
+        "--logs",
+        type=str,
+        metavar="LOG_FILE",
+        help="Path to a specific log file to analyze. If not provided, will auto-detect recent log files from logs/ directory.",
+    )
+    debug_parser.add_argument(
+        "--log-count",
+        type=int,
+        metavar="N",
+        help="Number of recent log sessions to analyze (default: 3). "
+        "Each session includes both .log (verbose) and .progress.log (summary) files. "
+        "Only applies when --logs is not specified.",
+    )
+    debug_parser.add_argument(
+        "--config",
+        type=str,
+        metavar="CONFIG_FILE",
+        help="Path to a GOLIAT config file to include for context. Useful when debugging config-related issues.",
+    )
+    debug_parser.add_argument(
+        "--no-shell-context",
+        action="store_true",
+        help="Don't gather shell history and environment variables. Useful if you want to focus only on log files.",
+    )
+    debug_parser.add_argument(
+        "--no-browser", action="store_true", help="Don't open the HTML debug report in browser. Just print to console."
+    )
+    # Model selection group
+    model_group = debug_parser.add_mutually_exclusive_group()
+    model_group.add_argument("--simple", action="store_true", help="Force use of simple model (gpt-5-mini) - faster and cheaper.")
+    model_group.add_argument("--complex", action="store_true", help="Force use of complex model (gpt-5) - more thorough analysis.")
+    model_group.add_argument("--auto", action="store_true", help="Auto-select model based on query complexity (default).")
+
+    recommend_parser = subparsers.add_parser("recommend", help="AI analysis of logs for issues")
+    recommend_parser.add_argument("log_file", type=str, help="Log file to analyze (or '-' for stdin)")
+    recommend_parser.add_argument("--quiet", action="store_true", help="Only output if issues found")
+    recommend_parser.add_argument("--backend", type=str, choices=["openai", "local"], default="openai")
+
     # free-space command
     subparsers.add_parser(
         "free-space",
@@ -290,6 +372,88 @@ def main():
             validate_config(args.config, base_dir=base_dir)
         except ImportError:
             print("Error: GOLIAT package not installed. Run 'goliat study' to install.")
+        return
+
+    elif args.command == "ask":
+        from cli.run_ai import main_ask
+
+        original_argv = sys.argv[:]
+        sys.argv = ["goliat-ask"]
+        if args.question:
+            sys.argv.append(args.question)
+        if hasattr(args, "debug") and args.debug:
+            sys.argv.extend(["--debug", args.debug])
+        if hasattr(args, "logs") and args.logs:
+            sys.argv.extend(["--logs", args.logs])
+        if hasattr(args, "config") and args.config:
+            sys.argv.extend(["--config", args.config])
+        if hasattr(args, "backend"):
+            sys.argv.extend(["--backend", args.backend])
+        if hasattr(args, "reindex") and args.reindex:
+            sys.argv.append("--reindex")
+        try:
+            main_ask()
+        finally:
+            sys.argv = original_argv
+        return
+
+    elif args.command == "chat":
+        from cli.run_ai import main_chat
+
+        original_argv = sys.argv[:]
+        sys.argv = ["goliat-chat"]
+        if hasattr(args, "backend"):
+            sys.argv.extend(["--backend", args.backend])
+        try:
+            main_chat()
+        finally:
+            sys.argv = original_argv
+        return
+
+    elif args.command == "debug":
+        from cli.run_ai import main_debug
+
+        original_argv = sys.argv[:]
+        sys.argv = ["goliat-debug"]
+        if hasattr(args, "error") and args.error:
+            sys.argv.append(args.error)
+        if hasattr(args, "question") and args.question:
+            sys.argv.extend(["--question", args.question])
+        if hasattr(args, "logs") and args.logs:
+            sys.argv.extend(["--logs", args.logs])
+        if hasattr(args, "log_count") and args.log_count:
+            sys.argv.extend(["--log-count", str(args.log_count)])
+        if hasattr(args, "config") and args.config:
+            sys.argv.extend(["--config", args.config])
+        if hasattr(args, "no_shell_context") and args.no_shell_context:
+            sys.argv.append("--no-shell-context")
+        if hasattr(args, "no_browser") and args.no_browser:
+            sys.argv.append("--no-browser")
+        if hasattr(args, "simple") and args.simple:
+            sys.argv.append("--simple")
+        if hasattr(args, "complex") and args.complex:
+            sys.argv.append("--complex")
+        if hasattr(args, "auto") and args.auto:
+            sys.argv.append("--auto")
+        try:
+            main_debug()
+        finally:
+            sys.argv = original_argv
+        return
+
+    elif args.command == "recommend":
+        from cli.run_ai import main_recommend
+
+        original_argv = sys.argv[:]
+        sys.argv = ["goliat-recommend", args.log_file]
+        if hasattr(args, "quiet") and args.quiet:
+            sys.argv.append("--quiet")
+        if hasattr(args, "backend"):
+            sys.argv.extend(["--backend", args.backend])
+        try:
+            main_recommend()
+        finally:
+            sys.argv = original_argv
         return
 
     # Commands that need full setup

@@ -171,7 +171,7 @@ class ConsoleLogger(LoggingMixin):
             # Stage completed
             if stage_name != self.current_stage:
                 self.current_stage = stage_name
-                message = f"[OK] {stage_name} Complete"
+                message = f"[SUCCESS] {stage_name} Complete"
                 formatted = self._format_box(message, "success")
                 self.progress_logger.info(formatted)
 
@@ -214,14 +214,23 @@ class ConsoleLogger(LoggingMixin):
         return False
 
 
-def study_process_wrapper(queue, stop_event, config_filename, process_id, no_cache=False):
+def study_process_wrapper(queue, stop_event, config_filename, process_id, no_cache=False, session_timestamp=None):
     """
     This function runs in a separate process to execute the study.
     It sets up its own loggers and communicates with the main GUI process via a queue
     and a stop event.
+
+    Args:
+        queue: Queue for communicating with main process.
+        stop_event: Event to signal stop from main process.
+        config_filename: Configuration file name.
+        process_id: Optional process ID for logging.
+        no_cache: Whether to disable caching.
+        session_timestamp: Optional timestamp to use for log files (ensures same log file as main process).
     """
     # Each process needs to set up its own loggers.
-    progress_logger, verbose_logger, _ = setup_loggers(process_id=process_id)
+    # Use the same session_timestamp as main process to write to the same log file
+    progress_logger, verbose_logger, _ = setup_loggers(process_id=process_id, session_timestamp=session_timestamp)
 
     try:
         from goliat.config import Config
@@ -317,13 +326,16 @@ def main():
                 print(f"Error removing stale lock file {lock_file_path}: {e}")
 
     # The main process only needs a minimal logger setup for the GUI.
-    progress_logger, verbose_logger, _ = setup_loggers(process_id=process_id)
+    progress_logger, verbose_logger, session_timestamp = setup_loggers(process_id=process_id)
 
     config = Config(base_dir, config_filename)
     execution_control = config["execution_control"] or {}
     use_gui = config["use_gui"]
     if use_gui is None:
         use_gui = True
+    use_web = config["use_web"]
+    if use_web is None:
+        use_web = True  # Default to True if not specified
 
     if execution_control.get("batch_run"):
         run_osparc_batch(config_filename)
@@ -340,15 +352,16 @@ def main():
             stop_event = ctx.Event()
 
             # Create and start the study process
+            # Pass session_timestamp so child process uses the same log file
             study_process = ctx.Process(
                 target=study_process_wrapper,
-                args=(queue, stop_event, config_filename, process_id, args.no_cache),
+                args=(queue, stop_event, config_filename, process_id, args.no_cache, session_timestamp),
             )
             study_process.start()
 
             # The GUI runs in the main process
             app = QApplication(sys.argv)
-            gui = ProgressGUI(queue, stop_event, study_process, init_window_title=args.title)
+            gui = ProgressGUI(queue, stop_event, study_process, init_window_title=args.title, use_web=use_web)
             gui.show()
 
             app.exec()
