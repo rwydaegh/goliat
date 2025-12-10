@@ -136,19 +136,17 @@ def main():
         # GUI Mode Execution
         app = QApplication(sys.argv)
         
-        # 1. Calculate Total Items
-        total_items = 0
+        # 1. Create strategies and estimate total items (placeholder: ~100 items per phantom)
         strategies = []
-        
-        # Pre-create strategies to calculate totals
         for phantom_name in phantoms:
             if study_type == "near_field":
                 strategy = NearFieldAnalysisStrategy(config, phantom_name, analysis_config=analysis_config)
             else:
                 strategy = FarFieldAnalysisStrategy(config, phantom_name, analysis_config=analysis_config)
-            
             strategies.append((phantom_name, strategy))
-            total_items += strategy.get_total_items()
+        
+        # Estimate total items for progress bar (placeholder value)
+        total_items = len(phantoms) * 100
 
         # 2. Create GUI
         window_title = f"{phantoms[0]} ({len(phantoms)} phantoms)" if len(phantoms) > 1 else phantoms[0]
@@ -167,6 +165,18 @@ def main():
                 from cli.generate_paper import main as generate_paper_main
                 logging.getLogger("progress").info("Generating LaTeX paper...", extra={"log_type": "info"})
                 generate_paper_main()
+            
+            # Run stats if enabled (default: True)
+            if analysis_config.get("run_stats", True):
+                from goliat.analysis.analyze_simulation_stats import main as stats_main
+                logging.getLogger("progress").info("Running simulation statistics...", extra={"log_type": "info"})
+                # Run stats with default arguments
+                original_argv = sys.argv[:]
+                sys.argv = ["goliat-stats", "results", "-o", "paper/simulation_stats", "--json"]
+                try:
+                    stats_main()
+                finally:
+                    sys.argv = original_argv
 
         # 4. Start Analysis in Background
         gui.start_analysis(run_analysis_task)
@@ -191,6 +201,18 @@ def main():
 
             logging.getLogger("progress").info("Generating LaTeX paper...", extra={"log_type": "info"})
             generate_paper_main()
+
+        # Run stats if enabled (default: True)
+        if analysis_config.get("run_stats", True):
+            from goliat.analysis.analyze_simulation_stats import main as stats_main
+            logging.getLogger("progress").info("Running simulation statistics...", extra={"log_type": "info"})
+            # Run stats with default arguments
+            original_argv = sys.argv[:]
+            sys.argv = ["goliat-stats", "results", "-o", "paper/simulation_stats", "--json"]
+            try:
+                stats_main()
+            finally:
+                sys.argv = original_argv
 
 
 if __name__ == "__main__":

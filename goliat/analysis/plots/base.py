@@ -282,6 +282,70 @@ class BasePlotter:
                 colors.append(base_colors[i % len(base_colors)])
             return colors
 
+    def _get_academic_linestyles(self, n_styles: int) -> list:
+        """Returns a list of academic/professional linestyles for publication-quality plots.
+
+        Linestyles cycle if more than available are requested.
+
+        Args:
+            n_styles: Number of linestyles needed.
+
+        Returns:
+            List of linestyle specifications.
+        """
+        base_linestyles = [
+            "solid",  # 0: solid
+            "dashed",  # 1: dashed
+            "dotted",  # 2: dotted
+            "dashdot",  # 3: dash-dot
+            (0, (5, 1)),  # 4: densely dashed (5pt dash, 1pt gap)
+            (0, (3, 1, 1, 1)),  # 5: dash-dot-dot
+            (0, (1, 1)),  # 6: densely dotted
+            (0, (5, 2, 1, 2)),  # 7: dash-dot with wider gaps
+            (0, (3, 3)),  # 8: loosely dashed
+            (0, (1, 2)),  # 9: loosely dotted
+        ]
+
+        if n_styles <= len(base_linestyles):
+            return base_linestyles[:n_styles]
+        else:
+            linestyles = []
+            for i in range(n_styles):
+                linestyles.append(base_linestyles[i % len(base_linestyles)])
+            return linestyles
+
+    def _get_academic_markers(self, n_markers: int) -> list:
+        """Returns a list of academic/professional markers for publication-quality plots.
+
+        Markers cycle if more than available are requested.
+
+        Args:
+            n_markers: Number of markers needed.
+
+        Returns:
+            List of marker specifications.
+        """
+        base_markers = [
+            "o",  # 0: circle
+            "s",  # 1: square
+            "^",  # 2: triangle up
+            "D",  # 3: diamond
+            "v",  # 4: triangle down
+            "p",  # 5: pentagon
+            "h",  # 6: hexagon
+            "*",  # 7: star
+            "X",  # 8: x (filled)
+            "P",  # 9: plus (filled)
+        ]
+
+        if n_markers <= len(base_markers):
+            return base_markers[:n_markers]
+        else:
+            markers = []
+            for i in range(n_markers):
+                markers.append(base_markers[i % len(base_markers)])
+            return markers
+
     def _get_title_with_phantom(self, base_title: str, scenario_name: str | None = None) -> str:
         """Creates a plot title with phantom name and optional scenario.
 
