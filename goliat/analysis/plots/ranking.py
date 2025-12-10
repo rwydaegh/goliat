@@ -84,6 +84,20 @@ class RankingPlotter(BasePlotter):
         top20_scaled = top20.copy()
         top20_scaled[metric] = top20_scaled[metric] * unit_multiplier
 
+        # Detect outliers: if ratio between #1 and #2 > 2.5, cap the display
+        outlier_threshold = 2.5
+        values_sorted = top20_scaled[metric].sort_values(ascending=False)
+        has_outlier = False
+        outlier_cap_value = None
+
+        if len(values_sorted) >= 2:
+            first_val = values_sorted.iloc[0]
+            second_val = values_sorted.iloc[1]
+            if second_val > 0 and first_val / second_val > outlier_threshold:
+                has_outlier = True
+                # Cap at 1.5x the second value for display
+                outlier_cap_value = second_val * 1.5
+
         # Color by tissue group using academic color palette
         colors = self._get_academic_colors(len(top20_scaled))
 
@@ -91,8 +105,47 @@ class RankingPlotter(BasePlotter):
         top20_clean = top20_scaled.copy()
         top20_clean["tissue_clean"] = top20_clean["tissue"].apply(lambda x: self._format_organ_name(x))
 
-        ax.barh(range(len(top20_clean)), top20_clean[metric], color=colors, alpha=0.7, edgecolor="black", linewidth=0.5)
-        ax.set_yticks(range(len(top20_clean)))
+        # Create display values - cap outliers if needed
+        display_values = top20_clean[metric].copy()
+        outlier_mask = pd.Series([False] * len(display_values), index=display_values.index)
+
+        if has_outlier and outlier_cap_value is not None:
+            # Mark the outlier(s) - values that are significantly higher than the cap
+            outlier_mask = display_values > outlier_cap_value
+            display_values = display_values.clip(upper=outlier_cap_value)
+
+        # Draw bars
+        bar_positions = range(len(top20_clean))
+        bars = ax.barh(bar_positions, display_values, color=colors, alpha=0.7, edgecolor="black", linewidth=0.5)
+
+        # Add broken bar pattern for outliers
+        if has_outlier:
+            for i, (bar, is_outlier) in enumerate(zip(bars, outlier_mask.values)):
+                if is_outlier:
+                    # Add diagonal lines to indicate broken/capped bar
+                    bar_height = bar.get_height()
+                    bar_y = bar.get_y()
+                    bar_width = bar.get_width()
+
+                    # Add break marks at the end of the bar
+                    break_x = bar_width * 0.95
+                    ax.plot([break_x, break_x], [bar_y + 0.1, bar_y + bar_height - 0.1], color="white", linewidth=2, zorder=3)
+                    ax.plot(
+                        [break_x - bar_width * 0.02, break_x + bar_width * 0.02],
+                        [bar_y + bar_height * 0.3, bar_y + bar_height * 0.7],
+                        color="white",
+                        linewidth=2,
+                        zorder=3,
+                    )
+                    ax.plot(
+                        [break_x - bar_width * 0.02, break_x + bar_width * 0.02],
+                        [bar_y + bar_height * 0.7, bar_y + bar_height * 0.3],
+                        color="white",
+                        linewidth=2,
+                        zorder=3,
+                    )
+
+        ax.set_yticks(bar_positions)
         ax.set_yticklabels(top20_clean["tissue_clean"], fontsize=9)
         ax.tick_params(axis="y", which="major", length=0)  # Remove y-axis tick marks
         # Reduce top and bottom margins
@@ -125,9 +178,12 @@ class RankingPlotter(BasePlotter):
         # Don't set title on plot - will be in caption file
         ax.grid(True, alpha=0.3, axis="x")
 
-        # Set x-axis range to start at 0 and go to max + 5%
-        max_val = top20_clean[metric].max()
-        ax.set_xlim(0, max_val * 1.05)
+        # Set x-axis range - use capped value if outliers exist
+        if has_outlier and outlier_cap_value is not None:
+            ax.set_xlim(0, outlier_cap_value * 1.15)  # Extra space for label
+        else:
+            max_val = top20_clean[metric].max()
+            ax.set_xlim(0, max_val * 1.05)
 
         # Add value labels on bars
         # For the highest bar (last one in sorted order), put label IN the bar, others to the right
@@ -135,13 +191,21 @@ class RankingPlotter(BasePlotter):
         max_bar_idx = len(top20_clean) - 1
 
         for i, (idx, row) in enumerate(top20_clean.iterrows()):
-            value = row[metric]
-            if i == max_bar_idx:  # Highest bar (last position)
+            actual_value = row[metric]
+            display_value = display_values.loc[idx]
+            is_outlier_bar = outlier_mask.loc[idx] if has_outlier else False
+
+            if is_outlier_bar:
+                # Outlier bar: show actual value with asterisk indicator
+                # Position label left of break marks (which are at 0.95), use black for readability
+                label_text = f"{actual_value:.3f}*"
+                ax.text(display_value * 0.85, i, label_text, va="center", ha="right", fontsize=8, color="black", weight="bold")
+            elif i == max_bar_idx:  # Highest bar (last position) - only if not outlier
                 # Highest bar: label inside, right-aligned, black text
-                ax.text(value * 0.95, i, f"{value:.3f}", va="center", ha="right", fontsize=8, color="black", weight="bold")
+                ax.text(actual_value * 0.95, i, f"{actual_value:.3f}", va="center", ha="right", fontsize=8, color="black", weight="bold")
             else:
                 # Other bars: label to the right
-                ax.text(value, i, f" {value:.3f}", va="center", fontsize=8)
+                ax.text(actual_value, i, f" {actual_value:.3f}", va="center", fontsize=8)
 
         plt.tight_layout()
 
@@ -149,7 +213,10 @@ class RankingPlotter(BasePlotter):
         filename_base = f"ranking_top20_{metric_name}_{scenario_name or 'all'}_{frequency_mhz or 'all'}MHz"
         # Use the properly formatted metric_display and unit_label for caption
         phantom_name_formatted = self.phantom_name.capitalize() if self.phantom_name else "the phantom"
-        caption = f"The horizontal bar chart ranks the top 20 tissues by {metric_display} ({unit_label}) for the {self._format_scenario_name(scenario_name) if scenario_name else 'all scenarios'} scenario{f' at {frequency_mhz} MHz' if frequency_mhz else ''} for {phantom_name_formatted}."
+        outlier_note = (
+            " Note: values marked with * are outliers that exceed the display scale; the actual value is shown." if has_outlier else ""
+        )
+        caption = f"The horizontal bar chart ranks the top 20 tissues by {metric_display} ({unit_label}) for the {self._format_scenario_name(scenario_name) if scenario_name else 'all scenarios'} scenario{f' at {frequency_mhz} MHz' if frequency_mhz else ''} for {phantom_name_formatted}.{outlier_note}"
         filename = self._save_figure(fig, "ranking", filename_base, title=title_full, caption=caption, dpi=300)
 
         # Save CSV data

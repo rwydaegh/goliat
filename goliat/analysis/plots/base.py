@@ -448,6 +448,48 @@ class BasePlotter:
         plt.close(fig)
         return filename
 
+    def _adjust_slanted_tick_labels(self, ax, rotation: float = 45.0) -> None:
+        """Adjusts the position of the '835' x-tick label when both '700' and '835' are present.
+
+        When x-tick labels are slanted at 45 degrees and both '700' and '835' frequency
+        labels are present, they can overlap. This method shifts the '835' label slightly
+        to the right to avoid the overlap.
+
+        Args:
+            ax: Matplotlib axes object.
+            rotation: Expected rotation angle for x-tick labels (default: 45.0).
+        """
+        # Get current x-tick labels
+        tick_labels = ax.get_xticklabels()
+        if not tick_labels:
+            return
+
+        # Check if labels are rotated (approximately 45 degrees)
+        first_label = tick_labels[0]
+        label_rotation = first_label.get_rotation()
+        if abs(label_rotation - rotation) > 5:  # Allow some tolerance
+            return
+
+        # Extract label texts
+        label_texts = [label.get_text() for label in tick_labels]
+
+        # Check if both '700' and '835' are present (can be just the number or with text like '700\n(5/6)')
+        has_700 = any("700" in str(text) for text in label_texts)
+        has_835 = any("835" in str(text) for text in label_texts)
+
+        if not (has_700 and has_835):
+            return
+
+        # Find the '835' label and shift it to the right
+        for label in tick_labels:
+            label_text = label.get_text()
+            if "835" in str(label_text):
+                # Get current position
+                current_pos = label.get_position()
+                # Shift slightly to the right (positive x direction)
+                # The shift amount is small - about 0.15 units on the x-axis
+                label.set_position((current_pos[0] + 0.15, current_pos[1]))
+
     def _save_csv_data(self, data_df: pd.DataFrame, subdir: str, filename_base: str):
         """Saves plot data to CSV file.
 

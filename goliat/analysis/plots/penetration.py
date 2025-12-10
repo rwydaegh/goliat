@@ -53,7 +53,19 @@ class PenetrationPlotter(BasePlotter):
 
         fig, ax = plt.subplots(figsize=(3.5, 2.5))  # IEEE single-column width
 
-        ax.plot(avg_ratio["frequency_mhz"], avg_ratio["penetration_ratio"], marker="o", linewidth=2, markersize=4)
+        linestyles = self._get_academic_linestyles(1)
+        markers = self._get_academic_markers(1)
+        colors = self._get_academic_colors(1)
+
+        ax.plot(
+            avg_ratio["frequency_mhz"],
+            avg_ratio["penetration_ratio"],
+            marker=markers[0],
+            linestyle=linestyles[0],
+            color=colors[0],
+            linewidth=2,
+            markersize=4,
+        )
 
         ax.set_xlabel(self._format_axis_label("Frequency", "MHz"))
         ax.set_ylabel(f"Ratio ({metric_type} Brain / {metric_type} Skin)")
@@ -61,6 +73,7 @@ class PenetrationPlotter(BasePlotter):
         # Rotate x-axis labels only for actual simulated frequencies
         # Rotate frequency labels (always rotate when x-axis is Frequency)
         plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
+        self._adjust_slanted_tick_labels(ax)
         formatted_scenario = self._format_scenario_name(scenario_name) if scenario_name else None
         if formatted_scenario:
             base_title = f"SAR penetration depth brain to skin {metric_type} ratio versus frequency for {formatted_scenario} scenario"
