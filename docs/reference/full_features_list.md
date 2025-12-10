@@ -455,3 +455,15 @@ This document provides a complete reference of every feature available in GOLIAT
 - Efficient caching system to avoid redundant computations
 - Parallel execution for multi-core utilization
 - Cloud batching for large-scale parallel runs
+
+## AI Assistant
+
+- **Natural Language Querying**: Ask questions about codebase, docs, and configs in plain English
+- **RAG-based Architecture**: Retrieves relevant context from indexed project files
+- **Recursive Indexing**: Automatically indexes all Python files, Markdown docs, and JSON schemas
+- **Interactive Mode**: Multi-turn conversation support (`goliat ai --interactive`)
+- **Single-shot Mode**: Quick answers via CLI (`goliat ai "query"`)
+- **Code Citations**: Direct references to source files and lines of code
+- **Markdown Formatting**: Syntax highlighted code blocks and structured answers
+- **Smart Context**: Aware of project structure, key components, and user's current environment
+- **Local Execution**: Runs locally using configured LLM provider (no data leaks)

@@ -43,6 +43,7 @@ GOLIAT is a Python framework that **automates electromagnetic field (EMF) dosime
 - ☁️ **Cloud-ready** – Scale from local testing to 100s of parallel cloud simulations
 - 📊 **Analysis built-in** – Get plots and detailed SAR reports
 - 🎨 **GUI included** – Monitor progress in real-time with ETA tracking
+- 🤖 **AI Assistant** – Query codebase and documentation with natural language
 
 ### Project funding and Acknowledgements
 
@@ -74,7 +75,10 @@ Environmental exposure from plane waves. Supports 6 incident directions and mult
 - **Cloud**: oSPARC for large-scale batch processing
 
 ### 🖥️ Real-time Monitoring
-Interactive GUI with progress bars, ETA estimation, and live logs. Optional web dashboard for monitoring distributed studies across multiple workers. Optional headless mode for automation.
+Interactive GUI with progress bars, ETA estimation, and live logs. Optional web dashboard for monitoring distributed studies.
+
+### 🤖 AI Assistant
+Integrated RAG-based assistant. Ask questions like *"running a simulation"*, *"adding a new phantom"*, or *"how are logs handled"* to get instant, context-aware answers.
 
 </td>
 </tr>
@@ -352,6 +356,7 @@ Each stage is modular, swap in custom phantoms, antennas, or analysis strategies
 | [API Reference](https://rwydaegh.github.io/goliat/reference/api_reference/) | Class and function details |
 | [Troubleshooting](https://rwydaegh.github.io/goliat/troubleshooting/) | Common issues and solutions |
 | [Cloud & Monitoring](https://rwydaegh.github.io/goliat/cloud/monitoring/) | Web dashboard for distributed execution |
+| [AI Assistant](https://rwydaegh.github.io/goliat/user_guide/ai_assistant/) | Natural language query interface |
 | [Developer Guide](https://rwydaegh.github.io/goliat/developer_guide/developer_guide/) | Extend GOLIAT or contribute |
 
 ---
