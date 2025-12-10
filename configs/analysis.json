@@ -28,5 +28,6 @@
   "plot_whole_body_sar_bar": true,
   "plot_peak_sar_line": true,
   "plot_far_field_distribution_boxplot": true,
-  "run_stats": true
+  "run_stats": true,
+  "generate_excel": true
 }
