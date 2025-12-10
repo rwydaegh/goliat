@@ -94,12 +94,13 @@ class TestAntenna:
         centered_antennas_dir.mkdir(parents=True)
 
         # Create files for nearby frequencies, but not 1400
-        (centered_antennas_dir / "1350MHz_centered.sab").touch()
+        # Use 1300 and 1450 so that 1450 is unambiguously the nearest (50 vs 100 MHz)
+        (centered_antennas_dir / "1300MHz_centered.sab").touch()
         (centered_antennas_dir / "1450MHz_centered.sab").touch()
         (centered_antennas_dir / "1500MHz_centered.sab").touch()
 
         path = antenna.get_centered_antenna_path(str(centered_antennas_dir))
-        # Should use 1450 as it's nearest to 1400
+        # Should use 1450 as it's nearest to 1400 (50 MHz away vs 100 MHz for 1300)
         expected = centered_antennas_dir / "1450MHz_centered.sab"
         assert path == str(expected)
 
