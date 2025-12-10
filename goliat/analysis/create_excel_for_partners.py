@@ -1,6 +1,7 @@
 """Create Excel file matching CNR's Excel format for Thelonious and Eartha phantoms."""
 
 import json
+import logging
 from pathlib import Path
 
 import pandas as pd
@@ -242,10 +243,10 @@ def main():
             csv_path = results_dir / phantom_name / "normalized_results_detailed.csv"
 
             if not csv_path.exists():
-                print(f"Warning: CSV file not found: {csv_path}")
+                logging.getLogger("progress").warning(f"CSV file not found: {csv_path}", extra={"log_type": "warning"})
                 continue
 
-            print(f"\nProcessing {phantom_name}...")
+            logging.getLogger("progress").info(f"  Processing: {phantom_name.capitalize()}...", extra={"log_type": "progress"})
 
             # Read CSV data
             df = pd.read_csv(csv_path)
@@ -286,11 +287,11 @@ def main():
                 _add_table_formatting(ws_cheek, sheet_cheek, sheet_name_cheek)
                 _auto_size_columns(ws_cheek, sheet_cheek)
 
-            print(f"  - Sheet {sheet_name_fronteyes}: {len(sheet_fronteyes)} rows")
-            print(f"  - Sheet {sheet_name_belly}: {len(sheet_belly)} rows")
-            print(f"  - Sheet {sheet_name_cheek}: {len(sheet_cheek)} rows")
+            logging.getLogger("progress").info(f"    - {sheet_name_fronteyes}: {len(sheet_fronteyes)} rows", extra={"log_type": "verbose"})
+            logging.getLogger("progress").info(f"    - {sheet_name_belly}: {len(sheet_belly)} rows", extra={"log_type": "verbose"})
+            logging.getLogger("progress").info(f"    - {sheet_name_cheek}: {len(sheet_cheek)} rows", extra={"log_type": "verbose"})
 
-    print(f"\nCreated combined Excel file: {output_path}")
+    logging.getLogger("progress").info(f"  Created: {output_path.name}", extra={"log_type": "success"})
 
 
 if __name__ == "__main__":
