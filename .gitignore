@@ -23,6 +23,7 @@ analysis/cpw/data/
 analysis/cpw/plots/
 analysis/sensitivity_analysis/plots/
 detuning/
+detuning2/
 
 # Data
 data/
