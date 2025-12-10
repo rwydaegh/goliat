@@ -173,7 +173,7 @@ Real-time progress tracking with phase-based ETA estimation.
 ### Analysis results
 Auto-generated SAR heatmaps by tissue and frequency.
 
-![Results Plot](https://raw.githubusercontent.com/rwydaegh/goliat/master/docs/img/results_plot.png)
+![SAR Heatmap](https://raw.githubusercontent.com/rwydaegh/goliat/master/docs/img/results_capita_selecta/06_heatmap.png)
 
 </details>
 
