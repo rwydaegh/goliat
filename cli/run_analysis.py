@@ -8,18 +8,18 @@ import sys
 # GUI is now default ON unless --no-gui is specified
 GUI_MODE = "--no-gui" not in sys.argv
 
-import matplotlib
+import matplotlib  # noqa: E402
 
 # Always use Agg backend for analysis plotting to avoid threading issues
 # even when the GUI is running (the GUI is a separate PyQt window)
 matplotlib.use("Agg")
 
-from goliat.utils.setup import initial_setup
-from goliat.analysis.analyzer import Analyzer
-from goliat.analysis.far_field_strategy import FarFieldAnalysisStrategy
-from goliat.analysis.near_field_strategy import NearFieldAnalysisStrategy
-from goliat.config import Config
-from goliat.logging_manager import setup_loggers
+from goliat.utils.setup import initial_setup  # noqa: E402
+from goliat.analysis.analyzer import Analyzer  # noqa: E402
+from goliat.analysis.far_field_strategy import FarFieldAnalysisStrategy  # noqa: E402
+from goliat.analysis.near_field_strategy import NearFieldAnalysisStrategy  # noqa: E402
+from goliat.config import Config  # noqa: E402
+from goliat.logging_manager import setup_loggers  # noqa: E402
 
 # Imports for GUI
 if GUI_MODE:
@@ -32,7 +32,7 @@ if GUI_MODE:
         matplotlib.use("Agg")
 
 # Base directory for config files
-from cli.utils import get_base_dir
+from cli.utils import get_base_dir  # noqa: E402
 
 base_dir = get_base_dir()
 
@@ -135,7 +135,7 @@ def main():
     if gui_enabled:
         # GUI Mode Execution
         app = QApplication(sys.argv)
-        
+
         # 1. Create strategies for each phantom
         strategies = []
         for phantom_name in phantoms:
@@ -144,12 +144,12 @@ def main():
             else:
                 strategy = FarFieldAnalysisStrategy(config, phantom_name, analysis_config=analysis_config)
             strategies.append((phantom_name, strategy))
-        
+
         # Calculate estimated total items based on config structure
         # Items = (num_frequencies × num_placements) per phantom + estimated plots
         antenna_config = config["antenna_config"] or {}
         placement_scenarios = config["placement_scenarios"] or {}
-        
+
         num_frequencies = len(antenna_config)
         num_placements = 0
         for scenario_def in placement_scenarios.values():
@@ -157,14 +157,14 @@ def main():
                 positions = scenario_def.get("positions", {})
                 orientations = scenario_def.get("orientations", {})
                 num_placements += len(positions) * max(len(orientations), 1)
-        
+
         # Items per phantom: processing + plotting (roughly 2x for plots)
         items_per_phantom = num_frequencies * num_placements * 2  # *2 for plots
         # Add buffer for additional plots (heatmaps, summaries, etc.)
         items_per_phantom += 50
-        
+
         total_items = len(phantoms) * items_per_phantom
-        
+
         logging.getLogger("progress").debug(
             f"Progress bar estimate: {num_frequencies} freqs × {num_placements} placements × 2 + 50 = "
             f"{items_per_phantom}/phantom × {len(phantoms)} phantoms = {total_items} total items",
@@ -175,48 +175,72 @@ def main():
         window_title = f"{phantoms[0]} ({len(phantoms)} phantoms)" if len(phantoms) > 1 else phantoms[0]
         gui = AnalysisGUI(window_title, total_items)
         gui.show()
-        
+
         # 3. Define Worker Function
         def run_analysis_task():
             for phantom_name, strategy in strategies:
-                # Update GUI header if possible (not strictly thread-safe to update UI directly, 
+                # Update GUI header if possible (not strictly thread-safe to update UI directly,
                 # but we can rely on logging "Starting Results Analysis" which GUI handles)
                 analyzer = Analyzer(config, phantom_name, strategy, plot_format=args.format)
                 analyzer.run_analysis()
-            
+
             if args.generate_paper:
                 from cli.generate_paper import main as generate_paper_main
+
                 logging.getLogger("progress").info("Generating LaTeX paper...", extra={"log_type": "info"})
                 generate_paper_main()
-            
+
+            # Generate Excel file if enabled (default: True for near_field)
+            if analysis_config.get("generate_excel", True) and study_type == "near_field":
+                from goliat.analysis.create_excel_for_partners import main as excel_main
+
+                logging.getLogger("progress").info("--- Generating Excel file for partners ---", extra={"log_type": "header"})
+                try:
+                    excel_main()
+                    logging.getLogger("progress").info("--- Excel file generation complete ---", extra={"log_type": "success"})
+                except Exception as e:
+                    logging.getLogger("progress").warning(f"Failed to generate Excel file: {e}", extra={"log_type": "warning"})
+
             # Run stats if enabled (default: True)
             if analysis_config.get("run_stats", True):
                 from goliat.analysis.analyze_simulation_stats import main as stats_main
-                logging.getLogger("progress").info("Running simulation statistics...", extra={"log_type": "info"})
+
+                logging.getLogger("progress").info("--- Running simulation statistics ---", extra={"log_type": "header"})
                 # Run stats with default arguments
                 original_argv = sys.argv[:]
                 sys.argv = ["goliat-stats", "results", "-o", "paper/simulation_stats", "--json"]
                 try:
                     stats_main()
+                    logging.getLogger("progress").info("--- Simulation statistics complete ---", extra={"log_type": "success"})
                 finally:
                     sys.argv = original_argv
 
-            # Generate Excel file if enabled (default: True for near_field)
-            if analysis_config.get("generate_excel", True) and study_type == "near_field":
-                from goliat.analysis.create_excel_for_partners import main as excel_main
-                logging.getLogger("progress").info("Generating Excel file for partners...", extra={"log_type": "info"})
+            # Run comparison if enabled in analysis config
+            compare_config = analysis_config.get("compare", {})
+            if compare_config.get("enabled", False):
+                from goliat.analysis.compare import run_comparison
+
+                logging.getLogger("progress").info("--- Running UGent vs CNR comparison ---", extra={"log_type": "header"})
                 try:
-                    excel_main()
-                except Exception as e:
-                    logging.getLogger("progress").warning(
-                        f"Failed to generate Excel file: {e}", extra={"log_type": "warning"}
+                    run_comparison(
+                        compare_config.get("ugent_file", "results/near_field/Final_Data_UGent.xlsx"),
+                        compare_config.get("cnr_file", "results/near_field/Final_Data_CNR.xlsx"),
+                        compare_config.get("output_dir", "plots/comparison"),
+                        args.format,
                     )
+                    logging.getLogger("progress").info("--- Comparison complete ---", extra={"log_type": "success"})
+                except Exception as e:
+                    logging.getLogger("progress").warning(f"Failed to run comparison: {e}", extra={"log_type": "warning"})
+
+            logging.getLogger("progress").info("Done. You can now close the GUI.", extra={"log_type": "success"})
 
         # 4. Start Analysis in Background
         gui.start_analysis(run_analysis_task)
-        
+
         # 5. Start Event Loop
-        sys.exit(app.exec())
+        app.exec()
+        # Force exit to avoid waiting for non-daemon threads (like matplotlib backends)
+        os._exit(0)
 
     else:
         # Headless Mode Execution (Original)
@@ -236,28 +260,47 @@ def main():
             logging.getLogger("progress").info("Generating LaTeX paper...", extra={"log_type": "info"})
             generate_paper_main()
 
+        # Generate Excel file if enabled (default: True for near_field)
+        if analysis_config.get("generate_excel", True) and study_type == "near_field":
+            from goliat.analysis.create_excel_for_partners import main as excel_main
+
+            logging.getLogger("progress").info("--- Generating Excel file for partners ---", extra={"log_type": "header"})
+            try:
+                excel_main()
+                logging.getLogger("progress").info("--- Excel file generation complete ---", extra={"log_type": "success"})
+            except Exception as e:
+                logging.getLogger("progress").warning(f"Failed to generate Excel file: {e}", extra={"log_type": "warning"})
+
         # Run stats if enabled (default: True)
         if analysis_config.get("run_stats", True):
             from goliat.analysis.analyze_simulation_stats import main as stats_main
-            logging.getLogger("progress").info("Running simulation statistics...", extra={"log_type": "info"})
+
+            logging.getLogger("progress").info("--- Running simulation statistics ---", extra={"log_type": "header"})
             # Run stats with default arguments
             original_argv = sys.argv[:]
             sys.argv = ["goliat-stats", "results", "-o", "paper/simulation_stats", "--json"]
             try:
                 stats_main()
+                logging.getLogger("progress").info("--- Simulation statistics complete ---", extra={"log_type": "success"})
             finally:
                 sys.argv = original_argv
 
-        # Generate Excel file if enabled (default: True for near_field)
-        if analysis_config.get("generate_excel", True) and study_type == "near_field":
-            from goliat.analysis.create_excel_for_partners import main as excel_main
-            logging.getLogger("progress").info("Generating Excel file for partners...", extra={"log_type": "info"})
+        # Run comparison if enabled in analysis config
+        compare_config = analysis_config.get("compare", {})
+        if compare_config.get("enabled", False):
+            from goliat.analysis.compare import run_comparison
+
+            logging.getLogger("progress").info("--- Running UGent vs CNR comparison ---", extra={"log_type": "header"})
             try:
-                excel_main()
-            except Exception as e:
-                logging.getLogger("progress").warning(
-                    f"Failed to generate Excel file: {e}", extra={"log_type": "warning"}
+                run_comparison(
+                    compare_config.get("ugent_file", "results/near_field/Final_Data_UGent.xlsx"),
+                    compare_config.get("cnr_file", "results/near_field/Final_Data_CNR.xlsx"),
+                    compare_config.get("output_dir", "plots/comparison"),
+                    args.format,
                 )
+                logging.getLogger("progress").info("--- Comparison complete ---", extra={"log_type": "success"})
+            except Exception as e:
+                logging.getLogger("progress").warning(f"Failed to run comparison: {e}", extra={"log_type": "warning"})
 
 
 if __name__ == "__main__":
