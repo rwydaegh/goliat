@@ -168,12 +168,144 @@ Also want to run setup and extract phases in parallel? See the [Cloud Setup Guid
 ### Interactive GUI
 Real-time progress tracking with phase-based ETA estimation.
 
-![GOLIAT GUI](https://raw.githubusercontent.com/rwydaegh/goliat/master/docs/img/tutorials/tut1_gui.gif)
+![GOLIAT GUI](docs/img/tutorials/tut1_gui.gif)
 
-### Analysis results
-Auto-generated SAR heatmaps by tissue and frequency.
+<details>
+<summary><b>Simulation Setup</b></summary>
 
-![SAR Heatmap](https://raw.githubusercontent.com/rwydaegh/goliat/master/docs/img/results_capita_selecta/06_heatmap.png)
+Automatic scene building in Sim4Life with phantom and antenna placement.
+
+![Near-field setup](docs/img/tutorials/tut1_setup.png)
+
+Far-field simulation with plane wave sources from multiple directions.
+
+![Far-field setup](docs/img/tutorials/tut3_setup.png)
+
+SAR distribution visualization in Sim4Life.
+
+![SAR result](docs/img/tutorials/tut1_result.png)
+
+</details>
+
+<details>
+<summary><b>Analysis Results Gallery</b></summary>
+
+GOLIAT auto-generates 16+ plot types. Click each to expand.
+
+<details>
+<summary>Heatmap - SAR overview across all conditions</summary>
+
+![Heatmap](docs/img/results_capita_selecta/06_heatmap.png)
+</details>
+
+<details>
+<summary>Bar Chart - Average SAR by frequency</summary>
+
+![Bar Chart](docs/img/results_capita_selecta/01_bar_chart.png)
+</details>
+
+<details>
+<summary>Boxplot - SAR distribution across scenarios</summary>
+
+![Boxplot](docs/img/results_capita_selecta/02_boxplot.png)
+</details>
+
+<details>
+<summary>Bubble Chart - Tissue mass vs SAR relationship</summary>
+
+![Bubble Chart](docs/img/results_capita_selecta/03_bubble.png)
+</details>
+
+<details>
+<summary>CDF - Cumulative distribution function</summary>
+
+![CDF](docs/img/results_capita_selecta/04_cdf.png)
+</details>
+
+<details>
+<summary>Correlation Matrix - Tissue group correlations</summary>
+
+![Correlation Matrix](docs/img/results_capita_selecta/05_correlation.png)
+</details>
+
+<details>
+<summary>Line Plot - SAR vs frequency trends</summary>
+
+![Line Plot](docs/img/results_capita_selecta/07_line.png)
+</details>
+
+<details>
+<summary>Outliers - Outlier detection summary</summary>
+
+![Outliers](docs/img/results_capita_selecta/08_outliers.png)
+</details>
+
+<details>
+<summary>Penetration - Depth ratio analysis</summary>
+
+![Penetration](docs/img/results_capita_selecta/09_penetration.png)
+</details>
+
+<details>
+<summary>Power Balance - Power distribution overview</summary>
+
+![Power Balance](docs/img/results_capita_selecta/10_power_balance.png)
+</details>
+
+<details>
+<summary>Ranking - Top 20 tissues by SAR</summary>
+
+![Ranking](docs/img/results_capita_selecta/11_ranking.png)
+</details>
+
+<details>
+<summary>Spatial - Peak SAR 2D location</summary>
+
+![Spatial](docs/img/results_capita_selecta/12_spatial.png)
+</details>
+
+<details>
+<summary>Scatter - Max local vs peak spatial SAR</summary>
+
+![Scatter](docs/img/results_capita_selecta/13_scatter.png)
+</details>
+
+<details>
+<summary>Tissue Response - Frequency response curve</summary>
+
+![Tissue Response](docs/img/results_capita_selecta/14_tissue_response.png)
+</details>
+
+<details>
+<summary>Distribution - Tissue mass/volume distribution</summary>
+
+![Distribution](docs/img/results_capita_selecta/15_mass_volume.png)
+</details>
+
+<details>
+<summary>Comparison - UGent vs CNR validation</summary>
+
+![Comparison](docs/img/results_capita_selecta/16_comparison.png)
+</details>
+
+</details>
+
+<details>
+<summary><b>Cloud Monitoring Dashboard</b></summary>
+
+Web dashboard for monitoring distributed studies across multiple workers.
+
+![Dashboard overview](docs/img/cloud/monitoring_dashboard.png)
+
+Track individual worker status and progress.
+
+![Workers overview](docs/img/cloud/monitoring_workers.png)
+
+Monitor super studies spanning multiple phantoms and frequencies.
+
+![Super studies](docs/img/cloud/monitoring_super_studies.png)
+
+</details>
 
 </details>
 
