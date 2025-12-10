@@ -190,13 +190,13 @@ class Analyzer:
             # P_effective = DielLoss + SIBCLoss + RadPower (the actual absorbed + radiated power)
             LOW_FREQ_THRESHOLD_MHZ = 1000
             power_balance = sar_results.get("power_balance", {})
-            
+
             if frequency_mhz <= LOW_FREQ_THRESHOLD_MHZ and power_balance:
                 diel_loss = power_balance.get("DielLoss", 0.0) or 0.0
                 sibc_loss = power_balance.get("SIBCLoss", 0.0) or 0.0
                 rad_power = power_balance.get("RadPower", 0.0) or 0.0
                 p_effective = diel_loss + sibc_loss + rad_power
-                
+
                 if p_effective > 0:
                     original_pin = simulated_power_w
                     simulated_power_w = p_effective
