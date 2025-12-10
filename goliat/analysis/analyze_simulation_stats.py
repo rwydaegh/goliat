@@ -490,18 +490,16 @@ def create_visualizations(stats: dict, output_dir: str | Path):
         fig.savefig(output_dir / "05_solver_scaling.png", dpi=200, bbox_inches='tight')
         plt.close(fig)
 
-    # 06. SPEED ANALYSIS PLOT
+    # 06. SPEED DISTRIBUTION PLOT
     if stats["peak_speed_list"]:
-        fig, axes = plt.subplots(1, 2, figsize=(16, 7))
+        fig, ax = plt.subplots(figsize=(14, 7))
         
         # Convert to GCells/s for readability
         peak_speeds_gcells = [s / 1000 for s in stats["peak_speed_list"]]
-        avg_speeds_gcells = [s / 1000 for s in stats["avg_speed_list"]] if stats["avg_speed_list"] else []
         
-        # Left: Histogram of Peak Speeds
-        ax = axes[0]
+        # Histogram of Peak Speeds
         ax.hist(peak_speeds_gcells, bins=25, color=colors[2], alpha=0.8, edgecolor=colors[2])
-        ax.set_title("Peak Speed Distribution", pad=15, fontweight='bold')
+        ax.set_title("Solver Speed Distribution", pad=15, fontweight='bold')
         ax.set_xlabel("Peak Speed (GCells/s)")
         ax.set_ylabel("Number of Simulations")
         ax.grid(True, axis='y', alpha=0.3)
@@ -516,27 +514,8 @@ def create_visualizations(stats: dict, output_dir: str | Path):
                 bbox=dict(boxstyle='round', facecolor='#1e222b', alpha=0.9, edgecolor=colors[5]),
                 color='white', fontsize=11)
         
-        # Right: Peak vs Average Speed scatter
-        ax2 = axes[1]
-        if avg_speeds_gcells:
-            ax2.scatter(avg_speeds_gcells, peak_speeds_gcells, c=colors[1], alpha=0.6, s=60)
-            ax2.set_title("Peak vs Average Speed", pad=15, fontweight='bold')
-            ax2.set_xlabel("Average Speed (GCells/s)")
-            ax2.set_ylabel("Peak Speed (GCells/s)")
-            ax2.set_xlim(left=0)
-            ax2.set_ylim(bottom=0)
-            ax2.grid(True, alpha=0.3)
-            
-            # Add diagonal reference line
-            max_val = max(max(peak_speeds_gcells), max(avg_speeds_gcells))
-            ax2.plot([0, max_val], [0, max_val], 'w--', alpha=0.3, label='1:1 line')
-        else:
-            ax2.text(0.5, 0.5, "No average speed data available", 
-                    ha='center', va='center', transform=ax2.transAxes, color='#888888')
-            ax2.axis('off')
-        
         plt.tight_layout()
-        fig.savefig(output_dir / "06_speed_analysis.png", dpi=200, bbox_inches='tight')
+        fig.savefig(output_dir / "06_speed_distribution.png", dpi=200, bbox_inches='tight')
         plt.close(fig)
 
 

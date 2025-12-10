@@ -191,6 +191,48 @@ class CdfPlotter(BasePlotter):
             # Fallback if no lines
             ax.set_ylim(0, 1.0)
 
+        # Add inset for "all scenarios, all frequencies" plots to zoom in on non-outliers
+        # Detect if this is an "all_allMHz" plot (scenario_name is None and frequency_mhz is None)
+        is_all_all_plot = scenario_name is None and frequency_mhz is None and group_by
+        
+        if is_all_all_plot and ax.get_lines() and len(ax.get_lines()) > 1:
+            from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+            
+            # Get max x value for each line to detect outlier
+            line_maxes = []
+            for line in ax.get_lines():
+                x_data = line.get_xdata()
+                if len(x_data) > 0:
+                    line_maxes.append((x_data.max(), line))
+            
+            if len(line_maxes) >= 2:
+                # Sort by max value
+                line_maxes.sort(key=lambda x: x[0], reverse=True)
+                max_val = line_maxes[0][0]
+                second_max = line_maxes[1][0]
+                
+                # Check if there's an outlier (max is > 2x the second highest)
+                if max_val > second_max * 2.0:
+                    # Create inset zoomed to the non-outlier range
+                    ax_inset = inset_axes(ax, width="40%", height="40%", loc="lower right", borderpad=1.5)
+                    
+                    # Replot all lines in the inset with reduced linewidth
+                    colors = self._get_academic_colors(len(ax.get_lines()))
+                    linestyles = self._get_academic_linestyles(len(ax.get_lines()))
+                    for idx, line in enumerate(ax.get_lines()):
+                        x_data = line.get_xdata()
+                        y_data = line.get_ydata()
+                        ax_inset.plot(x_data, y_data, linewidth=1, color=colors[idx], linestyle=linestyles[idx], alpha=0.8)
+                    
+                    # Set inset limits to zoom on non-outlier data (up to 95th percentile of second highest)
+                    # Use second_max * 1.1 as max x to include some margin
+                    inset_x_max = second_max * 1.1
+                    ax_inset.set_xlim(0, inset_x_max)
+                    ax_inset.set_ylim(y_min, 1.0)
+                    ax_inset.tick_params(labelsize=6)
+                    ax_inset.grid(True, alpha=0.3)
+                    ax_inset.set_title("Zoomed (excl. outlier)", fontsize=7, pad=2)
+
         # Add n= label for single CDF
         if not group_by:
             n_samples = len(plot_df)
