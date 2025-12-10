@@ -85,6 +85,7 @@ nav:
 - User Guide:
   - Quick Start: user_guide/quick_start.md
   - User Guide: user_guide/user_guide.md
+  - AI Assistant: user_guide/ai_assistant.md
 - Tutorials:
   - Overview: tutorials/overview.md
   - 1. Far-Field Basics: tutorials/01_far_field_basics.ipynb
