@@ -26,7 +26,7 @@ def read_caption_file(txt_path):
         title = title_match.group(1).strip()
 
     # Extract Caption
-    caption_match = re.search(r"Caption:\s*(.+?)(?:\n\n|\Z)", content, re.DOTALL)
+    caption_match = re.search(r"Caption:\s*(.+)", content, re.DOTALL)
     if caption_match:
         caption = caption_match.group(1).strip()
 
