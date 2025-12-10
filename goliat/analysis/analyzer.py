@@ -185,6 +185,27 @@ class Analyzer:
 
             simulated_power_w = sar_results.get("input_power_W", float("nan"))
 
+            # For low frequencies (<=1000 MHz), use P_effective instead of Pin
+            # because antenna mismatch causes Pin >> deposited power
+            # P_effective = DielLoss + SIBCLoss + RadPower (the actual absorbed + radiated power)
+            LOW_FREQ_THRESHOLD_MHZ = 1000
+            power_balance = sar_results.get("power_balance", {})
+            
+            if frequency_mhz <= LOW_FREQ_THRESHOLD_MHZ and power_balance:
+                diel_loss = power_balance.get("DielLoss", 0.0) or 0.0
+                sibc_loss = power_balance.get("SIBCLoss", 0.0) or 0.0
+                rad_power = power_balance.get("RadPower", 0.0) or 0.0
+                p_effective = diel_loss + sibc_loss + rad_power
+                
+                if p_effective > 0:
+                    original_pin = simulated_power_w
+                    simulated_power_w = p_effective
+                    logging.getLogger("progress").debug(
+                        f"    - Low freq ({frequency_mhz}MHz): Using P_effective={p_effective:.4e}W "
+                        f"instead of Pin={original_pin:.4e}W for normalization",
+                        extra={"log_type": "debug"},
+                    )
+
             # Warn if results exist but input power is missing (unusual)
             if pd.isna(simulated_power_w) or simulated_power_w <= 0:
                 logging.getLogger("progress").warning(
