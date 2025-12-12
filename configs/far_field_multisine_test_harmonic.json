@@ -1,7 +1,6 @@
 {
-    "extends": "base_config.json",
-    "study_type": "far_field",
-    "description": "Baseline: Two separate harmonic simulations at 700 and 2450 MHz for multi-sine validation",
+    "extends": "far_field_config.json",
+    "description": "Multi-sine test: Baseline with separate harmonic simulations at 700 and 2450 MHz",
     "phantoms": [
         "thelonious"
     ],
@@ -18,19 +17,6 @@
             "polarizations": [
                 "theta"
             ]
-        }
-    },
-    "simulation_parameters": {
-        "simulation_time_multiplier": 3.5
-    },
-    "gridding_parameters": {
-        "global_gridding": {
-            "grid_mode": "manual",
-            "manual_fallback_max_step_mm": 3.0
-        },
-        "global_gridding_per_frequency": {
-            "700": 2.5,
-            "2450": 1.482
         }
     },
     "execution_control": {
