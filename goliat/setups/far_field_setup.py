@@ -210,8 +210,8 @@ class FarFieldSetup(BaseSetup):
             plane_wave_source.UserSignalType = plane_wave_source.UserSignalType.enum.FromEquation
 
             # Create expression: cos(2*pi*f1*_t) + cos(2*pi*f2*_t) + ...
-            # Equal amplitude for all frequencies
-            terms = [f"cos(2 * 3.14159265358979 * {f} * _t)" for f in frequencies_hz]
+            # Equal amplitude for all frequencies. Use 'pi' constant (Sim4Life built-in)
+            terms = [f"cos(2 * pi * {f} * _t)" for f in frequencies_hz]
             expression = " + ".join(terms)
             self._log(f"    - UserExpression: {expression}", log_type="verbose")
             plane_wave_source.UserExpression = expression
