@@ -106,7 +106,8 @@ class SarExtractor(LoggingMixin):
         """Sets up and updates the EM sensor extractor for SAR analysis.
 
         For Gaussian excitation, extracts at center frequency only. For Harmonic,
-        extracts at all frequencies.
+        extracts at all frequencies. For multi-sine, extracts at the specific
+        frequency being processed (frequency_mhz should be an int at this point).
 
         Args:
             simulation_extractor: Results extractor from the simulation object.
@@ -119,11 +120,25 @@ class SarExtractor(LoggingMixin):
         excitation_type = self.config["simulation_parameters.excitation_type"] or "Harmonic"
         excitation_type_lower = excitation_type.lower() if isinstance(excitation_type, str) else "harmonic"
 
+        # Get frequency (should be int at extraction time, even for multi-sine)
+        freq_mhz = self.parent.frequency_mhz
+
         if excitation_type_lower == "gaussian":
             # Extract at center frequency for Gaussian
-            center_freq_hz = self.parent.frequency_mhz * 1e6
+            center_freq_hz = freq_mhz * 1e6 if isinstance(freq_mhz, int) else max(freq_mhz) * 1e6
             em_sensor_extractor.FrequencySettings.ExtractedFrequency = center_freq_hz, self.units.Hz
-            self._log(f"  - Extracting SAR at center frequency: {self.parent.frequency_mhz} MHz", log_type="info")
+            self._log(f"  - Extracting SAR at center frequency: {center_freq_hz / 1e6} MHz", log_type="info")
+        elif isinstance(freq_mhz, int):
+            # For single frequency (harmonic or multi-sine extraction at specific freq)
+            # Check if there are multiple frequencies available in the simulation
+            try:
+                # Try to extract at specific frequency
+                freq_hz = freq_mhz * 1e6
+                em_sensor_extractor.FrequencySettings.ExtractedFrequency = freq_hz, self.units.Hz
+                self._log(f"  - Extracting SAR at frequency: {freq_mhz} MHz", log_type="info")
+            except Exception:
+                # Fallback to "All" if setting specific frequency fails
+                em_sensor_extractor.FrequencySettings.ExtractedFrequency = "All"
         else:
             em_sensor_extractor.FrequencySettings.ExtractedFrequency = "All"
 

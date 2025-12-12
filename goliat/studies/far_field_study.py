@@ -326,22 +326,44 @@ class FarFieldStudy(BaseStudy):
                     if not reloaded_simulation:
                         raise RuntimeError(f"Could not find simulation '{sim_name}' after reloading.")
 
-                    with self.subtask("extract_results_total"):
-                        extractor = ResultsExtractor.from_params(
-                            config=self.config,
-                            simulation=reloaded_simulation,  # type: ignore
-                            phantom_name=phantom_name,
-                            frequency_mhz=freq,
-                            scenario_name="environmental",
-                            position_name=polarization_name,
-                            orientation_name=direction_name,
-                            study_type="far_field",
-                            verbose_logger=self.verbose_logger,
-                            progress_logger=self.progress_logger,
-                            gui=self.gui,  # type: ignore
-                            study=self,
-                        )
-                        extractor.extract()
+                    # For multi-sine, extract at each frequency separately
+                    if isinstance(freq, list):
+                        self._log(f"  - Multi-sine extraction: extracting at each frequency {freq} MHz", log_type="info")
+                        for single_freq in freq:
+                            self._log(f"    - Extracting at {single_freq} MHz...", log_type="progress")
+                            with self.subtask(f"extract_results_{single_freq}MHz"):
+                                extractor = ResultsExtractor.from_params(
+                                    config=self.config,
+                                    simulation=reloaded_simulation,  # type: ignore
+                                    phantom_name=phantom_name,
+                                    frequency_mhz=single_freq,  # Extract at single frequency
+                                    scenario_name="environmental",
+                                    position_name=polarization_name,
+                                    orientation_name=direction_name,
+                                    study_type="far_field",
+                                    verbose_logger=self.verbose_logger,
+                                    progress_logger=self.progress_logger,
+                                    gui=self.gui,  # type: ignore
+                                    study=self,
+                                )
+                                extractor.extract()
+                    else:
+                        with self.subtask("extract_results_total"):
+                            extractor = ResultsExtractor.from_params(
+                                config=self.config,
+                                simulation=reloaded_simulation,  # type: ignore
+                                phantom_name=phantom_name,
+                                frequency_mhz=freq,
+                                scenario_name="environmental",
+                                position_name=polarization_name,
+                                orientation_name=direction_name,
+                                study_type="far_field",
+                                verbose_logger=self.verbose_logger,
+                                progress_logger=self.progress_logger,
+                                gui=self.gui,  # type: ignore
+                                study=self,
+                            )
+                            extractor.extract()
                     self._verify_and_update_metadata("extract")
                     self.project_manager.save()
                     if self.gui:
