@@ -54,6 +54,19 @@ class FarFieldStudy(BaseStudy):
         frequencies = self.config["frequencies_mhz"] or []
         if not isinstance(frequencies, list):
             frequencies = [frequencies]
+
+        # Parse multi-sine frequency groups (e.g., "700+2450" -> [700, 2450])
+        parsed_frequencies = []
+        for freq in frequencies:
+            if isinstance(freq, str) and "+" in freq:
+                # Multi-sine group: "700+2450" -> [700, 2450]
+                freq_list = [int(f.strip()) for f in freq.split("+")]
+                parsed_frequencies.append(freq_list)
+                self._log(f"Multi-sine frequency group detected: {freq_list} MHz", log_type="info")
+            else:
+                parsed_frequencies.append(int(freq) if isinstance(freq, str) else freq)
+        frequencies = parsed_frequencies
+
         far_field_params = self.config["far_field_setup.environmental"] or {}
         incident_directions = far_field_params.get("incident_directions", []) if far_field_params else []
         polarizations = far_field_params.get("polarizations", []) if far_field_params else []
@@ -110,7 +123,7 @@ class FarFieldStudy(BaseStudy):
     def _process_single_far_field_simulation(
         self,
         phantom_name: str,
-        freq: int,
+        freq: int | list[int],
         direction_name: str,
         polarization_name: str,
         simulation_count: int,
@@ -133,9 +146,11 @@ class FarFieldStudy(BaseStudy):
             do_extract: Whether extract phase is enabled.
         """
         self._check_for_stop_signal()
+        # Format frequency for display
+        freq_display = f"{'+'.join(str(f) for f in freq)}" if isinstance(freq, list) else str(freq)
         self._log(
             f"\n--- Processing Simulation {simulation_count}/{total_simulations}: "
-            f"{phantom_name}, {freq}MHz, {direction_name}, {polarization_name} ---",
+            f"{phantom_name}, {freq_display}MHz, {direction_name}, {polarization_name} ---",
             level="progress",
             log_type="header",
         )
@@ -143,7 +158,7 @@ class FarFieldStudy(BaseStudy):
             self.gui.update_simulation_details(
                 simulation_count,
                 total_simulations,
-                f"{phantom_name}, {freq}MHz, {direction_name}, {polarization_name}",
+                f"{phantom_name}, {freq_display}MHz, {direction_name}, {polarization_name}",
             )
         self._run_single_simulation(
             phantom_name,
@@ -161,7 +176,7 @@ class FarFieldStudy(BaseStudy):
     def _run_single_simulation(
         self,
         phantom_name: str,
-        freq: int,
+        freq: int | list[int],
         direction_name: str,
         polarization_name: str,
         do_setup: bool,
@@ -170,6 +185,8 @@ class FarFieldStudy(BaseStudy):
     ):
         """Runs a full simulation for a single far-field case."""
         sim_log_handlers = None
+        # Format frequency for naming/paths
+        freq_str = f"{'+'.join(str(f) for f in freq)}" if isinstance(freq, list) else str(freq)
         try:
             simulation = None
 
@@ -271,7 +288,7 @@ class FarFieldStudy(BaseStudy):
                 import s4l_v1.document
 
                 if s4l_v1.document.AllSimulations:
-                    sim_name = f"EM_FDTD_{phantom_name}_{freq}MHz_{direction_name}_{polarization_name}"
+                    sim_name = f"EM_FDTD_{phantom_name}_{freq_str}MHz_{direction_name}_{polarization_name}"
                     simulation = next(
                         (s for s in s4l_v1.document.AllSimulations if s.Name == sim_name),
                         None,

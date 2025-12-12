@@ -26,7 +26,7 @@ class FarFieldSetup(BaseSetup):
         self,
         config: "Config",
         phantom_name: str,
-        frequency_mhz: int,
+        frequency_mhz: int | list[int],
         direction_name: str,
         polarization_name: str,
         project_manager: "ProjectManager",
@@ -38,6 +38,9 @@ class FarFieldSetup(BaseSetup):
         super().__init__(config, verbose_logger, progress_logger, gui)
         self.phantom_name = phantom_name
         self.frequency_mhz = frequency_mhz
+        # For multi-sine, use highest frequency for grid/reference
+        self.reference_frequency_mhz = max(frequency_mhz) if isinstance(frequency_mhz, list) else frequency_mhz
+        self.is_multisine = isinstance(frequency_mhz, list)
         self.direction_name = direction_name
         self.polarization_name = polarization_name
         self.project_manager = project_manager
@@ -102,7 +105,7 @@ class FarFieldSetup(BaseSetup):
                 None,  # type: ignore
                 self.verbose_logger,
                 self.progress_logger,
-                frequency_mhz=self.frequency_mhz,
+                frequency_mhz=self.reference_frequency_mhz,
             )
             gridding_setup.setup_gridding()
 
@@ -132,7 +135,7 @@ class FarFieldSetup(BaseSetup):
 
             all_simulation_parts = phantom_entities + [bbox_entity] + point_sensor_entities
 
-            super()._finalize_setup(self.project_manager, simulation, all_simulation_parts, self.frequency_mhz)
+            super()._finalize_setup(self.project_manager, simulation, all_simulation_parts, self.reference_frequency_mhz)
         elapsed = self.profiler.subtask_times["setup_voxelize"][-1]
         self._log(f"      - Subtask 'setup_voxelize' done in {elapsed:.2f}s", log_type="verbose")
         self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
@@ -153,6 +156,7 @@ class FarFieldSetup(BaseSetup):
 
         Configures plane wave direction (theta/phi) and polarization (psi)
         based on direction_name and polarization_name config.
+        For multi-sine, uses UserDefined excitation with sum of cosines.
 
         Args:
             bbox_entity: Simulation bounding box entity.
@@ -160,17 +164,22 @@ class FarFieldSetup(BaseSetup):
         Returns:
             Configured simulation object.
         """
-        sim_name = f"EM_FDTD_{self.phantom_name}_{self.frequency_mhz}MHz_{self.direction_name}_{self.polarization_name}"
+        # Format frequency for naming
+        if self.is_multisine:
+            freq_str = "+".join(str(f) for f in self.frequency_mhz)  # type: ignore
+        else:
+            freq_str = str(self.frequency_mhz)
+
+        sim_name = f"EM_FDTD_{self.phantom_name}_{freq_str}MHz_{self.direction_name}_{self.polarization_name}"
         self._log(f"  - Creating simulation: {sim_name}", log_type="info")
 
         simulation = self.emfdtd.Simulation()
         simulation.Name = sim_name
 
-        # Set frequency for the entire simulation FIRST. This influences material properties.
-        simulation.Frequency = self.frequency_mhz, self.s4l_v1.units.MHz
+        # Set reference frequency for the simulation (for material properties)
+        simulation.Frequency = self.reference_frequency_mhz, self.s4l_v1.units.MHz
 
         plane_wave_source = self.emfdtd.PlaneWaveSourceSettings()
-        plane_wave_source.CenterFrequency = self.frequency_mhz, self.s4l_v1.units.MHz
 
         # Calculate direction vector (k) and angles
         direction_map = {
@@ -191,6 +200,36 @@ class FarFieldSetup(BaseSetup):
             plane_wave_source.Psi = 0
         elif self.polarization_name == "phi":
             plane_wave_source.Psi = 90
+
+        if self.is_multisine:
+            # Multi-sine: UserDefined excitation with sum of cosines
+            self._log(f"  - Configuring multi-sine excitation: {self.frequency_mhz} MHz", log_type="info")
+            frequencies_hz = [f * 1e6 for f in self.frequency_mhz]  # type: ignore
+
+            plane_wave_source.ExcitationType = plane_wave_source.ExcitationType.enum.UserDefined
+            plane_wave_source.UserSignalType = plane_wave_source.UserSignalType.enum.FromEquation
+
+            # Create expression: cos(2*pi*f1*_t) + cos(2*pi*f2*_t) + ...
+            # Equal amplitude for all frequencies
+            terms = [f"cos(2 * 3.14159265358979 * {f} * _t)" for f in frequencies_hz]
+            expression = " + ".join(terms)
+            self._log(f"    - UserExpression: {expression}", log_type="verbose")
+            plane_wave_source.UserExpression = expression
+
+            # Set CenterFrequency to highest (for reference)
+            plane_wave_source.CenterFrequency = self.reference_frequency_mhz, self.s4l_v1.units.MHz
+
+            # Setup overall field sensor with extracted frequencies
+            field_sensor_settings = simulation.AddOverallFieldSensorSettings()
+            field_sensor_settings.ExtractedFrequencies = frequencies_hz
+            field_sensor_settings.OnTheFlyDFT = True
+            field_sensor_settings.RecordEField = True
+            field_sensor_settings.RecordHField = False
+            field_sensor_settings.RecordingDomain = field_sensor_settings.RecordingDomain.enum.RecordInFrequencyDomain
+            self._log(f"  - Configured field sensor for frequencies: {self.frequency_mhz} MHz", log_type="info")
+        else:
+            # Single frequency harmonic
+            plane_wave_source.CenterFrequency = self.frequency_mhz, self.s4l_v1.units.MHz  # type: ignore
 
         simulation.Add(plane_wave_source, [bbox_entity])
         self.document.AllSimulations.Add(simulation)

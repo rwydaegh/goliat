@@ -57,17 +57,18 @@ class BaseSetup(LoggingMixin):
         self,
         simulation: "emfdtd.Simulation",
         sim_bbox_entity: "model.Entity",
-        frequency_mhz: int,
+        frequency_mhz: int | list[int],
     ):
         """Sets simulation time and termination criteria based on bbox size.
 
         Calculates time from bbox diagonal length and frequency, then sets
         termination level (weak/medium/strong/user-defined) from config.
+        For multi-sine, also considers beat period requirements.
 
         Args:
             simulation: Simulation object to configure.
             sim_bbox_entity: Bounding box entity for size calculation.
-            frequency_mhz: Simulation frequency in MHz.
+            frequency_mhz: Simulation frequency in MHz (int or list for multi-sine).
         """
         sim_params = self.config["simulation_parameters"] or {}
 
@@ -91,6 +92,13 @@ class BaseSetup(LoggingMixin):
         excitation_type_lower = excitation_type.lower() if isinstance(excitation_type, str) else "harmonic"
 
         T_prop = diagonal_length_m / 299792458.0  # Speed of light in m/s
+
+        # Determine reference frequency for period calculation
+        is_multisine = isinstance(frequency_mhz, list)
+        if is_multisine:
+            ref_freq_mhz = max(frequency_mhz)
+        else:
+            ref_freq_mhz = frequency_mhz
 
         if excitation_type_lower == "gaussian":
             # Get Gaussian parameters
@@ -129,12 +137,44 @@ class BaseSetup(LoggingMixin):
             else:
                 self._log("  - Multiplier approach sufficient", log_type="info")
 
-            sim_time_periods = T_sim / (1 / (frequency_mhz * 1e6))
+            sim_time_periods = T_sim / (1 / (ref_freq_mhz * 1e6))
             self._log(f"  - Final simulation time: {T_sim * 1e9:.1f} ns ({sim_time_periods:.1f} periods)", log_type="highlight")
+        elif is_multisine:
+            # Multi-sine: need extra time for beat period
+            freq_list = frequency_mhz  # type: ignore
+            self._log(f"  - Multi-sine excitation: {freq_list} MHz", log_type="info")
+
+            # Calculate minimum frequency difference (beat frequency)
+            min_delta_mhz = min(abs(f1 - f2) for i, f1 in enumerate(freq_list) for f2 in freq_list[i + 1 :])
+            beat_period_s = 1.0 / (min_delta_mhz * 1e6)
+            T_beat_requirement = 5 * beat_period_s  # 5 beat periods for DFT accuracy
+
+            T_allocated = time_multiplier * T_prop
+
+            # Take maximum of propagation-based time and beat time
+            T_sim = max(T_allocated, T_beat_requirement)
+
+            # Logging
+            self._log("  - Multi-sine timing breakdown:", log_type="info")
+            self._log(f"    - Propagation (with multiplier): {T_allocated * 1e9:.1f} ns", log_type="info")
+            self._log(f"    - Min frequency delta: {min_delta_mhz} MHz", log_type="info")
+            self._log(f"    - Beat period: {beat_period_s * 1e9:.1f} ns", log_type="info")
+            self._log(f"    - Required for DFT (5x beat): {T_beat_requirement * 1e9:.1f} ns", log_type="info")
+
+            if T_sim == T_beat_requirement:
+                self._log("  - BEAT PERIOD DOMINATES", log_type="highlight")
+            else:
+                self._log("  - Multiplier approach sufficient", log_type="info")
+
+            sim_time_periods = T_sim / (1 / (ref_freq_mhz * 1e6))
+            self._log(
+                f"  - Final simulation time: {T_sim * 1e9:.1f} ns ({sim_time_periods:.1f} periods at {ref_freq_mhz} MHz)",
+                log_type="highlight",
+            )
         else:
             # Harmonic: existing logic
             time_to_travel_s = (time_multiplier * diagonal_length_m) / 299792458
-            sim_time_periods = time_to_travel_s / (1 / (frequency_mhz * 1e6))
+            sim_time_periods = time_to_travel_s / (1 / (ref_freq_mhz * 1e6))
             self._log(
                 f"  - Simulation time set to {sim_time_periods:.2f} periods.",
                 log_type="info",

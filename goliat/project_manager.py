@@ -518,7 +518,7 @@ class ProjectManager(LoggingMixin):
         self,
         study_type: str,
         phantom_name: str,
-        frequency_mhz: int,
+        frequency_mhz: int | list[int],
         scenario_name: Optional[str],
         position_name: Optional[str],
         orientation_name: Optional[str],
@@ -543,7 +543,7 @@ class ProjectManager(LoggingMixin):
         self,
         study_type: str,
         phantom_name: str,
-        frequency_mhz: int,
+        frequency_mhz: int | list[int],
         placement_name: str,
     ) -> tuple[str, str]:
         """Builds project directory and filename paths for the given study type.
@@ -551,7 +551,7 @@ class ProjectManager(LoggingMixin):
         Args:
             study_type: The type of study ('near_field' or 'far_field').
             phantom_name: The name of the phantom model.
-            frequency_mhz: The simulation frequency in MHz.
+            frequency_mhz: The simulation frequency in MHz (int or list for multi-sine).
             placement_name: The placement name (scenario_position_orientation).
 
         Returns:
@@ -560,26 +560,29 @@ class ProjectManager(LoggingMixin):
         Raises:
             ValueError: If study_type is unknown.
         """
+        # Format frequency for paths
+        freq_str = "+".join(str(f) for f in frequency_mhz) if isinstance(frequency_mhz, list) else str(frequency_mhz)
+
         if study_type == "near_field":
             project_dir = os.path.join(
                 self.config.base_dir,
                 "results",
                 "near_field",
                 phantom_name.lower(),
-                f"{frequency_mhz}MHz",
+                f"{freq_str}MHz",
                 placement_name,
             )
-            project_filename = f"near_field_{phantom_name.lower()}_{frequency_mhz}MHz_{placement_name}.smash"
+            project_filename = f"near_field_{phantom_name.lower()}_{freq_str}MHz_{placement_name}.smash"
         elif study_type == "far_field":
             project_dir = os.path.join(
                 self.config.base_dir,
                 "results",
                 "far_field",
                 phantom_name.lower(),
-                f"{frequency_mhz}MHz",
+                f"{freq_str}MHz",
                 placement_name,
             )
-            project_filename = f"far_field_{phantom_name.lower()}_{frequency_mhz}MHz_{placement_name}.smash"
+            project_filename = f"far_field_{phantom_name.lower()}_{freq_str}MHz_{placement_name}.smash"
         else:
             raise ValueError(f"Unknown study_type '{study_type}' in config.")
 
@@ -588,7 +591,7 @@ class ProjectManager(LoggingMixin):
     def create_or_open_project(
         self,
         phantom_name: str,
-        frequency_mhz: int,
+        frequency_mhz: int | list[int],
         scenario_name: Optional[str] = None,
         position_name: Optional[str] = None,
         orientation_name: Optional[str] = None,
