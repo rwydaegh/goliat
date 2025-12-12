@@ -230,7 +230,11 @@ class FarFieldSetup(BaseSetup):
             field_sensor_settings.RecordHField = False
             field_sensor_settings.RecordingDomain = field_sensor_settings.RecordingDomain.enum.RecordInFrequencyDomain
             self._log(f"  - Configured field sensor for frequencies: {self.frequency_mhz} MHz", log_type="info")
-        # else: Single frequency harmonic - CenterFrequency already set above
+        else:
+            # Single frequency harmonic
+            plane_wave_source.ExcitationType = plane_wave_source.ExcitationType.enum.Harmonic
+            plane_wave_source.ApplyFilter = True  # Default, but explicit is safer
+            # CenterFrequency already set immediately after creation
 
         simulation.Add(plane_wave_source, [bbox_entity])
         self.document.AllSimulations.Add(simulation)
