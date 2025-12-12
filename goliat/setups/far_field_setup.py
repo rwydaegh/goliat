@@ -216,7 +216,11 @@ class FarFieldSetup(BaseSetup):
             self._log(f"    - UserExpression: {expression}", log_type="verbose")
             plane_wave_source.UserExpression = expression
 
-            # Set CenterFrequency to highest (for reference)
+            # CRITICAL: Disable bandwidth filter so all frequency components pass through!
+            # The default filter would only pass frequencies near CenterFrequency
+            plane_wave_source.ApplyFilter = False
+
+            # Set CenterFrequency to highest (for reference/gridding)
             plane_wave_source.CenterFrequency = self.reference_frequency_mhz, self.s4l_v1.units.MHz
 
             # Setup overall field sensor with extracted frequencies
