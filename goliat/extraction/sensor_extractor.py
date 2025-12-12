@@ -155,6 +155,9 @@ class SensorExtractor:
             f"{self.parent.frequency_mhz}MHz",
             self.parent.placement_name,
         )
+        if not os.path.exists(results_dir):
+            os.makedirs(results_dir, exist_ok=True)
+
         plot_filepath = os.path.join(results_dir, "point_sensor_data.png")
         plt.savefig(plot_filepath, dpi=300)
         plt.close(fig)
