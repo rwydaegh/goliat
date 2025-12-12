@@ -144,7 +144,7 @@ class PowerExtractor(LoggingMixin):
             self.results_data.update(
                 {
                     "input_power_W": float(theoretical_power),
-                    "input_power_frequency_MHz": float(self.frequency_mhz),
+                    "input_power_frequency_MHz": float(self.frequency_mhz),  # type: ignore
                 }
             )
             self._log(
@@ -160,25 +160,31 @@ class PowerExtractor(LoggingMixin):
             em_sensor_extractor.Update()
 
             input_power_output = em_sensor_extractor.Outputs["EM Input Power(f)"]
-            input_power_output.Update()
+            if input_power_output:
+                input_power_output.Update()
 
-            power_data = input_power_output.Data.GetComponent(0)
-            if power_data is not None and power_data.size > 0:
-                if power_data.size == 1:
-                    manual_power = power_data.item()
+                power_data = input_power_output.Data.GetComponent(0)
+                if power_data is not None and power_data.size > 0:
+                    if power_data.size == 1:
+                        manual_power = power_data.item()
+                    else:
+                        center_freq_hz = self.frequency_mhz * 1e6  # type: ignore
+                        axis = input_power_output.Data.Axis
+                        target_index = np.argmin(np.abs(axis - center_freq_hz))
+                        manual_power = power_data[target_index]
+
+                    self._log(
+                        f"  - MANUAL input power (from s4l): {float(manual_power):.4e} W",
+                        log_type="info",
+                    )
                 else:
-                    center_freq_hz = self.frequency_mhz * 1e6
-                    axis = input_power_output.Data.Axis
-                    target_index = np.argmin(np.abs(axis - center_freq_hz))
-                    manual_power = power_data[target_index]
-
-                self._log(
-                    f"  - MANUAL input power (from s4l): {float(manual_power):.4e} W",
-                    log_type="info",
-                )
+                    self._log(
+                        "  - WARNING: Could not extract manual input power from s4l (empty data).",
+                        log_type="warning",
+                    )
             else:
                 self._log(
-                    "  - WARNING: Could not extract manual input power from s4l (empty data).",
+                    "  - WARNING: 'EM Input Power(f)' output not available from Overall Field sensor.",
                     log_type="warning",
                 )
         except Exception as e:
@@ -206,7 +212,7 @@ class PowerExtractor(LoggingMixin):
             self.results_data.update(
                 {
                     "input_power_W": float(power_w),
-                    "input_power_frequency_MHz": float(self.frequency_mhz),
+                    "input_power_frequency_MHz": float(self.frequency_mhz),  # type: ignore
                 }
             )
         else:
@@ -222,7 +228,7 @@ class PowerExtractor(LoggingMixin):
                 self.results_data.update(
                     {
                         "input_power_W": float(abs(power_complex)),
-                        "input_power_frequency_MHz": float(self.frequency_mhz),
+                        "input_power_frequency_MHz": float(self.frequency_mhz),  # type: ignore
                     }
                 )
             else:
@@ -234,7 +240,7 @@ class PowerExtractor(LoggingMixin):
                             self.frequency_mhz,
                         )
                     else:
-                        center_freq_hz = self.frequency_mhz * 1e6
+                        center_freq_hz = self.frequency_mhz * 1e6  # type: ignore
                         axis = input_power_output.Data.Axis
                         target_index = np.argmin(np.abs(axis - center_freq_hz))
                         input_power_w, freq_mhz = (
@@ -248,7 +254,7 @@ class PowerExtractor(LoggingMixin):
                     self.results_data.update(
                         {
                             "input_power_W": float(input_power_w),
-                            "input_power_frequency_MHz": float(freq_mhz),
+                            "input_power_frequency_MHz": float(freq_mhz),  # type: ignore
                         }
                     )
                 else:
