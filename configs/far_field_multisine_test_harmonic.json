@@ -19,6 +19,11 @@
             ]
         }
     },
+    "simulation_parameters": {
+        "bbox_padding_mm": 50,
+        "number_of_point_sensors": 2,
+        "simulation_time_multiplier": 6.0
+    },
     "execution_control": {
         "do_setup": true,
         "do_run": true,
