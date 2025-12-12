@@ -19,6 +19,9 @@
             ]
         }
     },
+    "simulation_parameters": {
+        "simulation_time_multiplier": 6.0
+    },
     "execution_control": {
         "do_setup": true,
         "do_run": true,
