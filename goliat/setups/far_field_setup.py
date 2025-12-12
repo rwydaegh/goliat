@@ -180,6 +180,8 @@ class FarFieldSetup(BaseSetup):
         simulation.Frequency = self.reference_frequency_mhz, self.s4l_v1.units.MHz
 
         plane_wave_source = self.emfdtd.PlaneWaveSourceSettings()
+        # Set CenterFrequency immediately (required for source to work)
+        plane_wave_source.CenterFrequency = self.reference_frequency_mhz, self.s4l_v1.units.MHz
 
         # Calculate direction vector (k) and angles
         direction_map = {
@@ -220,9 +222,6 @@ class FarFieldSetup(BaseSetup):
             # The default filter would only pass frequencies near CenterFrequency
             plane_wave_source.ApplyFilter = False
 
-            # Set CenterFrequency to highest (for reference/gridding)
-            plane_wave_source.CenterFrequency = self.reference_frequency_mhz, self.s4l_v1.units.MHz
-
             # Setup overall field sensor with extracted frequencies
             field_sensor_settings = simulation.AddOverallFieldSensorSettings()
             field_sensor_settings.ExtractedFrequencies = frequencies_hz
@@ -231,9 +230,7 @@ class FarFieldSetup(BaseSetup):
             field_sensor_settings.RecordHField = False
             field_sensor_settings.RecordingDomain = field_sensor_settings.RecordingDomain.enum.RecordInFrequencyDomain
             self._log(f"  - Configured field sensor for frequencies: {self.frequency_mhz} MHz", log_type="info")
-        else:
-            # Single frequency harmonic
-            plane_wave_source.CenterFrequency = self.frequency_mhz, self.s4l_v1.units.MHz  # type: ignore
+        # else: Single frequency harmonic - CenterFrequency already set above
 
         simulation.Add(plane_wave_source, [bbox_entity])
         self.document.AllSimulations.Add(simulation)
