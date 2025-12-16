@@ -345,7 +345,7 @@ def main():
         from goliat.utils.setup import initial_setup
 
         initial_setup()
-        print("\n✓ GOLIAT initialization complete!")
+        print("\nGOLIAT initialization complete!")
         print("  You can now run 'goliat study <config>' to start a simulation.")
         return
 
