@@ -11,6 +11,7 @@
 [![Maintainability](https://qlty.sh/gh/rwydaegh/projects/goliat/maintainability.svg)](https://qlty.sh/gh/rwydaegh/projects/goliat)
 [![Lines of code](https://img.shields.io/endpoint?url=https://ghloc.vercel.app/api/rwydaegh/goliat/badge)](https://ghloc.vercel.app/rwydaegh/goliat?branch=master)
 [![Code style: ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![GitHub Clones](https://img.shields.io/badge/dynamic/json?color=success&label=Clone&query=count&url=https://gist.githubusercontent.com/rwydaegh/475594c72c67763806ad077d7672adb2/raw/clone.json&logo=github)](https://github.com/rwydaegh/goliat)
 [![Python](https://img.shields.io/badge/python-3.11-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![GUI](https://img.shields.io/badge/GUI-PySide6-blue.svg?logo=qt&logoColor=white)](https://www.qt.io/qt-for-python)
 [![Cloud](https://img.shields.io/badge/cloud-oSPARC-blue.svg?logo=cloud&logoColor=white)](https://osparc.io/)
