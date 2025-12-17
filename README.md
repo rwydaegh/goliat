@@ -392,7 +392,7 @@ If you use this software, please cite it as:
   author  = {Wydaeghe, Robin},
   url     = {https://github.com/rwydaeghe/goliat},
   license = {Apache-2.0},
-  version = {1.2.3}
+  version = {1.3.0}
 }
 ```
 
