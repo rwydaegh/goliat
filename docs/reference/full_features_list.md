@@ -54,6 +54,10 @@ This document provides a complete reference of every feature available in GOLIAT
 - Create transfer functions between E-field values and absorption values
 - Support for environmental exposure scenarios (currently implemented)
 - Placeholder for auto-induced mode (future implementation)
+- **Multi-sine excitation**: Simulate multiple frequencies in a single run using `"700+2450"` config syntax
+- Automatic DFT extraction at each frequency component via `ExtractedFrequencies`
+- Simulation time extended for beat period requirement (multi-sine)
+- Frequency-dependent material dispersion fitting for multi-sine accuracy
 
 ## Phantom management
 
@@ -81,6 +85,8 @@ This document provides a complete reference of every feature available in GOLIAT
 - Subgridding level multipliers (x9, x3, etc.)
 - Subgridding auto-refinement levels (VeryFine, Fine, Default)
 - Subgridding overrides manual gridding for specified components
+- Isolated subgridding: Separate grid settings object to prevent contamination of regular grid
+- **Antenna file fallback**: Auto-fallback to nearest available frequency when exact match not found
 
 ## Placement scenarios
 
@@ -108,6 +114,10 @@ This document provides a complete reference of every feature available in GOLIAT
 - Resonance frequency extraction from Gaussian pulse results
 - Set bounding box padding for far-field simulations (millimeters)
 - Configure free-space antenna bounding box expansion [x, y, z] in millimeters
+- **Antenna detuning calibration**: Apply calibrated frequency shifts to account for body loading effects
+- Detuning values stored per-frequency in config (e.g., `"700": -15` for 15 MHz lower)
+- `detuning_enabled` config flag to enable/disable detuning compensation
+- Keep-awake functionality (`keep_awake` config) to prevent system sleep during long simulations
 
 ## Gridding configuration
 
@@ -226,6 +236,7 @@ This document provides a complete reference of every feature available in GOLIAT
 
 - Aggregate results across multiple simulations
 - Generate CSV files (normalized_results_detailed.csv, normalized_results_summary.csv)
+- **Automatic Excel generation**: Export results to `.xlsx` files during analysis
 - Create SAR heatmaps by tissue and frequency
 - Generate bar charts comparing SAR in different regions
 - Create boxplots showing SAR distributions
@@ -236,6 +247,9 @@ This document provides a complete reference of every feature available in GOLIAT
 - Summary statistics by frequency and scenario
 - Plot generation in dedicated plots directory
 - Automated LaTeX paper generation (`goliat generate-paper`) - Check out the [auto-generated first draft paper (only results)](https://github.com/rwydaegh/goliat/raw/master/paper/near_field/pure_results/results.pdf)
+- UGent vs CNR comparison tool for cross-institution validation
+- CDF plots with linestyle cycling for visual distinction
+- Slanted tick labels and academic styling for publication-ready plots
 
 ## GUI and monitoring
 
@@ -259,6 +273,9 @@ This document provides a complete reference of every feature available in GOLIAT
 - Headless mode option (`use_gui: false` for console-only operation)
 - Window title customization via `--title` command-line argument
 - GUI screenshot streaming to web dashboard for remote monitoring (1 FPS)
+- NTP-based timestamps for plot accuracy (bypasses VM clock drift issues)
+- Smart batching for web dashboard to adapt to network latency
+- Message ordering with timestamps and sequence numbers
 
 ## Logging system
 
@@ -360,6 +377,9 @@ This document provides a complete reference of every feature available in GOLIAT
 ### Analysis commands
 
 - `goliat analyze --config <config>` - Run analysis for near-field or far-field studies
+- `goliat analyze --config <config> --generate-paper` - Generate LaTeX paper after analysis
+- `goliat analyze --config <config> --no-gui` - Run analysis without GUI (default is GUI enabled)
+- `goliat stats <path>` - Parse simulation logs and generate statistics (auto-detects file vs directory mode)
 
 ### Parallel commands
 
@@ -419,6 +439,8 @@ This document provides a complete reference of every feature available in GOLIAT
 - `OSPARC_API_KEY` - oSPARC cloud API key (in `.env` file)
 - `OSPARC_API_SECRET` - oSPARC cloud API secret (in `.env` file)
 - `DOWNLOAD_EMAIL` - Email for phantom model downloads (in `.env` file)
+- `GOLIAT_SKIP_IF_EXISTS` - Skip simulation if extract deliverables already exist
+- `GOLIAT_AUTO_CLEANUP` - Enable automatic cleanup of simulation files after extraction
 
 ## Platform support
 
