@@ -6,7 +6,7 @@
     ],
     "frequencies_mhz": [
         700,
-        2450
+        835
     ],
     "far_field_setup": {
         "type": "environmental",

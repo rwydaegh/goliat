@@ -14,6 +14,7 @@ __pycache__/
 # Build and results
 results/
 /plots/
+!plots/organ_scatter/
 paper/
 !paper/IEEEtran.cls
 !paper/near_field/pure_results/results.pdf
@@ -28,6 +29,8 @@ detuning2/
 # Data
 data/
 !data/material_name_mapping.json
+!data/material_properties_cache.json
+!data/itis_v5.db
 !data/detuning*.json
 !data/.goliat_pricing.json
 
