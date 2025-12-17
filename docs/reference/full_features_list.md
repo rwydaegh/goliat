@@ -54,7 +54,7 @@ This document provides a complete reference of every feature available in GOLIAT
 - Create transfer functions between E-field values and absorption values
 - Support for environmental exposure scenarios (currently implemented)
 - Placeholder for auto-induced mode (future implementation)
-- **Multi-sine excitation**: Simulate multiple frequencies in a single run using `"700+2450"` config syntax
+- Multi-sine excitation: Simulate multiple frequencies in a single run using `"700+2450"` config syntax
 - Automatic DFT extraction at each frequency component via `ExtractedFrequencies`
 - Simulation time extended for beat period requirement (multi-sine)
 - Frequency-dependent material dispersion fitting for multi-sine accuracy
