@@ -259,11 +259,11 @@ Better error handling and UX for cloud VM setup.
 
 ## 📋 Pre-Release Checklist
 
-- [ ] Update `full_features_list.md` with all missing features
-- [ ] Add detuning section to user guide
-- [ ] Document new environment variables
-- [ ] Add `goliat stats` to CLI reference
-- [ ] Document Excel generation in analysis section
+- [x] Update `full_features_list.md` with all missing features
+- [x] Add detuning section to user guide
+- [x] Document new environment variables
+- [x] Add `goliat stats` to CLI reference
+- [x] Document Excel generation in analysis section
 - [ ] Update version number in `pyproject.toml`
 - [ ] Update version in README citation block
 - [ ] Create GitHub release with notes

@@ -92,6 +92,7 @@ After the simulation, GOLIAT's `ResultsExtractor` and `Analyzer` components take
     - Collects SAR data from all simulations in your study
     - Generates statistical summaries (mean, median, percentiles) grouped by frequency and scenario
     - Creates publication-ready plots (heatmaps, bar charts, boxplots, correlation matrices, and more)
+    - Exports formatted Excel files (`Final_Data_UGent.xlsx`) containing all data and metadata
     - Exports CSV files with detailed and summary statistics
     - Optionally generates a LaTeX paper with all figures organized by section
     This is useful for comparing results across frequencies, placements, or other parameters. Check out the [auto-generated first draft paper (only results)](https://github.com/rwydaegh/goliat/raw/master/paper/near_field/pure_results/results.pdf) to see an example of compiled analysis output. For details, see the [Analysis Guide](../developer_guide/analysis.md).
@@ -145,5 +146,6 @@ While the core GOLIAT workflow remains consistent, the specifics of scene setup 
 - **Manage disk space**: For serial workflows on machines with limited storage, use `"auto_cleanup_previous_results": ["output"]` to automatically delete previous simulation files. See [Configuration Guide](../developer_guide/configuration.md#execution-control) for details.
 -   **Customize with Confidence**: Feel free to modify frequencies and placements in your configuration files. However, for consistency with GOLIAT's protocols, it's generally recommended to keep the core antenna models fixed.
 -   **Effective Debugging**: Always consult the `logs/` directory for detailed error messages. You can also rerun specific phases of a study (e.g., `"do_setup": false, "do_run": false, "do_extract": true`) to isolate and debug issues more efficiently.
+-   **Analyze Logs**: Use `goliat stats <path>` to parse verbose logs into a JSON summary (for a single file) or generate statistical plots (for a directory of logs). This is helpful for analyzing solver performance and timing.
 
 You can now navigate GOLIAT and perform EMF dosimetry simulations. For hands-on examples, proceed to the [Tutorials](../tutorials/overview.md). For a complete reference of all available features, see the [Full List of Features](../reference/full_features_list.md). If you have any further questions or encounter issues, please open a [GitHub Issue](https://github.com/rwydaegh/goliat/issues).
