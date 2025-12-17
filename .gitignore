@@ -27,7 +27,7 @@ detuning/
 detuning2/
 
 # Data
-data/
+data/*
 !data/material_name_mapping.json
 !data/material_properties_cache.json
 !data/itis_v5.db

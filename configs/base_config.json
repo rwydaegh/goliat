@@ -1,6 +1,6 @@
 {
-  "use_gui": true,
-  "use_web": true,
+    "use_gui": true,
+    "use_web": true,
     "execution_control": {
         "do_setup": true,
         "do_run": true,
@@ -27,7 +27,8 @@
             "top_right_bottom",
             "lower_right_up",
             "top_left_bottom"
-        ]
+        ],
+        "extract_sapd": false
     },
     "gridding_parameters": {
         "global_gridding": {
@@ -36,8 +37,16 @@
         },
         "padding": {
             "padding_mode": "automatic",
-            "manual_bottom_padding_mm": [0, 0, 0],
-            "manual_top_padding_mm": [0, 0, 0]
+            "manual_bottom_padding_mm": [
+                0,
+                0,
+                0
+            ],
+            "manual_top_padding_mm": [
+                0,
+                0,
+                0
+            ]
         }
     },
     "solver_settings": {
