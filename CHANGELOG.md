@@ -7,6 +7,118 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2025-12-17
+
+Major release with multi-sine excitation, antenna detuning, dispersion fitting, and significant infrastructure improvements. ~102 commits, ~40k insertions, ~12k deletions since v1.2.3.
+
+### ✨ New features
+
+#### 🌊 Multi-sine excitation (far-field)
+Simulate multiple frequencies in a single FDTD run, extracting per-frequency SAR via DFT. Use `"700+2450"` syntax in `frequencies_mhz`. Up to ~4× speedup for widely-spaced frequencies.
+
+- Custom `UserDefined` excitation using sum of cosines
+- `ExtractedFrequencies` set on field sensor for DFT extraction
+- Simulation time extended for beat period requirement
+- Bandwidth filter explicitly disabled for multi-frequency components
+
+#### 📡 Antenna detuning calibration (near-field)
+Apply calibrated frequency shifts to account for body loading effects on antenna resonance.
+
+- Run Gaussian calibration sims to detect resonance shift
+- Store detuning values per frequency in config (e.g., `"700": -15`)
+- Harmonic sims automatically apply detuning offset
+- New config: `detuning_enabled`, `detuning_config`
+
+#### 🧪 Material dispersion fitting
+New `goliat/dispersion/` module for frequency-dependent material properties in multi-sine simulations.
+
+- Debye pole dispersion model fitting (exact for 2 frequencies)
+- IT'IS V5.0 database Cole-Cole model support via `material_cache.py`
+- `scipy` added as dependency for optimization
+
+#### 🤖 AI assistant improvements
+Refactored `goliat ai` command with new capabilities.
+
+- Animated thinking spinner (TTY-aware)
+- `--simple` and `--complex` flags to force model selection
+- Markdown formatting for responses
+- Detailed cost breakdown with token usage
+- Modular architecture: `embedding_indexer`, `query_processor`, `cost_tracker`, `chat_handler`
+
+#### 📊 Analysis enhancements
+- **Excel generation**: Automatic `.xlsx` file generation during analysis workflow
+- **Unified stats command**: Merged `stats` and `parse-log` into single `goliat stats` command
+  - Single `.log` file → parses to JSON
+  - Directory → generates visualizations from all `verbose.log` files
+- **Analysis GUI component**: New progress tracking for analysis phase
+- **UGent vs CNR comparison tool**: Cross-institution result validation
+
+#### 🌐 Web dashboard improvements
+- Screenshot streaming (1 FPS, JPEG compression)
+- Message ordering with timestamps and sequence numbers
+- Smart batching to adapt to network latency
+- NTP time for plot timestamps (bypasses VM clock issues)
+- Adaptive timeouts to prevent freeze on exit
+
+#### ☁️ Cloud setup improvements
+- OpenVPN verification before launch
+- Working directory fixes when run as administrator
+- Parallel launch of license installer and Git Bash
+- NVIDIA GPU driver validation
+
+### 🔧 Infrastructure
+
+#### Simulation runner refactoring
+Complete refactor using Strategy pattern. `simulation_runner.py` reduced from ~620 to ~245 lines.
+
+New modules:
+- `goliat/runners/execution_strategy.py` (abstract base)
+- `goliat/runners/isolve_manual_strategy.py` (local iSolve)
+- `goliat/runners/osparc_direct_strategy.py` (cloud)
+- `goliat/runners/sim4life_api_strategy.py` (Sim4Life API)
+- `goliat/runners/isolve_process_manager.py`
+- `goliat/runners/keep_awake_handler.py`
+- `goliat/runners/retry_handler.py`
+
+#### Gaussian near-field support
+Use Gaussian pulses for frequency-domain analysis (antenna characterization, detuning detection).
+
+- `excitation_type: "Gaussian"` config option
+- Custom Gaussian waveform support (`gaussian_pulse_k` parameter)
+- `ResonanceExtractor` for detecting antenna resonance
+- Bandwidth and frequency resolution config parameters
+
+### 🐛 Bug fixes
+
+- **Subgridding contamination**: Created separate `Automatic (Subgrid)` grid settings to prevent all components getting subgridded
+- **Antenna fallback**: Auto-fallback to nearest frequency antenna file when exact match not found
+- **Setup timestamp preservation**: Preserve `setup_timestamp` when setup is skipped (caching)
+- **Unicode on old Windows**: Replace ✓/✗/⚠ with ASCII equivalents for cp1252 console compatibility
+- **scipy dependency**: Added to dependencies (was missing, broke dispersion fitter tests)
+- **openpyxl dependency**: Added for Excel generation
+- **Power balance calculation**: Improved accuracy
+- **Bbox expansion**: Added for low-frequency whole_body simulations
+- **Point sensor extraction**: Ensure results directory exists
+
+### 📝 Documentation
+
+- Configuration guide: multi-sine frequency format, keep_awake, detuning parameters
+- Analysis documentation: Excel generation, `generate_excel` config option
+- User guide: detuning workflow, multi-sine excitation, `goliat stats` command
+- AI assistant: `--simple`/`--complex` flags, cost tracking, setup instructions
+- Troubleshooting: antenna file fallback behavior
+- Technical docs: `multi_sine_excitation_analysis.md`, `detuning_feature_design.md`, `dispersion_model_guide.md`
+- Capita selecta gallery with nested collapsible sections
+
+### 🔄 Environment variables
+
+- `GOLIAT_SKIP_IF_EXISTS`: Skip simulation if extract deliverables already exist
+- `GOLIAT_AUTO_CLEANUP`: Enable automatic cleanup of simulation files after extraction
+
+---
+
+## [1.2.3] - 2025-11-15
+
 ### Added
 
 - **PyPI Publishing:** Full PyPI package support with automated publishing workflow ([#69](https://github.com/rwydaegh/goliat/issues/69))
@@ -107,7 +219,9 @@ Note that the code was already finished last weekend.
 ### Refactoring
 - **Analysis:** Split strategies.py into multiple files ([#14](https://github.com/rwydaegh/goliat/pull/14), [#15](https://github.com/rwydaegh/goliat/pull/15))
 
-[Unreleased]: https://github.com/rwydaegh/goliat/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/rwydaegh/goliat/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/rwydaegh/goliat/compare/v1.2.3...v1.3.0
+[1.2.3]: https://github.com/rwydaegh/goliat/compare/v1.1.0...v1.2.3
 [1.1.0]: https://github.com/rwydaegh/goliat/compare/v1.0.0...v1.1.0
 [0.3.0-beta.1]: https://github.com/rwydaegh/goliat/compare/v0.2.0-beta.1...v0.3.0-beta.1
 [0.2.0-beta.1]: https://github.com/rwydaegh/goliat/compare/v0.1.0-beta.1...v0.2.0-beta.1
