@@ -1,0 +1,31 @@
+{
+    "extends": "far_field_config.json",
+    "study_type": "far_field",
+    "execution_control": {
+        "do_setup": true,
+        "only_write_input_file": false,
+        "do_run": true,
+        "do_extract": true,
+        "batch_run": false
+    },
+    "phantoms": [
+        "thelonious"
+    ],
+    "frequencies_mhz": [
+        700
+    ],
+    "far_field_setup": {
+        "type": "environmental",
+        "environmental": {
+            "incident_directions": [
+                "x_pos"
+            ],
+            "polarizations": [
+                "theta"
+            ]
+        }
+    },
+    "simulation_parameters": {
+        "extract_sapd": true
+    }
+}

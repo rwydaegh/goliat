@@ -60,6 +60,7 @@ configs/*
 !configs/ai_config.json
 !configs/investigate_detuning_low.json
 !configs/far_field_multisine*.json
+!configs/test_sapd_far_field.json
 
 # Generated files
 *.csv
