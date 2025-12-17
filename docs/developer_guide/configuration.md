@@ -170,7 +170,7 @@ These settings are unique to far-field (environmental exposure) studies.
 
 | Parameter | Type | Example Value | Description |
 | :--- | :--- | :--- | :--- |
-| `frequencies_mhz` | array | `[450, 700, 900]` | An array of frequencies in MHz to simulate. Each frequency will generate a separate `.smash` project file containing simulations for all directions and polarizations. |
+| `frequencies_mhz` | array | `[450, 700, 900]` | An array of frequencies in MHz to simulate. Each frequency generates a separate `.smash` project file. For multi-sine excitation (multiple frequencies in one simulation), use `"700+2450"` format, e.g., `["700+2450", 5800]`. See the [technical docs](../technical/multi_sine_excitation_analysis.md) for details. |
 | `far_field_setup.type` | string | `"environmental"` | The far-field scenario type. Currently, only `"environmental"` (plane waves) is fully implemented. |
 | `far_field_setup.environmental.incident_directions` | array | `["x_pos", "y_neg"]` | A list of plane wave incident directions. Supported values are single-axis directions: `"x_pos"`, `"x_neg"`, `"y_pos"`, `"y_neg"`, `"z_pos"`, `"z_neg"`. |
 | `far_field_setup.environmental.polarizations` | array | `["theta", "phi"]` | A list of polarizations to simulate for each incident direction. `"theta"` corresponds to vertical polarization and `"phi"` to horizontal. |
