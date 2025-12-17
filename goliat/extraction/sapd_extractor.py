@@ -29,6 +29,8 @@ class SapdExtractor(LoggingMixin):
         self.simulation = parent.simulation
         self.phantom_name = parent.phantom_name
         self.results_data = results_data
+        self.progress_logger = parent.progress_logger
+        self.verbose_logger = parent.verbose_logger
 
         import s4l_v1.analysis as analysis
         import s4l_v1.model as model
