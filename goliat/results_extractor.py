@@ -193,7 +193,7 @@ class ResultsExtractor(LoggingMixin):
             sar_extractor.extract_sar_statistics(simulation_extractor)
             power_extractor.extract_power_balance(simulation_extractor)
 
-            if self.config.get("simulation_parameters.extract_sapd"):
+            if self.config["simulation_parameters.extract_sapd"]:
                 sapd_extractor = SapdExtractor(self, results_data)
                 sapd_extractor.extract_sapd(simulation_extractor)
 
