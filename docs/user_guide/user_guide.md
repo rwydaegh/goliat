@@ -122,6 +122,8 @@ While the core GOLIAT workflow remains consistent, the specifics of scene setup 
 
 -   **Gaussian Excitation**: For near-field studies, you can use Gaussian pulse excitation instead of harmonic. This enables frequency-domain analysis and antenna resonance detection. Set `"excitation_type": "Gaussian"` in your config and configure `bandwidth_mhz` (typically 50-150 MHz). Gaussian excitation requires longer simulation times due to frequency resolution requirements.
 
+-   **Antenna Detuning Calibration**: When a phone is held against the body, the antenna's resonance frequency shifts due to body loading effects. GOLIAT supports calibrated detuning: run a Gaussian calibration simulation first to measure the frequency shift, then apply the offset in subsequent harmonic runs. Enable with `"detuning_enabled": true` and configure `"detuning_config": {"700": -15}` (shifts 700 MHz source down 15 MHz).
+
 ### Far-field workflow (environmental exposure)
 
 -   **Primary Use Case**: Evaluating whole-body EMF exposure from distant sources, such as broadcast antennas, cellular base stations, or industrial equipment. The focus is on whole-body average SAR and overall field distribution. We reduce the complexity of impinging fields to all orthogonal directions and two polarizations, and assume that by normalizing this to 1 W, we can construct a *transfer functions* between measured E-field values and absorption values, especially for channel scenarios where the user is not down- or uploading anything.
@@ -133,6 +135,8 @@ While the core GOLIAT workflow remains consistent, the specifics of scene setup 
   4.  **Results Analysis**: Focuses on whole-body average SAR and how SAR is distributed across the entire phantom, often aggregated over various exposure scenarios.
 
 -   **Auto-Induced Mode**: While currently a placeholder, this mode is envisioned for future implementations to simulate EMF exposure induced by body motion or other dynamic scenarios.
+
+-   **Multi-Sine Excitation**: For efficiency, GOLIAT can simulate multiple frequencies in a single FDTD run. Use the `"700+2450"` format in your `frequencies_mhz` array. The simulation extracts SAR at each frequency via DFT post-processing. This can provide ~4× speedup for widely-spaced frequencies. See [Technical Docs](../technical/multi_sine_excitation_analysis.md) for details.
 
 ## ✅ Tips for success
 
