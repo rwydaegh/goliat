@@ -181,22 +181,25 @@ class SapdExtractor(LoggingMixin):
         if len(entities) == 1:
             return entities[0]
 
-        # Create a temporary group for the extractor
-        group_name = "Temp_Skin_Group_For_SAPD"
+        # Create a temporary merged entity for the extractor
+        merged_name = "Skin_Merged_For_SAPD"
 
         # Check if exists (idempotency)
         all_entities = self.model.AllEntities()
-        if group_name in all_entities:
-            return all_entities[group_name]
+        if merged_name in all_entities:
+            return all_entities[merged_name]
 
         try:
-            # Create a group and add all skin entities to it
-            group = self.model.CreateGroup(group_name)
-            group.Add(entities)
-            self._temp_group = group
-            return group
+            # Merge multiple skin entities into a single entity using Unite.
+            # This is required for ModelToGridFilter to work correctly.
+            # Note: Unite is a destructive operation (modifies the scene), 
+            # but since we don't save the project after extraction, it's safe.
+            united_entity = self.model.Unite(entities)
+            united_entity.Name = merged_name
+            self._temp_group = united_entity
+            return united_entity
         except Exception as e:
-            self._log(f"Error creating skin group: {e}. Using first entity only.", log_type="warning")
+            self._log(f"Error uniting skin entities: {e}. Using first entity only.", log_type="warning")
             return entities[0]
 
     def _setup_em_sensor_extractor(self, simulation_extractor: "analysis.Extractor") -> "analysis.Extractor":
