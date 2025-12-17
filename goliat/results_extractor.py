@@ -32,7 +32,7 @@ class ExtractionContext:
     config: "Config"
     simulation: "s4l_v1.simulation.emfdtd.Simulation"
     phantom_name: str
-    frequency_mhz: int
+    frequency_mhz: int | list[int]
     scenario_name: str
     position_name: str
     orientation_name: str
@@ -85,7 +85,7 @@ class ResultsExtractor(LoggingMixin):
         config: "Config",
         simulation: "s4l_v1.simulation.emfdtd.Simulation",
         phantom_name: str,
-        frequency_mhz: int,
+        frequency_mhz: int | list[int],
         scenario_name: str,
         position_name: str,
         orientation_name: str,
