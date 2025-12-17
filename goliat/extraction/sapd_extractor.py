@@ -75,11 +75,17 @@ class SapdExtractor(LoggingMixin):
             # we must group them temporarily.
             surface_source_entity = self._prepare_skin_group(skin_entities)
 
-            model_to_grid_filter = self.analysis.core.ModelToGridFilter()
+            # Initialize with explicit inputs list to match working example
+            model_to_grid_filter = self.analysis.core.ModelToGridFilter(inputs=[])
             model_to_grid_filter.Name = "Skin_Surface_Source"
             model_to_grid_filter.Entity = surface_source_entity
             model_to_grid_filter.UpdateAttributes()
             self.document.AllAlgorithms.Add(model_to_grid_filter)
+            
+            # Debug: Check outputs
+            self.verbose_logger.info(f"EM Sensor Outputs: {[k for k in em_sensor_extractor.Outputs]}")
+            self.verbose_logger.info(f"ModelToGrid Outputs: {[k for k in model_to_grid_filter.Outputs]}")
+
 
             # 3. Setup GenericSAPDEvaluator
             # Inputs: Poynting Vector S(x,y,z,f0) and Surface
