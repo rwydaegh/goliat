@@ -23,6 +23,7 @@ classifiers = [
 dependencies = [
   "numpy<2",
   "pandas",
+  "scipy",
   "gdown",
   "seaborn",
   "matplotlib",
