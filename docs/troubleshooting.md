@@ -171,6 +171,12 @@ This section addresses common issues encountered when using GOLIAT. Issues are g
   2. For custom, match `placement_scenarios` keys exactly.
   3. Antenna: Ensure freq in `antenna_config` keys.
 
+### Antenna file not found (fallback behavior)
+- **Symptom**: Warning message "Exact antenna file for X MHz not found, using Y MHz instead."
+- **Cause**: No antenna CAD file exists for the exact frequency in your config.
+- **Behavior**: GOLIAT automatically falls back to the nearest available frequency. The simulation proceeds with the closest match.
+- **Solution**: This is usually fine for testing. For production, ensure you have the correct antenna files or accept the frequency mismatch.
+
 ## GUI and logging issues
 
 ### GUI freezes or no progress

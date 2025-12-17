@@ -36,6 +36,7 @@ The analysis configuration file (`configs/analysis.json`) controls which plots a
 ```json
 {
   "load_data": true,
+  "generate_excel": true,
   "plot_average_sar_bar": true,
   "plot_sar_heatmap": true,
   "plot_pssar_line": false
@@ -45,6 +46,7 @@ The analysis configuration file (`configs/analysis.json`) controls which plots a
 **Key settings:**
 
 - `load_data`: If `false`, loads cached results instead of re-processing (faster for re-plotting)
+- `generate_excel`: If `true` (default), exports results to a formatted Excel file
 - Plot flags: Set to `false` to skip specific plot types
 
 **Available plot types:**
@@ -91,11 +93,13 @@ results/
 └── near_field/
     └── <phantom_name>/
         ├── normalized_results_detailed.csv
-        └── normalized_results_summary.csv
+        ├── normalized_results_summary.csv
+        └── Final_Data_UGent.xlsx
 ```
 
-**CSV files:**
+**Output files:**
 
+- `Final_Data_UGent.xlsx`: Autosaved Excel file with multiple sheets (Data, Analysis, Specs) containing all results and metadata.
 - `normalized_results_detailed.csv`: Per-simulation detailed data with all metrics
 - `normalized_results_summary.csv`: Aggregated statistics by frequency and scenario
 
