@@ -85,14 +85,11 @@ def check_python_interpreter(base_dir=None):
 
     viable_pythons = find_sim4life_python_executables()
 
-    # Check if s4l_v1 can be imported (indicates Sim4Life packages are available)
+    # Check if s4l_v1 is available without importing it (avoids triggering S4L initialization/license check)
     # This handles venvs created with Sim4Life Python using --system-site-packages
-    try:
-        import s4l_v1  # noqa: F401
+    import importlib.util
 
-        s4l_v1_available = True
-    except ImportError:
-        s4l_v1_available = False
+    s4l_v1_available = importlib.util.find_spec("s4l_v1") is not None
 
     if "Sim4Life" in sys.executable:
         sys_executable_dir = os.path.normpath(os.path.dirname(sys.executable))
