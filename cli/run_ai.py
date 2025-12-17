@@ -1201,15 +1201,15 @@ Examples:
     if not args.no_shell_context:
         print("🔍 Gathering shell context...")
         shell_context = _gather_shell_context(log_count=log_count)
-        print(f"  ✓ Found {len(shell_context['history'])} recent commands")
+        print(f"  Found {len(shell_context['history'])} recent commands")
         if shell_context.get("recent_logs"):
-            print(f"  ✓ Found {len(shell_context['recent_logs'])} recent log files:")
+            print(f"  Found {len(shell_context['recent_logs'])} recent log files:")
             for log_info in shell_context["recent_logs"]:
                 log_path = log_info["file"]
                 size_kb = Path(log_path).stat().st_size / 1024 if Path(log_path).exists() else 0
-                print(f"     • {log_path} ({size_kb:.1f} KB)")
+                print(f"     - {log_path} ({size_kb:.1f} KB)")
         else:
-            print(f"  ⚠ No recent log files found (checked last {LOG_RECENCY_SECONDS // 60} minutes)")
+            print(f"  No recent log files found (checked last {LOG_RECENCY_SECONDS // 60} minutes)")
 
     # Get log context
     log_context_parts = []
@@ -1227,7 +1227,7 @@ Examples:
         try:
             log_path = Path(args.logs)
             if not log_path.exists():
-                print(f"⚠ Warning: Log file not found: {args.logs}")
+                print(f"Warning: Log file not found: {args.logs}")
             else:
                 with open(args.logs, encoding="utf-8", errors="ignore") as f:
                     content = f.read()
@@ -1246,7 +1246,7 @@ Examples:
         try:
             config_path = Path(args.config)
             if not config_path.exists():
-                print(f"⚠ Warning: Config file not found: {args.config}")
+                print(f"Warning: Config file not found: {args.config}")
             else:
                 with open(args.config) as f:
                     config_context = f.read()
@@ -1371,7 +1371,7 @@ Please help diagnose what went wrong based on the provided context."""
 
     # Validate response before creating HTML
     if not response or not response.strip():
-        print("\n⚠️  Warning: Received empty response from AI.")
+        print("\nWarning: Received empty response from AI.")
         print("   The HTML report will still be created, but may be incomplete.")
 
     # Create HTML and open in browser

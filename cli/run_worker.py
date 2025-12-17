@@ -106,7 +106,7 @@ def fetch_assignment(super_study_name, assignment_index, server_url, machine_id,
         super_study = studies[0]  # Take first match
         super_study_id = super_study["id"]
 
-        logger.info(f"{colorama.Fore.GREEN}✓ Found super study: {super_study['name']}")
+        logger.info(f"{colorama.Fore.GREEN}Found super study: {super_study['name']}")
         logger.info(f"  Total assignments: {super_study['totalAssignments']}")
         logger.info(f"  Completed: {super_study['completedAssignments']}")
 
@@ -149,7 +149,7 @@ def fetch_assignment(super_study_name, assignment_index, server_url, machine_id,
             logger.error(f"Response: {response.text[:500]}")
             sys.exit(1)
 
-        logger.info(f"{colorama.Fore.GREEN}✓ Assignment claimed successfully!")
+        logger.info(f"{colorama.Fore.GREEN}Assignment claimed successfully!")
 
         return assignment, super_study_id
 
@@ -229,7 +229,7 @@ def run_assignment(assignment, super_study_name, assignment_index, title, no_cac
         logger.info(f"{colorama.Fore.YELLOW}Note: Check the web dashboard to verify completion status.")
         return True
     except Exception as e:
-        logger.error(f"\n{colorama.Fore.RED}✗ Assignment {assignment_index} failed: {e}")
+        logger.error(f"\n{colorama.Fore.RED}Assignment {assignment_index} FAILED: {e}")
         import traceback
 
         traceback.print_exc()

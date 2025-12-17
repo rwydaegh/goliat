@@ -3,7 +3,7 @@
 from typing import Optional
 
 
-def build_surgical_gridding(gridding_params: dict, frequency_mhz: int) -> dict:
+def build_surgical_gridding(gridding_params: dict, frequency_mhz: int | list[int]) -> dict:
     """Extracts frequency-specific gridding parameters.
 
     This surgically extracts only the gridding value for the specific frequency,
@@ -24,7 +24,9 @@ def build_surgical_gridding(gridding_params: dict, frequency_mhz: int) -> dict:
 
     # Extract only the relevant frequency's gridding value
     if "global_gridding_per_frequency" in gridding_params:
-        freq_str = str(frequency_mhz)
+        # For multi-sine, use highest frequency's gridding
+        ref_freq = max(frequency_mhz) if isinstance(frequency_mhz, list) else frequency_mhz
+        freq_str = str(ref_freq)
         if freq_str in gridding_params["global_gridding_per_frequency"]:
             surgical_gridding["global_gridding_per_frequency"] = {freq_str: gridding_params["global_gridding_per_frequency"][freq_str]}
 
@@ -35,7 +37,7 @@ def build_near_field_simulation_config(
     config_accessor,
     surgical_config: dict,
     phantom_name: str,
-    frequency_mhz: int,
+    frequency_mhz: int | list[int],
     scenario_name: Optional[str],
     position_name: Optional[str],
     orientation_name: Optional[str],
@@ -52,7 +54,9 @@ def build_near_field_simulation_config(
         orientation_name: The name of the orientation.
     """
     # Select the specific antenna config for the given frequency
-    surgical_config["antenna_config"] = config_accessor[f"antenna_config.{frequency_mhz}"]
+    # For multi-sine, use highest frequency's antenna config
+    ref_freq = max(frequency_mhz) if isinstance(frequency_mhz, list) else frequency_mhz
+    surgical_config["antenna_config"] = config_accessor[f"antenna_config.{ref_freq}"]
 
     # Reconstruct placement_scenarios for the specific placement
     if scenario_name:

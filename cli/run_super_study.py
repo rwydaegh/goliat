@@ -210,7 +210,7 @@ def upload_super_study(name, description, base_config, assignment_configs, serve
 
         if response.status_code == 200:
             result = response.json()
-            logger.info(f"{colorama.Fore.GREEN}✓ Super study created successfully!")
+            logger.info(f"{colorama.Fore.GREEN}Super study created successfully!")
             logger.info(f"  ID: {result['id']}")
             logger.info(f"  Name: {result['name']}")
             logger.info(f"  Total assignments: {result['totalAssignments']}")

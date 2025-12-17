@@ -29,6 +29,7 @@ class MaterialSetup(BaseSetup):
         verbose_logger: "Logger",
         progress_logger: "Logger",
         free_space: bool = False,
+        frequencies_mhz: list[int] | None = None,
     ):
         """Initializes the MaterialSetup.
 
@@ -40,12 +41,15 @@ class MaterialSetup(BaseSetup):
             verbose_logger: Logger for detailed output.
             progress_logger: Logger for progress updates.
             free_space: Whether this is a free-space simulation.
+            frequencies_mhz: List of frequencies for multisine dispersion fitting.
         """
         super().__init__(config, verbose_logger, progress_logger)
         self.simulation = simulation
         self.antenna = antenna
         self.phantom_name = phantom_name
         self.free_space = free_space
+        self.frequencies_mhz = frequencies_mhz
+        self.is_multisine = frequencies_mhz is not None and len(frequencies_mhz) > 1
 
         # Import required modules
         import s4l_v1.materials.database
@@ -74,7 +78,10 @@ class MaterialSetup(BaseSetup):
 
         # Phantom materials
         if not self.free_space:
-            self._assign_phantom_materials()
+            if self.is_multisine:
+                self._assign_phantom_materials_multisine()
+            else:
+                self._assign_phantom_materials()
 
         # Antenna materials
         if not phantom_only:
@@ -128,6 +135,121 @@ class MaterialSetup(BaseSetup):
             # Release lock
             if os.path.exists(lock_file_path):
                 os.remove(lock_file_path)
+
+    def _assign_phantom_materials_multisine(self):
+        """Assigns dispersive materials for multisine simulations.
+
+        Fits dispersion models to match material properties at each
+        excitation frequency, enabling accurate FDTD simulation across
+        the full frequency range.
+
+        Uses IT'IS V5.0 database for accurate frequency-dependent properties.
+        """
+        import time
+
+        from ..dispersion import fit_dispersion, get_material_properties
+
+        import XMaterials as xm
+
+        self._log(
+            f"  - Multisine mode: fitting dispersion models for frequencies {self.frequencies_mhz} MHz",
+            log_type="info",
+        )
+
+        all_entities = self.model.AllEntities()
+        phantom_parts = [e for e in all_entities if isinstance(e, self.XCoreModeling.TriangleMesh)]
+
+        name_mapping = self.config.get_material_mapping(self.phantom_name)
+
+        material_groups = {}
+        for part in phantom_parts:
+            base_name = part.Name.split("(")[0].strip()
+            material_name = name_mapping.get(base_name, base_name.replace("_", " "))
+            material_groups.setdefault(material_name, []).append(part)
+
+        total_materials = len(material_groups)
+        assigned_count = 0
+        warning_count = 0
+        t_start_all = time.perf_counter()
+
+        assert self.frequencies_mhz is not None  # Guaranteed by is_multisine check
+
+        for material_name, entities in material_groups.items():
+            try:
+                # Get properties from IT'IS database at each frequency
+                props = get_material_properties(material_name, self.frequencies_mhz)
+                eps_r_list = [p["eps_r"] for p in props]
+                sigma_list = [p["sigma"] for p in props]
+                frequencies_hz = [f * 1e6 for f in self.frequencies_mhz]
+
+                # Fit Debye model (exact for 2 frequencies)
+                params = fit_dispersion(frequencies_hz, eps_r_list, sigma_list)
+
+                if params.fit_error > 0.01:
+                    self._log(
+                        f"    - WARNING: High fit error ({params.fit_error:.4f}) for '{material_name}'",
+                        log_type="warning",
+                    )
+                    warning_count += 1
+
+                # Create material with LinearDispersive model
+                material_settings = self.emfdtd.MaterialSettings()
+                material_settings.Name = f"{material_name} (Multisine)"
+                material_settings.ElectricProps.MaterialModel = material_settings.ElectricProps.MaterialModel.enum.LinearDispersive
+
+                # Access raw dispersion settings
+                disp = material_settings.raw.ElectricDispersiveSettings
+                disp.StartFrequency = params.start_freq_hz
+                disp.EndFrequency = params.end_freq_hz
+                disp.Permittivity = params.eps_inf
+                disp.Conductivity = params.sigma_dc
+
+                # Create and assign Debye poles (exact fit for 2 frequencies)
+                poles = []
+                for pole_fit in params.poles:
+                    pole = xm.LinearDispersionPole()
+                    pole.Active = True
+                    pole.Type = xm.LinearDispersionPole.ePoleType.kDebye
+                    pole[xm.LinearDispersionPole.ePoleProperty.kDebyeAmplitude] = 1.0
+                    pole[xm.LinearDispersionPole.ePoleProperty.kDebyeStaticPermittivity] = pole_fit.delta_eps
+                    pole[xm.LinearDispersionPole.ePoleProperty.kDebyeInfinityPermittivity] = 0.0
+                    pole[xm.LinearDispersionPole.ePoleProperty.kDebyeDamping] = pole_fit.tau_s  # tau in seconds!
+                    poles.append(pole)
+
+                disp.Poles = poles
+                self.simulation.Add(material_settings, entities)
+                assigned_count += 1
+
+            except KeyError:
+                self._log(
+                    f"    - Warning: '{material_name}' not in cache, using database fallback",
+                    log_type="warning",
+                )
+                # Fallback to standard database linking
+                try:
+                    mat = self.database["IT'IS 4.2"][material_name]
+                    material_settings = self.emfdtd.MaterialSettings()
+                    self.simulation.LinkMaterialWithDatabase(material_settings, mat)
+                    self.simulation.Add(material_settings, entities)
+                except KeyError:
+                    self._log(
+                        f"    - Warning: Could not find material '{material_name}' in IT'IS 4.2 database.",
+                        log_type="warning",
+                    )
+            except Exception as e:
+                self._log(
+                    f"    - ERROR fitting dispersion for '{material_name}': {e}",
+                    log_type="error",
+                )
+
+        # Summary
+        t_total = time.perf_counter() - t_start_all
+        self._log(
+            f"    - Assigned {assigned_count}/{total_materials} dispersive materials in {t_total:.2f}s",
+            log_type="info",
+        )
+        if warning_count > 0:
+            self._log(f"    - {warning_count} materials had high fit error", log_type="warning")
 
     def _assign_antenna_materials(self, antenna_components: dict):
         """Assigns materials to antenna components from config.

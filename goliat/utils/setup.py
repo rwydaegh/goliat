@@ -76,7 +76,7 @@ def initial_setup():
             print("\nInstalling GOLIAT package and dependencies in editable mode...")
             try:
                 subprocess.check_call([sys.executable, "-m", "pip", "install", "-e", base_dir])
-                print("✓ GOLIAT package installed successfully!")
+                print("GOLIAT package installed successfully!")
             except subprocess.CalledProcessError as e:
                 logging.error(f"Failed to install GOLIAT package: {e}")
                 sys.exit(1)
@@ -84,7 +84,7 @@ def initial_setup():
             print("\nInstalling GOLIAT package and dependencies...")
             try:
                 subprocess.check_call([sys.executable, "-m", "pip", "install", "goliat"])
-                print("✓ GOLIAT package installed successfully!")
+                print("GOLIAT package installed successfully!")
             except subprocess.CalledProcessError as e:
                 logging.error(f"Failed to install GOLIAT package: {e}")
                 sys.exit(1)

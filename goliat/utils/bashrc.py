@@ -41,6 +41,10 @@ def sync_bashrc_to_home(base_dir):
             if in_goliat_section and "AX_USE_UNSUPPORTED_CARDS" in line:
                 new_lines.append(line)
                 continue
+            # Preserve PYTHONIOENCODING even if it's in GOLIAT section
+            if in_goliat_section and "PYTHONIOENCODING" in line:
+                new_lines.append(line)
+                continue
             if in_goliat_section and line.strip() == "" and new_lines and new_lines[-1].strip() == "":
                 in_goliat_section = False
                 continue
@@ -107,6 +111,7 @@ def update_bashrc(selected_python_path, base_dir=None):
     preserved_lines = []  # Lines to preserve (comments, non-Sim4Life exports, etc.)
     preserved_vars = {}  # Track preserved environment variables
     has_ax_unsupported = False
+    has_pythonioencoding = False
 
     if os.path.exists(bashrc_path):
         try:
@@ -123,6 +128,11 @@ def update_bashrc(selected_python_path, base_dir=None):
                 if "AX_USE_UNSUPPORTED_CARDS" in line:
                     has_ax_unsupported = True
                     preserved_vars["AX_USE_UNSUPPORTED_CARDS"] = line.rstrip("\n")
+                    continue
+                # Preserve PYTHONIOENCODING
+                if "PYTHONIOENCODING" in line:
+                    has_pythonioencoding = True
+                    preserved_vars["PYTHONIOENCODING"] = line.rstrip("\n")
                     continue
                 # Preserve other export statements that aren't Sim4Life PATH
                 if stripped.startswith("export ") and "PATH" not in line:
@@ -151,9 +161,15 @@ def update_bashrc(selected_python_path, base_dir=None):
     elif "AX_USE_UNSUPPORTED_CARDS" in preserved_vars:
         new_lines.append(preserved_vars["AX_USE_UNSUPPORTED_CARDS"])
 
+    # Add PYTHONIOENCODING if not already present (fixes Unicode on older Windows)
+    if not has_pythonioencoding:
+        new_lines.append("export PYTHONIOENCODING=utf-8")
+    elif "PYTHONIOENCODING" in preserved_vars:
+        new_lines.append(preserved_vars["PYTHONIOENCODING"])
+
     # Add other preserved environment variables
     for var_name, var_line in preserved_vars.items():
-        if var_name != "AX_USE_UNSUPPORTED_CARDS":
+        if var_name not in ("AX_USE_UNSUPPORTED_CARDS", "PYTHONIOENCODING"):
             new_lines.append(var_line)
 
     # Write the updated content
@@ -191,15 +207,15 @@ def prompt_copy_bashrc_to_home(base_dir):
     print()
     print("OPTION 1 (Recommended for beginners):")
     print("  Copy this configuration to your home directory (~/.bashrc)")
-    print("  ✓ Sim4Life Python will be available automatically in ALL new bash windows")
-    print("  ✓ You won't need to remember to run 'source .bashrc' each time")
-    print("  ⚠ This modifies your global bash configuration")
+    print("  PRO: Sim4Life Python will be available automatically in ALL new bash windows")
+    print("  PRO: You won't need to remember to run 'source .bashrc' each time")
+    print("  CON: This modifies your global bash configuration")
     print()
     print("OPTION 2 (Default):")
     print("  Keep using the project-local .bashrc file")
-    print("  ✓ Non-intrusive - doesn't modify your global bash config")
-    print("  ⚠ You must run 'source .bashrc' each time you open a new bash terminal")
-    print("     (or navigate to the project directory and source it)")
+    print("  PRO: Non-intrusive - doesn't modify your global bash config")
+    print("  CON: You must run 'source .bashrc' each time you open a new bash terminal")
+    print("       (or navigate to the project directory and source it)")
     print()
 
     response = input("Copy .bashrc to your home directory? [y/N]: ").strip().lower()
@@ -226,7 +242,7 @@ def prompt_copy_bashrc_to_home(base_dir):
         if "Sim4Life" in existing_content or any(
             line.strip() in existing_content for line in bashrc_content.split("\n") if line.strip() and not line.strip().startswith("#")
         ):
-            print("\n⚠ Sim4Life Python paths already found in ~/.bashrc")
+            print("\nNote: Sim4Life Python paths already found in ~/.bashrc")
             overwrite = input("  Do you want to update them? [y/N]: ").strip().lower()
             if overwrite not in ["y", "yes"]:
                 print("  Skipped. Using existing ~/.bashrc configuration.")
@@ -239,7 +255,7 @@ def prompt_copy_bashrc_to_home(base_dir):
                 f.write(bashrc_content)
                 f.write("\n")
 
-            print("\n✓ Copied .bashrc configuration to ~/.bashrc")
+            print("\nDone! Copied .bashrc configuration to ~/.bashrc")
             print("  New bash windows will automatically have Sim4Life Python in PATH.")
             print("  You can remove these lines from ~/.bashrc anytime if needed.")
             print("  This preference will be remembered - future .bashrc updates will sync automatically.")
@@ -250,10 +266,10 @@ def prompt_copy_bashrc_to_home(base_dir):
             save_user_preferences(base_dir, prefs)
         except Exception as e:
             logging.error(f"Failed to write to ~/.bashrc: {e}")
-            print(f"\n⚠ Could not write to ~/.bashrc: {e}")
+            print(f"\nError: Could not write to ~/.bashrc: {e}")
             print("  You can manually copy the content from .bashrc to ~/.bashrc if desired.")
     else:
-        print("\n✓ Keeping project-local .bashrc")
+        print("\nOK, keeping project-local .bashrc")
         print("  Remember to run 'source .bashrc' when opening new bash terminals,")
         print("  or navigate to the project directory first.")
         print("  You can manually copy .bashrc to ~/.bashrc later if desired.")

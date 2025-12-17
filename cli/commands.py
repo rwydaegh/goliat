@@ -49,7 +49,7 @@ def init_config(study_type: str = "near_field", output_path: str = None, base_di
     with open(output_path, "w") as f:
         json.dump(config, f, indent=2)
 
-    print(f"✓ Created config file: {output_path}")
+    print(f"Created config file: {output_path}")
     print("  Edit this file to customize your study settings.")
 
 
@@ -87,14 +87,14 @@ def show_status(base_dir: str = None):
     from goliat.utils.setup import check_package_installed
 
     is_installed = check_package_installed()
-    print(f"Package installed: {'✓ Yes' if is_installed else '✗ No'}")
+    print(f"Package installed: {'Yes' if is_installed else 'No'}")
 
     # Python interpreter
     print(f"Python: {sys.executable}")
     if "Sim4Life" in sys.executable:
-        print("  ✓ Sim4Life Python detected")
+        print("  Sim4Life Python detected")
     else:
-        print("  ⚠ Not using Sim4Life Python")
+        print("  Warning: Not using Sim4Life Python")
 
     # Data directories
     data_dir = os.path.join(base_dir, "data")
@@ -102,8 +102,8 @@ def show_status(base_dir: str = None):
     antennas_dir = os.path.join(data_dir, "antennas", "centered")
 
     print("\nData directories:")
-    print(f"  Phantoms: {'✓ Present' if os.path.exists(phantoms_dir) and os.listdir(phantoms_dir) else '✗ Missing'}")
-    print(f"  Antennas: {'✓ Present' if os.path.exists(antennas_dir) and os.listdir(antennas_dir) else '✗ Missing'}")
+    print(f"  Phantoms: {'Present' if os.path.exists(phantoms_dir) and os.listdir(phantoms_dir) else 'Missing'}")
+    print(f"  Antennas: {'Present' if os.path.exists(antennas_dir) and os.listdir(antennas_dir) else 'Missing'}")
 
     # Config files
     configs_dir = os.path.join(base_dir, "configs")
@@ -130,41 +130,41 @@ def validate_config(config_path: str, base_dir: str = None):
         # Basic checks
         study_type = config["study_type"]
         if not study_type:
-            print("  ✗ Missing 'study_type'")
+            print("  ERROR: Missing 'study_type'")
             sys.exit(1)
         else:
-            print(f"  ✓ Study type: {study_type}")
+            print(f"  Study type: {study_type}")
 
         phantoms = config["phantoms"] or []
         if not phantoms:
-            print("  ✗ No phantoms specified")
+            print("  ERROR: No phantoms specified")
             sys.exit(1)
         else:
             if isinstance(phantoms, dict):
                 phantom_list = list(phantoms.keys())
             else:
                 phantom_list = phantoms
-            print(f"  ✓ Phantoms: {', '.join(phantom_list)}")
+            print(f"  Phantoms: {', '.join(phantom_list)}")
 
         if study_type == "near_field":
             antenna_config = config["antenna_config"] or {}
             if not antenna_config:
-                print("  ✗ Missing 'antenna_config'")
+                print("  ERROR: Missing 'antenna_config'")
                 sys.exit(1)
             else:
-                print(f"  ✓ Frequencies: {', '.join(antenna_config.keys())} MHz")
+                print(f"  Frequencies: {', '.join(antenna_config.keys())} MHz")
         elif study_type == "far_field":
             frequencies = config["frequencies_mhz"] or []
             if not frequencies:
-                print("  ✗ Missing 'frequencies_mhz'")
+                print("  ERROR: Missing 'frequencies_mhz'")
                 sys.exit(1)
             else:
-                print(f"  ✓ Frequencies: {', '.join(map(str, frequencies))} MHz")
+                print(f"  Frequencies: {', '.join(map(str, frequencies))} MHz")
 
-        print("  ✓ Config is valid!")
+        print("  Config is valid!")
 
     except Exception as e:
-        print(f"  ✗ Error: {e}")
+        print(f"  ERROR: {e}")
         sys.exit(1)
 
 

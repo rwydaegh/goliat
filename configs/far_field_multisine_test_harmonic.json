@@ -1,0 +1,32 @@
+{
+    "extends": "far_field_config.json",
+    "description": "Multi-sine test: Baseline with separate harmonic simulations at 700 and 2450 MHz",
+    "phantoms": [
+        "thelonious"
+    ],
+    "frequencies_mhz": [
+        700,
+        835
+    ],
+    "far_field_setup": {
+        "type": "environmental",
+        "environmental": {
+            "incident_directions": [
+                "x_pos"
+            ],
+            "polarizations": [
+                "theta"
+            ]
+        }
+    },
+    "simulation_parameters": {
+        "bbox_padding_mm": 50,
+        "number_of_point_sensors": 2,
+        "simulation_time_multiplier": 6.0
+    },
+    "execution_control": {
+        "do_setup": true,
+        "do_run": true,
+        "do_extract": true
+    }
+}

@@ -57,13 +57,13 @@ def setup_configs(base_dir: Optional[str] = None, overwrite: bool = False) -> No
         # Copy file
         try:
             shutil.copy2(str(config_file), str(target_file))
-            logging.info(f"  ✓ Copied {config_file.name}")
+            logging.info(f"  Done: Copied {config_file.name}")
             copied_count += 1
         except Exception as e:
-            logging.error(f"  ✗ Failed to copy {config_file.name}: {e}")
+            logging.error(f"  Failed to copy {config_file.name}: {e}")
 
     if copied_count > 0:
-        logging.info(f"\n✓ Config files initialized in {configs_dir}")
+        logging.info(f"\nDone: Config files initialized in {configs_dir}")
         if skipped_count > 0:
             logging.info(f"  ({skipped_count} file(s) skipped - already exist)")
 
@@ -80,6 +80,6 @@ def setup_configs(base_dir: Optional[str] = None, overwrite: bool = False) -> No
                 logging.info("  Skipping material_name_mapping.json (already exists)")
             else:
                 shutil.copy2(str(material_mapping_source), str(material_mapping_target))
-                logging.info("  ✓ Copied material_name_mapping.json to data/")
+                logging.info("  Done: Copied material_name_mapping.json to data/")
     except Exception as e:
         logging.warning(f"Could not copy material_name_mapping.json: {e}")

@@ -306,7 +306,7 @@ class Config:
     def build_simulation_config(
         self,
         phantom_name: str,
-        frequency_mhz: int,
+        frequency_mhz: int | list[int],
         scenario_name: Optional[str] = None,
         position_name: Optional[str] = None,
         orientation_name: Optional[str] = None,
@@ -457,7 +457,7 @@ class Config:
     def update_detuning_file(
         self,
         phantom_name: str,
-        frequency_mhz: int,
+        frequency_mhz: int | list[int],
         placement_name: str,
         detuning_mhz: float,
     ) -> None:
@@ -480,7 +480,9 @@ class Config:
 
         # Normalize phantom name to lowercase
         phantom_lower = phantom_name.lower()
-        freq_str = f"{frequency_mhz}MHz"
+        # For multi-sine, format as "700+2450MHz"
+        freq_str_val = "+".join(str(f) for f in frequency_mhz) if isinstance(frequency_mhz, list) else str(frequency_mhz)
+        freq_str = f"{freq_str_val}MHz"
 
         # Load existing data or create empty structure
         if os.path.exists(resolved_path):
