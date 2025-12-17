@@ -23,9 +23,9 @@
 
 <div align="center">
 
-<img src="docs/img/tutorials/goliat_overview.gif" width="50%">
+<img src="docs/img/tutorials/tut1_gui.gif" width="75%">
 
-*GOLIAT GUI showing real-time progress monitoring, along with the verbose Bash shell and the online monitoring website*
+*GOLIAT GUI showing real-time progress monitoring. Scroll down to see the online monitoring website and Bash shell!*
 
 </div>
 
@@ -168,13 +168,10 @@ Also want to run setup and extract phases in parallel? See the [Cloud Setup Guid
 
 ---
 
-## Screenshots
+## Screenshots & videos
 
-<details>
-<summary> <b>Click to see GOLIAT in action</b></summary>
-
-### Interactive GUI
-Real-time progress tracking with phase-based ETA estimation, along with the verbose Bash shell and the online monitoring website.
+### GUI, Bash shell & online monitoring website
+Detailed real-time progress tracking with ETA estimation, along with the verbose logging and the [online monitoring website](https://monitor.goliat.waves-ugent.be).
 
 ![GOLIAT GUI](docs/img/tutorials/goliat_overview.gif)
 
