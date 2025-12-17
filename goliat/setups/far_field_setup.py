@@ -89,6 +89,7 @@ class FarFieldSetup(BaseSetup):
                 self.verbose_logger,
                 self.progress_logger,
                 free_space=False,
+                frequencies_mhz=list(self.frequency_mhz) if self.is_multisine else None,  # type: ignore[arg-type]
             )
             material_setup.assign_materials(phantom_only=True)
         elapsed = self.profiler.subtask_times["setup_materials"][-1]
