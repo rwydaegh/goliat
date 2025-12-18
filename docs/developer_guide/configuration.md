@@ -124,6 +124,9 @@ These settings control the core behavior of the FDTD solver.
 | `keep_awake` | boolean | `false` | If `true`, launches a keep-awake script when the simulation starts to prevent system sleep during long-running simulations. |
 | `detuning_enabled` | boolean | `false` | **(Near-Field)** If `true`, applies calibrated frequency detuning to account for body loading effects on antenna resonance. Requires detuning values in the `detuning_config` object. |
 | `detuning_config` | object | `{"700": -15}` | **(Near-Field)** Maps frequencies (MHz) to detuning offsets. E.g., `{"700": -15}` means the 700 MHz source is shifted down 15 MHz to compensate for body loading. |
+| `extract_sapd` | boolean | `false` | If `true`, extracts Surface Absorbed Power Density (SAPD) from simulation results. Recommended for frequencies > 6 GHz. |
+| `sapd_mesh_slicing_side_length_mm` | number | `100.0` | Side length in mm for the mesh slicing box around the peak SAR location for faster SAPD calculation. |
+| `sapd_slicing_side_length_mm` | number | `100.0` | Side length in mm for the H5 data slicing box around the peak SAR location to optimize extraction speed. |
 
 <br>
 
