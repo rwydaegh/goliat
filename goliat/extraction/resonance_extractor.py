@@ -31,6 +31,7 @@ class ResonanceExtractor(LoggingMixin):
         self.verbose_logger = parent.verbose_logger
         self.progress_logger = parent.progress_logger
         self.results_data = results_data
+        self.gui = parent.gui
 
         import s4l_v1.document
 
@@ -70,8 +71,9 @@ class ResonanceExtractor(LoggingMixin):
             max_power_w = power_data_w[max_idx]
 
             # Calculate detuning
-            nominal_freq_mhz = self.frequency_mhz
-            detuning_mhz = resonant_freq_mhz - nominal_freq_mhz
+            freq_mhz = self.frequency_mhz
+            nominal_freq_mhz = float(freq_mhz if isinstance(freq_mhz, (int, float)) else np.mean(freq_mhz))
+            detuning_mhz = float(resonant_freq_mhz - nominal_freq_mhz)
 
             # Calculate frequency resolution
             if len(freq_axis_hz) > 1:

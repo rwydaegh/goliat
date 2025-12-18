@@ -33,6 +33,7 @@ class SapdExtractor(LoggingMixin):
         self.results_data = results_data
         self.progress_logger = parent.progress_logger
         self.verbose_logger = parent.verbose_logger
+        self.gui = parent.gui
 
         import s4l_v1.analysis as analysis
         import s4l_v1.model as model
