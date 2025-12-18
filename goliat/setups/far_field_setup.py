@@ -222,8 +222,9 @@ class FarFieldSetup(BaseSetup):
             t_ramp = ramp_periods / min_freq_hz
 
             # Smooth raised-cosine ramp: 0.5 * (1 - cos(pi * t / T_ramp)) for t < T_ramp, then 1.0
-            # Sim4Life parser supports 'min' and 'cos'
-            ramp_expr = f"0.5 * (1 - cos(pi * min(_t, {t_ramp:.12e}) / {t_ramp:.12e}))"
+            # S4L parser may not support 'min()'. Use robust 'min(a, b) = 0.5 * (a + b - abs(a - b))'
+            t_capped = f"0.5 * (_t + {t_ramp:.12e} - abs(_t - {t_ramp:.12e}))"
+            ramp_expr = f"0.5 * (1 - cos(pi * {t_capped} / {t_ramp:.12e}))"
 
             # Create expression: cos(2*pi*f1*_t) + cos(2*pi*f2*_t) + ...
             # Equal amplitude for all frequencies. Use 'pi' constant (Sim4Life built-in)
