@@ -69,18 +69,25 @@ class SapdExtractor(LoggingMixin):
             if peak_sar_details:
                 center_m = peak_sar_details.get("PeakLocation")
 
-            # Use simulation results extractor to find path
+            # Use project_manager to find H5 path (same pattern as Cleaner)
             original_h5_path = None
             try:
-                # simulation_extractor in Sim4Life has a DataSource which has a Path
-                original_h5_path = simulation_extractor.DataSource.Path
-            except Exception:
-                # Fallback: try to guess path from simulation name/id
-                sim_dir = self.simulation.ProjectDir
-                sim_id = self.simulation.Id
-                guess = os.path.join(sim_dir, f"{sim_id}_Output.h5")
-                if os.path.exists(guess):
-                    original_h5_path = guess
+                if self.parent.study is not None:
+                    project_path = self.parent.study.project_manager.project_path
+                    if project_path:
+                        project_dir = os.path.dirname(project_path)
+                        project_filename = os.path.basename(project_path)
+                        results_dir = os.path.join(project_dir, project_filename + "_Results")
+
+                        # Find the latest Output.h5 file
+                        if os.path.exists(results_dir):
+                            import glob
+
+                            output_files = glob.glob(os.path.join(results_dir, "*_Output.h5"))
+                            if output_files:
+                                original_h5_path = max(output_files, key=os.path.getmtime)
+            except Exception as e:
+                self._log(f"      - Could not determine H5 path: {e}", log_type="verbose")
 
             if center_m and original_h5_path and os.path.exists(original_h5_path):
                 side_len_mm = float(self.config["simulation_parameters.sapd_slicing_side_length_mm"] or 100.0)  # type: ignore
