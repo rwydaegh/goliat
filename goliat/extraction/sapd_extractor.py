@@ -1,8 +1,7 @@
-import os
 import traceback
 from typing import TYPE_CHECKING, List
+
 from ..logging_manager import LoggingMixin
-from ..utils.h5_slicer import slice_h5_output
 
 if TYPE_CHECKING:
     import s4l_v1.analysis as analysis
@@ -69,47 +68,9 @@ class SapdExtractor(LoggingMixin):
             if peak_sar_details:
                 center_m = peak_sar_details.get("PeakLocation")
 
-            # Use project_manager to find H5 path (same pattern as Cleaner)
-            original_h5_path = None
-            try:
-                if self.parent.study is not None:
-                    project_path = self.parent.study.project_manager.project_path
-                    if project_path:
-                        project_dir = os.path.dirname(project_path)
-                        project_filename = os.path.basename(project_path)
-                        results_dir = os.path.join(project_dir, project_filename + "_Results")
-
-                        # Find the latest Output.h5 file
-                        if os.path.exists(results_dir):
-                            import glob
-
-                            output_files = glob.glob(os.path.join(results_dir, "*_Output.h5"))
-                            if output_files:
-                                original_h5_path = max(output_files, key=os.path.getmtime)
-            except Exception as e:
-                self._log(f"      - Could not determine H5 path: {e}", log_type="verbose")
-
-            if center_m and original_h5_path and os.path.exists(original_h5_path):
-                side_len_mm = float(self.config["simulation_parameters.sapd_slicing_side_length_mm"] or 100.0)  # type: ignore
-                side_len_m = side_len_mm / 1000.0
-
-                sliced_h5_path = original_h5_path.replace("_Output.h5", "_Output_Sliced.h5")
-                self._log(f"      - Slicing H5 for SAPD optimization (size: {side_len_mm}mm)...", log_type="info")
-
-                try:
-                    slice_h5_output(original_h5_path, sliced_h5_path, tuple(center_m), side_len_m)
-
-                    # Create a new extractor for the sliced file
-                    # In S4L, we can use analysis.core.Extractor(path)
-                    import s4l_v1.analysis as analysis
-
-                    sliced_extractor = analysis.core.Extractor(sliced_h5_path)
-                    simulation_extractor = sliced_extractor
-                    self._log("      - Using sliced H5 for SAPD calculation.", log_type="info")
-                except Exception as slice_err:
-                    self._log(f"      - WARNING: H5 slicing failed: {slice_err}. Falling back to full H5.", log_type="warning")
-            else:
-                self._log("      - Skipping H5 slicing (peak SAR location or H5 file not found).", log_type="info")
+            # Note: H5 slicing optimization was removed - it requires loading sliced H5
+            # as a new extractor which is not straightforward in Sim4Life API.
+            # The mesh slicing below provides the main performance benefit.
 
             # 1. Get Skin Entities
             skin_entities = self._get_skin_entities()
