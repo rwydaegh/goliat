@@ -22,9 +22,7 @@ def slice_h5_output(input_file: str, output_file: str, center_m: Tuple[float, fl
         (center_m[2] - half_len, center_m[2] + half_len),
     )
 
-    print(f"Slicing {input_file} -> {output_file}")
-    print(f"Center: {center_m} m, Side: {side_length_m} m")
-    print(f"Bounds: {bounds}")
+    # Logging removed - caller handles logging
 
     with h5py.File(input_file, "r") as src, h5py.File(output_file, "w") as dst:
         # 1. Map meshes to their slices
@@ -43,7 +41,6 @@ def slice_h5_output(input_file: str, output_file: str, center_m: Tuple[float, fl
                     sy = get_slice_indices(ax_y, bounds[1][0], bounds[1][1])
                     sz = get_slice_indices(ax_z, bounds[2][0], bounds[2][1])
                     mesh_slices[m_path] = (sx, sy, sz, len(ax_x), len(ax_y), len(ax_z))
-                    print(f"Mesh {mesh_id}: X:{sx}, Y:{sy}, Z:{sz}")
 
         # 2. Identify which mesh each FieldGroup uses
         # FieldGroups usually have a RefId or similar, but often it's direct.

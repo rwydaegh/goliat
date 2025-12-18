@@ -63,116 +63,139 @@ class SapdExtractor(LoggingMixin):
         self._log("    - Extract SAPD statistics...", level="progress", log_type="progress")
 
         try:
-            # 0. Slicing Optimization
-            # Find peak SAR location from results_data and create a sliced H5 for faster processing
-            peak_sar_details = self.results_data.get("peak_sar_details")
-            center_m = None
-            if peak_sar_details:
-                center_m = peak_sar_details.get("PeakLocation")
+            elapsed = 0.0
+            if self.parent.study:
+                with self.parent.study.profiler.subtask("extract_sapd"):  # type: ignore
+                    # 0. Slicing Optimization
+                    # Find peak SAR location from results_data and create a sliced H5 for faster processing
+                    peak_sar_details = self.results_data.get("peak_sar_details")
+                    center_m = None
+                    if peak_sar_details:
+                        center_m = peak_sar_details.get("PeakLocation")
 
-            # Try to use sliced H5 for better performance
-            sliced_h5_path = None
-            sliced_extractor = None
-            if center_m:
-                sliced_h5_path = self._create_sliced_h5(center_m)
+                    # Try to use sliced H5 for better performance
+                    sliced_h5_path = None
+                    sliced_extractor = None
+                    if center_m:
+                        sliced_h5_path = self._create_sliced_h5(center_m)
 
-            # Create extractor - use sliced H5 if available, otherwise use original
-            if sliced_h5_path:
-                # Create a new SimulationExtractor from the sliced H5 file
-                sliced_extractor = self.analysis.extractors.SimulationExtractor(inputs=[])
-                sliced_extractor.Name = "SAPD_Sliced_Extractor"
-                sliced_extractor.FileName = sliced_h5_path
-                sliced_extractor.UpdateAttributes()
-                self.document.AllAlgorithms.Add(sliced_extractor)
-                active_extractor = sliced_extractor
-                self._log("      - Using sliced H5 for SAPD calculation.", log_type="info")
-            else:
-                active_extractor = simulation_extractor
+                    # Create extractor - use sliced H5 if available, otherwise use original
+                    if sliced_h5_path:
+                        # Create a new SimulationExtractor from the sliced H5 file
+                        sliced_extractor = self.analysis.extractors.SimulationExtractor(inputs=[])
+                        sliced_extractor.Name = "SAPD_Sliced_Extractor"
+                        sliced_extractor.FileName = sliced_h5_path
+                        sliced_extractor.UpdateAttributes()
+                        self.document.AllAlgorithms.Add(sliced_extractor)
+                        active_extractor = sliced_extractor
+                        self._log("      - Using sliced H5 for SAPD calculation.", log_type="info")
+                    else:
+                        active_extractor = simulation_extractor
 
-            # 1. Get Skin Entities
-            skin_entities = self._get_skin_entities()
-            if not skin_entities:
-                self._log("      - WARNING: No skin entities found for SAPD extraction.", log_type="warning")
-                return
+                    # 1. Get Skin Entities
+                    skin_entities = self._get_skin_entities()
+                    if not skin_entities:
+                        self._log("      - WARNING: No skin entities found for SAPD extraction.", log_type="warning")
+                        return
 
-            # 2. Create Surface Filter (ModelToGrid)
-            # We need to pass a single entity to ModelToGridFilter. If multiple skin parts exist,
-            # we must group them temporarily. We also slice the mesh to a smaller area around the peak SAR
-            # location to significantly speed up the SAPD calculation.
+                    # 2. Create Surface Filter (ModelToGrid)
+                    # We need to pass a single entity to ModelToGridFilter. If multiple skin parts exist,
+                    # we must group them temporarily. We also slice the mesh to a smaller area around the peak SAR
+                    # location to significantly speed up the SAPD calculation.
 
-            # Determine side length for mesh slicing (defaults to 100mm)
-            mesh_side_len_mm = float(self.config["simulation_parameters.sapd_mesh_slicing_side_length_mm"] or 100.0)  # type: ignore
+                    # Determine side length for mesh slicing (defaults to 100mm)
+                    mesh_side_len_mm = float(self.config["simulation_parameters.sapd_mesh_slicing_side_length_mm"] or 100.0)  # type: ignore
 
-            # Convert center from meters (SAR output) to mm (Sim4Life model units)
-            center_mm = [c * 1000.0 for c in center_m] if center_m else None
+                    # Convert center from meters (SAR output) to mm (Sim4Life model units)
+                    center_mm = [c * 1000.0 for c in center_m] if center_m else None
 
-            surface_source_entity = self._prepare_skin_group(skin_entities, center_mm, mesh_side_len_mm)
+                    surface_source_entity = self._prepare_skin_group(skin_entities, center_mm, mesh_side_len_mm)
 
-            # Create EM Sensor Extractor from the active extractor (sliced or original)
-            em_sensor_extractor = self._setup_em_sensor_extractor(active_extractor)
+                    # Create EM Sensor Extractor from the active extractor (sliced or original)
+                    em_sensor_extractor = self._setup_em_sensor_extractor(active_extractor)
 
-            # Initialize with explicit inputs list to match working example
-            model_to_grid_filter = self.analysis.core.ModelToGridFilter(inputs=[])
-            model_to_grid_filter.Name = "Skin_Surface_Source"
-            model_to_grid_filter.Entity = surface_source_entity
-            model_to_grid_filter.UpdateAttributes()
-            self.document.AllAlgorithms.Add(model_to_grid_filter)
+                    # Initialize with explicit inputs list to match working example
+                    model_to_grid_filter = self.analysis.core.ModelToGridFilter(inputs=[])
+                    model_to_grid_filter.Name = "Skin_Surface_Source"
+                    model_to_grid_filter.Entity = surface_source_entity
+                    model_to_grid_filter.UpdateAttributes()
+                    self.document.AllAlgorithms.Add(model_to_grid_filter)
 
-            # 3. Setup GenericSAPDEvaluator
-            # Inputs: Poynting Vector S(x,y,z,f0) and Surface
-            inputs = [em_sensor_extractor.Outputs["S(x,y,z,f0)"], model_to_grid_filter.Outputs["Surface"]]
+                    # 3. Setup GenericSAPDEvaluator
+                    # Inputs: Poynting Vector S(x,y,z,f0) and Surface
+                    inputs = [em_sensor_extractor.Outputs["S(x,y,z,f0)"], model_to_grid_filter.Outputs["Surface"]]
 
-            sapd_evaluator = self.analysis.em_evaluators.GenericSAPDEvaluator(inputs=inputs)
-            sapd_evaluator.AveragingArea = 4.0, self.units.SquareCentiMeters
-            sapd_evaluator.Threshold = 0.01, self.units.Meters  # 10 mm
-            sapd_evaluator.UpdateAttributes()
-            self.document.AllAlgorithms.Add(sapd_evaluator)
+                    sapd_evaluator = self.analysis.em_evaluators.GenericSAPDEvaluator(inputs=inputs)
+                    sapd_evaluator.AveragingArea = 4.0, self.units.SquareCentiMeters
+                    sapd_evaluator.Threshold = 0.01, self.units.Meters  # 10 mm
+                    sapd_evaluator.UpdateAttributes()
+                    self.document.AllAlgorithms.Add(sapd_evaluator)
 
-            # 4. Extract Results
-            sapd_report = sapd_evaluator.Outputs["Spatial-Averaged Power Density Report"]
-            sapd_report.Update()
+                    # 4. Extract Results
+                    sapd_report = sapd_evaluator.Outputs["Spatial-Averaged Power Density Report"]
+                    sapd_report.Update()
 
-            data_collection = sapd_report.Data.DataSimpleDataCollection
+                    # Parse results from the DataSimpleDataCollection
+                    data_collection = sapd_report.Data.DataSimpleDataCollection
+                    if not data_collection:
+                        self._log("      - WARNING: No SAPD data available.", log_type="warning")
+                        return
 
-            # Helper to safely get values
-            def get_value(key, default=0.0):
-                try:
-                    return data_collection.FieldValue(key, 0)
-                except Exception:
-                    return default
+                    # Get keys and extract peak SAPD and location
+                    keys = list(data_collection.Keys())
+                    peak_sapd = None
+                    peak_loc = None
 
-            peak_sapd = get_value("PeakPower")
-            peak_loc = get_value("PeakSAPDPosition")
+                    for key in keys:
+                        val = data_collection.FieldValue(key, 0)
+                        if "Peak" in key and "Power" in key:
+                            peak_sapd = val
+                        if "Peak" in key and "Location" in key:
+                            peak_loc = val
 
-            # Store in results_data
-            # We save as 'sapd_results' for the separate JSON
-            # And also flatten valid keys into the main results for the pickle if needed,
-            # or just keep it distinct. The requirement says "Include SAPD data... in the final pickle output".
-            # The pickle is usually dump of results_data.
+                    if peak_sapd is None:
+                        # Fallback: look for any power density value
+                        for key in keys:
+                            if "Power" in key or "Density" in key:
+                                peak_sapd = data_collection.FieldValue(key, 0)
+                                break
 
-            sapd_info = {
-                "peak_sapd_W_m2": peak_sapd,
-                "peak_sapd_location_m": peak_loc,  # usually a vec3
-            }
+                    if peak_sapd is None:
+                        self._log("      - WARNING: Could not extract peak SAPD value.", log_type="warning")
+                        return
 
-            self.results_data["sapd_results"] = sapd_info
+                    # Store in results_data
+                    # We save as 'sapd_results' for the separate JSON
+                    # And also flatten valid keys into the main results for the pickle if needed,
+                    # or just keep it distinct. The requirement says "Include SAPD data... in the final pickle output".
+                    # The pickle is usually dump of results_data.
 
-            # Log success
-            self._log(f"      - Peak SAPD: {peak_sapd:.4f} W/m^2", log_type="info")
-            self._log("      - Subtask 'extract_sapd' done", level="progress", log_type="success")
+                    sapd_info = {
+                        "peak_sapd_W_m2": peak_sapd,
+                        "peak_sapd_location_m": peak_loc,  # usually a vec3
+                    }
 
-            # Clean up algorithms
-            self.document.AllAlgorithms.Remove(sapd_evaluator)
-            self.document.AllAlgorithms.Remove(model_to_grid_filter)
-            if em_sensor_extractor:
-                self.document.AllAlgorithms.Remove(em_sensor_extractor)
+                    self.results_data["sapd_results"] = sapd_info
 
-            # Clean up sliced extractor if we created one
-            if sliced_extractor is not None:
-                try:
-                    self.document.AllAlgorithms.Remove(sliced_extractor)
-                except Exception:
-                    pass
+                    # Log success
+                    self._log(f"      - Peak SAPD: {peak_sapd:.4f} W/m^2", log_type="info")
+
+                    # Clean up algorithms
+                    self.document.AllAlgorithms.Remove(sapd_evaluator)
+                    self.document.AllAlgorithms.Remove(model_to_grid_filter)
+                    if em_sensor_extractor:
+                        self.document.AllAlgorithms.Remove(em_sensor_extractor)
+
+                    # Clean up sliced extractor if we created one
+                    if sliced_extractor is not None:
+                        try:
+                            self.document.AllAlgorithms.Remove(sliced_extractor)
+                        except Exception:
+                            pass
+
+                elapsed = self.parent.study.profiler.subtask_times["extract_sapd"][-1]
+            self._log(f"      - Subtask 'extract_sapd' done in {elapsed:.2f}s", log_type="verbose")
+            self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
             # Clean up temporary group if created?
             # If we created a temporary group entity, we should probably remove it to not pollute the scene,
