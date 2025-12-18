@@ -1,7 +1,8 @@
+import os
 import traceback
 from typing import TYPE_CHECKING, List
-
 from ..logging_manager import LoggingMixin
+from ..utils.h5_slicer import slice_h5_output
 
 if TYPE_CHECKING:
     import s4l_v1.analysis as analysis
@@ -61,8 +62,47 @@ class SapdExtractor(LoggingMixin):
         self._log("    - Extract SAPD statistics...", level="progress", log_type="progress")
 
         try:
-            # 0. Setup EM Sensor Extractor (Local)
-            em_sensor_extractor = self._setup_em_sensor_extractor(simulation_extractor)
+            # 0. Slicing Optimization (Optional but recommended for speed)
+            # Find peak SAR location from results_data
+            peak_sar_details = self.results_data.get("peak_sar_details")
+            center_m = None
+            if peak_sar_details:
+                center_m = peak_sar_details.get("PeakLocation")
+
+            # Use simulation results extractor to find path
+            original_h5_path = None
+            try:
+                # simulation_extractor in Sim4Life has a DataSource which has a Path
+                original_h5_path = simulation_extractor.DataSource.Path
+            except Exception:
+                # Fallback: try to guess path from simulation name/id
+                sim_dir = self.simulation.ProjectDir
+                sim_id = self.simulation.Id
+                guess = os.path.join(sim_dir, f"{sim_id}_Output.h5")
+                if os.path.exists(guess):
+                    original_h5_path = guess
+
+            if center_m and original_h5_path and os.path.exists(original_h5_path):
+                side_len_mm = float(self.config["simulation_parameters.sapd_slicing_side_length_mm"] or 100.0)  # type: ignore
+                side_len_m = side_len_mm / 1000.0
+
+                sliced_h5_path = original_h5_path.replace("_Output.h5", "_Output_Sliced.h5")
+                self._log(f"      - Slicing H5 for SAPD optimization (size: {side_len_mm}mm)...", log_type="info")
+
+                try:
+                    slice_h5_output(original_h5_path, sliced_h5_path, tuple(center_m), side_len_m)
+
+                    # Create a new extractor for the sliced file
+                    # In S4L, we can use analysis.core.Extractor(path)
+                    import s4l_v1.analysis as analysis
+
+                    sliced_extractor = analysis.core.Extractor(sliced_h5_path)
+                    simulation_extractor = sliced_extractor
+                    self._log("      - Using sliced H5 for SAPD calculation.", log_type="info")
+                except Exception as slice_err:
+                    self._log(f"      - WARNING: H5 slicing failed: {slice_err}. Falling back to full H5.", log_type="warning")
+            else:
+                self._log("      - Skipping H5 slicing (peak SAR location or H5 file not found).", log_type="info")
 
             # 1. Get Skin Entities
             skin_entities = self._get_skin_entities()
@@ -72,8 +112,19 @@ class SapdExtractor(LoggingMixin):
 
             # 2. Create Surface Filter (ModelToGrid)
             # We need to pass a single entity to ModelToGridFilter. If multiple skin parts exist,
-            # we must group them temporarily.
-            surface_source_entity = self._prepare_skin_group(skin_entities)
+            # we must group them temporarily. We also slice the mesh to a smaller area around the peak SAR
+            # location to significantly speed up the SAPD calculation.
+
+            # Determine side length for mesh slicing (defaults to 100mm)
+            mesh_side_len_mm = float(self.config["simulation_parameters.sapd_mesh_slicing_side_length_mm"] or 100.0)  # type: ignore
+
+            # Convert center from meters (SAR output) to mm (Sim4Life model units)
+            center_mm = [c * 1000.0 for c in center_m] if center_m else None
+
+            surface_source_entity = self._prepare_skin_group(skin_entities, center_mm, mesh_side_len_mm)
+
+            # Create EM Sensor Extractor
+            em_sensor_extractor = self._setup_em_sensor_extractor(simulation_extractor)
 
             # Initialize with explicit inputs list to match working example
             model_to_grid_filter = self.analysis.core.ModelToGridFilter(inputs=[])
@@ -81,11 +132,10 @@ class SapdExtractor(LoggingMixin):
             model_to_grid_filter.Entity = surface_source_entity
             model_to_grid_filter.UpdateAttributes()
             self.document.AllAlgorithms.Add(model_to_grid_filter)
-            
+
             # Debug: Check outputs
             self.verbose_logger.info(f"EM Sensor Outputs: {[k for k in em_sensor_extractor.Outputs]}")
             self.verbose_logger.info(f"ModelToGrid Outputs: {[k for k in model_to_grid_filter.Outputs]}")
-
 
             # 3. Setup GenericSAPDEvaluator
             # Inputs: Poynting Vector S(x,y,z,f0) and Surface
@@ -173,34 +223,139 @@ class SapdExtractor(LoggingMixin):
 
         return found_entities
 
-    def _prepare_skin_group(self, entities: List["model.Entity"]) -> "model.Entity":
-        """Returns a single entity representing the skin.
+    def _prepare_skin_group(self, entities: List["model.Entity"], center_mm=None, side_len_mm=None) -> "model.Entity":
+        """Returns a single entity representing the skin, optionally sliced.
 
-        If multiple entities, creates a group.
+        1. Clones the input entities to preserve the original project geometry.
+        2. Merges multiple skin entities into a single entity using Unite.
+        3. If center_mm and side_len_mm are provided, slices the merged mesh to a cubic box
+           using 6 PlanarCut operations (more robust than CSG Intersect).
+        4. Cleans up the resulting mesh using RemoveBackToBackTriangles, RepairTriangleMesh,
+           and RemeshTriangleMesh.
+
+        Args:
+            entities: List of skin entities to merge and optionally slice.
+            center_mm: Center point in millimeters (Sim4Life model units). Optional.
+            side_len_mm: Side length in millimeters. Optional.
         """
-        if len(entities) == 1:
-            return entities[0]
+        import XCoreModeling
 
-        # Create a temporary merged entity for the extractor
+        if not entities:
+            return None
+
+        # Always work on clones to avoid destroying the original phantom entities
+        try:
+            clones = [e.Clone() for e in entities]
+        except Exception as e:
+            self._log(f"      - WARNING: Could not clone skin entities: {e}. Using originals (destructive).", log_type="warning")
+            clones = entities
+
+        # Unite parts into a single entity
+        if len(clones) > 1:
+            try:
+                # Unite is required for ModelToGridFilter to work correctly on multiple pieces.
+                united_entity = self.model.Unite(clones)
+                self._temp_group = united_entity
+            except Exception as e:
+                self._log(f"      - WARNING: Error uniting skin clones: {e}. Using first piece only.", log_type="warning")
+                united_entity = clones[0]
+        else:
+            united_entity = clones[0]
+
+        # Name it for visibility in S4L
         merged_name = "Skin_Merged_For_SAPD"
+        united_entity.Name = merged_name
 
-        # Check if exists (idempotency)
-        all_entities = self.model.AllEntities()
-        if merged_name in all_entities:
-            return all_entities[merged_name]
+        # Perform slicing if peak location is known
+        if center_mm is not None and side_len_mm is not None:
+            self._log(f"      - Slicing mesh to {side_len_mm:.1f}mm box around peak...", log_type="info")
+            try:
+                entity = united_entity
+                half_side = side_len_mm / 2.0
+
+                # Use 6 PlanarCut operations instead of CSG Intersect (more robust for complex meshes)
+                # PlanarCut keeps the volume in the half-space along the plane normal
+
+                # Cut -X side: keep everything with x > center_x - half_side
+                entity = XCoreModeling.PlanarCut(
+                    entity, self.model.Vec3(center_mm[0] - half_side, center_mm[1], center_mm[2]), self.model.Vec3(1, 0, 0)
+                )
+
+                # Cut +X side: keep everything with x < center_x + half_side
+                entity = XCoreModeling.PlanarCut(
+                    entity, self.model.Vec3(center_mm[0] + half_side, center_mm[1], center_mm[2]), self.model.Vec3(-1, 0, 0)
+                )
+
+                # Cut -Y side
+                entity = XCoreModeling.PlanarCut(
+                    entity, self.model.Vec3(center_mm[0], center_mm[1] - half_side, center_mm[2]), self.model.Vec3(0, 1, 0)
+                )
+
+                # Cut +Y side
+                entity = XCoreModeling.PlanarCut(
+                    entity, self.model.Vec3(center_mm[0], center_mm[1] + half_side, center_mm[2]), self.model.Vec3(0, -1, 0)
+                )
+
+                # Cut -Z side
+                entity = XCoreModeling.PlanarCut(
+                    entity, self.model.Vec3(center_mm[0], center_mm[1], center_mm[2] - half_side), self.model.Vec3(0, 0, 1)
+                )
+
+                # Cut +Z side
+                entity = XCoreModeling.PlanarCut(
+                    entity, self.model.Vec3(center_mm[0], center_mm[1], center_mm[2] + half_side), self.model.Vec3(0, 0, -1)
+                )
+
+                # Clean up the mesh after planar cuts
+                self._log("      - Cleaning up sliced mesh...", log_type="info")
+                self._cleanup_mesh(entity, XCoreModeling)
+
+                entity.Name = "Skin_Sliced_For_SAPD"
+                return entity
+
+            except Exception as e:
+                self._log(f"      - WARNING: Mesh slicing failed: {e}. Using unsliced group.", log_type="warning")
+                return united_entity
+
+        return united_entity
+
+    def _cleanup_mesh(self, entity: "model.Entity", XCoreModeling) -> None:
+        """Cleans up a mesh after slicing operations.
+
+        Applies a 3-step cleanup pipeline:
+        1. RemoveBackToBackTriangles - removes duplicate/overlapping triangles
+        2. RepairTriangleMesh - fills holes and fixes self-intersections
+        3. RemeshTriangleMesh - regenerates mesh with uniform edge length
+        """
+        try:
+            # Step 1: Remove duplicate triangles
+            XCoreModeling.RemoveBackToBackTriangles(entity)
+        except Exception as e:
+            self.verbose_logger.debug(f"RemoveBackToBackTriangles skipped: {e}")
 
         try:
-            # Merge multiple skin entities into a single entity using Unite.
-            # This is required for ModelToGridFilter to work correctly.
-            # Note: Unite is a destructive operation (modifies the scene), 
-            # but since we don't save the project after extraction, it's safe.
-            united_entity = self.model.Unite(entities)
-            united_entity.Name = merged_name
-            self._temp_group = united_entity
-            return united_entity
+            # Step 2: Repair holes and self-intersections
+            XCoreModeling.RepairTriangleMesh(
+                [entity],
+                fill_holes=True,
+                repair_intersections=True,
+                min_components_size=10,  # Remove small disconnected pieces
+            )
         except Exception as e:
-            self._log(f"Error uniting skin entities: {e}. Using first entity only.", log_type="warning")
-            return entities[0]
+            self.verbose_logger.debug(f"RepairTriangleMesh skipped: {e}")
+
+        try:
+            # Step 3: Remesh to uniform quality
+            mesh_opts = XCoreModeling.MeshingOptions()
+            mesh_opts.EdgeLength = 2.0  # 2mm target edge length
+            mesh_opts.MinEdgeLength = 1.0  # 1mm minimum
+            mesh_opts.FeatureAngle = 30.0  # Preserve edges at 30 degree angle
+            mesh_opts.MaxSpanAngle = 20.0  # Curvature refinement
+            mesh_opts.MergeCoincidentNodes = True
+            mesh_opts.RepairIntersections = True
+            XCoreModeling.RemeshTriangleMesh(entity, mesh_opts)
+        except Exception as e:
+            self.verbose_logger.debug(f"RemeshTriangleMesh skipped: {e}")
 
     def _setup_em_sensor_extractor(self, simulation_extractor: "analysis.Extractor") -> "analysis.Extractor":
         """Sets up the EM sensor extractor for SAPD analysis.

@@ -40,6 +40,7 @@ commit_message.txt
 
 # Sim4Life Documentation
 PythonAPIReference/
+hybridizer/*
 Sim4Life.pdf
 Sim4Life_Manual.pdf
 Sim4Life_Introduction.pdf
