@@ -63,17 +63,31 @@ class SapdExtractor(LoggingMixin):
         self._log("    - Extract SAPD statistics...", level="progress", log_type="progress")
 
         try:
-            # 0. Slicing Optimization (Optional but recommended for speed)
-            # Find peak SAR location from results_data
+            # 0. Slicing Optimization
+            # Find peak SAR location from results_data and create a sliced H5 for faster processing
             peak_sar_details = self.results_data.get("peak_sar_details")
             center_m = None
             if peak_sar_details:
                 center_m = peak_sar_details.get("PeakLocation")
 
-            # H5 slicing optimization - create a smaller H5 file for faster processing
-            # Save sliced H5 to results directory (same location as other deliverables)
+            # Try to use sliced H5 for better performance
+            sliced_h5_path = None
+            sliced_extractor = None
             if center_m:
-                self._slice_h5_to_results_dir(center_m)
+                sliced_h5_path = self._create_sliced_h5(center_m)
+
+            # Create extractor - use sliced H5 if available, otherwise use original
+            if sliced_h5_path:
+                # Create a new SimulationExtractor from the sliced H5 file
+                sliced_extractor = self.analysis.extractors.SimulationExtractor(inputs=[])
+                sliced_extractor.Name = "SAPD_Sliced_Extractor"
+                sliced_extractor.FileName = sliced_h5_path
+                sliced_extractor.UpdateAttributes()
+                self.document.AllAlgorithms.Add(sliced_extractor)
+                active_extractor = sliced_extractor
+                self._log("      - Using sliced H5 for SAPD calculation.", log_type="info")
+            else:
+                active_extractor = simulation_extractor
 
             # 1. Get Skin Entities
             skin_entities = self._get_skin_entities()
@@ -94,8 +108,8 @@ class SapdExtractor(LoggingMixin):
 
             surface_source_entity = self._prepare_skin_group(skin_entities, center_mm, mesh_side_len_mm)
 
-            # Create EM Sensor Extractor
-            em_sensor_extractor = self._setup_em_sensor_extractor(simulation_extractor)
+            # Create EM Sensor Extractor from the active extractor (sliced or original)
+            em_sensor_extractor = self._setup_em_sensor_extractor(active_extractor)
 
             # Initialize with explicit inputs list to match working example
             model_to_grid_filter = self.analysis.core.ModelToGridFilter(inputs=[])
@@ -153,6 +167,13 @@ class SapdExtractor(LoggingMixin):
             if em_sensor_extractor:
                 self.document.AllAlgorithms.Remove(em_sensor_extractor)
 
+            # Clean up sliced extractor if we created one
+            if sliced_extractor is not None:
+                try:
+                    self.document.AllAlgorithms.Remove(sliced_extractor)
+                except Exception:
+                    pass
+
             # Clean up temporary group if created?
             # If we created a temporary group entity, we should probably remove it to not pollute the scene,
             # but S4L python API for removing entities is tricky.
@@ -205,37 +226,39 @@ class SapdExtractor(LoggingMixin):
 
         return os.path.join(base_path, self.parent.placement_name)
 
-    def _slice_h5_to_results_dir(self, center_m: list) -> None:
-        """Slices the simulation H5 output file and saves to results directory.
+    def _create_sliced_h5(self, center_m: list) -> str | None:
+        """Creates a sliced H5 file and returns its path.
 
-        The sliced H5 is saved alongside other deliverables (pkl, html) for use in
-        post-processing or further analysis. This does not affect the SAPD calculation
-        itself but provides a smaller file for easier data transfer and analysis.
+        The sliced H5 contains only the data around the peak SAR location,
+        significantly reducing the data size for faster SAPD calculation.
 
         Args:
             center_m: Peak SAR location in meters [x, y, z].
+
+        Returns:
+            Path to the sliced H5 file, or None if slicing failed.
         """
         try:
             # Find the original H5 file using project_manager pattern
             if self.parent.study is None:
-                return
+                return None
 
             project_path = self.parent.study.project_manager.project_path
             if not project_path:
-                return
+                return None
 
             project_dir = os.path.dirname(project_path)
             project_filename = os.path.basename(project_path)
             sim_results_dir = os.path.join(project_dir, project_filename + "_Results")
 
             if not os.path.exists(sim_results_dir):
-                return
+                return None
 
             import glob
 
             output_files = glob.glob(os.path.join(sim_results_dir, "*_Output.h5"))
             if not output_files:
-                return
+                return None
 
             original_h5_path = max(output_files, key=os.path.getmtime)
 
@@ -250,12 +273,15 @@ class SapdExtractor(LoggingMixin):
             side_len_mm = float(self.config["simulation_parameters.sapd_slicing_side_length_mm"] or 100.0)  # type: ignore
             side_len_m = side_len_mm / 1000.0
 
-            self._log(f"      - Slicing H5 to results directory ({side_len_mm}mm box)...", log_type="info")
+            self._log(f"      - Slicing H5 ({side_len_mm}mm box around peak)...", log_type="info")
             slice_h5_output(original_h5_path, sliced_h5_path, tuple(center_m), side_len_m)
             self._log(f"      - Saved sliced H5: {sliced_filename}", log_type="info")
 
+            return sliced_h5_path
+
         except Exception as e:
-            self._log(f"      - H5 slicing skipped: {e}", log_type="verbose")
+            self._log(f"      - H5 slicing failed: {e}. Using full H5.", log_type="warning")
+            return None
 
     def _prepare_skin_group(self, entities: List["model.Entity"], center_mm=None, side_len_mm=None) -> "model.Entity":
         """Returns a single entity representing the skin, optionally sliced.
