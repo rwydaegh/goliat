@@ -27,7 +27,7 @@ detuning/
 detuning2/
 
 # Data
-data/
+data/*
 !data/material_name_mapping.json
 !data/material_properties_cache.json
 !data/itis_v5.db
@@ -40,6 +40,7 @@ commit_message.txt
 
 # Sim4Life Documentation
 PythonAPIReference/
+hybridizer/*
 Sim4Life.pdf
 Sim4Life_Manual.pdf
 Sim4Life_Introduction.pdf
@@ -60,6 +61,7 @@ configs/*
 !configs/ai_config.json
 !configs/investigate_detuning_low.json
 !configs/far_field_multisine*.json
+!configs/test_sapd_far_field.json
 
 # Generated files
 *.csv

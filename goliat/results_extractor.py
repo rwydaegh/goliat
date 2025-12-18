@@ -8,6 +8,7 @@ from .extraction.json_encoder import NumpyArrayEncoder
 from .extraction.power_extractor import PowerExtractor
 from .extraction.reporter import Reporter
 from .extraction.resonance_extractor import ResonanceExtractor
+from .extraction.sapd_extractor import SapdExtractor
 from .extraction.sar_extractor import SarExtractor
 from .extraction.sensor_extractor import SensorExtractor
 from .logging_manager import LoggingMixin
@@ -141,6 +142,7 @@ class ResultsExtractor(LoggingMixin):
         """Returns the standard deliverable filenames used by this extractor."""
         return {
             "json": "sar_results.json",
+            "sapd_json": "sapd_results.json",
             "pkl": "sar_stats_all_tissues.pkl",
             "html": "sar_stats_all_tissues.html",
         }
@@ -191,6 +193,10 @@ class ResultsExtractor(LoggingMixin):
             sar_extractor.extract_sar_statistics(simulation_extractor)
             power_extractor.extract_power_balance(simulation_extractor)
 
+            if self.config["simulation_parameters.extract_sapd"]:
+                sapd_extractor = SapdExtractor(self, results_data)
+                sapd_extractor.extract_sapd(simulation_extractor)
+
         if (self.config["simulation_parameters.number_of_point_sensors"] or 0) > 0:  # type: ignore
             sensor_extractor = SensorExtractor(self, results_data)
             sensor_extractor.extract_point_sensor_data(simulation_extractor)
@@ -217,9 +223,19 @@ class ResultsExtractor(LoggingMixin):
         results_dir = reporter._get_results_dir()
         os.makedirs(results_dir, exist_ok=True)
         deliverables = self.get_deliverable_filenames()
+
+        # Save SAPD results separately if present
+        if "sapd_results" in results_data:
+            sapd_filepath = os.path.join(results_dir, deliverables["sapd_json"])
+            with open(sapd_filepath, "w") as f:
+                json.dump(results_data["sapd_results"], f, indent=4, cls=NumpyArrayEncoder)
+            self._log(f"  - SAPD results saved to: {sapd_filepath}", log_type="info")
+
         results_filepath = os.path.join(results_dir, deliverables["json"])
 
-        final_results_data = {k: v for k, v in results_data.items() if not k.startswith("_temp") and k != "point_sensor_data"}
+        final_results_data = {
+            k: v for k, v in results_data.items() if not k.startswith("_temp") and k != "point_sensor_data" and k != "sapd_results"
+        }
 
         with open(results_filepath, "w") as f:
             json.dump(final_results_data, f, indent=4, cls=NumpyArrayEncoder)
