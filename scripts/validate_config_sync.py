@@ -18,11 +18,11 @@ def compare_configs():
     configs_dir = repo_root / "configs"
 
     if not defaults_dir.exists():
-        print(f"❌ Defaults directory not found: {defaults_dir}")
+        print(f"[X] Defaults directory not found: {defaults_dir}")
         return False
 
     if not configs_dir.exists():
-        print(f"❌ Configs directory not found: {configs_dir}")
+        print(f"[X] Configs directory not found: {configs_dir}")
         return False
 
     errors = []
@@ -80,7 +80,7 @@ def compare_configs():
         print()
         for error in errors:
             print(error)
-        print("\n💡 Tip: Run 'python scripts/sync_configs.py' to sync configs")
+        print("\n[INFO] Tip: Run 'python scripts/sync_configs.py' to sync configs")
         return False
 
     print(f"All {checked_count} config file(s) are in sync!")
