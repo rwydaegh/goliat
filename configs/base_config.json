@@ -28,7 +28,8 @@
             "lower_right_up",
             "top_left_bottom"
         ],
-        "extract_sapd": false
+        "extract_sapd": false,
+        "multisine_ramp_periods": 2.0
     },
     "gridding_parameters": {
         "global_gridding": {
