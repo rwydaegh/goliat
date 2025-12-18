@@ -17,6 +17,70 @@ from .python_interpreter import check_python_interpreter, find_sim4life_python_e
 # Import config_setup
 from .config_setup import setup_configs
 
+
+def _pull_lfs_files(base_dir: str) -> None:
+    """
+    Pull Git LFS files needed for GOLIAT.
+    
+    Specifically pulls data/itis_v5.db which is required for multisine
+    material dispersion fitting.
+    """
+    import shutil
+    
+    db_path = os.path.join(base_dir, "data", "itis_v5.db")
+    
+    # Check if git lfs is available
+    if shutil.which("git") is None:
+        logging.debug("Git not found, skipping LFS pull")
+        return
+    
+    # Check if we're in a git repo
+    git_dir = os.path.join(base_dir, ".git")
+    if not os.path.isdir(git_dir):
+        logging.debug("Not a git repository, skipping LFS pull")
+        return
+    
+    # Check if the file exists and is a valid database (not just an LFS pointer)
+    if os.path.exists(db_path):
+        # LFS pointer files are small text files (~130 bytes)
+        # The actual DB is ~7MB
+        file_size = os.path.getsize(db_path)
+        if file_size > 10000:  # If > 10KB, it's the real file
+            logging.debug("IT'IS database already present")
+            return
+        logging.info("IT'IS database is an LFS pointer, pulling actual file...")
+    else:
+        logging.info("Pulling IT'IS material database via Git LFS...")
+    
+    try:
+        # First ensure git lfs is installed for this repo
+        subprocess.run(
+            ["git", "lfs", "install"],
+            cwd=base_dir,
+            capture_output=True,
+            check=False,  # Don't fail if lfs not installed
+        )
+        
+        # Pull just the database file
+        result = subprocess.run(
+            ["git", "lfs", "pull", "--include=data/itis_v5.db"],
+            cwd=base_dir,
+            capture_output=True,
+            text=True,
+        )
+        
+        if result.returncode == 0:
+            logging.info("IT'IS database downloaded successfully")
+        else:
+            # Don't fail setup, just warn - the JSON cache fallback exists
+            logging.warning(
+                f"Could not pull IT'IS database via Git LFS: {result.stderr.strip()}"
+            )
+    except FileNotFoundError:
+        logging.debug("Git LFS not available")
+    except Exception as e:
+        logging.warning(f"Git LFS pull failed: {e}")
+
 __all__ = [
     "initial_setup",
     "check_package_installed",
@@ -118,6 +182,9 @@ def initial_setup():
     data_dir = os.path.join(base_dir, "data")
     os.makedirs(data_dir, exist_ok=True)
     lock_file = os.path.join(data_dir, ".setup_done")
+
+    # Pull Git LFS files (specifically itis_v5.db for multisine dispersion)
+    _pull_lfs_files(base_dir)
 
     # Always run prepare_data() - it has its own checks to determine what needs to be done
     # This allows repair of incomplete setups (e.g., if user canceled during antenna preparation)
