@@ -103,7 +103,13 @@ def _load_db_params(db_path: Optional[Path] = None) -> dict:
     path = db_path or _DEFAULT_DB_PATH
 
     if not path.exists():
-        raise FileNotFoundError(f"IT'IS database not found at {path}")
+        raise FileNotFoundError(
+            f"IT'IS database not found at {path}\n"
+            "This file is stored in Git LFS. To download it, run:\n"
+            "  git lfs install\n"
+            "  git lfs pull --include='data/itis_v5.db'\n"
+            "Or run 'goliat init' which handles this automatically."
+        )
 
     conn = sqlite3.connect(str(path))
     cursor = conn.cursor()
@@ -241,7 +247,11 @@ def get_material_properties(
         try:
             return _get_from_db(tissue_name, frequencies_mhz)
         except FileNotFoundError:
-            logger.warning("IT'IS database not found, falling back to JSON cache")
+            logger.warning(
+                "IT'IS database not found, falling back to JSON cache. "
+                "For full frequency support, run: git lfs pull --include='data/itis_v5.db' "
+                "or 'goliat init'"
+            )
             return _get_from_cache(tissue_name, frequencies_mhz)
     else:
         return _get_from_cache(tissue_name, frequencies_mhz)
