@@ -192,17 +192,18 @@ class SapdExtractor(LoggingMixin):
                     self._log(f"      - Peak SAPD: {peak_sapd:.4f} W/m^2", log_type="info")
 
                     # Clean up algorithms
-                    self.document.AllAlgorithms.Remove(sapd_evaluator)
-                    self.document.AllAlgorithms.Remove(model_to_grid_filter)
-                    if em_sensor_extractor:
-                        self.document.AllAlgorithms.Remove(em_sensor_extractor)
+                    # The following cleanup is commented out as requested to keep the algorithms for inspection
+                    # self.document.AllAlgorithms.Remove(sapd_evaluator)
+                    # self.document.AllAlgorithms.Remove(model_to_grid_filter)
+                    # if em_sensor_extractor:
+                    #     self.document.AllAlgorithms.Remove(em_sensor_extractor)
 
                     # Clean up sliced extractor if we created one
-                    if sliced_extractor is not None:
-                        try:
-                            self.document.AllAlgorithms.Remove(sliced_extractor)
-                        except Exception:
-                            pass
+                    # if sliced_extractor is not None:
+                    #     try:
+                    #         self.document.AllAlgorithms.Remove(sliced_extractor)
+                    #     except Exception:
+                    #         pass
 
                 elapsed = self.parent.study.profiler.subtask_times["extract_sapd"][-1]
             self._log(f"      - Subtask 'extract_sapd' done in {elapsed:.2f}s", log_type="verbose")
@@ -337,24 +338,49 @@ class SapdExtractor(LoggingMixin):
         if not entities:
             return None
 
-        # Always work on clones to avoid destroying the original phantom entities
-        try:
-            clones = [e.Clone() for e in entities]
-        except Exception as e:
-            self._log(f"      - WARNING: Could not clone skin entities: {e}. Using originals (destructive).", log_type="warning")
-            clones = entities
+        # Look for a cache of this entity in data/[phantom_name]_skin.sab
+        cache_dir = os.path.join(self.parent.config.base_dir, "data")
+        cache_path = os.path.join(cache_dir, f"{self.phantom_name}_skin.sab")
+        united_entity = None
 
-        # Unite parts into a single entity
-        if len(clones) > 1:
+        if os.path.exists(cache_path):
+            self._log(f"      - Loading cached skin from {cache_path}...", log_type="info")
             try:
-                # Unite is required for ModelToGridFilter to work correctly on multiple pieces.
-                united_entity = self.model.Unite(clones)
-                self._temp_group = united_entity
+                imported_entities = list(self.model.Import(cache_path))
+                if imported_entities:
+                    united_entity = imported_entities[0]
+                    self._temp_group = united_entity
             except Exception as e:
-                self._log(f"      - WARNING: Error uniting skin clones: {e}. Using first piece only.", log_type="warning")
+                self._log(f"      - WARNING: Could not import skin cache: {e}. Re-creating.", log_type="warning")
+
+        if united_entity is None:
+            self._log(f"      - Merging {len(entities)} skin entities into one (takes a while)...", log_type="info")
+            # Always work on clones to avoid destroying the original phantom entities
+            try:
+                clones = [e.Clone() for e in entities]
+            except Exception as e:
+                self._log(f"      - WARNING: Could not clone skin entities: {e}. Using originals (destructive).", log_type="warning")
+                clones = entities
+
+            # Unite parts into a single entity
+            if len(clones) > 1:
+                try:
+                    # Unite is required for ModelToGridFilter to work correctly on multiple pieces.
+                    united_entity = self.model.Unite(clones)
+                    self._temp_group = united_entity
+                except Exception as e:
+                    self._log(f"      - WARNING: Error uniting skin clones: {e}. Using first piece only.", log_type="warning")
+                    united_entity = clones[0]
+            else:
                 united_entity = clones[0]
-        else:
-            united_entity = clones[0]
+
+            # Export to cache
+            try:
+                os.makedirs(cache_dir, exist_ok=True)
+                self.model.Export([united_entity], cache_path)
+                self._log(f"      - Exported merged skin to cache: {cache_path}", log_type="info")
+            except Exception as e:
+                self._log(f"      - WARNING: Could not export skin cache: {e}", log_type="warning")
 
         # Name it for visibility in S4L
         merged_name = "Skin_Merged_For_SAPD"
