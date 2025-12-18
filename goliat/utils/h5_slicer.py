@@ -148,10 +148,9 @@ def slice_h5_output(input_file: str, output_file: str, center_m: Tuple[float, fl
                         total_nodes_new = NX_new * NY_new * NZ_new
                         bb_max = max(0, total_nodes_new - 1)
 
-                        print(f"  Updating bounding_box {name}: [0, {bb_max}]")
                         dst_dataset = dst.create_dataset(name, data=np.array([0, bb_max], dtype=obj.dtype))
-                    except Exception as e:
-                        print(f"  Warning: Could not update bounding_box {name}: {e}")
+                    except Exception:
+                        # Fall back to copying original
                         dst_dataset = dst.create_dataset(name, data=obj[:])
                 else:
                     # Copy entirely

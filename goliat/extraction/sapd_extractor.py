@@ -146,19 +146,30 @@ class SapdExtractor(LoggingMixin):
                     peak_sapd = None
                     peak_loc = None
 
+                    def safe_get_value(key):
+                        """Safely get value from data collection, handling nullptr."""
+                        try:
+                            return data_collection.FieldValue(key, 0)
+                        except TypeError:
+                            # C++ nullptr can't be converted to Python
+                            return None
+
                     for key in keys:
-                        val = data_collection.FieldValue(key, 0)
-                        if "Peak" in key and "Power" in key:
-                            peak_sapd = val
-                        if "Peak" in key and "Location" in key:
-                            peak_loc = val
+                        val = safe_get_value(key)
+                        if val is not None:
+                            if "Peak" in key and "Power" in key:
+                                peak_sapd = val
+                            if "Peak" in key and "Location" in key:
+                                peak_loc = val
 
                     if peak_sapd is None:
                         # Fallback: look for any power density value
                         for key in keys:
                             if "Power" in key or "Density" in key:
-                                peak_sapd = data_collection.FieldValue(key, 0)
-                                break
+                                val = safe_get_value(key)
+                                if val is not None:
+                                    peak_sapd = val
+                                    break
 
                     if peak_sapd is None:
                         self._log("      - WARNING: Could not extract peak SAPD value.", log_type="warning")
