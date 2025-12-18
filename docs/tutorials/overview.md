@@ -30,7 +30,7 @@ Device exposure scenarios with antennas.
 
 - Duration: 30-35 minutes
 - Difficulty: Intermediate
-- Topics: Antennas, placements, anatomical landmarks, localized SAR
+- Topics: Antennas, placements, anatomical landmarks, localized SAR, SAPD extraction
 
 ### 4. [Gridding and phantom rotation](04_gridding_and_phantom_rotation.ipynb)
 

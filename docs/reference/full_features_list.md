@@ -59,9 +59,12 @@ This document provides a complete reference of every feature available in GOLIAT
 - Support for environmental exposure scenarios (currently implemented)
 - Placeholder for auto-induced mode (future implementation)
 - Multi-sine excitation: Simulate multiple frequencies in a single run using `"700+2450"` config syntax
-- Automatic DFT extraction at each frequency component via `ExtractedFrequencies`
-- Simulation time extended for beat period requirement (multi-sine)
-- Frequency-dependent material dispersion fitting for multi-sine accuracy
+- UserDefined waveform with superimposed sinusoids for multi-frequency excitation
+- Automatic DFT extraction at each frequency component via `ExtractedFrequencies` setting
+- Simulation time automatically extended to capture beat period requirements (multi-sine)
+- Frequency-dependent material dispersion fitting via pole-zero model for multi-sine accuracy
+- Per-frequency SAR extraction with traceback logging for frequency-specific failures
+- ~4× speedup for widely-spaced frequencies (> 200 MHz apart)
 
 ## Phantom management
 
@@ -413,9 +416,10 @@ This document provides a complete reference of every feature available in GOLIAT
 
 ### Result files
 
-- `sar_results.json` - Normalized SAR values summary
-- `sar_stats_all_tissues.pkl` - Detailed tissue-specific SAR data (Python pickle)
+- `sar_results.json` - Normalized SAR values summary (includes SAPD if extraction enabled)
+- `sar_stats_all_tissues.pkl` - Detailed tissue-specific SAR data (Python pickle), includes SAPD results
 - `sar_stats_all_tissues.html` - HTML table of tissue SAR values
+- `sliced_output_{freq}MHz.h5` - Sliced H5 file around peak SAR location (for faster SAPD calculation)
 - `point_sensor_data.png` - Electric field magnitude plot at monitoring points
 - `*_Output.h5` - Simulation output file (HDF5 format)
 - `*_Input.h5` - Solver input file (HDF5 format)

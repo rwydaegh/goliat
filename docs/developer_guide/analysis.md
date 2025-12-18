@@ -1,6 +1,6 @@
 # Analysis system
 
-GOLIAT's analysis system processes simulation results and generates reports, plots, and publications. This document covers user-facing usage and internal architecture.
+GOLIAT's analysis system processes simulation results (SAR and SAPD metrics) and generates reports, plots, and publications. This document covers user-facing usage and internal architecture.
 
 ## User guide
 
@@ -230,7 +230,7 @@ The `Plotter` class uses composition to delegate to specialized plot modules:
 ### Data flow
 
 1. **Result loading**: Strategy iterates through configured scenarios
-2. **File discovery**: Locates `sar_results.json` and `sar_stats_all_tissues.pkl` files
+2. **File discovery**: Locates `sar_results.json` (including SAPD data if collected) and `sar_stats_all_tissues.pkl` files
 3. **Data extraction**: Strategy extracts relevant metrics per simulation
 4. **Normalization**: Applies power normalization factors
 5. **Aggregation**: Combines all simulations into DataFrames

@@ -139,7 +139,22 @@ While the core GOLIAT workflow remains consistent, the specifics of scene setup 
 
 -   **Auto-Induced Mode**: While currently a placeholder, this mode is envisioned for future implementations to simulate EMF exposure induced by body motion or other dynamic scenarios.
 
--   **Multi-Sine Excitation**: For efficiency, GOLIAT can simulate multiple frequencies in a single FDTD run. Use the `"700+2450"` format in your `frequencies_mhz` array. The simulation extracts SAR at each frequency via DFT post-processing. This can provide ~4× speedup for widely-spaced frequencies. See [Technical Docs](../technical/multi_sine_excitation_analysis.md) for details.
+-   **Multi-Sine Excitation**: For efficiency, GOLIAT can simulate multiple frequencies in a single FDTD run. Use the `"700+2450"` format in your `frequencies_mhz` array (e.g., `["700+2450", 5800]`). The simulation uses a UserDefined waveform with superimposed sinusoids and extracts SAR at each frequency via DFT post-processing. This provides ~4× speedup for widely-spaced frequencies (> 200 MHz apart) where beat period overhead is minimal. Frequency-dependent material dispersion is automatically handled through dispersion fitting. See [Technical Docs](../technical/multi_sine_excitation_analysis.md) for mathematical details.
+
+    **Example multi-sine config:**
+    ```json
+    {
+      "frequencies_mhz": ["700+2450", 5800],
+      "far_field_setup": {
+        "type": "environmental",
+        "environmental": {
+          "incident_directions": ["x_pos", "y_neg"],
+          "polarizations": ["theta", "phi"]
+        }
+      }
+    }
+    ```
+    This runs two simulations per direction/polarization: one extracting SAR at 700 and 2450 MHz, another at 5800 MHz.
 
 ## ✅ Tips for success
 

@@ -228,6 +228,7 @@ GOLIAT groups individual tissues into logical categories (e.g., eyes, brain, ski
 
     - `PowerExtractor`: Extracts input power and power balance.
     - `SarExtractor`: Extracts detailed SAR statistics for all tissues.
+    - `SapdExtractor`: Extracts Surface Absorbed Power Density on the skin surface.
     - `SensorExtractor`: Extracts data from point sensors.
     - `Reporter`: Generates detailed reports in Pickle and HTML formats.
     - `Cleaner`: Handles cleanup of simulation files to save disk space.

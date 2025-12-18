@@ -155,11 +155,11 @@ GOLIAT is an automated Python framework for near-field and far-field dosimetric 
 
 ## Overview
 
-GOLIAT automates dosimetric assessments for the GOLIAT project, calculating SAR in digital human phantoms from device or environmental EMF exposure. Key features:
+GOLIAT automates dosimetric assessments for the GOLIAT project, calculating SAR and SAPD in digital human phantoms from device or environmental EMF exposure. Key features:
 
 - Modular scene building (phantoms, antennas, plane waves).
 - Local or cloud execution (iSolve/oSPARC).
-- Results extraction and analysis (SAR metrics, plots).
+- Results extraction and analysis (SAR and SAPD metrics, plots).
 - GUI for progress tracking.
 - Automatic disk space management for serial workflows.
 
