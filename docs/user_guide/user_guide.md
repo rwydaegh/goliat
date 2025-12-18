@@ -12,6 +12,7 @@ Before diving into the workflows, let's clarify some fundamental terms:
 -   **Near-Field Simulations**: Focus on scenarios where an EMF source (e.g., an antenna in a mobile device) is in close proximity to the body. These simulations assess localized absorption, particularly in sensitive areas like the head, eyes, or limbs.
 -   **Far-Field Simulations**: Address scenarios involving plane waves impinging on the entire body from various directions (e.g., front, back, sides). These are typically used for evaluating environmental or broadcast exposure.
 -   **Specific Absorption Rate (SAR)**: The primary output metric, representing the rate at which electromagnetic energy is absorbed per unit mass of biological tissue, typically expressed in milliwatts per kilogram (mW/kg) per 1W of input power. GOLIAT provides whole-body average SAR, localized SAR (e.g., head/trunk), and peak spatial-average SAR (psSAR) over 10g tissue cubes in specific organs (e.g., brain, eyes, skin).
+-   **Surface Absorbed Power Density (SAPD)**: An additional metric for high-frequency exposure (> 6 GHz), measuring the power density absorbed on the skin surface. GOLIAT automatically calculates peak SAPD and its location based on the skin surface mesh.
 -   **Configuration Files (Configs)**: JSON files that serve as the "recipe" for your simulations. They define all parameters, including phantom selection, frequencies, antenna properties, and execution controls. GOLIAT uses a hierarchical system where study-specific configs inherit from `base_config.json`, allowing for easy customization and overrides.
 
 ## 🚀 End-to-end workflow: from config to analysis
@@ -82,6 +83,7 @@ After the simulation, GOLIAT's `ResultsExtractor` and `Analyzer` components take
   -   **Whole-Body SAR**: The average SAR over the entire phantom.
   -   **Localized SAR**: Average SAR in specific regions, such as the head or trunk, relevant for localized exposures.
   -   **psSAR10g**: Peak spatial-average SAR over a 10-gram tissue cube, typically reported for sensitive organs like the eyes, brain, and skin.
+  -   **SAPD**: Surface Absorbed Power Density (peak value and location) on the skin surface.
   -   **Power Balance**: A check to ensure energy conservation within the simulation, ideally close to 100%.
 -   **Normalization**: All extracted SAR values are normalized to a 1W input power, providing a standardized basis for comparison.
 -   **Output Files** (located in the `results/` folder):

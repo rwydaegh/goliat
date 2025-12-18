@@ -43,6 +43,10 @@ This document provides a complete reference of every feature available in GOLIAT
 - Phantom rotation towards phone for precise by_cheek contact (automatic angle detection)
 - Configurable phantom rotation angle offset (additional rotation after contact detection)
 - Binary search algorithm for finding exact touching angle (0-30 degrees, 0.5 degree precision)
+- **Surface Absorbed Power Density (SAPD)**: Extract peak and spatial-averaged power density on the skin surface (compliant with IEC/IEEE 63195-2:2022)
+- Fast SAPD calculation via mesh slicing around peak SAR locations
+- H5 slicing optimization for reduced data overhead during SAPD processing
+- Caching system for merged skin surface entities to significantly speed up repeated runs
 
 ### Far-field studies
 
@@ -229,8 +233,10 @@ This document provides a complete reference of every feature available in GOLIAT
 - Explicit configuration-based tissue matching (no keyword fallbacks)
 - Preservation of original Sim4Life tissue names (e.g., "Eye (Cornea)" vs "Eye (Lens)")
 - Phantom suffix handling in tissue name display
-- Resonance frequency extraction from Gaussian pulse results (ResonanceExtractor)
 - Antenna detuning detection (frequency shift relative to nominal frequency)
+- **SAPD Extraction**: Extract surface absorbed power density metrics (peak value and location)
+- Automated ModelToGrid filtering for skin surface extraction
+- Configurable SAPD averaging area (default: 4cm²) and threshold (default: 10mm)
 
 ## Analysis and visualization
 
