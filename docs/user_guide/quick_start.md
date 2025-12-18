@@ -1,6 +1,6 @@
 # Quick start: Your first GOLIAT simulation
 
-Welcome to GOLIAT! This guide will get you up and running with your first automated EMF dosimetry simulation in minutes. GOLIAT streamlines the entire process using Sim4Life, handling scene setup, execution, and results analysis. We'll walk through a simple "Hello World" near-field simulation to calculate Specific Absorption Rate (SAR) in a digital human phantom.
+Welcome to GOLIAT! This guide will get you up and running with your first automated EMF dosimetry simulation in minutes. GOLIAT streamlines the entire process using Sim4Life, handling scene setup, execution, and results analysis. We'll walk through a simple "Hello World" near-field simulation to calculate Specific Absorption Rate (SAR) and Surface Absorbed Power Density (SAPD) in a digital human phantom.
 
 ## What you'll achieve
 
@@ -121,7 +121,7 @@ goliat study my_first_near_field_study
 - Downloads phantom and antenna models (one-time)
 - Builds simulation scene in Sim4Life (loads phantom, places antenna)
 - Runs FDTD solver via iSolve
-- Extracts SAR metrics (whole-body, head/trunk, peak 10g SAR)
+- Extracts SAR metrics (whole-body, head/trunk, peak 10g SAR) and optionally SAPD
 - Duration: 5-10 minutes depending on hardware
 
 ![GOLIAT GUI during simulation](../img/tutorials/tut1_gui.gif)
@@ -132,7 +132,7 @@ goliat study my_first_near_field_study
 Once the simulation is complete, GOLIAT will save all results in a structured directory within the `results/` folder. For our example, you'll find outputs in `results/near_field/thelonious/700MHz/by_cheek/`.
 
 **Key output files**:
-- `sar_results.json`: Contains normalized SAR values (e.g., mW/kg per 1W input power).
+- `sar_results.json`: Contains normalized SAR values (e.g., mW/kg per 1W input power). May also include SAPD if extraction is enabled.
 - `sar_stats_all_tissues.pkl`: A detailed Python pickle file with tissue-specific data.
 - **Plots**: Various plots, such as SAR heatmaps and bar charts, visualizing the results.
 

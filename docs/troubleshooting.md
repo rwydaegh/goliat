@@ -177,6 +177,24 @@ This section addresses common issues encountered when using GOLIAT. Issues are g
 - **Behavior**: GOLIAT automatically falls back to the nearest available frequency. The simulation proceeds with the closest match.
 - **Solution**: This is usually fine for testing. For production, ensure you have the correct antenna files or accept the frequency mismatch.
 
+### Multi-sine frequency extraction fails
+- **Symptom**: Warning message "Failed to extract SAR for frequency X MHz" with traceback in verbose logs.
+- **Cause**: DFT extraction at a specific frequency failed, possibly due to insufficient simulation time or dispersion fitting issues.
+- **Solution**:
+  1. Check the verbose logs for the full traceback to identify the specific error.
+  2. Ensure frequencies are widely spaced (> 200 MHz apart) for optimal multi-sine performance.
+  3. Increase `simulation_time_multiplier` if beat period requirements aren't being met.
+  4. Other frequencies in the group may still extract successfully - check results.
+
+### SAPD extraction fails or returns no data
+- **Symptom**: Warning "No skin entities found for SAPD extraction" or "Could not extract peak SAPD value."
+- **Cause**: Missing skin entity configuration or Sim4Life API compatibility issues.
+- **Solution**:
+  1. Ensure `skin_group` is defined in `material_name_mapping.json` under `_tissue_groups` for your phantom.
+  2. Check that skin entities (e.g., "Skin", "Ear_skin") exist in the model.
+  3. Review verbose logs for detailed error messages.
+  4. SAPD requires the peak SAR location to be computed first - ensure SAR extraction succeeds.
+
 ## GUI and logging issues
 
 ### GUI freezes or no progress

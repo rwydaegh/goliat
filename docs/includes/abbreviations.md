@@ -1,6 +1,8 @@
 *[SAR]: Specific Absorption Rate
 *[psSAR]: Peak Spatial-Average Specific Absorption Rate
 *[psSAR10g]: Peak Spatial-Average Specific Absorption Rate over 10-gram tissue cube
+*[SAPD]: Surface Absorbed Power Density
+*[DFT]: Discrete Fourier Transform
 *[EMF]: Electromagnetic Field
 *[GUI]: Graphical User Interface
 *[API]: Application Programming Interface
