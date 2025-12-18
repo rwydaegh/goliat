@@ -1,7 +1,9 @@
+import os
 import traceback
 from typing import TYPE_CHECKING, List
 
 from ..logging_manager import LoggingMixin
+from ..utils.h5_slicer import slice_h5_output
 
 if TYPE_CHECKING:
     import s4l_v1.analysis as analysis
@@ -68,9 +70,10 @@ class SapdExtractor(LoggingMixin):
             if peak_sar_details:
                 center_m = peak_sar_details.get("PeakLocation")
 
-            # Note: H5 slicing optimization was removed - it requires loading sliced H5
-            # as a new extractor which is not straightforward in Sim4Life API.
-            # The mesh slicing below provides the main performance benefit.
+            # H5 slicing optimization - create a smaller H5 file for faster processing
+            # Save sliced H5 to results directory (same location as other deliverables)
+            if center_m:
+                self._slice_h5_to_results_dir(center_m)
 
             # 1. Get Skin Entities
             skin_entities = self._get_skin_entities()
@@ -100,10 +103,6 @@ class SapdExtractor(LoggingMixin):
             model_to_grid_filter.Entity = surface_source_entity
             model_to_grid_filter.UpdateAttributes()
             self.document.AllAlgorithms.Add(model_to_grid_filter)
-
-            # Debug: Check outputs
-            self.verbose_logger.info(f"EM Sensor Outputs: {[k for k in em_sensor_extractor.Outputs]}")
-            self.verbose_logger.info(f"ModelToGrid Outputs: {[k for k in model_to_grid_filter.Outputs]}")
 
             # 3. Setup GenericSAPDEvaluator
             # Inputs: Poynting Vector S(x,y,z,f0) and Surface
@@ -190,6 +189,73 @@ class SapdExtractor(LoggingMixin):
                 self.verbose_logger.warning(f"SAPD: Expected skin entity '{name}' not found in model.")
 
         return found_entities
+
+    def _get_results_dir(self) -> str:
+        """Returns the results directory path for current simulation (same as Reporter)."""
+        base_path = os.path.join(
+            self.parent.config.base_dir,
+            "results",
+            self.parent.study_type,
+            self.parent.phantom_name,
+            f"{self.parent.frequency_mhz}MHz",
+        )
+
+        if self.parent.study_type == "far_field":
+            return os.path.join(base_path, self.parent.placement_name)
+
+        return os.path.join(base_path, self.parent.placement_name)
+
+    def _slice_h5_to_results_dir(self, center_m: list) -> None:
+        """Slices the simulation H5 output file and saves to results directory.
+
+        The sliced H5 is saved alongside other deliverables (pkl, html) for use in
+        post-processing or further analysis. This does not affect the SAPD calculation
+        itself but provides a smaller file for easier data transfer and analysis.
+
+        Args:
+            center_m: Peak SAR location in meters [x, y, z].
+        """
+        try:
+            # Find the original H5 file using project_manager pattern
+            if self.parent.study is None:
+                return
+
+            project_path = self.parent.study.project_manager.project_path
+            if not project_path:
+                return
+
+            project_dir = os.path.dirname(project_path)
+            project_filename = os.path.basename(project_path)
+            sim_results_dir = os.path.join(project_dir, project_filename + "_Results")
+
+            if not os.path.exists(sim_results_dir):
+                return
+
+            import glob
+
+            output_files = glob.glob(os.path.join(sim_results_dir, "*_Output.h5"))
+            if not output_files:
+                return
+
+            original_h5_path = max(output_files, key=os.path.getmtime)
+
+            # Determine output path in results directory
+            results_dir = self._get_results_dir()
+            os.makedirs(results_dir, exist_ok=True)
+
+            sliced_filename = f"sliced_output_{self.parent.frequency_mhz}MHz.h5"
+            sliced_h5_path = os.path.join(results_dir, sliced_filename)
+
+            # Get slice size from config
+            side_len_mm = float(self.config["simulation_parameters.sapd_slicing_side_length_mm"] or 100.0)  # type: ignore
+            side_len_m = side_len_mm / 1000.0
+
+            self._log(f"      - Slicing H5 to results directory ({side_len_mm}mm box)...", log_type="info")
+            slice_h5_output(original_h5_path, sliced_h5_path, tuple(center_m), side_len_m)
+            self._log(f"      - Saved sliced H5: {sliced_filename}", log_type="info")
+
+        except Exception as e:
+            self._log(f"      - H5 slicing skipped: {e}", log_type="verbose")
 
     def _prepare_skin_group(self, entities: List["model.Entity"], center_mm=None, side_len_mm=None) -> "model.Entity":
         """Returns a single entity representing the skin, optionally sliced.
