@@ -338,8 +338,8 @@ class SapdExtractor(LoggingMixin):
         if not entities:
             return None
 
-        # Look for a cache of this entity in data/[phantom_name]_skin.sab
-        cache_dir = os.path.join(self.parent.config.base_dir, "data")
+        # Look for a cache of this entity in data/phantoms_skin/[phantom_name]_skin.sab
+        cache_dir = os.path.join(self.parent.config.base_dir, "data", "phantoms_skin")
         cache_path = os.path.join(cache_dir, f"{self.phantom_name}_skin.sab")
         united_entity = None
 
