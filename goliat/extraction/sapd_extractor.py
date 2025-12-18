@@ -193,31 +193,21 @@ class SapdExtractor(LoggingMixin):
                     self._log(f"      - Peak SAPD: {peak_sapd:.4f} W/m^2", log_type="info")
 
                     # Clean up algorithms
-                    # The following cleanup is commented out as requested to keep the algorithms for inspection
-                    # self.document.AllAlgorithms.Remove(sapd_evaluator)
-                    # self.document.AllAlgorithms.Remove(model_to_grid_filter)
-                    # if em_sensor_extractor:
-                    #     self.document.AllAlgorithms.Remove(em_sensor_extractor)
+                    self.document.AllAlgorithms.Remove(sapd_evaluator)
+                    self.document.AllAlgorithms.Remove(model_to_grid_filter)
+                    if em_sensor_extractor:
+                        self.document.AllAlgorithms.Remove(em_sensor_extractor)
 
                     # Clean up sliced extractor if we created one
-                    # if sliced_extractor is not None:
-                    #     try:
-                    #         self.document.AllAlgorithms.Remove(sliced_extractor)
-                    #     except Exception:
-                    #         pass
+                    if sliced_extractor is not None:
+                        try:
+                            self.document.AllAlgorithms.Remove(sliced_extractor)
+                        except Exception:
+                            pass
 
                 elapsed = self.parent.study.profiler.subtask_times["extract_sapd"][-1]
             self._log(f"      - Subtask 'extract_sapd' done in {elapsed:.2f}s", log_type="verbose")
             self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
-
-            # Clean up temporary group if created?
-            # If we created a temporary group entity, we should probably remove it to not pollute the scene,
-            # but S4L python API for removing entities is tricky.
-            # Usually strict cleanup isn't done for entities, but let's check.
-            if hasattr(self, "_temp_group") and self._temp_group:
-                # self.model.AllEntities().Remove? - Not standard API.
-                # We'll leave the group; it's harmless.
-                pass
 
         except Exception as e:
             self._log(
