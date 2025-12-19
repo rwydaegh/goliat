@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" font-family="Arial, sans-serif">
+  <defs>
+    <style>
+      .machine-box { fill: #e3f2fd; stroke: #1976d2; stroke-width: 2; }
+      .gpu-box { fill: #fff3e0; stroke: #f57c00; stroke-width: 2; }
+      .cloud-box { fill: #f3e5f5; stroke: #7b1fa2; stroke-width: 2; }
+      .dashboard-box { fill: #e8f5e9; stroke: #388e3c; stroke-width: 2; }
+      .arrow { stroke: #424242; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .arrow-up { stroke: #424242; stroke-width: 2; fill: none; marker-end: url(#arrowhead-up); }
+      .label { font-size: 14px; font-weight: bold; fill: #212121; }
+      .subtitle { font-size: 11px; fill: #616161; }
+      .title { font-size: 16px; font-weight: bold; fill: #1976d2; }
+      .recommended { fill: #2e7d32; font-weight: bold; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#424242" />
+    </marker>
+    <marker id="arrowhead-up" markerWidth="10" markerHeight="10" refX="5" refY="10" orient="auto">
+      <polygon points="5 10, 0 0, 10 0" fill="#424242" />
+    </marker>
+  </defs>
+  
+  <!-- Local Sequential -->
+  <g transform="translate(50, 30)">
+    <text x="0" y="0" class="title">Local Sequential</text>
+    <rect x="0" y="25" width="200" height="110" class="machine-box" rx="5"/>
+    <rect x="20" y="55" width="160" height="50" class="gpu-box" rx="3"/>
+    <text x="100" y="85" text-anchor="middle" font-size="12" fill="#f57c00" font-weight="bold">GPU</text>
+    <text x="100" y="125" text-anchor="middle" class="subtitle">Sim 1 → Sim 2 → Sim 3</text>
+  </g>
+  
+  <!-- Local Parallel -->
+  <g transform="translate(350, 30)">
+    <text x="0" y="0" class="title">Local Parallel</text>
+    <rect x="0" y="25" width="230" height="130" class="machine-box" rx="5"/>
+    <rect x="20" y="55" width="190" height="50" class="gpu-box" rx="3"/>
+    <text x="115" y="85" text-anchor="middle" font-size="12" fill="#f57c00" font-weight="bold">GPU</text>
+    <text x="115" y="130" text-anchor="middle" class="subtitle">Setup/Extract: parallel</text>
+    <text x="115" y="145" text-anchor="middle" class="subtitle">Run: Sim 1 → Sim 2 → Sim 3 (sequential)</text>
+  </g>
+  
+  <!-- oSPARC Batch -->
+  <g transform="translate(650, 30)">
+    <text x="0" y="0" class="title">oSPARC Batch</text>
+    <rect x="0" y="25" width="200" height="70" class="machine-box" rx="5"/>
+    <text x="100" y="50" text-anchor="middle" font-size="12" font-weight="bold">Local Machine</text>
+    <text x="100" y="70" text-anchor="middle" class="subtitle">Generate inputs</text>
+    <line x1="100" y1="95" x2="100" y2="140" class="arrow"/>
+    <rect x="0" y="140" width="200" height="110" class="cloud-box" rx="5"/>
+    <text x="100" y="165" text-anchor="middle" font-size="12" fill="#7b1fa2" font-weight="bold">oSPARC Platform</text>
+    <rect x="30" y="180" width="40" height="30" class="gpu-box" rx="3"/>
+    <text x="50" y="200" text-anchor="middle" font-size="9" fill="#f57c00" font-weight="bold">GPU</text>
+    <rect x="80" y="180" width="40" height="30" class="gpu-box" rx="3"/>
+    <text x="100" y="200" text-anchor="middle" font-size="9" fill="#f57c00" font-weight="bold">GPU</text>
+    <rect x="130" y="180" width="40" height="30" class="gpu-box" rx="3"/>
+    <text x="150" y="200" text-anchor="middle" font-size="9" fill="#f57c00" font-weight="bold">GPU</text>
+    <text x="100" y="240" text-anchor="middle" class="subtitle">Parallel execution</text>
+    <line x1="100" y1="250" x2="100" y2="300" class="arrow"/>
+    <rect x="0" y="300" width="200" height="45" class="machine-box" rx="5"/>
+    <text x="100" y="325" text-anchor="middle" class="subtitle">Download Results</text>
+  </g>
+  
+  <!-- Distributed VMs (Recommended) -->
+  <g transform="translate(100, 400)">
+    <text x="0" y="0" class="title recommended">Distributed VMs (Recommended)</text>
+    
+    <!-- Master Config -->
+    <rect x="200" y="30" width="200" height="50" class="machine-box" rx="5"/>
+    <text x="300" y="55" text-anchor="middle" font-size="12" font-weight="bold">Master Config</text>
+    <line x1="300" y1="80" x2="300" y2="110" class="arrow"/>
+    
+    <!-- Monitoring Dashboard -->
+    <rect x="150" y="110" width="300" height="80" class="dashboard-box" rx="5"/>
+    <text x="300" y="135" text-anchor="middle" font-size="14" fill="#388e3c" font-weight="bold">Monitoring Dashboard</text>
+    <text x="300" y="155" text-anchor="middle" class="subtitle" font-size="11">Splits config into assignments</text>
+    <text x="300" y="170" text-anchor="middle" class="subtitle" font-size="10">(Super Studies)</text>
+    
+    <!-- Arrows: Dashboard to VMs (assignments) - positioned from bottom of dashboard -->
+    <line x1="200" y1="190" x2="80" y2="250" class="arrow"/>
+    <line x1="300" y1="190" x2="300" y2="250" class="arrow"/>
+    <line x1="400" y1="190" x2="520" y2="250" class="arrow"/>
+    
+    <!-- VM 1 -->
+    <rect x="0" y="250" width="160" height="110" class="machine-box" rx="5"/>
+    <text x="80" y="275" text-anchor="middle" font-size="12" font-weight="bold">VM 1</text>
+    <rect x="15" y="290" width="130" height="50" class="gpu-box" rx="3"/>
+    <text x="80" y="320" text-anchor="middle" font-size="12" fill="#f57c00" font-weight="bold">GPU</text>
+    <text x="80" y="355" text-anchor="middle" class="subtitle" font-size="9">Assignment 1</text>
+    
+    <!-- VM 2 -->
+    <rect x="220" y="250" width="160" height="110" class="machine-box" rx="5"/>
+    <text x="300" y="275" text-anchor="middle" font-size="12" font-weight="bold">VM 2</text>
+    <rect x="235" y="290" width="130" height="50" class="gpu-box" rx="3"/>
+    <text x="300" y="320" text-anchor="middle" font-size="12" fill="#f57c00" font-weight="bold">GPU</text>
+    <text x="300" y="355" text-anchor="middle" class="subtitle" font-size="9">Assignment 2</text>
+    
+    <!-- VM 3 -->
+    <rect x="440" y="250" width="160" height="110" class="machine-box" rx="5"/>
+    <text x="520" y="275" text-anchor="middle" font-size="12" font-weight="bold">VM 3</text>
+    <rect x="455" y="290" width="130" height="50" class="gpu-box" rx="3"/>
+    <text x="520" y="320" text-anchor="middle" font-size="12" fill="#f57c00" font-weight="bold">GPU</text>
+    <text x="520" y="355" text-anchor="middle" class="subtitle" font-size="9">Assignment 3</text>
+    
+    <!-- Additional VMs indicator -->
+    <text x="300" y="390" text-anchor="middle" class="subtitle" font-size="10" font-style="italic">... scales to any number of VMs</text>
+  </g>
+  
+  <!-- Legend -->
+  <g transform="translate(900, 30)">
+    <rect x="0" y="0" width="240" height="190" fill="#fafafa" stroke="#ccc" stroke-width="1" rx="5"/>
+    <text x="120" y="25" text-anchor="middle" font-size="14" font-weight="bold">Legend</text>
+    <rect x="20" y="40" width="30" height="20" class="machine-box"/>
+    <text x="60" y="55" font-size="12" alignment-baseline="middle">Machine/VM</text>
+    <rect x="20" y="70" width="30" height="20" class="gpu-box"/>
+    <text x="60" y="85" font-size="12" alignment-baseline="middle">GPU</text>
+    <rect x="20" y="100" width="30" height="20" class="cloud-box"/>
+    <text x="60" y="115" font-size="12" alignment-baseline="middle">Cloud Platform</text>
+    <rect x="20" y="130" width="30" height="20" class="dashboard-box"/>
+    <text x="60" y="145" font-size="12" alignment-baseline="middle">Monitoring Dashboard</text>
+    <line x1="20" y1="165" x2="50" y2="165" class="arrow"/>
+    <text x="60" y="170" font-size="12" alignment-baseline="middle">Data flow</text>
+  </g>
+</svg>
