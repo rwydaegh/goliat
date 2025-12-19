@@ -284,11 +284,14 @@ class BaseStudy(LoggingMixin):
     def _should_reupload_results(self) -> bool:
         """Checks if results should be reuploaded.
 
+        When running as a worker with --reupload-results flag, this allows
+        uploading existing extract deliverables to the web dashboard even
+        when simulations are skipped due to caching (e.g., GOLIAT_SKIP_IF_EXISTS).
+
         Returns:
             True if results should be reuploaded, False otherwise.
         """
-        # Default implementation - can be overridden by subclasses if needed
-        return False
+        return os.environ.get("GOLIAT_REUPLOAD_RESULTS", "").lower() in ("1", "true", "yes")
 
     def _run_study(self):
         """Executes the study logic. Must be implemented by subclasses.
