@@ -23,6 +23,9 @@ from cli.utils import get_base_dir
 
 base_dir = get_base_dir()
 
+# Valid split-by options
+SPLIT_BY_OPTIONS = ["auto", "phantom", "direction", "polarization", "frequency"]
+
 
 def setup_console_logging():
     """Sets up a basic console logger with color."""
@@ -90,9 +93,127 @@ def calculate_split_factors(num_phantoms, num_items, target_splits):
     return best_phantom_splits, best_item_splits
 
 
+def split_config_by_dimension(config_path, split_by, logger):
+    """
+    Splits the configuration file by a single dimension (phantom, direction, polarization, or frequency).
+    Creates one assignment per item in that dimension.
+
+    Returns: (base_config, assignment_configs) where assignment_configs is a list of dicts
+    """
+    if not os.path.exists(config_path):
+        logger.error(f"{colorama.Fore.RED}Error: Config file not found at '{config_path}'")
+        sys.exit(1)
+
+    with open(config_path, "r") as f:
+        base_config = json.load(f)
+
+    study_type = base_config.get("study_type")
+    assignment_configs = []
+
+    # Extract phantoms
+    base_phantoms = base_config.get("phantoms", [])
+    is_near_field_dict = isinstance(base_phantoms, dict)
+    if is_near_field_dict:
+        phantom_list = list(base_phantoms.keys())
+    else:
+        phantom_list = base_phantoms
+
+    if split_by == "phantom":
+        # One assignment per phantom
+        for phantom in phantom_list:
+            assignment_config = deepcopy(base_config)
+            if is_near_field_dict:
+                original_phantoms_dict = base_config.get("phantoms", {})
+                assignment_config["phantoms"] = {phantom: original_phantoms_dict[phantom]}
+            else:
+                assignment_config["phantoms"] = [phantom]
+
+            assignment_configs.append({"config": assignment_config, "phantoms": [phantom], "items": [phantom], "items_name": "phantom"})
+
+        logger.info(f"Split by phantom: {len(phantom_list)} assignments (one per phantom)")
+        logger.info(f"  Phantoms: {phantom_list}")
+
+    elif split_by == "frequency":
+        # One assignment per frequency (far-field only, or can be extended for near-field)
+        frequencies = base_config.get("frequencies_mhz", [])
+        if not frequencies:
+            logger.error(f"{colorama.Fore.RED}Error: No frequencies found in config for frequency splitting.")
+            sys.exit(1)
+
+        for freq in frequencies:
+            assignment_config = deepcopy(base_config)
+            assignment_config["frequencies_mhz"] = [freq]
+
+            assignment_configs.append({"config": assignment_config, "phantoms": phantom_list, "items": [freq], "items_name": "frequency"})
+
+        logger.info(f"Split by frequency: {len(frequencies)} assignments (one per frequency)")
+        logger.info(f"  Frequencies: {frequencies}")
+
+    elif split_by == "direction":
+        # One assignment per incident direction (far-field only)
+        if study_type != "far_field":
+            logger.error(f"{colorama.Fore.RED}Error: Direction splitting is only supported for far-field studies.")
+            sys.exit(1)
+
+        far_field_setup = base_config.get("far_field_setup", {})
+        far_field_type = far_field_setup.get("type", "environmental")
+        far_field_params = far_field_setup.get(far_field_type, {})
+        directions = far_field_params.get("incident_directions", [])
+
+        if not directions:
+            logger.error(f"{colorama.Fore.RED}Error: No incident_directions found in config for direction splitting.")
+            sys.exit(1)
+
+        for direction in directions:
+            assignment_config = deepcopy(base_config)
+            # Update the incident_directions in the nested structure
+            assignment_config["far_field_setup"][far_field_type]["incident_directions"] = [direction]
+
+            assignment_configs.append(
+                {"config": assignment_config, "phantoms": phantom_list, "items": [direction], "items_name": "direction"}
+            )
+
+        logger.info(f"Split by direction: {len(directions)} assignments (one per direction)")
+        logger.info(f"  Directions: {directions}")
+
+    elif split_by == "polarization":
+        # One assignment per polarization (far-field only)
+        if study_type != "far_field":
+            logger.error(f"{colorama.Fore.RED}Error: Polarization splitting is only supported for far-field studies.")
+            sys.exit(1)
+
+        far_field_setup = base_config.get("far_field_setup", {})
+        far_field_type = far_field_setup.get("type", "environmental")
+        far_field_params = far_field_setup.get(far_field_type, {})
+        polarizations = far_field_params.get("polarizations", [])
+
+        if not polarizations:
+            logger.error(f"{colorama.Fore.RED}Error: No polarizations found in config for polarization splitting.")
+            sys.exit(1)
+
+        for polarization in polarizations:
+            assignment_config = deepcopy(base_config)
+            # Update the polarizations in the nested structure
+            assignment_config["far_field_setup"][far_field_type]["polarizations"] = [polarization]
+
+            assignment_configs.append(
+                {"config": assignment_config, "phantoms": phantom_list, "items": [polarization], "items_name": "polarization"}
+            )
+
+        logger.info(f"Split by polarization: {len(polarizations)} assignments (one per polarization)")
+        logger.info(f"  Polarizations: {polarizations}")
+
+    else:
+        logger.error(f"{colorama.Fore.RED}Error: Unknown split_by value '{split_by}'")
+        sys.exit(1)
+
+    return base_config, assignment_configs
+
+
 def split_config(config_path, num_splits, logger):
     """
-    Splits the configuration file into multiple assignment configs.
+    Splits the configuration file into multiple assignment configs using the 'auto' strategy.
+    Splits by phantoms × frequencies/antennas.
 
     Returns: (base_config, assignment_configs) where assignment_configs is a list of dicts
     """
@@ -256,8 +377,20 @@ def main():
     parser.add_argument(
         "--num-splits",
         type=int,
-        default=4,
-        help="Number of assignments to split into (default: 4).",
+        default=None,
+        help="Number of assignments to split into (default: auto-determined by --split-by).",
+    )
+    parser.add_argument(
+        "--split-by",
+        type=str,
+        default="auto",
+        choices=SPLIT_BY_OPTIONS,
+        help=f"Dimension to split by. Options: {', '.join(SPLIT_BY_OPTIONS)}. "
+        "'auto' splits by phantoms × frequencies (default). "
+        "'phantom' creates one assignment per phantom. "
+        "'frequency' creates one assignment per frequency. "
+        "'direction' creates one assignment per incident direction (far-field only). "
+        "'polarization' creates one assignment per polarization (far-field only).",
     )
     parser.add_argument(
         "--server-url",
@@ -272,17 +405,32 @@ def main():
     server_url = args.server_url or os.getenv("GOLIAT_MONITORING_URL") or "https://monitor.goliat.waves-ugent.be"
     server_url = server_url.rstrip("/")
 
-    if args.num_splits < 1:
+    # Validate arguments
+    if args.split_by == "auto" and args.num_splits is None:
+        args.num_splits = 4  # Default for auto mode
+
+    if args.split_by != "auto" and args.num_splits is not None:
+        logger.warning(
+            f"{colorama.Fore.YELLOW}Warning: --num-splits is ignored when using --split-by {args.split_by}. "
+            f"The number of assignments is determined by the number of {args.split_by}s in the config."
+        )
+
+    if args.split_by == "auto" and args.num_splits < 1:
         logger.error(f"{colorama.Fore.RED}Error: --num-splits must be at least 1.")
         sys.exit(1)
 
     logger.info(f"{colorama.Fore.CYAN}Creating super study '{args.name}'...")
     logger.info(f"  Config: {args.config}")
-    logger.info(f"  Splits: {args.num_splits}")
+    logger.info(f"  Split by: {args.split_by}")
+    if args.split_by == "auto":
+        logger.info(f"  Splits: {args.num_splits}")
     logger.info(f"  Server: {server_url}\n")
 
-    # Split the config
-    base_config, assignment_configs = split_config(args.config, args.num_splits, logger)
+    # Split the config based on strategy
+    if args.split_by == "auto":
+        base_config, assignment_configs = split_config(args.config, args.num_splits, logger)
+    else:
+        base_config, assignment_configs = split_config_by_dimension(args.config, args.split_by, logger)
 
     # Upload to server
     upload_super_study(args.name, args.description, base_config, assignment_configs, server_url, logger)

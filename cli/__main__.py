@@ -228,8 +228,15 @@ Examples:
     super_study_parser.add_argument(
         "--num-splits",
         type=int,
-        default=4,
-        help="Number of assignments to split into (default: 4).",
+        default=None,
+        help="Number of assignments to split into (default: 4 for auto mode).",
+    )
+    super_study_parser.add_argument(
+        "--split-by",
+        type=str,
+        default="auto",
+        choices=["auto", "phantom", "direction", "polarization", "frequency"],
+        help="Dimension to split by: 'auto' (phantoms × frequencies), 'phantom', 'direction', 'polarization', or 'frequency'.",
     )
     super_study_parser.add_argument(
         "--server-url",
@@ -567,8 +574,10 @@ def main():
         sys.argv = ["goliat-super-study", args.config, "--name", args.name]
         if args.description:
             sys.argv.extend(["--description", args.description])
-        if args.num_splits != 4:
+        if args.num_splits is not None:
             sys.argv.extend(["--num-splits", str(args.num_splits)])
+        if hasattr(args, "split_by") and args.split_by:
+            sys.argv.extend(["--split-by", args.split_by])
         if args.server_url:
             sys.argv.extend(["--server-url", args.server_url])
         try:

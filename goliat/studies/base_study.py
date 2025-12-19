@@ -423,6 +423,7 @@ class BaseStudy(LoggingMixin):
             "sar_results.json",
             "sar_stats_all_tissues.pkl",
             "sar_stats_all_tissues.html",
+            "sapd_results.json",  # Optional: only uploaded if SAPD extraction was enabled
         ]
 
         files = {}

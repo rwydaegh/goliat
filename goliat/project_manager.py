@@ -134,9 +134,10 @@ class ProjectManager(LoggingMixin):
             setup_timestamp: Timestamp to compare against (setup time in seconds).
 
         Returns:
-            True if all extract deliverables exist and are fresh, False otherwise.
+            True if all required extract deliverables exist and are fresh, False otherwise.
         """
-        deliverable_filenames = ResultsExtractor.get_deliverable_filenames()
+        # Only check required deliverables (excludes optional files like SAPD results)
+        deliverable_filenames = ResultsExtractor.get_required_deliverable_filenames()
         extract_files = [os.path.join(project_dir, filename) for filename in deliverable_filenames.values()]
 
         return all(os.path.exists(file_path) and os.path.getmtime(file_path) > setup_timestamp for file_path in extract_files)
@@ -629,7 +630,8 @@ class ProjectManager(LoggingMixin):
         # GOLIAT_SKIP_IF_EXISTS: Super aggressive skip mode - just check if extract deliverables exist
         # No timestamp checks, no config hash checks, no nothing. Just skip if files are there.
         if os.environ.get("GOLIAT_SKIP_IF_EXISTS", "").lower() in ("1", "true", "yes"):
-            deliverable_filenames = ResultsExtractor.get_deliverable_filenames()
+            # Only check required deliverables (excludes optional files like SAPD results)
+            deliverable_filenames = ResultsExtractor.get_required_deliverable_filenames()
             all_exist = all(os.path.exists(os.path.join(project_dir, fname)) for fname in deliverable_filenames.values())
             if all_exist:
                 self._log(
