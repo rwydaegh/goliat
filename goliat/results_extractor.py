@@ -138,13 +138,37 @@ class ResultsExtractor(LoggingMixin):
         return cls(context)
 
     @staticmethod
-    def get_deliverable_filenames() -> dict:
-        """Returns the standard deliverable filenames used by this extractor."""
+    def get_required_deliverable_filenames() -> dict:
+        """Returns the required deliverable filenames that must exist for extract to be considered done.
+
+        These are the core files that are always generated during extraction.
+        """
         return {
             "json": "sar_results.json",
-            "sapd_json": "sapd_results.json",
             "pkl": "sar_stats_all_tissues.pkl",
             "html": "sar_stats_all_tissues.html",
+        }
+
+    @staticmethod
+    def get_optional_deliverable_filenames() -> dict:
+        """Returns optional deliverable filenames that may or may not be generated.
+
+        These files are only created when specific extraction features are enabled
+        (e.g., SAPD extraction).
+        """
+        return {
+            "sapd_json": "sapd_results.json",
+        }
+
+    @staticmethod
+    def get_deliverable_filenames() -> dict:
+        """Returns all deliverable filenames (required + optional).
+
+        For backward compatibility and file uploads.
+        """
+        return {
+            **ResultsExtractor.get_required_deliverable_filenames(),
+            **ResultsExtractor.get_optional_deliverable_filenames(),
         }
 
     def extract(self):

@@ -121,7 +121,7 @@ This document provides a complete reference of every feature available in GOLIAT
 - Resonance frequency extraction from Gaussian pulse results
 - Set bounding box padding for far-field simulations (millimeters)
 - Configure free-space antenna bounding box expansion [x, y, z] in millimeters
-- **Antenna detuning calibration**: Apply calibrated frequency shifts to account for body loading effects
+- Antenna detuning calibration: Apply calibrated frequency shifts to account for body loading effects
 - Detuning values stored per-frequency in config (e.g., `"700": -15` for 15 MHz lower)
 - `detuning_enabled` config flag to enable/disable detuning compensation
 - Keep-awake functionality (`keep_awake` config) to prevent system sleep during long simulations
