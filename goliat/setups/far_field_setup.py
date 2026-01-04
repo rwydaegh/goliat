@@ -293,19 +293,24 @@ class FarFieldSetup(BaseSetup):
         if not auto_reduce:
             return None
 
-        # Check if we're above the threshold frequency
-        threshold_mhz = bbox_reduction.get("auto_reduce_threshold_mhz", 7000)
-        if freq_mhz < threshold_mhz:
-            self._log(f"  - Frequency {freq_mhz} MHz below auto-reduce threshold ({threshold_mhz} MHz)", log_type="verbose")
+        # Get reference frequency (the highest frequency where full body fits)
+        reference_freq_mhz = bbox_reduction.get("reference_frequency_mhz", 5800)
+        if freq_mhz <= reference_freq_mhz:
+            self._log(
+                f"  - Frequency {freq_mhz} MHz at or below reference ({reference_freq_mhz} MHz), no reduction needed",
+                log_type="verbose",
+            )
             return None
 
-        # Calculate automatic height limit based on target max cells
-        target_max_cells = bbox_reduction.get("target_max_cells", 2.2e9)
-        height_limit = self._calculate_auto_height_limit(phantom_bbox_min, phantom_bbox_max, freq_mhz, target_max_cells)
+        # Calculate automatic height limit based on cubic frequency scaling
+        height_limit = self._calculate_auto_height_limit(phantom_bbox_min, phantom_bbox_max, freq_mhz, reference_freq_mhz)
 
         if height_limit is not None:
+            full_height = phantom_bbox_max[2] - phantom_bbox_min[2]
+            reduction_pct = (1 - height_limit / full_height) * 100
             self._log(
-                f"  - Auto-calculated height limit: {height_limit:.1f} mm for {freq_mhz} MHz (target max cells: {target_max_cells:.2e})",
+                f"  - Auto-calculated height limit: {height_limit:.1f} mm for {freq_mhz} MHz "
+                f"(ref: {reference_freq_mhz} MHz, reduction: {reduction_pct:.1f}%)",
                 log_type="info",
             )
 
@@ -316,63 +321,43 @@ class FarFieldSetup(BaseSetup):
         phantom_bbox_min: np.ndarray,
         phantom_bbox_max: np.ndarray,
         freq_mhz: int,
-        target_max_cells: float,
+        reference_freq_mhz: int,
     ) -> float | None:
-        """Calculates automatic height limit based on cell count budget.
+        """Calculates automatic height limit based on cubic frequency scaling.
 
-        The cell count scales cubically with grid resolution. This method calculates
-        what fraction of the phantom height can be simulated while staying under the
-        target cell count.
+        Cell count scales cubically with frequency (since cell size ~ 1/freq for constant
+        cells per wavelength). To maintain the same cell count as at reference_freq_mhz,
+        we reduce the height by the cubic ratio of frequencies.
+
+        Formula: height_factor = (reference_freq / current_freq)^3
 
         Args:
             phantom_bbox_min: Original phantom bounding box minimum [x, y, z] in mm.
             phantom_bbox_max: Original phantom bounding box maximum [x, y, z] in mm.
-            freq_mhz: Simulation frequency in MHz.
-            target_max_cells: Maximum target cell count.
+            freq_mhz: Current simulation frequency in MHz.
+            reference_freq_mhz: Reference frequency where full body fits in memory.
 
         Returns:
-            Height limit in mm, or None if full body fits within budget.
+            Height limit in mm, or None if no reduction needed.
         """
-        # Get grid resolution for this frequency
-        gridding_params = self.config["gridding_parameters"] or {}
-        per_freq_gridding = gridding_params.get("global_gridding_per_frequency", {})
-        global_gridding = gridding_params.get("global_gridding", {})
+        # Calculate full phantom height
+        full_height_mm = phantom_bbox_max[2] - phantom_bbox_min[2]
 
-        freq_key = str(int(freq_mhz))
-        if freq_key in per_freq_gridding:
-            cell_size_mm = per_freq_gridding[freq_key]
-        else:
-            cell_size_mm = global_gridding.get("manual_fallback_max_step_mm", 3.0)
+        # Calculate height reduction factor using cubic frequency scaling
+        # Cell count at freq_mhz vs reference_freq_mhz scales as (freq/ref)^3
+        # To keep same cell count, reduce height by (ref/freq)^3
+        height_factor = (reference_freq_mhz / freq_mhz) ** 3
 
-        # Calculate full phantom dimensions
-        phantom_dims = phantom_bbox_max - phantom_bbox_min  # [width, depth, height]
-        full_height_mm = phantom_dims[2]  # Z-axis is height
-
-        # Calculate full body cell count
-        cells_x = phantom_dims[0] / cell_size_mm
-        cells_y = phantom_dims[1] / cell_size_mm
-        cells_z = phantom_dims[2] / cell_size_mm
-        full_cell_count = cells_x * cells_y * cells_z
-
-        self._log(
-            f"  - Full body cell count estimate: {full_cell_count:.2e} "
-            f"(dims: {phantom_dims[0]:.0f}x{phantom_dims[1]:.0f}x{phantom_dims[2]:.0f} mm, "
-            f"cell: {cell_size_mm} mm)",
-            log_type="verbose",
-        )
-
-        if full_cell_count <= target_max_cells:
-            self._log("  - Full body fits within cell budget, no reduction needed", log_type="verbose")
-            return None
-
-        # Calculate reduction factor: target_cells = cells_x * cells_y * (reduced_height / cell_size)
-        # So: reduced_height = target_cells * cell_size / (cells_x * cells_y)
-        reduction_factor = target_max_cells / full_cell_count
-        reduced_height_mm = full_height_mm * reduction_factor
+        reduced_height_mm = full_height_mm * height_factor
 
         # Ensure we keep at least 20% of the body (head + upper torso minimum)
         min_height_mm = full_height_mm * 0.2
         reduced_height_mm = max(reduced_height_mm, min_height_mm)
+
+        self._log(
+            f"  - Height scaling: ({reference_freq_mhz}/{freq_mhz})^3 = {height_factor:.4f}",
+            log_type="verbose",
+        )
 
         return reduced_height_mm
 
