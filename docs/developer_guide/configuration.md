@@ -143,6 +143,9 @@ These settings define the spatial discretization of the simulation domain.
 | `padding.padding_mode` | string | `"automatic"` | Defines how padding is applied around the simulation domain. Can be `"automatic"` or `"manual"`. |
 | `padding.manual_bottom_padding_mm` | array | `[0, 0, 0]` | For manual padding, the [x, y, z] padding in millimeters at the bottom of the domain. |
 | `padding.manual_top_padding_mm` | array | `[0, 0, 0]` | For manual padding, the [x, y, z] padding in millimeters at the top of the domain. |
+| `phantom_bbox_reduction.auto_reduce_bbox` | boolean | `false` | **(Far-Field)** If `true`, enables automatic phantom height reduction for frequencies above `reference_frequency_mhz`. |
+| `phantom_bbox_reduction.reference_frequency_mhz` | number | `5800` | **(Far-Field)** The reference frequency where full-body simulation fits in memory. For higher frequencies, height is reduced by `(reference/current)³`. |
+| `phantom_bbox_reduction.height_limit_per_frequency_mm` | object | `{}` | **(Far-Field)** Manual height limits per frequency in mm (e.g., `{"10000": 400}`). Overrides automatic calculation. |
 
 <br>
 

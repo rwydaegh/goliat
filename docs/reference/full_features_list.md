@@ -136,6 +136,9 @@ This document provides a complete reference of every feature available in GOLIAT
 - Manual padding configuration for bottom and top of domain [x, y, z]
 - Intelligent gridding around critical areas (finer cells near antenna/phantom surface)
 - Automatic gridding optimization for computational efficiency
+- Phantom bounding box reduction (far-field): Automatically truncate phantom height for high-frequency simulations to reduce cell count
+- Cubic frequency scaling: height_factor = (reference_freq / current_freq)³
+- Manual per-frequency height limits override automatic calculation
 
 ## Solver configuration
 
