@@ -415,7 +415,7 @@ def organize_plots(plots_dir):
     return plots_by_section
 
 
-def generate_latex(plots_by_section):
+def generate_latex(plots_by_section, study_type="near_field"):
     """Generate LaTeX document."""
 
     # Sort sections in a logical order
@@ -442,26 +442,29 @@ def generate_latex(plots_by_section):
         if section not in sections:
             sections.append(section)
 
-    latex_content = """\\documentclass{IEEEtran}
-\\usepackage{graphicx}
-\\usepackage{booktabs}
-\\usepackage{float}
-\\usepackage{alphalph}
+    # Format study type for title
+    study_type_formatted = study_type.replace("_", "-").title()
+
+    latex_content = f"""\\documentclass{{IEEEtran}}
+\\usepackage{{graphicx}}
+\\usepackage{{booktabs}}
+\\usepackage{{float}}
+\\usepackage{{alphalph}}
 
 % Fix subsection counter to use extended alphabetic (aa, ab, ... after z) instead of \\Alpha (limited to 26)
 \\makeatletter
-\\@addtoreset{subsection}{section}
-\\def\\thesubsection{\\alphalph{\\value{subsection}}}
-\\def\\thesubsectiondis{\\thesection.\\alphalph{\\value{subsection}}}
+\\@addtoreset{{subsection}}{{section}}
+\\def\\thesubsection{{\\alphalph{{\\value{{subsection}}}}}}
+\\def\\thesubsectiondis{{\\thesection.\\alphalph{{\\value{{subsection}}}}}}
 \\makeatother
 
-\\usepackage{hyperref}
+\\usepackage{{hyperref}}
 
-\\title{Near-Field Analysis Results}
-\\author{Robin Wydaeghe}
-\\date{\\today}
+\\title{{{study_type_formatted} Analysis Results}}
+\\author{{Robin Wydaeghe}}
+\\date{{\\today}}
 
-\\begin{document}
+\\begin{{document}}
 
 \\maketitle
 
@@ -496,14 +499,14 @@ def generate_latex(plots_by_section):
             for plot in plots:
                 # Path relative to LaTeX file - reference plots directly from goliat/plots/
                 pdf_rel_path = plot["pdf_path"].as_posix()  # Use forward slashes for LaTeX
-                # Use relative path from paper/near_field/pure_results/ to plots/near_field/
-                # Need 3 levels up: pure_results -> near_field -> paper -> goliat/
-                pdf_rel_path = f"../../../plots/near_field/{pdf_rel_path}"
+                # Use relative path from paper/{study_type}/pure_results/ to plots/{study_type}/
+                # Need 3 levels up: pure_results -> {study_type} -> paper -> goliat/
+                pdf_rel_path = f"../../../plots/{study_type}/{pdf_rel_path}"
                 title_raw = plot["title"]
                 title_formatted = format_title_for_text(title_raw)
                 title_escaped = escape_latex(title_raw)  # For caption
                 # Format scenario names in caption before escaping LaTeX
-                # Use escape_latex_preserve_commands to preserve \textit{} commands
+                # Use escape_latex_preserve_commands to preserve \\textit{} commands
                 caption_raw = plot["caption"]
                 caption_formatted = format_caption_scenarios(caption_raw)
                 caption = escape_latex_preserve_commands(caption_formatted)
@@ -518,7 +521,7 @@ def generate_latex(plots_by_section):
 
                 # Write text with reference before figure
                 if title_formatted:
-                    latex_content += f"{title_formatted} can be found in Figure~\\ref{{{label}}}. \\\\\n\n"
+                    latex_content += f"{title_formatted} can be found in Figure~\\ref{{{label}}}. \\\\\\\\\n\n"
 
                 latex_content += "\\begin{figure}[H]\n"
                 latex_content += "\\centering\n"
@@ -538,11 +541,24 @@ def generate_latex(plots_by_section):
 
 def main():
     """Main function."""
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Generate LaTeX paper from analysis plots.")
+    parser.add_argument(
+        "--study-type",
+        type=str,
+        default="near_field",
+        choices=["near_field", "far_field"],
+        help="Study type: near_field or far_field (default: near_field)",
+    )
+    args = parser.parse_args()
+
+    study_type = args.study_type
     base_dir = Path(get_base_dir())
 
-    # Paths relative to base_dir
-    paper_dir = base_dir / "paper" / "near_field" / "pure_results"
-    plots_source = base_dir / "plots" / "near_field"
+    # Paths relative to base_dir - use study_type for paths
+    paper_dir = base_dir / "paper" / study_type / "pure_results"
+    plots_source = base_dir / "plots" / study_type
     ieee_cls_source = base_dir / "paper" / "IEEEtran.cls"
     ieee_cls_dest = paper_dir / "IEEEtran.cls"
     output_tex = paper_dir / "results.tex"
@@ -555,7 +571,7 @@ def main():
         print(f"Warning: Source plots directory not found: {plots_source}")
         return
 
-    print("Scanning plots directory...")
+    print(f"Scanning {study_type} plots directory...")
     plots_by_section = organize_plots(plots_source)
 
     total_plots = sum(sum(len(plots) for plots in subsections.values()) for subsections in plots_by_section.values())
@@ -571,7 +587,7 @@ def main():
 
     # Generate LaTeX
     print("Generating LaTeX file...")
-    latex_content = generate_latex(plots_by_section)
+    latex_content = generate_latex(plots_by_section, study_type)
 
     # Write to file
     with open(output_tex, "w", encoding="utf-8") as f:
