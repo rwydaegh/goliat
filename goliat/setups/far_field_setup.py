@@ -365,8 +365,9 @@ class FarFieldSetup(BaseSetup):
         """Creates simulation bbox from phantom geometry with padding.
 
         Supports optional phantom height reduction for high frequencies to manage
-        computational costs. The phantom is always truncated from the bottom
-        (keeping the head, reducing downward extent).
+        computational costs (truncating from bottom). Also supports symmetry reduction
+        when `use_symmetry_reduction` is enabled, which cuts the bounding box in half
+        along the x-axis to exploit human left-right symmetry.
         """
         bbox_name = "far_field_simulation_bbox"
         self._log("Creating simulation bounding box for far-field...", log_type="progress")
@@ -402,6 +403,22 @@ class FarFieldSetup(BaseSetup):
 
         sim_bbox_min = original_bbox_min - padding_mm
         sim_bbox_max = original_bbox_max + padding_mm
+
+        # Check for symmetry reduction (cut phantom in half, keep positive x side)
+        bbox_reduction = self.config["gridding_parameters.phantom_bbox_reduction"]
+        use_symmetry = False
+        if bbox_reduction and isinstance(bbox_reduction, dict):
+            use_symmetry = bbox_reduction.get("use_symmetry_reduction", False)
+
+        if use_symmetry:
+            # Cut the bounding box at x=0, keeping only the positive x (right) side
+            # Human phantoms are typically centered at x=0
+            original_x_min = sim_bbox_min[0]
+            sim_bbox_min[0] = 0.0  # Move x_min to the center (x=0)
+            self._log(
+                f"  - Symmetry reduction enabled: cutting bbox at x=0 (original x_min: {original_x_min:.1f}mm, new x_min: 0.0mm)",
+                log_type="info",
+            )
 
         sim_bbox = XCoreModeling.CreateWireBlock(self.model.Vec3(sim_bbox_min), self.model.Vec3(sim_bbox_max))
         sim_bbox.Name = bbox_name
