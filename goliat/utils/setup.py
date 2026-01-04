@@ -21,25 +21,25 @@ from .config_setup import setup_configs
 def _pull_lfs_files(base_dir: str) -> None:
     """
     Pull Git LFS files needed for GOLIAT.
-    
+
     Specifically pulls data/itis_v5.db which is required for multisine
     material dispersion fitting.
     """
     import shutil
-    
+
     db_path = os.path.join(base_dir, "data", "itis_v5.db")
-    
+
     # Check if git lfs is available
     if shutil.which("git") is None:
         logging.debug("Git not found, skipping LFS pull")
         return
-    
+
     # Check if we're in a git repo
     git_dir = os.path.join(base_dir, ".git")
     if not os.path.isdir(git_dir):
         logging.debug("Not a git repository, skipping LFS pull")
         return
-    
+
     # Check if the file exists and is a valid database (not just an LFS pointer)
     if os.path.exists(db_path):
         # LFS pointer files are small text files (~130 bytes)
@@ -51,7 +51,7 @@ def _pull_lfs_files(base_dir: str) -> None:
         logging.info("IT'IS database is an LFS pointer, pulling actual file...")
     else:
         logging.info("Pulling IT'IS material database via Git LFS...")
-    
+
     try:
         # First ensure git lfs is installed for this repo
         subprocess.run(
@@ -60,7 +60,7 @@ def _pull_lfs_files(base_dir: str) -> None:
             capture_output=True,
             check=False,  # Don't fail if lfs not installed
         )
-        
+
         # Pull just the database file
         result = subprocess.run(
             ["git", "lfs", "pull", "--include=data/itis_v5.db"],
@@ -68,18 +68,17 @@ def _pull_lfs_files(base_dir: str) -> None:
             capture_output=True,
             text=True,
         )
-        
+
         if result.returncode == 0:
             logging.info("IT'IS database downloaded successfully")
         else:
             # Don't fail setup, just warn - the JSON cache fallback exists
-            logging.warning(
-                f"Could not pull IT'IS database via Git LFS: {result.stderr.strip()}"
-            )
+            logging.warning(f"Could not pull IT'IS database via Git LFS: {result.stderr.strip()}")
     except FileNotFoundError:
         logging.debug("Git LFS not available")
     except Exception as e:
         logging.warning(f"Git LFS pull failed: {e}")
+
 
 __all__ = [
     "initial_setup",
