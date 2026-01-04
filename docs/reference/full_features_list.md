@@ -43,7 +43,7 @@ This document provides a complete reference of every feature available in GOLIAT
 - Phantom rotation towards phone for precise by_cheek contact (automatic angle detection)
 - Configurable phantom rotation angle offset (additional rotation after contact detection)
 - Binary search algorithm for finding exact touching angle (0-30 degrees, 0.5 degree precision)
-- **Surface Absorbed Power Density (SAPD)**: Extract peak and spatial-averaged power density on the skin surface (compliant with IEC/IEEE 63195-2:2022)
+- Surface Absorbed Power Density (SAPD): Extract peak and spatial-averaged power density on the skin surface (compliant with IEC/IEEE 63195-2:2022)
 - Fast SAPD calculation via mesh slicing around peak SAR locations
 - H5 slicing optimization for reduced data overhead during SAPD processing
 - Caching system for merged skin surface entities to significantly speed up repeated runs
@@ -93,7 +93,7 @@ This document provides a complete reference of every feature available in GOLIAT
 - Subgridding auto-refinement levels (VeryFine, Fine, Default)
 - Subgridding overrides manual gridding for specified components
 - Isolated subgridding: Separate grid settings object to prevent contamination of regular grid
-- **Antenna file fallback**: Auto-fallback to nearest available frequency when exact match not found
+- Antenna file fallback: Auto-fallback to nearest available frequency when exact match not found
 
 ## Placement scenarios
 
@@ -240,7 +240,7 @@ This document provides a complete reference of every feature available in GOLIAT
 - Preservation of original Sim4Life tissue names (e.g., "Eye (Cornea)" vs "Eye (Lens)")
 - Phantom suffix handling in tissue name display
 - Antenna detuning detection (frequency shift relative to nominal frequency)
-- **SAPD Extraction**: Extract surface absorbed power density metrics (peak value and location)
+- SAPD Extraction: Extract surface absorbed power density metrics (peak value and location)
 - Automated ModelToGrid filtering for skin surface extraction
 - Configurable SAPD averaging area (default: 4cm²) and threshold (default: 10mm)
 
@@ -248,7 +248,7 @@ This document provides a complete reference of every feature available in GOLIAT
 
 - Aggregate results across multiple simulations
 - Generate CSV files (normalized_results_detailed.csv, normalized_results_summary.csv)
-- **Automatic Excel generation**: Export results to `.xlsx` files during analysis
+- Automatic Excel generation: Export results to `.xlsx` files during analysis
 - Create SAR heatmaps by tissue and frequency
 - Generate bar charts comparing SAR in different regions
 - Create boxplots showing SAR distributions
@@ -493,12 +493,12 @@ This document provides a complete reference of every feature available in GOLIAT
 
 ## AI Assistant
 
-- **Natural Language Querying**: Ask questions about codebase, docs, and configs in plain English
-- **RAG-based Architecture**: Retrieves relevant context from indexed project files
-- **Recursive Indexing**: Automatically indexes all Python files, Markdown docs, and JSON schemas
-- **Interactive Mode**: Multi-turn conversation support (`goliat ai --interactive`)
-- **Single-shot Mode**: Quick answers via CLI (`goliat ai "query"`)
-- **Code Citations**: Direct references to source files and lines of code
-- **Markdown Formatting**: Syntax highlighted code blocks and structured answers
+- Natural Language Querying: Ask questions about codebase, docs, and configs in plain English
+- RAG-based Architecture: Retrieves relevant context from indexed project files
+- Recursive Indexing: Automatically indexes all Python files, Markdown docs, and JSON schemas
+- Interactive Mode: Multi-turn conversation support (`goliat ai --interactive`)
+- Single-shot Mode: Quick answers via CLI (`goliat ai "query"`)
+- Code Citations: Direct references to source files and lines of code
+- Markdown Formatting: Syntax highlighted code blocks and structured answers
 - **Smart Context**: Aware of project structure, key components, and user's current environment
 - **Local Execution**: Runs locally using configured LLM provider (no data leaks)

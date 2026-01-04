@@ -232,6 +232,17 @@ GOLIAT groups individual tissues into logical categories (e.g., eyes, brain, ski
     - `SensorExtractor`: Extracts data from point sensors.
     - `Reporter`: Generates detailed reports in Pickle and HTML formats.
     - `Cleaner`: Handles cleanup of simulation files to save disk space.
+
+#### Surface absorbed power density (SAPD)
+
+GOLIAT extracts the power density absorbed at the skin surface for frequencies above 6 GHz. This automated workflow uses Sim4Life's `GenericSAPDEvaluator` plugin.
+
+1. Surface preparation: The system unites the Skin and Ear_skin entities (defined in the material mapping) into a single Skin_Merged_For_SAPD entity. This merged mesh is cached in data/phantoms_skin/ as a .sab file.
+2. Speed optimizations:
+    - HDF5 slicing: Creates a sub-sampled H5 output file around the peak SAR location to reduce memory overhead.
+    - Mesh slicing: Clips the skin mesh to a 100 mm box using 6 planar cuts.
+3. Mesh cleanup: Sliced meshes are repaired using RemoveBackToBackTriangles, RepairTriangleMesh, and RemeshTriangleMesh (2 mm target edge length) for accurate evaluation.
+4. Evaluation: The evaluator uses a 4 cm² averaging area and a 10 mm depth threshold, compliant with IEC/IEEE 63195-2:2022.
 - **Some interesting methods**:
 
     - `extract()`: Orchestrates the entire extraction process.

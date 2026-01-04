@@ -252,12 +252,9 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
 
         # Tissue group bar plots (symmetric with near-field: brain, eyes, skin, genitals)
         if self.should_generate_plot("plot_average_sar_bar"):
-            # Create a dummy progress series (far-field doesn't have progress like NF)
-            progress_info = pd.Series({freq: "12/12" for freq in results_df["frequency_mhz"].unique()})
-            plotter.plot_average_sar_bar("environmental", summary_stats, progress_info, results_df)
+            plotter.plot_average_sar_bar("environmental", summary_stats, None, results_df)
         if self.should_generate_plot("plot_average_pssar_bar"):
-            progress_info = pd.Series({freq: "12/12" for freq in results_df["frequency_mhz"].unique()})
-            plotter.plot_average_pssar_bar("environmental", summary_stats, progress_info, results_df)
+            plotter.plot_average_pssar_bar("environmental", summary_stats, None, results_df)
 
         # ============================================================================
         # Individual Variation Line Plots (one line per direction/polarization)
