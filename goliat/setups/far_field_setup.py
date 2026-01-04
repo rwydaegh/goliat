@@ -260,8 +260,129 @@ class FarFieldSetup(BaseSetup):
 
         return simulation
 
+    def _get_phantom_height_limit_mm(self, phantom_bbox_min: np.ndarray, phantom_bbox_max: np.ndarray) -> float | None:
+        """Determines the phantom height limit for the current frequency.
+
+        Checks for manual per-frequency height limits first, then falls back to
+        automatic reduction if enabled. Returns None if no reduction should be applied.
+
+        Args:
+            phantom_bbox_min: Original phantom bounding box minimum [x, y, z] in mm.
+            phantom_bbox_max: Original phantom bounding box maximum [x, y, z] in mm.
+
+        Returns:
+            Height limit in mm (measured from top of head downward), or None for full body.
+        """
+        bbox_reduction = self.config["gridding_parameters.phantom_bbox_reduction"]
+        if not bbox_reduction:
+            return None
+
+        freq_mhz = self.reference_frequency_mhz
+
+        # Check for manual per-frequency height limit first
+        height_per_freq = bbox_reduction.get("height_limit_per_frequency_mm", {})
+        if height_per_freq and isinstance(height_per_freq, dict):
+            freq_key = str(int(freq_mhz))
+            if freq_key in height_per_freq:
+                manual_limit = height_per_freq[freq_key]
+                self._log(f"  - Using manual height limit: {manual_limit} mm for {freq_mhz} MHz", log_type="info")
+                return manual_limit
+
+        # Check for automatic reduction
+        auto_reduce = bbox_reduction.get("auto_reduce_bbox", False)
+        if not auto_reduce:
+            return None
+
+        # Check if we're above the threshold frequency
+        threshold_mhz = bbox_reduction.get("auto_reduce_threshold_mhz", 7000)
+        if freq_mhz < threshold_mhz:
+            self._log(f"  - Frequency {freq_mhz} MHz below auto-reduce threshold ({threshold_mhz} MHz)", log_type="verbose")
+            return None
+
+        # Calculate automatic height limit based on target max cells
+        target_max_cells = bbox_reduction.get("target_max_cells", 2.2e9)
+        height_limit = self._calculate_auto_height_limit(phantom_bbox_min, phantom_bbox_max, freq_mhz, target_max_cells)
+
+        if height_limit is not None:
+            self._log(
+                f"  - Auto-calculated height limit: {height_limit:.1f} mm for {freq_mhz} MHz (target max cells: {target_max_cells:.2e})",
+                log_type="info",
+            )
+
+        return height_limit
+
+    def _calculate_auto_height_limit(
+        self,
+        phantom_bbox_min: np.ndarray,
+        phantom_bbox_max: np.ndarray,
+        freq_mhz: int,
+        target_max_cells: float,
+    ) -> float | None:
+        """Calculates automatic height limit based on cell count budget.
+
+        The cell count scales cubically with grid resolution. This method calculates
+        what fraction of the phantom height can be simulated while staying under the
+        target cell count.
+
+        Args:
+            phantom_bbox_min: Original phantom bounding box minimum [x, y, z] in mm.
+            phantom_bbox_max: Original phantom bounding box maximum [x, y, z] in mm.
+            freq_mhz: Simulation frequency in MHz.
+            target_max_cells: Maximum target cell count.
+
+        Returns:
+            Height limit in mm, or None if full body fits within budget.
+        """
+        # Get grid resolution for this frequency
+        gridding_params = self.config["gridding_parameters"] or {}
+        per_freq_gridding = gridding_params.get("global_gridding_per_frequency", {})
+        global_gridding = gridding_params.get("global_gridding", {})
+
+        freq_key = str(int(freq_mhz))
+        if freq_key in per_freq_gridding:
+            cell_size_mm = per_freq_gridding[freq_key]
+        else:
+            cell_size_mm = global_gridding.get("manual_fallback_max_step_mm", 3.0)
+
+        # Calculate full phantom dimensions
+        phantom_dims = phantom_bbox_max - phantom_bbox_min  # [width, depth, height]
+        full_height_mm = phantom_dims[2]  # Z-axis is height
+
+        # Calculate full body cell count
+        cells_x = phantom_dims[0] / cell_size_mm
+        cells_y = phantom_dims[1] / cell_size_mm
+        cells_z = phantom_dims[2] / cell_size_mm
+        full_cell_count = cells_x * cells_y * cells_z
+
+        self._log(
+            f"  - Full body cell count estimate: {full_cell_count:.2e} "
+            f"(dims: {phantom_dims[0]:.0f}x{phantom_dims[1]:.0f}x{phantom_dims[2]:.0f} mm, "
+            f"cell: {cell_size_mm} mm)",
+            log_type="verbose",
+        )
+
+        if full_cell_count <= target_max_cells:
+            self._log("  - Full body fits within cell budget, no reduction needed", log_type="verbose")
+            return None
+
+        # Calculate reduction factor: target_cells = cells_x * cells_y * (reduced_height / cell_size)
+        # So: reduced_height = target_cells * cell_size / (cells_x * cells_y)
+        reduction_factor = target_max_cells / full_cell_count
+        reduced_height_mm = full_height_mm * reduction_factor
+
+        # Ensure we keep at least 20% of the body (head + upper torso minimum)
+        min_height_mm = full_height_mm * 0.2
+        reduced_height_mm = max(reduced_height_mm, min_height_mm)
+
+        return reduced_height_mm
+
     def _create_or_get_simulation_bbox(self) -> "model.Entity":
-        """Creates simulation bbox from phantom geometry with padding."""
+        """Creates simulation bbox from phantom geometry with padding.
+
+        Supports optional phantom height reduction for high frequencies to manage
+        computational costs. The phantom is always truncated from the bottom
+        (keeping the head, reducing downward extent).
+        """
         bbox_name = "far_field_simulation_bbox"
         self._log("Creating simulation bounding box for far-field...", log_type="progress")
         import XCoreModeling
@@ -271,13 +392,31 @@ class FarFieldSetup(BaseSetup):
             raise RuntimeError("No phantom found to create bounding box.")
 
         bbox_min, bbox_max = self.model.GetBoundingBox(phantom_entities)
+        original_bbox_min = np.array(bbox_min)
+        original_bbox_max = np.array(bbox_max)
+
+        # Check for phantom height reduction
+        height_limit_mm = self._get_phantom_height_limit_mm(original_bbox_min, original_bbox_max)
+
+        if height_limit_mm is not None:
+            # Truncate from bottom: keep top (head), reduce from below
+            # Z-axis: max is top of head, min is feet
+            full_height = original_bbox_max[2] - original_bbox_min[2]
+            if height_limit_mm < full_height:
+                new_z_min = original_bbox_max[2] - height_limit_mm
+                original_bbox_min[2] = new_z_min
+                self._log(
+                    f"  - Phantom bbox reduced: keeping top {height_limit_mm:.1f} mm "
+                    f"(original height: {full_height:.1f} mm, reduction: {(1 - height_limit_mm / full_height) * 100:.1f}%)",
+                    log_type="info",
+                )
 
         padding_mm = self.config["simulation_parameters.bbox_padding_mm"]
         if padding_mm is None:
             padding_mm = 50
 
-        sim_bbox_min = np.array(bbox_min) - padding_mm
-        sim_bbox_max = np.array(bbox_max) + padding_mm
+        sim_bbox_min = original_bbox_min - padding_mm
+        sim_bbox_max = original_bbox_max + padding_mm
 
         sim_bbox = XCoreModeling.CreateWireBlock(self.model.Vec3(sim_bbox_min), self.model.Vec3(sim_bbox_max))
         sim_bbox.Name = bbox_name
