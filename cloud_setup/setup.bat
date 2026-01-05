@@ -2,6 +2,14 @@
 setlocal enabledelayedexpansion
 
 :: ============================================================================
+:: UNIFIED SETUP SCRIPT
+:: ============================================================================
+:: This script handles both fresh installation AND reconnection scenarios.
+:: - If goliat/ folder exists in user's home: run RECONNECTION flow
+:: - If goliat/ folder does NOT exist: run FULL SETUP flow
+:: ============================================================================
+
+:: ============================================================================
 :: Initialize setup tracking (prevents premature execution of end section)
 :: ============================================================================
 set "SETUP_STARTED=1"
@@ -87,42 +95,163 @@ if /i "%COMPUTERNAME%" neq "MYGCLOUDPC" if /i "%COMPUTERNAME%" neq "WIN10-NEW" (
 )
 
 :: ============================================================================
-:: Complete Setup and Run Script with Timing
+:: Check for Administrator Privileges
 :: ============================================================================
-:: This script performs the complete setup and launches the study
-:: ============================================================================
-
-:: Start overall timer
-set "START_TIME=%TIME%"
-echo ============================================================================
-echo Starting setup at %START_TIME%
-echo ============================================================================
-echo.
-
-:: 1. Check for Administrator Privileges
-echo [STEP 1/9] Checking for administrator privileges...
-set "STEP_START=%TIME%"
+echo Checking for administrator privileges...
 net session >nul 2>&1
-if %errorlevel% == 0 (
-    echo Administrator privileges detected.
-) else (
+if %errorlevel% neq 0 (
     echo ERROR: This script requires administrator privileges.
     echo Please right-click the script and select "Run as administrator".
     pause
     exit /b 1
 )
-call :ShowElapsedTime "%STEP_START%"
+echo Administrator privileges detected.
 echo.
-echo [DEBUG] Step 1 completed, proceeding to Step 2...
+
+:: ============================================================================
+:: DETECT IF SETUP HAS ALREADY BEEN COMPLETED
+:: ============================================================================
+set "GOLIAT_PATH=C:\Users\%CURRENT_USER%\goliat"
+
+if exist "%GOLIAT_PATH%" (
+    echo ============================================================================
+    echo GOLIAT INSTALLATION DETECTED
+    echo ============================================================================
+    echo Found goliat/ at: %GOLIAT_PATH%
+    echo Running RECONNECTION flow...
+    echo ============================================================================
+    echo.
+    goto :RECONNECTION_FLOW
+) else (
+    echo ============================================================================
+    echo NO GOLIAT INSTALLATION DETECTED
+    echo ============================================================================
+    echo goliat/ not found at: %GOLIAT_PATH%
+    echo Running FULL SETUP flow...
+    echo ============================================================================
+    echo.
+    goto :FULL_SETUP_FLOW
+)
+
+:: ============================================================================
+:: RECONNECTION FLOW
+:: ============================================================================
+:RECONNECTION_FLOW
+
+echo [RECONNECTION 1/3] Connecting to VPN...
+
+:: Check if VPN config exists
+if not exist "%DESKTOP_PATH%\certs\Intec-iGent.ovpn" (
+    echo ERROR: Intec-iGent.ovpn not found in the 'certs' directory on Desktop.
+    pause
+    exit /b 1
+)
+
+:: Create credentials file
+set "AUTH_FILE=%DESKTOP_PATH%\certs\openvpn_auth.txt"
+(
+    echo YOUR_VPN_USERNAME
+    echo YOUR_VPN_PASSWORD
+) > "%AUTH_FILE%"
+
+:: Launch OpenVPN
+cd /d "%DESKTOP_PATH%\certs"
+
+:: Verify OpenVPN is installed before launching
+set "OPENVPN_EXE=C:\Program Files\OpenVPN\bin\openvpn.exe"
+if not exist "%OPENVPN_EXE%" (
+    echo ERROR: OpenVPN executable not found at: %OPENVPN_EXE%
+    echo OpenVPN is not installed. Please run the full setup first.
+    pause
+    exit /b 1
+)
+
+start "OpenVPN" "%OPENVPN_EXE%" --config "Intec-iGent.ovpn" --auth-user-pass "openvpn_auth.txt"
+
+echo VPN connection initiated. Waiting for connection to establish...
+timeout /t 15 /nobreak >nul
+echo.
+
+echo [RECONNECTION 2/3] Opening File Explorer at goliat/...
+start "" explorer.exe "%GOLIAT_PATH%"
+echo.
+
+echo [RECONNECTION 3/3] Launching Git Bash with git commands...
+
+:: Verify bash.exe exists before launching
+set "BASH_EXE=C:\Program Files\Git\bin\bash.exe"
+if not exist "%BASH_EXE%" (
+    :: Also check alternative Git installation paths
+    if exist "C:\Program Files (x86)\Git\bin\bash.exe" (
+        set "BASH_EXE=C:\Program Files (x86)\Git\bin\bash.exe"
+    ) else (
+        echo ERROR: Git Bash not found! Please install Git first.
+        pause
+        exit /b 1
+    )
+)
+
+:: Create a temporary initialization script for bash
+set "INIT_SCRIPT=%TEMP%\goliat_reconnect_%RANDOM%.sh"
+(
+    echo cd /c/Users/%CURRENT_USER%/goliat
+    echo git config --add safe.directory C:/Users/%CURRENT_USER%/goliat
+    echo git config --global user.email "YOUR_EMAIL@example.com"
+    echo git config --global user.name "YOUR_NAME"
+    echo git pull
+    echo echo ""
+    echo echo "==================================================="
+    echo echo "Git Bash is ready! You are in the goliat directory."
+    echo echo "==================================================="
+    echo exec bash --login -i
+) > "%INIT_SCRIPT%"
+
+:: Convert Windows temp path to Git Bash format (C:\Users\... -> /c/Users/...)
+set "INIT_SCRIPT_BASH=%INIT_SCRIPT:C:\=/c/%"
+set "INIT_SCRIPT_BASH=%INIT_SCRIPT_BASH:\=/%"
+
+:: Launch Git Bash with initialization commands
+cd /d "%GOLIAT_PATH%"
+cmd /c start "GOLIAT" "%BASH_EXE%" -c "source '%INIT_SCRIPT_BASH%'" 2>nul
+if %errorlevel% neq 0 (
+    echo WARNING: Failed to launch Git Bash. You may need to launch it manually.
+    echo Navigate to: %GOLIAT_PATH%
+) else (
+    echo Git Bash launched successfully.
+)
+echo.
+
+echo ============================================================================
+echo RECONNECTION COMPLETE!
+echo ============================================================================
+echo - VPN connection initiated
+echo - File Explorer opened at goliat/
+echo - Git Bash launched with git pull executed
+echo ============================================================================
+pause
+endlocal
+exit /b 0
+
+
+:: ============================================================================
+:: FULL SETUP FLOW
+:: ============================================================================
+:FULL_SETUP_FLOW
+
+:: Start overall timer
+set "START_TIME=%TIME%"
+echo ============================================================================
+echo Starting FULL SETUP at %START_TIME%
+echo ============================================================================
+echo.
 
 :: Define file paths
 set "PYTHON_INSTALLER=%TEMP%\python_installer.exe"
 set "OPENVPN_INSTALLER=%TEMP%\openvpn.msi"
 set "GIT_INSTALLER=%TEMP%\git_installer.exe"
 
-:: 2. Download OpenVPN Installer
-echo [STEP 2/9] Downloading OpenVPN Installer...
-echo [DEBUG] Starting Step 2...
+:: 1. Download OpenVPN Installer
+echo [STEP 1/8] Downloading OpenVPN Installer...
 set "STEP_START=%TIME%"
 curl -L -o "%OPENVPN_INSTALLER%" "https://swupdate.openvpn.org/community/releases/OpenVPN-2.6.15-I001-amd64.msi"
 if %errorlevel% neq 0 (
@@ -132,11 +261,9 @@ if %errorlevel% neq 0 (
 )
 call :ShowElapsedTime "%STEP_START%"
 echo.
-echo [DEBUG] Step 2 completed, proceeding to Step 3...
 
-:: 3. Download and Install Python 3.11
-echo [STEP 3/9] Downloading and Installing Python 3.11...
-echo [DEBUG] Starting Step 3...
+:: 2. Download and Install Python 3.11
+echo [STEP 2/8] Downloading and Installing Python 3.11...
 set "STEP_START=%TIME%"
 curl -L -o "%PYTHON_INSTALLER%" "https://www.python.org/ftp/python/3.11.5/python-3.11.5-amd64.exe"
 if %errorlevel% neq 0 (
@@ -153,19 +280,11 @@ if %errorlevel% neq 0 (
 :: Small delay to ensure installation completes
 timeout /t 2 /nobreak >nul
 echo Python installation finished.
-:: Explicit check to prevent premature execution
-if "%SETUP_COMPLETE%"=="1" (
-    echo ERROR: SETUP_COMPLETE flag is incorrectly set! This should not happen.
-    pause
-    exit /b 1
-)
 call :ShowElapsedTime "%STEP_START%"
 echo.
-echo [DEBUG] Step 3 completed, proceeding to Step 4...
 
-:: 4. Install gdown
-echo [STEP 4/9] Installing gdown utility...
-echo [DEBUG] Starting Step 4...
+:: 3. Install gdown
+echo [STEP 3/8] Installing gdown utility...
 set "STEP_START=%TIME%"
 "C:/Program Files/Python311/python.exe" -m pip install gdown
 if %errorlevel% neq 0 (
@@ -175,11 +294,9 @@ if %errorlevel% neq 0 (
 )
 call :ShowElapsedTime "%STEP_START%"
 echo.
-echo [DEBUG] Step 4 completed, proceeding to Step 5...
 
-:: 5. Download and Install Sim4Life
-echo [STEP 5/9] Downloading and Installing Sim4Life...
-echo [DEBUG] Starting Step 5...
+:: 4. Download and Install Sim4Life
+echo [STEP 4/8] Downloading and Installing Sim4Life...
 set "STEP_START=%TIME%"
 set "SIM4LIFE_ZIP=%TEMP%\Sim4Life.zip"
 "C:/Program Files/Python311/python.exe" -m gdown "YOUR_PRIVATE_GDRIVE_FILE_ID" -O "%SIM4LIFE_ZIP%"
@@ -208,11 +325,9 @@ del "%SIM4LIFE_ZIP%"
 rmdir /s /q "%SIM4LIFE_DIR%"
 call :ShowElapsedTime "%STEP_START%"
 echo.
-echo [DEBUG] Step 5 completed, proceeding to Step 6...
 
-:: 6. Download VPN Configuration Files
-echo [STEP 6/9] Downloading VPN configuration files from Google Drive...
-echo [DEBUG] Starting Step 6...
+:: 5. Download VPN Configuration Files
+echo [STEP 5/8] Downloading VPN configuration files from Google Drive...
 set "STEP_START=%TIME%"
 "C:/Program Files/Python311/python.exe" -m gdown "https://drive.google.com/drive/folders/YOUR_PRIVATE_GDRIVE_FOLDER_ID" --folder -O .
 if %errorlevel% neq 0 (
@@ -223,8 +338,8 @@ if %errorlevel% neq 0 (
 call :ShowElapsedTime "%STEP_START%"
 echo.
 
-:: 7. Install OpenVPN and Connect
-echo [STEP 7/9] Installing OpenVPN and Connecting to VPN...
+:: 6. Install OpenVPN and Connect
+echo [STEP 6/8] Installing OpenVPN and Connecting to VPN...
 set "STEP_START=%TIME%"
 echo Installing OpenVPN silently...
 msiexec /i "%OPENVPN_INSTALLER%" /quiet
@@ -266,8 +381,8 @@ timeout /t 30 /nobreak >nul
 call :ShowElapsedTime "%STEP_START%"
 echo.
 
-:: 8. Install Git and Clone Repository
-echo [STEP 8/9] Installing Git and Cloning Repository...
+:: 7. Install Git and Clone Repository
+echo [STEP 7/8] Installing Git and Cloning Repository...
 set "STEP_START=%TIME%"
 
 echo Downloading Git installer...
@@ -309,8 +424,8 @@ if %errorlevel% neq 0 (
 call :ShowElapsedTime "%STEP_START%"
 echo.
 
-:: 9. Setup Complete - Launch License Installer and Git Bash in Parallel
-echo [STEP 9/9] Setup Complete - Launching License Installer and Git Bash...
+:: 8. Setup Complete - Launch License Installer and Git Bash in Parallel
+echo [STEP 8/8] Setup Complete - Launching License Installer and Git Bash...
 set "STEP_START=%TIME%"
 echo.
 
@@ -405,6 +520,11 @@ if exist "%LICENSE_PATH%" (
 )
 echo.
 
+:: Open File Explorer at goliat directory
+echo Opening File Explorer at goliat/...
+start "" explorer.exe "C:\Users\%CURRENT_USER%\goliat"
+echo.
+
 :: Launch Git Bash with initialization commands (non-blocking)
 echo Launching Git Bash with initialization commands...
 echo Executing commands from start.sh...
@@ -423,8 +543,11 @@ echo.
 call :ShowElapsedTime "%STEP_START%"
 echo.
 echo ============================================================================
-echo Both license installer and Git Bash have been launched!
-echo You can install the license while working in the Git Bash terminal.
+echo SETUP COMPLETE!
+echo ============================================================================
+echo - License installer launched
+echo - File Explorer opened at goliat/
+echo - Git Bash launched and initialized
 echo ============================================================================
 pause
 endlocal

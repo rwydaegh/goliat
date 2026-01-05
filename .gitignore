@@ -79,7 +79,7 @@ configs/*
 # Scripts
 goliat/utils/scripts/keep_awake.py
 
-# Cloud setup - credentials and documentation
+# Cloud setup - credentials and personal scripts
 cloud_setup/tensordock_documentation.md
 cloud_setup/my_*.bat
 cloud_setup/my_*.py

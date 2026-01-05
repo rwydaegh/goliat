@@ -243,6 +243,8 @@ This document provides a complete reference of every feature available in GOLIAT
 - SAPD Extraction: Extract surface absorbed power density metrics (peak value and location)
 - Automated ModelToGrid filtering for skin surface extraction
 - Configurable SAPD averaging area (default: 4cm²) and threshold (default: 10mm)
+- Simulation metadata export: Automatically export timing, performance, and file size data to pickle and JSON files after extraction
+- Metadata includes: timing breakdown (all phases + subtasks), solver config (iterations, time step, grid resolution, total cell-iterations, power balance), hardware info (GPU model/memory, peak RAM), performance metrics (MCells/s), grid info (MCells with PML), and file sizes (_Output.h5, SAPD H5, .smash)
 
 ## Analysis and visualization
 
@@ -342,16 +344,19 @@ This document provides a complete reference of every feature available in GOLIAT
 
 - Deploy Windows VM with GPU support from cloud providers
 - Remote Desktop Protocol (RDP) connection support
-- Automated setup script (`setup_and_run.bat`)
-- Automatic OpenVPN client installation
+- Unified setup script (`setup.bat`) with automatic mode detection
+- Auto-detection: Script checks if `goliat/` exists to determine fresh install vs reconnection
+- Fresh install mode: Full automated setup (~10 minutes)
+- Reconnection mode: Quick VPN + git pull + ready terminal (~15 seconds)
+- Automatic OpenVPN client installation and connection
 - Automatic Python 3.11 installation
 - Automatic Git installation
 - Automatic Sim4Life download and installation
 - VPN configuration file download from Google Drive
-- VPN connection automation
-- Parallel launch of Sim4Life license installer and Git Bash
+- Parallel launch of Sim4Life license installer, File Explorer, and Git Bash
 - Automatic GOLIAT repository cloning
-- Automatic Git Bash initialization (pip install, git config, goliat init)
+- Automatic Git Bash initialization (pip install, git config, git pull, goliat init)
+- File Explorer opens at goliat/ directory automatically
 - Python script for API-based VM deployment (`deploy_windows_vm.py`)
 - Support for multiple cloud providers (TensorDock, AWS, GCP, Azure)
 - Cost estimation and monitoring
@@ -422,6 +427,8 @@ This document provides a complete reference of every feature available in GOLIAT
 - `sar_results.json` - Normalized SAR values summary (includes SAPD if extraction enabled)
 - `sar_stats_all_tissues.pkl` - Detailed tissue-specific SAR data (Python pickle), includes SAPD results
 - `sar_stats_all_tissues.html` - HTML table of tissue SAR values
+- `simulation_metadata.pkl` - Comprehensive simulation metadata (timing, performance, hardware, file sizes) in pickle format
+- `simulation_metadata.json` - Same metadata in human-readable JSON format for paper analysis
 - `sliced_output_{freq}MHz.h5` - Sliced H5 file around peak SAR location (for faster SAPD calculation)
 - `point_sensor_data.png` - Electric field magnitude plot at monitoring points
 - `*_Output.h5` - Simulation output file (HDF5 format)

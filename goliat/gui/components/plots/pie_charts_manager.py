@@ -28,6 +28,7 @@ class PieChartsManager:
         Handles special cases:
         - "isolve" -> "iSolve"
         - "sar" -> "SAR" (when part of "sar_statistics" or similar)
+        - "sapd" -> "SAPD" (Surface Absorbed Power Density)
 
         Args:
             subtask_key: The subtask key (e.g., "run_isolve_execution", "extract_sar_statistics")
@@ -46,6 +47,8 @@ class PieChartsManager:
                 formatted_words.append("iSolve")
             elif word_lower == "sar":
                 formatted_words.append("SAR")
+            elif word_lower == "sapd":
+                formatted_words.append("SAPD")
             else:
                 formatted_words.append(word.capitalize())
 
