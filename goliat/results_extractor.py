@@ -236,6 +236,32 @@ class ResultsExtractor(LoggingMixin):
 
         self._save_json_results(results_data)
 
+        # Export simulation metadata before cleanup (to capture file sizes)
+        if self.study and hasattr(self.study, "profiler") and hasattr(self.study, "project_manager"):
+            if self.study.project_manager.project_path:
+                from goliat.metadata_exporter import export_simulation_metadata
+
+                # Build simulation name
+                if self.study_type == "far_field":
+                    # For far-field: EM_FDTD_{phantom}_{freq}MHz_{direction}_{polarization}
+                    sim_name = (
+                        f"EM_FDTD_{self.phantom_name}_{self.frequency_mhz}MHz_{self.orientation_name}_{self.placement_name.split('_')[-1]}"
+                    )
+                else:
+                    # For near-field: EM_FDTD_{phantom}_{freq}MHz_{placement}
+                    sim_name = f"EM_FDTD_{self.phantom_name}_{self.frequency_mhz}MHz_{self.placement_name}"
+
+                export_simulation_metadata(
+                    profiler=self.study.profiler,
+                    project_path=self.study.project_manager.project_path,
+                    simulation_name=sim_name,
+                    study_type=self.study_type,
+                    phantom_name=self.phantom_name,
+                    frequency_mhz=self.frequency_mhz,
+                    config_path=self.config.config_path,
+                    extract_sapd=bool(self.config["extract_sapd"]) if self.config["extract_sapd"] is not None else False,
+                )
+
         # Cleanup if configured
         if self.config.get_auto_cleanup_previous_results():
             cleaner = Cleaner(self)

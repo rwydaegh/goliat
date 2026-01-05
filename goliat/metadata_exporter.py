@@ -169,16 +169,16 @@ class MetadataExporter:
         try:
             metadata = self._collect_metadata()
 
-            results_dir = os.path.join(self.project_dir, "Results")
-            os.makedirs(results_dir, exist_ok=True)
+            # Save metadata files in the project directory (same level as .smash file)
+            os.makedirs(self.project_dir, exist_ok=True)
 
             # Export to pickle
-            pickle_path = os.path.join(results_dir, "simulation_metadata.pkl")
+            pickle_path = os.path.join(self.project_dir, "simulation_metadata.pkl")
             with open(pickle_path, "wb") as f:
                 pickle.dump(asdict(metadata), f)
 
             # Export to JSON
-            json_path = os.path.join(results_dir, "simulation_metadata.json")
+            json_path = os.path.join(self.project_dir, "simulation_metadata.json")
             with open(json_path, "w") as f:
                 json.dump(asdict(metadata), f, indent=2, default=str)
 
