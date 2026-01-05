@@ -364,28 +364,60 @@ class MetadataExporter:
         if not self.project_dir:
             return FileSizeInfo()
 
-        results_dir = os.path.join(self.project_dir, "Results")
+        # Sim4Life typically puts results in a folder named {project_name}_Results
+        # but sometimes files might be in the project dir or a generic Results folder.
+        project_filename = os.path.basename(self.project_path) if self.project_path else ""
+        s4l_results_dir = os.path.join(self.project_dir, project_filename + "_Results")
+        generic_results_dir = os.path.join(self.project_dir, "Results")
+
         info = FileSizeInfo()
 
+        # We'll search in all plausible locations
+        search_dirs = [self.project_dir, s4l_results_dir, generic_results_dir]
+
+        # Clean up search dirs (remove non-existent ones)
+        search_dirs = [d for d in search_dirs if d and os.path.exists(d)]
+
+        # Debug prints for troubleshooting
+        print(f"[MetadataExporter] Searching for output files in: {search_dirs}")
+
         # _Output.h5 files
-        output_h5_files = glob.glob(os.path.join(results_dir, "*_Output.h5"))
+        output_h5_files = []
+        for d in search_dirs:
+            matches = glob.glob(os.path.join(d, "*_Output.h5"))
+            output_h5_files.extend(matches)
+
         if output_h5_files:
             # Take the largest one (there should typically be only one)
             largest_h5 = max(output_h5_files, key=os.path.getsize)
             info.output_h5_bytes = os.path.getsize(largest_h5)
             info.output_h5_mb = info.output_h5_bytes / (1024 * 1024)
+            print(f"[MetadataExporter] Found largest Output.h5: {largest_h5} ({info.output_h5_mb:.2f} MB)")
+        else:
+            print("[MetadataExporter] No *_Output.h5 files found.")
 
         # SAPD H5 files (if extract_sapd was enabled)
-        sapd_h5_files = glob.glob(os.path.join(results_dir, "*sapd*.h5")) + glob.glob(os.path.join(results_dir, "*SAPD*.h5"))
+        sapd_h5_files = []
+        for d in search_dirs:
+            matches = glob.glob(os.path.join(d, "*sapd*.h5")) + glob.glob(os.path.join(d, "*SAPD*.h5"))
+            sapd_h5_files.extend(matches)
+
         if sapd_h5_files:
             largest_sapd = max(sapd_h5_files, key=os.path.getsize)
             info.sapd_h5_bytes = os.path.getsize(largest_sapd)
             info.sapd_h5_mb = info.sapd_h5_bytes / (1024 * 1024)
+            print(f"[MetadataExporter] Found largest SAPD H5: {largest_sapd} ({info.sapd_h5_mb:.2f} MB)")
+        else:
+            if self.extract_sapd:
+                print("[MetadataExporter] SAPD enabled but no *sapd*.h5 files found.")
 
         # Project .smash file
         if self.project_path and os.path.exists(self.project_path):
             info.project_smash_bytes = os.path.getsize(self.project_path)
             info.project_smash_mb = info.project_smash_bytes / (1024 * 1024)
+            print(f"[MetadataExporter] Measured project file: {self.project_path} ({info.project_smash_mb:.2f} MB)")
+        else:
+            print(f"[MetadataExporter] Project file not found at: {self.project_path}")
 
         return info
 
