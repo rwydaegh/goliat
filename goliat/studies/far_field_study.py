@@ -3,7 +3,6 @@ import traceback
 from typing import TYPE_CHECKING
 
 from ..logging_manager import add_simulation_log_handlers, remove_simulation_log_handlers
-from ..metadata_exporter import export_simulation_metadata
 from ..results_extractor import ResultsExtractor
 from ..setups.far_field_setup import FarFieldSetup
 from ..utils import profile
@@ -374,20 +373,6 @@ class FarFieldStudy(BaseStudy):
                             extractor.extract()
                     self._verify_and_update_metadata("extract")
                     self.project_manager.save()
-
-                    # Export simulation metadata (timing, performance, file sizes)
-                    if self.project_manager.project_path:
-                        sim_name = f"EM_FDTD_{phantom_name}_{freq_str}MHz_{direction_name}_{polarization_name}"
-                        export_simulation_metadata(
-                            profiler=self.profiler,
-                            project_path=self.project_manager.project_path,
-                            simulation_name=sim_name,
-                            study_type="far_field",
-                            phantom_name=phantom_name,
-                            frequency_mhz=freq,
-                            config_path=self.config.config_path,
-                            extract_sapd=bool(self.config["extract_sapd"]) if self.config["extract_sapd"] is not None else False,
-                        )
 
                     if self.gui:
                         self.gui.update_stage_progress("Extracting Results", 1, 1)
