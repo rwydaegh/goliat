@@ -62,69 +62,68 @@ Once your VM is deployed:
 
 ## Step 3: Run the setup script
 
-The `cloud_setup/` directory contains an automated setup script that installs everything needed:
+The `cloud_setup/` directory contains a unified setup script that handles both fresh installation and reconnection scenarios.
 
 ### What the script does
 
-The `setup_and_run.bat` script automates the following steps:
+The `setup.bat` script **automatically detects** whether GOLIAT has already been installed by checking if the `goliat/` folder exists in the user's home directory.
 
-1. Checks computer name (configurable)
-2. Checks for administrator privileges
-3. Downloads OpenVPN installer
-4. Downloads and installs Python 3.11
-5. Installs gdown utility for Google Drive downloads
-6. Downloads and installs Sim4Life
-7. Downloads VPN configuration files (if needed)
-8. Installs OpenVPN and connects to VPN (if required for Sim4Life license access)
-9. Installs Git and clones the GOLIAT repository
-10. Launches Sim4Life license installer and Git Bash in parallel
+#### Fresh installation (goliat/ not found)
 
-The script includes error handling to prevent premature execution and verifies that required files exist before launching processes.
+If this is a new machine, the script runs the **full setup flow**:
+
+1. Checks computer name and administrator privileges
+2. Downloads and installs OpenVPN
+3. Downloads and installs Python 3.11
+4. Installs gdown utility for Google Drive downloads
+5. Downloads and installs Sim4Life
+6. Downloads VPN configuration files
+7. Connects to VPN (if required for Sim4Life license access)
+8. Installs Git and clones the GOLIAT repository
+9. Launches Sim4Life license installer, File Explorer, and Git Bash in parallel
+10. Git Bash automatically runs initialization commands (pip install, git config, goliat init)
+
+#### Reconnection (goliat/ found)
+
+If the setup has already been completed, the script runs the **reconnection flow**:
+
+1. Connects to VPN
+2. Opens File Explorer at the goliat/ directory
+3. Launches Git Bash with automatic commands:
+   - Sets git safe.directory
+   - Configures git user.email and user.name
+   - Runs `git pull` to fetch latest changes
+   - Leaves the terminal ready for use
+
+This means you only need **one script** - just run `setup.bat` every time you connect to the VM.
 
 ### Running the script
 
 1. **Copy the setup script** to your VM (you can use RDP file transfer or download it)
 
-2. **Edit the script** if needed:
-   - Replace `YOUR_COMPUTER_NAME` with the expected computer name (or remove the check if not needed)
-   - Replace `YOUR_PRIVATE_GDRIVE_FOLDER_ID` with your Google Drive folder ID which should contain your `.ovpn` and `.crt` files.
-   - Replace `YOUR_PRIVATE_GDRIVE_FILE_ID` with your Sim4Life `.exe` installer (for private use *only* with the express intent to *only* transfer this to the remote machine).
-   - Replace `YOUR_VPN_USERNAME` and `YOUR_VPN_PASSWORD` if using VPN
+2. **Edit the script** if needed (first time only):
+   - Replace `YOUR_PRIVATE_GDRIVE_FOLDER_ID` with your Google Drive folder ID containing `.ovpn` and `.crt` files
+   - Replace `YOUR_PRIVATE_GDRIVE_FILE_ID` with your Sim4Life installer file ID
+   - Replace `YOUR_VPN_USERNAME` and `YOUR_VPN_PASSWORD` with your VPN credentials
    - Replace `YOUR_USERNAME` with your GitHub username
+   - Replace `YOUR_EMAIL@example.com` and `YOUR_NAME` with your git credentials
 
 3. **Run as Administrator**:
 
-        ```cmd
-        Right-click setup_and_run.bat → Run as administrator
-        ```
+   ```cmd
+   Right-click setup.bat → Run as administrator
+   ```
 
-4. **Wait ~10 minutes** while the script installs everything
+4. **First run**: Wait ~10 minutes while the script installs everything. The license installer, File Explorer, and Git Bash all launch automatically when complete.
 
-5. **Both windows launch simultaneously**:
-   - The Sim4Life license installer opens automatically
-   - Git Bash launches in the GOLIAT repository directory with initialization commands already executed
-   - You can install the license while working in Git Bash
-
-6. **Git Bash is ready to use**: The script automatically runs initialization commands from `start.sh` (pip install, git config, goliat init), so the terminal is ready for immediate use
-
-## VPN reconnection
-
-If you need to reconnect to VPN later without rerunning the full setup, use `connect_vpn.bat`:
-
-```cmd
-Right-click connect_vpn.bat → Run as administrator
-```
-
-**Note**: Before running `connect_vpn.bat`, edit it to replace `YOUR_VPN_USERNAME` and `YOUR_VPN_PASSWORD` with your actual VPN credentials. This script assumes OpenVPN is already installed and that the VPN configuration files exist in the `certs/` directory.
+5. **Subsequent runs**: The script detects the existing installation and runs the quick reconnection flow (~15 seconds).
 
 ## File structure
 
 The `cloud_setup/` directory contains:
 
-- **`setup_and_run.bat`**: Complete automated setup (template with placeholders for open source use)
-- **`my_setup_and_run.bat`**: Personal copy with actual credentials (gitignored)
-- **`connect_vpn.bat`**: VPN reconnection script (template)
-- **`my_connect_vpn.bat`**: Personal VPN script with credentials (gitignored)
+- **`setup.bat`**: Unified setup script that handles both fresh installation and reconnection (template with placeholders)
+- **`my_setup.bat`**: Personal copy with actual credentials (gitignored)
 - **`deploy_windows_vm.py`**: Python script for API-based VM deployment (template)
 - **`my_deploy_windows_vm.py`**: Personal deployment script with credentials (gitignored)
 

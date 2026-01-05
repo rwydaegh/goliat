@@ -1,6 +1,7 @@
 {
     "use_gui": true,
     "use_web": true,
+    "extract_sapd": false,
     "execution_control": {
         "do_setup": true,
         "do_run": true,
@@ -28,7 +29,6 @@
             "lower_right_up",
             "top_left_bottom"
         ],
-        "extract_sapd": false,
         "multisine_ramp_periods": 2.0
     },
     "gridding_parameters": {
