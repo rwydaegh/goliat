@@ -36,7 +36,7 @@ def mock_parent_far_field():
     parent.study_type = "far_field"
     parent.phantom_name = "thelonious"
     parent.frequency_mhz = 700
-    parent.placement_name = "environmental_theta_x_pos"
+    parent.placement_name = "environmental_x_pos_theta"
     parent._log = MagicMock()
     parent.get_deliverable_filenames.return_value = {
         "pkl": "results.pkl",
@@ -138,7 +138,7 @@ class TestReporter:
             "far_field",
             "thelonious",
             "700MHz",
-            "environmental_theta_x_pos",
+            "environmental_x_pos_theta",
         )
         assert results_dir == expected
 

@@ -1,0 +1,60 @@
+{
+    "extends": "far_field_config.json",
+    "comment": "Minimal config for testing field_reader.py and focus_optimizer.py",
+    "phantoms": [
+        "thelonious"
+    ],
+    "frequencies_mhz": [
+        700
+    ],
+    "far_field_setup": {
+        "type": "environmental",
+        "environmental": {
+            "incident_directions": [
+                "x_pos",
+                "x_neg",
+                "y_pos",
+                "y_neg"
+            ],
+            "polarizations": [
+                "theta"
+            ]
+        }
+    },
+    "execution_control": {
+        "do_setup": true,
+        "do_run": true,
+        "do_extract": false,
+        "auto_cleanup_previous_results": []
+    },
+    "simulation_parameters": {
+        "bbox_padding_mm": 30,
+        "simulation_time_multiplier": 1.0
+    },
+    "gridding_parameters": {
+        "global_gridding": {
+            "grid_mode": "manual",
+            "manual_fallback_max_step_mm": 2.5
+        },
+        "global_gridding_per_frequency": {
+            "700": 2.5
+        },
+        "padding": {
+            "padding_mode": "manual",
+            "manual_bottom_padding_mm": [
+                0,
+                0,
+                0
+            ],
+            "manual_top_padding_mm": [
+                0,
+                0,
+                0
+            ]
+        },
+        "phantom_bbox_reduction": {
+            "use_symmetry_reduction": true
+        }
+    },
+    "extract_sapd": false
+}
