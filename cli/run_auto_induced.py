@@ -30,34 +30,22 @@ def main():
 
     args = parser.parse_args()
 
-    # Load config
-    config_path = Path(args.config)
-    if not config_path.exists():
-        # Try adding configs/ prefix and .json suffix
-        candidates = [
-            config_path,
-            Path("configs") / config_path,
-            Path("configs") / f"{config_path}.json",
-            config_path.with_suffix(".json"),
-        ]
-        for candidate in candidates:
-            if candidate.exists():
-                config_path = candidate
-                break
-        else:
-            print(f"ERROR: Config file not found: {args.config}")
-            sys.exit(1)
+    # Get base directory (same as run_study.py)
+    from cli.utils import get_base_dir
+
+    base_dir = get_base_dir()
 
     # Parse config (with extends support)
     from goliat.config import Config
 
-    config = Config(str(config_path))
+    config_filename = args.config
+    config = Config(base_dir, config_filename)
 
     # Print header
     print("\n" + "=" * 60)
     print("GOLIAT Auto-Induced Exposure Analysis")
     print("=" * 60)
-    print(f"Config: {config_path}")
+    print(f"Config: {config.config_path}")
 
     # Get auto_induced settings from config
     auto_induced_cfg = config["auto_induced"] or {}
@@ -146,7 +134,7 @@ def main():
                 h5_paths=h5_paths,
                 input_h5=input_h5,
                 output_dir=output_dir,
-                config_path=str(config_path),
+                config_path=config.config_path,
                 top_n=top_n,
                 cube_size_mm=cube_size_mm,
                 skip_sapd=skip_sapd,
