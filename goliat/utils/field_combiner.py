@@ -269,6 +269,7 @@ def combine_fields_sliced(
             for comp_idx in range(3):
                 comp_key = f"comp{comp_idx}"
                 out_ds = out_f[f"{field_path}/{comp_key}"]
+                out_shape = out_ds.shape[:3]  # Target shape (Nx, Ny, Nz)
 
                 # Combine sliced data from all directions
                 combined: np.ndarray | None = None
@@ -306,10 +307,15 @@ def combine_fields_sliced(
                         sy = get_slice_indices(src_ax_y, bounds[1][0], bounds[1][1])
                         sz = get_slice_indices(src_ax_z, bounds[2][0], bounds[2][1])
 
-                        # Adjust for Yee grid (clamp to actual data shape)
+                        # Clamp to source data shape (Yee grid)
                         sx = slice(sx.start, min(sx.stop, src_ds.shape[0]))
                         sy = slice(sy.start, min(sy.stop, src_ds.shape[1]))
                         sz = slice(sz.start, min(sz.stop, src_ds.shape[2]))
+
+                        # Further constrain to match output shape exactly
+                        sx = slice(sx.start, sx.start + out_shape[0])
+                        sy = slice(sy.start, sy.start + out_shape[1])
+                        sz = slice(sz.start, sz.start + out_shape[2])
 
                         # Read sliced data
                         data = src_ds[sx, sy, sz, :]
