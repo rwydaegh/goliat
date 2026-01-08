@@ -42,6 +42,7 @@ def extract_sapd_from_h5(
 
     # Load config for skin entity names if provided
     skin_entity_names = ["Skin", "Ear_skin"]  # Default fallback
+    phantom_name: str | None = None
     if config_path and os.path.exists(config_path):
         try:
             from goliat.config import Config
@@ -49,7 +50,6 @@ def extract_sapd_from_h5(
             config = Config(config_path)
             # Try to get skin group from material mapping
             # We need phantom name - try to infer from path
-            phantom_name = None
             path_parts = h5_path.parts
             for part in path_parts:
                 if part in ["thelonious", "duke", "ella", "billie", "glenn", "fats", "louis"]:
@@ -62,6 +62,13 @@ def extract_sapd_from_h5(
                 skin_entity_names = tissue_groups.get("skin_group", skin_entity_names)
         except Exception as e:
             print(f"      DEBUG: Config lookup failed: {e}")
+
+    # Infer phantom name from path if not found
+    if phantom_name is None:
+        for part in h5_path.parts:
+            if part in ["thelonious", "duke", "ella", "billie", "glenn", "fats", "louis"]:
+                phantom_name = part
+                break
 
     print(f"      DEBUG: Creating SimulationExtractor for {h5_path.name}")
 
@@ -83,32 +90,42 @@ def extract_sapd_from_h5(
         em_sensor_extractor.Update()
         print("      DEBUG: EM sensor extractor updated")
 
-        # Find skin entities in the model
-        print(f"      DEBUG: Looking for skin entities: {skin_entity_names}")
-        skin_entities = []
-        all_entities = model.AllEntities()
-        print(f"      DEBUG: Found {len(list(all_entities))} entities in model")
-        for name in skin_entity_names:
-            if name in all_entities:
-                skin_entities.append(all_entities[name])
-                print(f"      DEBUG: Found skin entity: {name}")
+        # Load skin surface from cached SAB file
+        # The SapdExtractor caches skin as data/phantoms_skin/{phantom}_skin.sab
+        surface_entity = None
 
-        if not skin_entities:
-            # No skin entities in model - this might happen if we're running
-            # standalone without a loaded project. Return partial results.
+        if phantom_name:
+            # Try to find the cached skin SAB file
+            # Look relative to the H5 path (results dir) by going up to base
+            base_dir = None
+            for i, part in enumerate(h5_path.parts):
+                if part == "results":
+                    base_dir = Path(*h5_path.parts[:i])
+                    break
+
+            if base_dir:
+                cache_path = base_dir / "data" / "phantoms_skin" / f"{phantom_name}_skin.sab"
+                print(f"      DEBUG: Looking for skin cache at: {cache_path}")
+
+                if cache_path.exists():
+                    print("      DEBUG: Importing cached skin SAB file...")
+                    try:
+                        imported_entities = list(model.Import(str(cache_path)))
+                        if imported_entities:
+                            surface_entity = imported_entities[0]
+                            surface_entity.Name = "AutoInduced_Skin_Surface"
+                            print("      DEBUG: Skin surface loaded from cache")
+                    except Exception as e:
+                        print(f"      DEBUG: SAB import failed: {e}")
+                else:
+                    print(f"      DEBUG: No cached skin file found at {cache_path}")
+                    print("      DEBUG: Run a normal SAPD extraction first to create the cache")
+
+        if surface_entity is None:
             return {
-                "warning": "No skin entities found in model. Load a project with the phantom first.",
+                "error": f"No skin surface available. Run 'goliat study' with extract_sapd=true first to cache the skin mesh for {phantom_name}.",
                 "combined_h5": str(h5_path),
             }
-
-        # Merge skin entities if multiple
-        print(f"      DEBUG: Merging {len(skin_entities)} skin entities...")
-        if len(skin_entities) > 1:
-            surface_entity = model.Unite([e.Clone() for e in skin_entities])
-        else:
-            surface_entity = skin_entities[0].Clone()
-        surface_entity.Name = "AutoInduced_Skin_Surface"
-        print("      DEBUG: Skin entities merged")
 
         # Create ModelToGridFilter for skin surface
         model_to_grid = analysis.core.ModelToGridFilter(inputs=[])
