@@ -5,8 +5,8 @@ requiring a running simulation. Uses Sim4Life's SimulationExtractor to load
 the H5 directly.
 """
 
-import os
 import json
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -48,12 +48,14 @@ def extract_sapd_from_h5(
             from goliat.config import Config
 
             config = Config(config_path)
+            # Get known phantoms from material mapping keys
+            known_phantoms = set(config.material_mapping.keys())
             # Try to get skin group from material mapping
             # We need phantom name - try to infer from path
             path_parts = h5_path.parts
             for part in path_parts:
-                if part in ["thelonious", "duke", "ella", "billie", "glenn", "fats", "louis"]:
-                    phantom_name = part
+                if part.lower() in known_phantoms:
+                    phantom_name = part.lower()
                     break
 
             if phantom_name:
@@ -63,12 +65,25 @@ def extract_sapd_from_h5(
         except Exception as e:
             print(f"      DEBUG: Config lookup failed: {e}")
 
-    # Infer phantom name from path if not found
+    # Infer phantom name from path if not found (fallback to checking path parts)
     if phantom_name is None:
-        for part in h5_path.parts:
-            if part in ["thelonious", "duke", "ella", "billie", "glenn", "fats", "louis"]:
-                phantom_name = part
-                break
+        # Try to load material mapping directly
+        try:
+            # Find base_dir by looking for 'results' in path
+            for i, part in enumerate(h5_path.parts):
+                if part == "results":
+                    base_dir = Path(*h5_path.parts[:i])
+                    mapping_path = base_dir / "data" / "material_name_mapping.json"
+                    if mapping_path.exists():
+                        with open(mapping_path) as f:
+                            known_phantoms = set(json.load(f).keys())
+                        for part in h5_path.parts:
+                            if part.lower() in known_phantoms:
+                                phantom_name = part.lower()
+                                break
+                    break
+        except Exception:
+            pass
 
     print(f"      DEBUG: Creating SimulationExtractor for {h5_path.name}")
 
