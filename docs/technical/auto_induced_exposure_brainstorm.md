@@ -769,7 +769,7 @@ If we don't have a completed simulation template, we'd need to reverse-engineer 
 - `FieldGroups/{id}/AllFields/EM E(x,y,z,f0)/_Object/Snapshots/0/comp{0,1,2}` - E-field components
 - `FieldGroups/{id}/_Object` attributes: `name` = "Overall Field"
 
-The metadata and auxillary structures can be copied from `_Input.h5` if needed.
+The metadata and auxiliary structures can be copied from `_Input.h5` if needed.
 
 
 

@@ -31,10 +31,10 @@ Unlike **environmental exposure** (random plane waves hitting a phantom from var
         1. Load skin mask from any _Input.h5 (grids are identical)
         2. Search for worst-case focus point: argmax_r Σ|E_i(r)| over skin voxels
         3. Compute optimal phases: φ_i = -arg(E_i(r_max))
-        4. Combine fields: E_combined = Σ (1/√N) exp(jφ_i) × E_i
-                          H_combined = Σ (1/√N) exp(jφ_i) × H_i
-        5. Write combined_Output.h5 (copy template, replace E/H)
-        6. Run SAPD extraction via Sim4Life
+        4. Extract small cube (~100mm) around focus point from each direction
+        5. Combine fields in cube only: E_combined = Σ (1/√N) exp(jφ_i) × E_i
+        6. Write sliced combined_Output.h5 (small file, ~16MB not GBs)
+        7. Run SAPD extraction via Sim4Life on sliced H5
 ```
 
 ---
@@ -152,46 +152,114 @@ This mirrors the proven `SapdExtractor._create_sliced_h5` approach.
 
 ## 4. Implementation Roadmap
 
-### Phase 1: PoC Script (Weeks 1-2)
+### Phase 1: PoC Script ✅ COMPLETE
 
-Standalone Python script that:
+Standalone CLI that:
 1. Takes directory of completed environmental sim results
 2. Extracts skin mask from `_Input.h5`
-3. Finds worst-case focus point on skin
+3. Finds worst-case focus point(s) on skin
 4. Combines E/H fields with optimal phases
-5. Writes valid `combined_Output.h5`
+5. Writes valid sliced `combined_Output.h5`
 
-**Validation:** Manual load into Sim4Life to verify fields are readable.
+**Validation:** Manual load into Sim4Life confirms fields are readable.
 
-### Phase 2: SAPD Integration (Week 3)
+### Phase 2: SAPD Integration (Next)
 
-- Integrate with `SapdExtractor` using same `SimulationExtractor` pattern
-- Run SAPD extraction on combined H5
-- Compare auto-induced vs environmental SAPD (focusing effect should be visible)
+Integrate combined H5 into existing SAPD extraction:
 
-### Phase 3: CLI Command (Week 4)
+```python
+# In SapdExtractor or new AutoInducedExtractor
+combined_h5 = "results/combined_Output.h5"
+sapd_result = sapd_extractor.extract_from_h5(combined_h5)
+```
+
+Key considerations:
+- Combined H5 uses sliced structure from `slice_h5_output`
+- Same format already used by peak-SAR SAPD extraction
+- May need to iterate over `--top-n` candidates and pick worst SAPD
+
+### Phase 3: CLI Command Integration
 
 ```bash
-goliat combine tessellation_config.json --output-dir results/auto_induced/
+goliat combine results/far_field/thelonious/2450MHz \
+    --input-h5 path/to/_Input.h5 \
+    --output combined_Output.h5 \
+    --top-n 3
+```
+
+Or integrated into study workflow:
+```bash
+goliat study auto_induced_config.json  # runs env sims + combination
+```
+
+### Phase 4: Full Workflow Integration (Long-term)
+
+**Goal:** Single config runs everything automatically.
+
+```json
+{
+    "study_type": "auto_induced_far_field",
+    "auto_induced": {
+        "enabled": true,
+        "top_n_candidates": 3,
+        "cube_size_mm": 100,
+        "extract_sapd": true
+    }
+}
+```
+
+**Automated workflow:**
+1. `FarFieldStudy` runs N×2 environmental sims
+2. Post-simulation hook triggers `field_combiner`
+3. For each candidate, runs `SapdExtractor`
+4. Reports worst-case auto-induced SAPD alongside environmental
+
+**Architecture:**
+```
+goliat/
+├── studies/
+│   └── far_field_study.py          # Add post-sim hook for auto-induced
+├── extraction/
+│   └── auto_induced_extractor.py   # New: orchestrates combination + SAPD
+└── utils/
+    ├── field_combiner.py           # ✅ Done
+    ├── focus_optimizer.py          # ✅ Done
+    └── field_reader.py             # ✅ Done
 ```
 
 ---
 
-## 5. Proposed PR Structure
+## 5. Implementation Status
+
+### 5.1 Completed PRs
 
 | PR | Component | Status | Description |
 |----|-----------|--------|-------------|
-| 1 | `skin_voxel_utils.py` | ✅ Done (#124, #125) | Extract skin voxel mask from `_Output.h5` |
-| 2 | `field_reader.py` | ⬜ | Memory-efficient E/H field reading from `_Output.h5` |
-| 3 | `optimizer.py` | ⬜ | Worst-case search + phase computation |
-| 4 | `combiner.py` | ⬜ | Chunked field combination (memory efficient) |
-| 5 | `h5_writer.py` | ⬜ | Write combined H5 from template |
-| 6 | SAPD integration | ⬜ | Load combined H5 into existing extraction |
-| 7 | CLI command | ⬜ | `goliat combine` with config options |
+| 1 | `skin_voxel_utils.py` | ✅ Done | Extract skin voxel mask from `_Input.h5` |
+| 2 | `field_reader.py` | ✅ Done | Vectorized E/H field reading from `_Output.h5` |
+| 3 | `focus_optimizer.py` | ✅ Done | Worst-case search + phase computation + top-N candidates |
+| 4+5 | `field_combiner.py` | ✅ Done | Sliced combination + H5 writing via `slice_h5_output` |
+| 6 | SAPD integration | ⬜ Pending | Load combined H5 into existing extraction |
+| 7 | CLI command | ⬜ Pending | `goliat combine` with config options |
+
+### 5.2 CLI Usage (Current)
+
+```bash
+python -m goliat.utils.field_combiner results/far_field/thelonious/2450MHz \
+    --input-h5 "path/to/_Input.h5" \
+    --output results/combined_Output.h5 \
+    --cube-size 100 \
+    --top-n 3
+```
+
+**Options:**
+- `--cube-size`: Side length of extraction cube in mm (default 100, matches SAPD extractor)
+- `--top-n`: Number of candidate focus points to generate (default 1)
+- `--full`: Use full-field combination (slow, ~10min) instead of sliced
 
 ---
 
-## 6. Memory Considerations
+## 6. Memory & Performance
 
 **Typical phantom at 1mm resolution:** 300×500×1900 voxels
 
@@ -199,32 +267,103 @@ goliat combine tessellation_config.json --output-dir results/auto_induced/
 - E-field: 3 components × complex64 = ~2.1 GB
 - H-field: 3 components × complex64 = ~2.1 GB
 
-**Chunked processing approach:**
+### 6.1 Sliced Combination (Recommended)
+
+**Key insight**: SAPD is highest at the focus point. We only need to combine fields in a small cube around focus, not the entire body.
+
+```python
+result = combine_fields_sliced(h5_paths, weights, template, output, 
+                               center_idx=focus_idx, side_length_mm=100)
+```
+
+- **Speed**: ~1-2 seconds instead of ~10 minutes
+- **Output size**: ~16MB instead of ~4GB
+- **Memory**: Trivial (~50MB per direction for the cube)
+
+### 6.2 Focus Search Performance
+
+Original implementation: ~50 seconds (per-voxel loop)
+Optimized implementation: ~5-6 seconds (vectorized numpy indexing)
+
+```python
+# Read full component, then use numpy fancy indexing
+full_data = dataset[:]  # Single H5 read
+data = full_data[ix, iy, iz, :]  # Vectorized extraction
+```
+
+### 6.3 Full Combination (Legacy)
+
+For cases where full field is needed (e.g., visualization):
+
 ```python
 for z_start in range(0, Nz, chunk_size):
-    z_end = min(z_start + chunk_size, Nz)
     for h5_path in h5_paths:
         E_chunk = read_efield_chunk(h5_path, z_start, z_end)
         E_combined[:,:,:,z_start:z_end] += weight * E_chunk
 ```
 
-With chunk_size=50 z-slabs: ~56MB per direction per chunk—manageable.
+With chunk_size=50: ~56MB per direction per chunk.
 
 ---
 
-## 7. Open Questions
+## 7. Important Implementation Notes
 
-1. **Focus component:** Use E_z specifically, or |E| (full magnitude)?
-   - Document currently uses E_z for MRT
-   - Physically, |E| is more relevant for SAR
+### 7.1 Symmetry Reduction Incompatibility
 
-2. **Polarization handling:** Each direction has θ and φ polarizations
-   - Treat as 2N separate channels (N directions × 2 pols)?
-   - Or aggregate polarizations first?
+**DO NOT use `use_symmetry_reduction: true` for auto-induced exposure.**
+
+Symmetry reduction cuts the bounding box at x=0, resulting in different grid sizes for different incident directions. These cannot be combined.
+
+Set in config:
+```json
+"phantom_bbox_reduction": {
+    "use_symmetry_reduction": false
+}
+```
+
+### 7.2 Yee Grid Staggering
+
+Field components have different shapes due to Yee grid:
+- `comp0 (Ex)`: shape (Nx-1, Ny, Nz)
+- `comp1 (Ey)`: shape (Nx, Ny-1, Nz)  
+- `comp2 (Ez)`: shape (Nx, Ny, Nz-1)
+
+All index operations must clamp to the component's actual shape.
+
+### 7.3 H5 Structure Requirements
+
+Sim4Life requires specific groups to load an H5 file:
+- `AllMaterialMaps`
+- `FieldGroups`
+- `InputFileGeneration`
+- `InputFileStatus`
+- `Meshes`
+- `OutputFileGeneration`
+- `OutputFileStatus`
+- `SolverSpecificSettings`
+
+The `slice_h5_output` function copies all these properly; custom H5 writing must include them.
+
+### 7.4 Top-N Candidates
+
+SAPD is averaged over 4 cm² (~20mm diameter). The single-voxel Σ|E| peak might not correspond to the actual worst-case SAPD.
+
+Use `--top-n 3` to generate multiple candidates and run SAPD on each to find the true worst case.
 
 ---
 
-## 8. References
+## 8. Open Questions
+
+1. **Focus search refinement**: Should we implement smoothed averaging over neighboring skin voxels to better predict SAPD peak location?
+
+2. **Polarization handling**: Each direction has θ and φ polarizations
+   - Currently treated as 2N separate channels (N directions × 2 pols)
+
+3. **Multi-frequency**: How to handle frequency-dependent results?
+
+---
+
+## 9. References
 
 **Existing code patterns:**
 - `goliat/utils/h5_slicer.py` - H5 slicing and copying
@@ -237,4 +376,4 @@ With chunk_size=50 z-slabs: ~56MB per direction per chunk—manageable.
 ---
 
 *Document created: 2026-01-08*
-*Last updated: 2026-01-08*
+*Last updated: 2026-01-08 (field_combiner CLI fully functional)*
