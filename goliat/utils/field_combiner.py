@@ -326,8 +326,9 @@ def combine_fields_sliced(
                         else:
                             combined += weight * chunk_complex
 
-                # Write combined data
+                # Write combined data (truncate to match output shape)
                 if combined is not None:
+                    combined = combined[: out_shape[0], : out_shape[1], : out_shape[2]]
                     out_ds[..., 0] = np.real(combined)
                     out_ds[..., 1] = np.imag(combined)
 
