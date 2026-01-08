@@ -20,6 +20,12 @@ from .core import (
 # Also expose setup utilities for convenience
 from .setup import initial_setup
 
+# Skin voxel utilities for auto-induced exposure
+from .skin_voxel_utils import (
+    extract_skin_voxels,
+    get_skin_voxel_coordinates,
+)
+
 __all__ = [
     "StudyCancelledError",
     "Profiler",
@@ -31,4 +37,6 @@ __all__ = [
     "delete_project_file",
     "suppress_stdout_stderr",
     "initial_setup",
+    "extract_skin_voxels",
+    "get_skin_voxel_coordinates",
 ]

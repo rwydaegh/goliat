@@ -40,7 +40,7 @@ commit_message.txt
 
 # Sim4Life Documentation
 PythonAPIReference/
-# hybridizer/*  # Temporarily commented out for auto-induced brainstorming
+hybridizer/
 Sim4Life.pdf
 Sim4Life_Manual.pdf
 Sim4Life_Introduction.pdf
