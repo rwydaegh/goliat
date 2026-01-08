@@ -123,6 +123,9 @@ def extract_sapd_from_h5(
                 print(f"      DEBUG: Looking for skin cache at: {cache_path}")
 
                 if cache_path.exists():
+                    print("      DEBUG: Creating new document for geometry import...")
+                    document.New()  # Initialize ACIS geometry subsystem
+
                     print("      DEBUG: Importing cached skin SAB file...")
                     try:
                         imported_entities = list(model.Import(str(cache_path)))
@@ -132,6 +135,14 @@ def extract_sapd_from_h5(
                             print("      DEBUG: Skin surface loaded from cache")
                     except Exception as e:
                         print(f"      DEBUG: SAB import failed: {e}")
+                        # Save document for debugging
+                        debug_path = os.path.join(output_dir, "debug_before_import.smash") if output_dir else None
+                        if debug_path:
+                            try:
+                                document.SaveAs(debug_path)
+                                print(f"      DEBUG: Saved debug project: {debug_path}")
+                            except Exception:
+                                pass
                 else:
                     print(f"      DEBUG: No cached skin file found at {cache_path}")
                     print("      DEBUG: Run a normal SAPD extraction first to create the cache")
