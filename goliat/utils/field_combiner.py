@@ -48,8 +48,17 @@ def combine_fields_chunked(
     if len(h5_paths) != len(weights):
         raise ValueError(f"Number of paths ({len(h5_paths)}) != number of weights ({len(weights)})")
 
-    # Get grid shape from first file
+    # Get grid shape from first file and validate all match
     Nx, Ny, Nz = get_field_shape(h5_paths[0])
+    for i, h5_path in enumerate(h5_paths[1:], start=1):
+        shape_i = get_field_shape(h5_path)
+        if shape_i != (Nx, Ny, Nz):
+            raise ValueError(
+                f"Grid shape mismatch: {h5_paths[0].name} has {(Nx, Ny, Nz)}, "
+                f"but {h5_path.name} has {shape_i}. "
+                f"All H5 files must have identical grids. "
+                f"Hint: Disable 'use_symmetry_reduction' for auto-induced exposure."
+            )
 
     # Copy template to output
     output_h5_path.parent.mkdir(parents=True, exist_ok=True)
@@ -204,7 +213,9 @@ if __name__ == "__main__":
         print(f"No files matching {args.pattern} found in {args.results_dir}")
         exit(1)
 
-    print(f"\nFound {len(h5_paths)} _Output.h5 files")
+    print(f"\nFound {len(h5_paths)} _Output.h5 files:")
+    for p in h5_paths:
+        print(f"  - {p}")
     print(f"Input H5: {args.input_h5}")
     print(f"Output: {args.output}")
 

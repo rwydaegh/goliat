@@ -53,7 +53,7 @@
             ]
         },
         "phantom_bbox_reduction": {
-            "use_symmetry_reduction": true
+            "use_symmetry_reduction": false
         }
     },
     "extract_sapd": false
