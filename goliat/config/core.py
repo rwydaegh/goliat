@@ -101,7 +101,10 @@ class Config:
         """Resolves the absolute path to a config file.
 
         Handles both absolute paths and relative paths. If the filename doesn't
-        end with .json, it's added automatically.
+        end with .json, it's added automatically. Searches in order:
+        1. Absolute path or relative path with directory component
+        2. User configs/ directory
+        3. Package defaults directory (goliat/config/defaults/)
 
         Args:
             config_filename: Filename or relative path to the config.
@@ -116,7 +119,18 @@ class Config:
         if not config_filename.endswith(".json"):
             config_filename += ".json"
 
-        return os.path.join(self.base_dir, "configs", config_filename)
+        # First check user configs/ directory
+        user_config_path = os.path.join(self.base_dir, "configs", config_filename)
+        if os.path.exists(user_config_path):
+            return user_config_path
+
+        # Fallback to package defaults directory
+        defaults_path = os.path.join(self.base_dir, "goliat", "config", "defaults", config_filename)
+        if os.path.exists(defaults_path):
+            return defaults_path
+
+        # Return user path for error message (they'll likely want to create it there)
+        return user_config_path
 
     def _resolve_path_relative_to_config(self, config_file_path: str, relative_path: str) -> str:
         """Resolves a path relative to a config file's directory.

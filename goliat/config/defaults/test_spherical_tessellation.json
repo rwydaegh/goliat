@@ -1,0 +1,30 @@
+{
+    "extends": "far_field_config.json",
+    "phantoms": ["thelonious"],
+    "frequencies_mhz": [700],
+    "far_field_setup": {
+        "type": "environmental",
+        "environmental": {
+            "spherical_tessellation": {
+                "theta_divisions": 2,
+                "phi_divisions": 4
+            },
+            "polarizations": ["theta"]
+        }
+    },
+    "execution_control": {
+        "do_setup": true,
+        "do_run": false,
+        "do_extract": false
+    },
+    "gridding_parameters": {
+        "global_gridding": {
+            "grid_mode": "manual",
+            "manual_fallback_max_step_mm": 5.0
+        }
+    },
+    "simulation_parameters": {
+        "bbox_padding_mm": 20,
+        "number_of_point_sensors": 0
+    }
+}
