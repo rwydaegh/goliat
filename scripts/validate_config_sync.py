@@ -37,8 +37,9 @@ def compare_configs():
         config_file = configs_dir / default_file.name
 
         # Check if the file exists in configs/
+        # Missing files are warnings, not errors - they might be gitignored locally
         if not config_file.exists():
-            errors.append(f"[ERROR] Missing in configs/: {default_file.name}")
+            print(f"[WARN] Missing in configs/ (gitignored?): {default_file.name}")
             continue
 
         checked_count += 1

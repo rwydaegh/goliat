@@ -6,12 +6,12 @@ This module enables efficient worst-case SAPD search by identifying skin voxels
 
 import h5py
 import numpy as np
-from typing import Tuple, Dict, List, Optional
+from typing import Tuple, Dict, Sequence, Optional
 
 
 def extract_skin_voxels(
     input_h5_path: str,
-    skin_keywords: Optional[List[str]] = None,
+    skin_keywords: Optional[Sequence[str]] = None,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, Dict[int, str]]:
     """Extract skin voxel mask and grid axes from a Sim4Life _Input.h5 file.
 
