@@ -152,27 +152,79 @@ This mirrors the proven `SapdExtractor._create_sliced_h5` approach.
 
 ## 4. Implementation Roadmap
 
-### Phase 1: PoC Script (Weeks 1-2)
+### Phase 1: PoC Script ✅ COMPLETE
 
-Standalone Python script that:
+Standalone CLI that:
 1. Takes directory of completed environmental sim results
 2. Extracts skin mask from `_Input.h5`
-3. Finds worst-case focus point on skin
+3. Finds worst-case focus point(s) on skin
 4. Combines E/H fields with optimal phases
-5. Writes valid `combined_Output.h5`
+5. Writes valid sliced `combined_Output.h5`
 
-**Validation:** Manual load into Sim4Life to verify fields are readable.
+**Validation:** Manual load into Sim4Life confirms fields are readable.
 
-### Phase 2: SAPD Integration (Week 3)
+### Phase 2: SAPD Integration (Next)
 
-- Integrate with `SapdExtractor` using same `SimulationExtractor` pattern
-- Run SAPD extraction on combined H5
-- Compare auto-induced vs environmental SAPD (focusing effect should be visible)
+Integrate combined H5 into existing SAPD extraction:
 
-### Phase 3: CLI Command (Week 4)
+```python
+# In SapdExtractor or new AutoInducedExtractor
+combined_h5 = "results/combined_Output.h5"
+sapd_result = sapd_extractor.extract_from_h5(combined_h5)
+```
+
+Key considerations:
+- Combined H5 uses sliced structure from `slice_h5_output`
+- Same format already used by peak-SAR SAPD extraction
+- May need to iterate over `--top-n` candidates and pick worst SAPD
+
+### Phase 3: CLI Command Integration
 
 ```bash
-goliat combine tessellation_config.json --output-dir results/auto_induced/
+goliat combine results/far_field/thelonious/2450MHz \
+    --input-h5 path/to/_Input.h5 \
+    --output combined_Output.h5 \
+    --top-n 3
+```
+
+Or integrated into study workflow:
+```bash
+goliat study auto_induced_config.json  # runs env sims + combination
+```
+
+### Phase 4: Full Workflow Integration (Long-term)
+
+**Goal:** Single config runs everything automatically.
+
+```json
+{
+    "study_type": "auto_induced_far_field",
+    "auto_induced": {
+        "enabled": true,
+        "top_n_candidates": 3,
+        "cube_size_mm": 100,
+        "extract_sapd": true
+    }
+}
+```
+
+**Automated workflow:**
+1. `FarFieldStudy` runs N×2 environmental sims
+2. Post-simulation hook triggers `field_combiner`
+3. For each candidate, runs `SapdExtractor`
+4. Reports worst-case auto-induced SAPD alongside environmental
+
+**Architecture:**
+```
+goliat/
+├── studies/
+│   └── far_field_study.py          # Add post-sim hook for auto-induced
+├── extraction/
+│   └── auto_induced_extractor.py   # New: orchestrates combination + SAPD
+└── utils/
+    ├── field_combiner.py           # ✅ Done
+    ├── focus_optimizer.py          # ✅ Done
+    └── field_reader.py             # ✅ Done
 ```
 
 ---
