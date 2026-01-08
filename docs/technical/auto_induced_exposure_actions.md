@@ -181,11 +181,10 @@ goliat combine tessellation_config.json --output-dir results/auto_induced/
 
 | PR | Component | Status | Description |
 |----|-----------|--------|-------------|
-| 1 | `skin_voxel_utils.py` | ✅ Done (#124, #125) | Extract skin voxel mask from `_Output.h5` |
-| 2 | `field_reader.py` | ⬜ | Memory-efficient E/H field reading from `_Output.h5` |
-| 3 | `optimizer.py` | ⬜ | Worst-case search + phase computation |
-| 4 | `combiner.py` | ⬜ | Chunked field combination (memory efficient) |
-| 5 | `h5_writer.py` | ⬜ | Write combined H5 from template |
+| 1 | `skin_voxel_utils.py` | ✅ Done (#124, #125) | Extract skin voxel mask from `_Input.h5` |
+| 2 | `field_reader.py` | ✅ Done (#126, #127) | Memory-efficient E/H field reading from `_Output.h5` |
+| 3 | `focus_optimizer.py` | ✅ Done (#126, #127) | Worst-case search + phase computation |
+| 4+5 | `field_combiner.py` | ✅ Done (#128) | Chunked combination + H5 writing |
 | 6 | SAPD integration | ⬜ | Load combined H5 into existing extraction |
 | 7 | CLI command | ⬜ | `goliat combine` with config options |
 

@@ -1,11 +1,11 @@
 {
     "extends": "far_field_config.json",
-    "comment": "Minimal config for testing field_reader.py and focus_optimizer.py",
+    "comment": "Test config for auto-induced exposure PoC (2450 MHz, 1.4mm resolution)",
     "phantoms": [
         "thelonious"
     ],
     "frequencies_mhz": [
-        700
+        2450
     ],
     "far_field_setup": {
         "type": "environmental",
@@ -34,10 +34,10 @@
     "gridding_parameters": {
         "global_gridding": {
             "grid_mode": "manual",
-            "manual_fallback_max_step_mm": 2.5
+            "manual_fallback_max_step_mm": 1.4
         },
         "global_gridding_per_frequency": {
-            "700": 2.5
+            "2450": 1.4
         },
         "padding": {
             "padding_mode": "manual",
