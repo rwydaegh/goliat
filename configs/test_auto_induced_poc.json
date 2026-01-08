@@ -24,21 +24,24 @@
     "execution_control": {
         "do_setup": true,
         "do_run": true,
-        "do_extract": true,
+        "do_extract": false,
         "auto_cleanup_previous_results": []
     },
     "simulation_parameters": {
         "bbox_padding_mm": 30,
         "number_of_point_sensors": 2,
-        "simulation_time_multiplier": 2.0
+        "simulation_time_multiplier": 1.0
     },
     "gridding_parameters": {
         "global_gridding": {
             "grid_mode": "manual",
-            "manual_fallback_max_step_mm": 3.0
+            "manual_fallback_max_step_mm": 2.5
         },
         "global_gridding_per_frequency": {
-            "700": 3.0
+            "700": 2.5
+        },
+        "phantom_bbox_reduction": {
+            "use_symmetry_reduction": true
         }
     },
     "extract_sapd": false
