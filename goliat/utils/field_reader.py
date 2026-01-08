@@ -117,12 +117,15 @@ def read_field_at_indices(
             shape = dataset.shape[:3]  # (Nx, Ny, Nz) for this component
 
             for i, (ix, iy, iz) in enumerate(indices):
-                # Clamp to valid range for this component
+                # Clamp each index to valid range for this component's shape
                 # Component 0 (Ex): shape is (Nx-1, Ny, Nz)
                 # Component 1 (Ey): shape is (Nx, Ny-1, Nz)
                 # Component 2 (Ez): shape is (Nx, Ny, Nz-1)
-                idx = [int(ix), int(iy), int(iz)]
-                idx[comp] = min(idx[comp], shape[comp] - 1)
+                idx = [
+                    min(int(ix), shape[0] - 1),
+                    min(int(iy), shape[1] - 1),
+                    min(int(iz), shape[2] - 1),
+                ]
 
                 data = dataset[idx[0], idx[1], idx[2], :]
                 result[i, comp] = data[0] + 1j * data[1]
