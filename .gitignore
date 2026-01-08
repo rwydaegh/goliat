@@ -63,6 +63,7 @@ configs/*
 !configs/far_field_multisine*.json
 !configs/test_sapd_far_field.json
 !configs/test_auto_induced_poc.json
+!configs/generate_skin_cache.json
 
 # Generated files
 *.csv
