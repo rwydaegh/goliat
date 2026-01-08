@@ -11,6 +11,8 @@ import numpy as np
 from pathlib import Path
 from typing import Sequence, Tuple, Union, Optional
 
+from tqdm import tqdm
+
 from .field_reader import read_field_at_indices
 from .skin_voxel_utils import extract_skin_voxels, get_skin_voxel_coordinates
 
@@ -33,7 +35,7 @@ def compute_magnitude_sum_at_skin(
     """
     magnitude_sum = np.zeros(len(skin_indices), dtype=np.float64)
 
-    for h5_path in h5_paths:
+    for h5_path in tqdm(h5_paths, desc="Reading E-fields", leave=False):
         # Read E-field at skin voxels only
         E_skin = read_field_at_indices(h5_path, skin_indices, field_type="E")
         # E_skin shape: (N_skin, 3) complex

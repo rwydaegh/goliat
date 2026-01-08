@@ -12,6 +12,7 @@ from typing import Sequence, Union, Optional
 
 import h5py
 import numpy as np
+from tqdm import tqdm
 
 from .field_reader import find_overall_field_group, get_field_path, get_field_shape
 
@@ -93,7 +94,8 @@ def _combine_single_field_chunked(
     field_path = get_field_path(fg_path, field_type)
 
     # Process in z-slab chunks
-    for z_start in range(0, Nz, chunk_size):
+    n_chunks = (Nz + chunk_size - 1) // chunk_size
+    for z_start in tqdm(range(0, Nz, chunk_size), total=n_chunks, desc=f"{field_type}-field", leave=False):
         z_end = min(z_start + chunk_size, Nz)
 
         # Combine each component separately
@@ -181,6 +183,7 @@ def combine_and_write(
 if __name__ == "__main__":
     import argparse
     import glob
+    import time
 
     from .focus_optimizer import find_focus_and_compute_weights
 
@@ -205,20 +208,30 @@ if __name__ == "__main__":
     print(f"Input H5: {args.input_h5}")
     print(f"Output: {args.output}")
 
+    total_start = time.perf_counter()
+
     # Step 1: Find focus point and compute weights
     print("\nStep 1: Finding worst-case focus point...")
+    t1 = time.perf_counter()
     focus_idx, weights, info = find_focus_and_compute_weights(h5_paths, args.input_h5)
+    t1_elapsed = time.perf_counter() - t1
     print(f"  Focus voxel: [{focus_idx[0]}, {focus_idx[1]}, {focus_idx[2]}]")
     print(f"  Max Σ|E_i|: {info['max_magnitude_sum']:.4e}")
+    print(f"  ⏱ {t1_elapsed:.2f}s")
 
     # Step 2: Combine fields
     print("\nStep 2: Combining weighted fields...")
+    t2 = time.perf_counter()
     result = combine_and_write(
         h5_paths=h5_paths,
         weights=weights,
         output_h5_path=args.output,
         chunk_size=args.chunk_size,
     )
+    t2_elapsed = time.perf_counter() - t2
+    print(f"  ⏱ {t2_elapsed:.2f}s")
+
+    total_elapsed = time.perf_counter() - total_start
 
     print("\n" + "=" * 50)
     print("Combination complete!")
@@ -226,3 +239,4 @@ if __name__ == "__main__":
     print(f"  Grid shape: {result['grid_shape']}")
     print(f"  Directions: {result['n_directions']}")
     print(f"  Output: {result['output_path']}")
+    print(f"  Total time: {total_elapsed:.2f}s")
