@@ -47,7 +47,11 @@ def extract_sapd_from_h5(
         try:
             from goliat.config import Config
 
-            config = Config(config_path)
+            # Config expects (base_dir, config_filename), not full path
+            config_path_obj = Path(config_path)
+            base_dir_for_config = str(config_path_obj.parent.parent)  # Go up from configs/ to project root
+            config_filename = config_path_obj.name
+            config = Config(base_dir_for_config, config_filename)
             # Get known phantoms from material mapping keys
             known_phantoms = set(config.material_mapping.keys())
             # Try to get skin group from material mapping
