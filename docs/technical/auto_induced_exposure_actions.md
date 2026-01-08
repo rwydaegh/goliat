@@ -239,23 +239,35 @@ goliat/
 | 2 | `field_reader.py` | ✅ Done | Vectorized E/H field reading from `_Output.h5` |
 | 3 | `focus_optimizer.py` | ✅ Done | Worst-case search + phase computation + top-N candidates |
 | 4+5 | `field_combiner.py` | ✅ Done | Sliced combination + H5 writing via `slice_h5_output` |
-| 6 | SAPD integration | ⬜ Pending | Load combined H5 into existing extraction |
-| 7 | CLI command | ⬜ Pending | `goliat combine` with config options |
+| 6+7 | `auto_induced_extractor.py` + CLI | ✅ Done | `goliat auto-induced` command with SAPD extraction |
 
-### 5.2 CLI Usage (Current)
+### 5.2 CLI Usage
 
 ```bash
-python -m goliat.utils.field_combiner results/far_field/thelonious/2450MHz \
-    --input-h5 "path/to/_Input.h5" \
-    --output results/combined_Output.h5 \
-    --cube-size 100 \
-    --top-n 3
+goliat auto-induced configs/test_auto_induced_poc.json
 ```
 
-**Options:**
-- `--cube-size`: Side length of extraction cube in mm (default 100, matches SAPD extractor)
-- `--top-n`: Number of candidate focus points to generate (default 1)
-- `--full`: Use full-field combination (slow, ~10min) instead of sliced
+The config file must include an `auto_induced` section:
+
+```json
+{
+    "auto_induced": {
+        "enabled": true,
+        "top_n": 3,
+        "cube_size_mm": 100,
+        "skip_sapd": false
+    }
+}
+```
+
+**Config Options:**
+- `enabled`: Enable/disable auto-induced processing (default: true)
+- `top_n`: Number of candidate focus points to evaluate (default: 1)
+- `cube_size_mm`: Side length of extraction cube in mm (default: 100)
+- `skip_sapd`: Skip SAPD extraction, only create combined H5 files (default: false)
+
+**CLI Options:**
+- `--skip-sapd`: Override config to skip SAPD extraction
 
 ---
 
