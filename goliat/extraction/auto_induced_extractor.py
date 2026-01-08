@@ -60,8 +60,10 @@ def extract_sapd_from_h5(
                 material_mapping = config.get_material_mapping(phantom_name)
                 tissue_groups = material_mapping.get("_tissue_groups", {})
                 skin_entity_names = tissue_groups.get("skin_group", skin_entity_names)
-        except Exception:
-            pass  # Use defaults
+        except Exception as e:
+            print(f"      DEBUG: Config lookup failed: {e}")
+
+    print(f"      DEBUG: Creating SimulationExtractor for {h5_path.name}")
 
     # Create extractor pointing to the combined H5 file
     sliced_extractor = analysis.extractors.SimulationExtractor(inputs=[])
@@ -69,20 +71,27 @@ def extract_sapd_from_h5(
     sliced_extractor.FileName = str(h5_path)
     sliced_extractor.UpdateAttributes()
     document.AllAlgorithms.Add(sliced_extractor)
+    print("      DEBUG: SimulationExtractor created successfully")
 
     try:
         # Get overall field sensor extractor
+        print("      DEBUG: Getting Overall Field extractor...")
         em_sensor_extractor = sliced_extractor["Overall Field"]
         em_sensor_extractor.FrequencySettings.ExtractedFrequency = "All"
         document.AllAlgorithms.Add(em_sensor_extractor)
+        print("      DEBUG: Updating EM sensor extractor...")
         em_sensor_extractor.Update()
+        print("      DEBUG: EM sensor extractor updated")
 
         # Find skin entities in the model
+        print(f"      DEBUG: Looking for skin entities: {skin_entity_names}")
         skin_entities = []
         all_entities = model.AllEntities()
+        print(f"      DEBUG: Found {len(list(all_entities))} entities in model")
         for name in skin_entity_names:
             if name in all_entities:
                 skin_entities.append(all_entities[name])
+                print(f"      DEBUG: Found skin entity: {name}")
 
         if not skin_entities:
             # No skin entities in model - this might happen if we're running
@@ -93,11 +102,13 @@ def extract_sapd_from_h5(
             }
 
         # Merge skin entities if multiple
+        print(f"      DEBUG: Merging {len(skin_entities)} skin entities...")
         if len(skin_entities) > 1:
             surface_entity = model.Unite([e.Clone() for e in skin_entities])
         else:
             surface_entity = skin_entities[0].Clone()
         surface_entity.Name = "AutoInduced_Skin_Surface"
+        print("      DEBUG: Skin entities merged")
 
         # Create ModelToGridFilter for skin surface
         model_to_grid = analysis.core.ModelToGridFilter(inputs=[])
