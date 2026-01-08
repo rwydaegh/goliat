@@ -57,8 +57,8 @@ class Reporter:
         )
 
         if self.parent.study_type == "far_field":
-            # For far-field, placement_name is constructed from scenario, polarization, and direction
-            # e.g., environmental_theta_x_pos
+            # For far-field, placement_name is environmental_direction_polarization
+            # e.g., environmental_x_pos_theta
             placement_name = f"{self.parent.placement_name}"
             return os.path.join(base_path, placement_name)
 

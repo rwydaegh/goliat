@@ -651,9 +651,10 @@ class ProjectManager(LoggingMixin):
         direction_name = None
         polarization_name = None
         if study_type == "far_field":
-            # For far-field, the orientation and position names map to direction and polarization
-            direction_name = orientation_name
-            polarization_name = position_name
+            # For far-field, position_name=direction, orientation_name=polarization
+            # This produces folder names like environmental_x_pos_theta
+            direction_name = position_name
+            polarization_name = orientation_name
 
         surgical_config = self.config.build_simulation_config(
             phantom_name=phantom_name,

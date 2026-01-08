@@ -118,10 +118,10 @@ def _find_far_field_input_files(config: "Config", results_base_dir: Path, phanto
     main_logger.info(f"Looking for {total_combinations} direction/polarization combination(s) for {phantom} at {freq}MHz")
 
     # Search for input files in each direction/polarization directory
-    for polarization_name in polarizations:
-        for direction_name in incident_directions:
-            # Placement name format: environmental_{polarization}_{direction}
-            placement_name = f"{scenario_name}_{polarization_name}_{direction_name}"
+    for direction_name in incident_directions:
+        for polarization_name in polarizations:
+            # Placement name format: environmental_{direction}_{polarization}
+            placement_name = f"{scenario_name}_{direction_name}_{polarization_name}"
             project_dir = results_base_dir / "far_field" / phantom.lower() / f"{freq}MHz" / placement_name
             project_filename_base = f"far_field_{phantom.lower()}_{freq}MHz_{placement_name}"
             results_folder = project_dir / f"{project_filename_base}.smash_Results"

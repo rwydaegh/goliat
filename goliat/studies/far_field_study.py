@@ -253,8 +253,8 @@ class FarFieldStudy(BaseStudy):
                         phantom_name,
                         freq,
                         "environmental",
-                        polarization_name,
                         direction_name,
+                        polarization_name,
                     )
                     # Add simulation-specific log handlers after project directory is created
                     if self.project_manager.project_path:
@@ -330,8 +330,8 @@ class FarFieldStudy(BaseStudy):
                     phantom_name,
                     freq,
                     "environmental",
-                    polarization_name,
                     direction_name,
+                    polarization_name,
                 )
                 # Add simulation-specific log handlers after project directory is created
                 if self.project_manager.project_path:
