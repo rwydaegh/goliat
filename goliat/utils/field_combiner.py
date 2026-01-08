@@ -202,19 +202,22 @@ def combine_fields_sliced(
     MUCH faster than full-field combination - only processes a small region.
     The output H5 is also much smaller (MBs instead of GBs).
 
+    Uses slice_h5_output to create a properly structured sliced H5 first,
+    then modifies the field data with the weighted combination.
+
     Args:
         h5_paths: List of _Output.h5 file paths (one per direction).
         weights: Complex weights for each direction, shape (N,).
         template_h5_path: Path to an existing _Output.h5 to use as template.
         output_h5_path: Path for the combined output H5 file.
         center_idx: [ix, iy, iz] voxel indices of the focus point.
-        side_length_mm: Side length of the cube to extract (default 50mm for SAPD).
+        side_length_mm: Side length of the cube to extract (default 100mm for SAPD).
         field_types: Which fields to combine ('E', 'H', or both).
 
     Returns:
         Dict with info about the combination.
     """
-    from .h5_slicer import get_slice_indices
+    from .h5_slicer import slice_h5_output
 
     h5_paths = [Path(p) for p in h5_paths]
     template_h5_path = Path(template_h5_path)
@@ -225,7 +228,6 @@ def combine_fields_sliced(
 
     # Get grid axes from template to convert indices to physical coords
     with h5py.File(template_h5_path, "r") as f:
-        # Find mesh with axes
         for mesh_key in f["Meshes"].keys():
             mesh = f[f"Meshes/{mesh_key}"]
             if "axis_x" in mesh:
@@ -244,86 +246,73 @@ def combine_fields_sliced(
         float(axis_z[min(iz, len(axis_z) - 1)]),
     )
 
-    # Calculate bounds
-    half_len = (side_length_mm / 1000.0) / 2.0
-    bounds = (
-        (center_m[0] - half_len, center_m[0] + half_len),
-        (center_m[1] - half_len, center_m[1] + half_len),
-        (center_m[2] - half_len, center_m[2] + half_len),
+    # Step 1: Create sliced H5 with all metadata using existing slicer
+    output_h5_path.parent.mkdir(parents=True, exist_ok=True)
+    slice_h5_output(
+        str(template_h5_path),
+        str(output_h5_path),
+        center_m,
+        side_length_mm / 1000.0,  # Convert mm to m
     )
 
-    # Calculate slice indices
-    sx = get_slice_indices(axis_x, bounds[0][0], bounds[0][1])
-    sy = get_slice_indices(axis_y, bounds[1][0], bounds[1][1])
-    sz = get_slice_indices(axis_z, bounds[2][0], bounds[2][1])
-
-    output_h5_path.parent.mkdir(parents=True, exist_ok=True)
-
-    # Create output H5 with sliced structure
-    with h5py.File(template_h5_path, "r") as template, h5py.File(output_h5_path, "w") as out_f:
-        # Copy and slice mesh axes
-        for mesh_key in template["Meshes"].keys():
-            mesh = template[f"Meshes/{mesh_key}"]
-            if "axis_x" not in mesh:
-                continue
-
-            out_mesh = out_f.create_group(f"Meshes/{mesh_key}")
-            out_mesh.create_dataset("axis_x", data=mesh["axis_x"][sx])
-            out_mesh.create_dataset("axis_y", data=mesh["axis_y"][sy])
-            out_mesh.create_dataset("axis_z", data=mesh["axis_z"][sz])
-
-            # Copy mesh attributes
-            if "_Object" in mesh:
-                out_obj = out_mesh.create_group("_Object")
-                for key, val in mesh["_Object"].attrs.items():
-                    out_obj.attrs[key] = val
-
-        # Find and process FieldGroups
-        fg_path = find_overall_field_group(template)
+    # Step 2: Replace field data with combined fields
+    with h5py.File(output_h5_path, "r+") as out_f:
+        fg_path = find_overall_field_group(out_f)
         if fg_path is None:
-            raise ValueError("No 'Overall Field' in template")
+            raise ValueError("No 'Overall Field' in output")
 
-        # Create FieldGroup structure
-        out_fg = out_f.create_group(fg_path)
-        if "_Object" in template[fg_path]:
-            out_obj = out_fg.create_group("_Object")
-            for key, val in template[f"{fg_path}/_Object"].attrs.items():
-                out_obj.attrs[key] = val
-
-        # Process each field type
         for field_type in field_types:
             field_path = get_field_path(fg_path, field_type)
-            if field_path not in template:
+            if field_path not in out_f:
                 continue
 
-            # Create field structure in output
-            out_field_group = out_f.create_group(field_path)
-            for key, val in template[field_path].attrs.items():
-                out_field_group.attrs[key] = val
-
-            # Process each component
             for comp_idx in range(3):
                 comp_key = f"comp{comp_idx}"
-                src_ds = template[f"{field_path}/{comp_key}"]
-
-                # Adjust slices for Yee grid staggering
-                slices = [sx, sy, sz]
-                shape = src_ds.shape
-                for dim in range(3):
-                    s = slices[dim]
-                    # If this component is shorter in this dimension, adjust
-                    max_idx = shape[dim]
-                    slices[dim] = slice(s.start, min(s.stop, max_idx))
+                out_ds = out_f[f"{field_path}/{comp_key}"]
 
                 # Combine sliced data from all directions
-                combined = None
+                combined: np.ndarray | None = None
                 for h5_path, weight in zip(h5_paths, weights):
+                    # First slice this source file to get matching region
                     with h5py.File(h5_path, "r") as src_f:
                         src_fg = find_overall_field_group(src_f)
                         if src_fg is None:
                             raise ValueError(f"No 'Overall Field' in {h5_path}")
+
                         src_field_path = get_field_path(src_fg, field_type)
-                        data = src_f[f"{src_field_path}/{comp_key}"][slices[0], slices[1], slices[2], :]
+                        src_ds = src_f[f"{src_field_path}/{comp_key}"]
+
+                        # Get axes from source to find slice indices
+                        for mesh_key in src_f["Meshes"].keys():
+                            mesh = src_f[f"Meshes/{mesh_key}"]
+                            if "axis_x" in mesh:
+                                src_ax_x = mesh["axis_x"][:]
+                                src_ax_y = mesh["axis_y"][:]
+                                src_ax_z = mesh["axis_z"][:]
+                                break
+                        else:
+                            raise ValueError(f"No mesh with axes in {h5_path}")
+
+                        # Calculate slice indices for this source
+                        from .h5_slicer import get_slice_indices
+
+                        half_len = (side_length_mm / 1000.0) / 2.0
+                        bounds = (
+                            (center_m[0] - half_len, center_m[0] + half_len),
+                            (center_m[1] - half_len, center_m[1] + half_len),
+                            (center_m[2] - half_len, center_m[2] + half_len),
+                        )
+                        sx = get_slice_indices(src_ax_x, bounds[0][0], bounds[0][1])
+                        sy = get_slice_indices(src_ax_y, bounds[1][0], bounds[1][1])
+                        sz = get_slice_indices(src_ax_z, bounds[2][0], bounds[2][1])
+
+                        # Adjust for Yee grid (clamp to actual data shape)
+                        sx = slice(sx.start, min(sx.stop, src_ds.shape[0]))
+                        sy = slice(sy.start, min(sy.stop, src_ds.shape[1]))
+                        sz = slice(sz.start, min(sz.stop, src_ds.shape[2]))
+
+                        # Read sliced data
+                        data = src_ds[sx, sy, sz, :]
                         chunk_complex = data[..., 0] + 1j * data[..., 1]
 
                         if combined is None:
@@ -332,12 +321,20 @@ def combine_fields_sliced(
                             combined += weight * chunk_complex
 
                 # Write combined data
-                out_data = np.stack([np.real(combined), np.imag(combined)], axis=-1)
-                out_ds = out_field_group.create_dataset(comp_key, data=out_data)
-                for key, val in src_ds.attrs.items():
-                    out_ds.attrs[key] = val
+                if combined is not None:
+                    out_ds[..., 0] = np.real(combined)
+                    out_ds[..., 1] = np.imag(combined)
 
-    sliced_shape = (sx.stop - sx.start, sy.stop - sy.start, sz.stop - sz.start)
+    # Get shape from the output file
+    with h5py.File(output_h5_path, "r") as f:
+        for mesh_key in f["Meshes"].keys():
+            mesh = f[f"Meshes/{mesh_key}"]
+            if "axis_x" in mesh:
+                sliced_shape = (len(mesh["axis_x"]), len(mesh["axis_y"]), len(mesh["axis_z"]))
+                break
+        else:
+            sliced_shape = (0, 0, 0)
+
     return {
         "center_m": center_m,
         "side_length_mm": side_length_mm,
