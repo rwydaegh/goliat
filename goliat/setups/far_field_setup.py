@@ -185,7 +185,8 @@ class FarFieldSetup(BaseSetup):
         plane_wave_source.CenterFrequency = self.reference_frequency_mhz, self.s4l_v1.units.MHz
 
         # Calculate direction vector (k) and angles
-        direction_map = {
+        # Support both orthogonal directions (x_pos, etc.) and spherical tessellation (theta_phi format)
+        orthogonal_direction_map = {
             "x_pos": (0, 90),
             "x_neg": (180, 90),
             "y_pos": (90, 90),
@@ -193,7 +194,22 @@ class FarFieldSetup(BaseSetup):
             "z_pos": (0, 0),
             "z_neg": (0, 180),
         }
-        phi_deg, theta_deg = direction_map[self.direction_name]
+
+        if self.direction_name in orthogonal_direction_map:
+            # Standard orthogonal direction
+            phi_deg, theta_deg = orthogonal_direction_map[self.direction_name]
+        else:
+            # Spherical tessellation format: "theta_phi" in degrees (e.g., "45_90" means theta=45°, phi=90°)
+            try:
+                parts = self.direction_name.split("_")
+                theta_deg = float(parts[0])
+                phi_deg = float(parts[1])
+                self._log(f"  - Spherical direction: theta={theta_deg}°, phi={phi_deg}°", log_type="verbose")
+            except (ValueError, IndexError) as e:
+                raise ValueError(
+                    f"Invalid direction_name '{self.direction_name}'. Must be one of {list(orthogonal_direction_map.keys())} "
+                    f"or a spherical tessellation format 'theta_phi' (e.g., '45_90')."
+                ) from e
 
         plane_wave_source.Theta = theta_deg
         plane_wave_source.Phi = phi_deg

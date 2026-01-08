@@ -68,8 +68,21 @@ class FarFieldStudy(BaseStudy):
         frequencies = parsed_frequencies
 
         far_field_params = self.config["far_field_setup.environmental"] or {}
-        incident_directions = far_field_params.get("incident_directions", []) if far_field_params else []
         polarizations = far_field_params.get("polarizations", []) if far_field_params else []
+
+        # Check for spherical tessellation mode
+        spherical_tessellation = far_field_params.get("spherical_tessellation", None) if far_field_params else None
+
+        if spherical_tessellation:
+            # Generate directions from theta/phi divisions
+            incident_directions = self._generate_spherical_directions(spherical_tessellation)
+            self._log(
+                f"Spherical tessellation: generated {len(incident_directions)} directions",
+                log_type="info",
+            )
+        else:
+            # Standard orthogonal directions from config
+            incident_directions = far_field_params.get("incident_directions", []) if far_field_params else []
 
         total_simulations = len(phantoms) * len(frequencies) * len(incident_directions) * len(polarizations)
         self.profiler.set_total_simulations(total_simulations)
@@ -119,6 +132,49 @@ class FarFieldStudy(BaseStudy):
                             do_run,
                             do_extract,
                         )
+
+    def _generate_spherical_directions(self, tessellation_config: dict) -> list[str]:
+        """Generates direction names from spherical tessellation config.
+
+        Creates a grid of incident wave directions by dividing the sphere
+        along theta (polar angle from +z) and phi (azimuthal angle from +x).
+
+        Args:
+            tessellation_config: Dict with 'theta_divisions' and 'phi_divisions'.
+                - theta_divisions: Number of divisions for theta (0° to 180°).
+                - phi_divisions: Number of divisions for phi (0° to 360°, exclusive of 360°).
+
+        Returns:
+            List of direction names in format "theta_phi" (e.g., "45_90").
+        """
+        theta_divisions = tessellation_config.get("theta_divisions", 3)
+        phi_divisions = tessellation_config.get("phi_divisions", 4)
+
+        directions = []
+
+        # Generate theta values: 0° (z+) to 180° (z-)
+        # Using theta_divisions + 1 points to include both endpoints
+        theta_values = [i * 180 / theta_divisions for i in range(theta_divisions + 1)]
+
+        # Generate phi values: 0° to 360° (exclusive of 360° since 0° = 360°)
+        phi_values = [i * 360 / phi_divisions for i in range(phi_divisions)]
+
+        for theta in theta_values:
+            # At poles (theta=0 or 180), all phi values give the same direction
+            # Only use phi=0 at poles to avoid redundant simulations
+            if theta == 0 or theta == 180:
+                direction_name = f"{int(theta)}_{int(0)}"
+                directions.append(direction_name)
+            else:
+                for phi in phi_values:
+                    direction_name = f"{int(theta)}_{int(phi)}"
+                    directions.append(direction_name)
+
+        self._log(f"  - Theta divisions: {theta_divisions} ({theta_values})", log_type="verbose")
+        self._log(f"  - Phi divisions: {phi_divisions} ({phi_values})", log_type="verbose")
+        self._log(f"  - Generated {len(directions)} unique directions", log_type="verbose")
+
+        return directions
 
     def _process_single_far_field_simulation(
         self,
