@@ -358,16 +358,17 @@ if __name__ == "__main__":
     import glob
     import time
 
-    from .focus_optimizer import find_focus_and_compute_weights
+    from .focus_optimizer import find_focus_and_compute_weights, compute_optimal_phases, compute_weights
 
     parser = argparse.ArgumentParser(description="Combine weighted E/H fields for auto-induced exposure")
     parser.add_argument("results_dir", help="Directory containing _Output.h5 files")
     parser.add_argument("--input-h5", required=True, help="Path to _Input.h5 for skin mask")
-    parser.add_argument("--output", required=True, help="Output H5 file path")
+    parser.add_argument("--output", required=True, help="Output H5 file path (or base path for --top-n)")
     parser.add_argument("--pattern", default="*_Output.h5", help="Glob pattern for output files")
     parser.add_argument("--cube-size", type=float, default=100.0, help="Cube side length in mm (default 100)")
     parser.add_argument("--full", action="store_true", help="Combine full field (slow, large output)")
     parser.add_argument("--chunk-size", type=int, default=50, help="Z-slab chunk size (only for --full)")
+    parser.add_argument("--top-n", type=int, default=1, help="Generate N candidate focus points (default 1)")
 
     args = parser.parse_args()
 
@@ -385,43 +386,60 @@ if __name__ == "__main__":
     print(f"Input H5: {args.input_h5}")
     print(f"Output: {args.output}")
     print(f"Mode: {'FULL (slow)' if args.full else f'SLICED ({args.cube_size}mm cube)'}")
+    print(f"Top N candidates: {args.top_n}")
 
     total_start = time.perf_counter()
 
-    # Step 1: Find focus point and compute weights
-    print("\nStep 1: Finding worst-case focus point...")
+    # Step 1: Find focus point(s) and compute weights
+    print(f"\nStep 1: Finding top-{args.top_n} worst-case focus points...")
     t1 = time.perf_counter()
-    focus_idx, weights, info = find_focus_and_compute_weights(h5_paths, args.input_h5)
+    focus_indices, weights, info = find_focus_and_compute_weights(h5_paths, args.input_h5, top_n=args.top_n)
     t1_elapsed = time.perf_counter() - t1
-    print(f"  Focus voxel: [{focus_idx[0]}, {focus_idx[1]}, {focus_idx[2]}]")
-    print(
-        f"  Focus coords: ({info['focus_coords_m'][0] * 1000:.1f}, {info['focus_coords_m'][1] * 1000:.1f}, {info['focus_coords_m'][2] * 1000:.1f}) mm"
-    )
-    print(f"  Max Σ|E_i|: {info['max_magnitude_sum']:.4e}")
+
+    # Handle both single and multiple focus points
+    if args.top_n == 1:
+        focus_indices = np.array([focus_indices])  # Make it 2D for uniform handling
+
+    for i, (focus_idx, mag_sum) in enumerate(zip(focus_indices, info["all_magnitude_sums"])):
+        print(f"  #{i + 1}: voxel [{focus_idx[0]}, {focus_idx[1]}, {focus_idx[2]}], Σ|E|={mag_sum:.4e}")
     print(f"  ⏱ {t1_elapsed:.2f}s")
 
-    # Step 2: Combine fields
-    print("\nStep 2: Combining weighted fields...")
+    # Step 2: Combine fields for each candidate
+    print(f"\nStep 2: Combining weighted fields for {args.top_n} candidate(s)...")
     t2 = time.perf_counter()
 
-    if args.full:
-        result = combine_and_write(
-            h5_paths=h5_paths,
-            weights=weights,
-            output_h5_path=args.output,
-            chunk_size=args.chunk_size,
-        )
-        shape_info = f"Grid shape: {result['grid_shape']}"
-    else:
-        result = combine_fields_sliced(
-            h5_paths=h5_paths,
-            weights=weights,
-            template_h5_path=h5_paths[0],
-            output_h5_path=args.output,
-            center_idx=focus_idx,
-            side_length_mm=args.cube_size,
-        )
-        shape_info = f"Sliced shape: {result['sliced_shape']} ({args.cube_size}mm cube)"
+    for i, focus_idx in enumerate(focus_indices):
+        # Compute phases specific to this focus point
+        phases = compute_optimal_phases(h5_paths, focus_idx)
+        candidate_weights = compute_weights(phases)
+
+        # Generate output path
+        if args.top_n == 1:
+            output_path = args.output
+        else:
+            base, ext = args.output.rsplit(".", 1) if "." in args.output else (args.output, "h5")
+            output_path = f"{base}_candidate{i + 1}.{ext}"
+
+        print(f"  Candidate #{i + 1}: {output_path}")
+
+        if args.full:
+            result = combine_and_write(
+                h5_paths=h5_paths,
+                weights=candidate_weights,
+                output_h5_path=output_path,
+                chunk_size=args.chunk_size,
+            )
+            shape_info = f"Grid shape: {result['grid_shape']}"
+        else:
+            result = combine_fields_sliced(
+                h5_paths=h5_paths,
+                weights=candidate_weights,
+                template_h5_path=h5_paths[0],
+                output_h5_path=output_path,
+                center_idx=focus_idx,
+                side_length_mm=args.cube_size,
+            )
+            shape_info = f"Sliced shape: {result['sliced_shape']}"
 
     t2_elapsed = time.perf_counter() - t2
     print(f"  ⏱ {t2_elapsed:.2f}s")
@@ -431,7 +449,6 @@ if __name__ == "__main__":
     print("\n" + "=" * 50)
     print("Combination complete!")
     print("=" * 50)
-    print(f"  {shape_info}")
-    print(f"  Directions: {result['n_directions']}")
-    print(f"  Output: {result['output_path']}")
+    print(f"  Candidates: {args.top_n}")
+    print(f"  Directions: {len(h5_paths)}")
     print(f"  Total time: {total_elapsed:.2f}s")
