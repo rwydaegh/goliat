@@ -11,6 +11,8 @@ import numpy as np
 from pathlib import Path
 from typing import Sequence, Tuple, Union, Optional
 
+from tqdm import tqdm
+
 from .field_reader import read_field_at_indices
 from .skin_voxel_utils import extract_skin_voxels, get_skin_voxel_coordinates
 
@@ -33,7 +35,7 @@ def compute_magnitude_sum_at_skin(
     """
     magnitude_sum = np.zeros(len(skin_indices), dtype=np.float64)
 
-    for h5_path in h5_paths:
+    for h5_path in tqdm(h5_paths, desc="Reading E-fields", leave=False):
         # Read E-field at skin voxels only
         E_skin = read_field_at_indices(h5_path, skin_indices, field_type="E")
         # E_skin shape: (N_skin, 3) complex
@@ -49,19 +51,21 @@ def find_worst_case_focus_point(
     h5_paths: Sequence[Union[str, Path]],
     input_h5_path: Union[str, Path],
     skin_keywords: Optional[Sequence[str]] = None,
-) -> Tuple[np.ndarray, int, float]:
-    """Find the worst-case focus point on skin.
+    top_n: int = 1,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Find the worst-case focus point(s) on skin.
 
     Args:
         h5_paths: List of _Output.h5 file paths (one per direction/polarization).
         input_h5_path: Path to _Input.h5 for skin mask extraction.
         skin_keywords: Keywords to match skin tissues (default: ["skin"]).
+        top_n: Number of top candidate focus points to return.
 
     Returns:
         Tuple of:
-            - worst_voxel_idx: Array [ix, iy, iz] of worst-case voxel indices
-            - skin_idx: Index within skin voxels array
-            - max_magnitude_sum: Maximum Σ|E_i| value
+            - worst_voxel_indices: Array of shape (top_n, 3) with [ix, iy, iz] indices
+            - skin_indices_arr: Array of shape (top_n,) with indices within skin voxels
+            - magnitude_sums: Array of shape (top_n,) with Σ|E_i| values
     """
     # Extract skin mask and indices
     skin_mask, axis_x, axis_y, axis_z, _ = extract_skin_voxels(str(input_h5_path), skin_keywords)
@@ -73,12 +77,16 @@ def find_worst_case_focus_point(
     # Compute magnitude sum at all skin voxels
     magnitude_sum = compute_magnitude_sum_at_skin(h5_paths, skin_indices)
 
-    # Find maximum
-    worst_skin_idx = np.argmax(magnitude_sum)
-    worst_voxel_idx = skin_indices[worst_skin_idx]
-    max_magnitude_sum = magnitude_sum[worst_skin_idx]
+    # Find top N maxima (use argpartition for efficiency)
+    top_n = min(top_n, len(magnitude_sum))
+    top_skin_indices = np.argpartition(magnitude_sum, -top_n)[-top_n:]
+    # Sort by magnitude descending
+    top_skin_indices = top_skin_indices[np.argsort(magnitude_sum[top_skin_indices])[::-1]]
 
-    return worst_voxel_idx, worst_skin_idx, max_magnitude_sum
+    worst_voxel_indices = skin_indices[top_skin_indices]  # Shape: (top_n, 3)
+    top_magnitude_sums = magnitude_sum[top_skin_indices]  # Shape: (top_n,)
+
+    return worst_voxel_indices, top_skin_indices, top_magnitude_sums
 
 
 def compute_optimal_phases(
@@ -136,25 +144,28 @@ def find_focus_and_compute_weights(
     h5_paths: Sequence[Union[str, Path]],
     input_h5_path: Union[str, Path],
     skin_keywords: Optional[Sequence[str]] = None,
+    top_n: int = 1,
 ) -> Tuple[np.ndarray, np.ndarray, dict]:
-    """Complete workflow: find worst-case focus point and compute weights.
+    """Complete workflow: find worst-case focus point(s) and compute weights.
 
     Args:
         h5_paths: List of _Output.h5 file paths.
         input_h5_path: Path to _Input.h5 for skin mask.
         skin_keywords: Keywords to match skin tissues.
+        top_n: Number of candidate focus points to return.
 
     Returns:
         Tuple of:
-            - focus_voxel_idx: [ix, iy, iz] of worst-case focus point
-            - weights: Complex weights for each direction
-            - info: Dict with additional info (phases, max_magnitude_sum, etc.)
+            - focus_voxel_indices: Shape (top_n, 3) or (3,) if top_n=1
+            - weights: Complex weights for each direction (for top-1 focus)
+            - info: Dict with additional info
     """
-    # Find worst-case focus point
-    focus_voxel_idx, skin_idx, max_mag_sum = find_worst_case_focus_point(h5_paths, input_h5_path, skin_keywords)
+    # Find worst-case focus points
+    focus_voxel_indices, skin_indices, mag_sums = find_worst_case_focus_point(h5_paths, input_h5_path, skin_keywords, top_n=top_n)
 
-    # Compute optimal phases
-    phases = compute_optimal_phases(h5_paths, focus_voxel_idx)
+    # Compute optimal phases for the top-1 focus point
+    top_focus_idx = focus_voxel_indices[0]
+    phases = compute_optimal_phases(h5_paths, top_focus_idx)
 
     # Compute weights
     weights = compute_weights(phases)
@@ -162,18 +173,25 @@ def find_focus_and_compute_weights(
     # Get physical coordinates
     skin_mask, ax_x, ax_y, ax_z, _ = extract_skin_voxels(str(input_h5_path), skin_keywords)
     coords = get_skin_voxel_coordinates(skin_mask, ax_x, ax_y, ax_z)
-    focus_coords_m = coords[skin_idx]
+    focus_coords_m = coords[skin_indices[0]]
 
     info = {
         "phases_rad": phases,
         "phases_deg": np.degrees(phases),
-        "max_magnitude_sum": max_mag_sum,
+        "max_magnitude_sum": float(mag_sums[0]),
         "focus_coords_m": focus_coords_m,
         "n_directions": len(h5_paths),
         "n_skin_voxels": len(coords),
+        "top_n": top_n,
+        "all_focus_indices": focus_voxel_indices,
+        "all_magnitude_sums": mag_sums,
     }
 
-    return focus_voxel_idx, weights, info
+    # Return single focus if top_n=1, else return all
+    if top_n == 1:
+        return top_focus_idx, weights, info
+    else:
+        return focus_voxel_indices, weights, info
 
 
 # --- CLI for testing ---

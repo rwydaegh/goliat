@@ -89,6 +89,7 @@ def read_field_at_indices(
     """Read field values at specific voxel indices.
 
     Optimized for reading fields only at skin voxel locations.
+    Uses vectorized numpy indexing for speed.
 
     Args:
         h5_path: Path to _Output.h5 file.
@@ -116,16 +117,20 @@ def read_field_at_indices(
             dataset = f[f"{field_path}/comp{comp}"]
             shape = dataset.shape[:3]  # (Nx, Ny, Nz) for this component
 
-            for i, (ix, iy, iz) in enumerate(indices):
-                # Clamp to valid range for this component
-                # Component 0 (Ex): shape is (Nx-1, Ny, Nz)
-                # Component 1 (Ey): shape is (Nx, Ny-1, Nz)
-                # Component 2 (Ez): shape is (Nx, Ny, Nz-1)
-                idx = [int(ix), int(iy), int(iz)]
-                idx[comp] = min(idx[comp], shape[comp] - 1)
+            # Clamp indices to valid range for this component
+            # Component 0 (Ex): shape is (Nx-1, Ny, Nz)
+            # Component 1 (Ey): shape is (Nx, Ny-1, Nz)
+            # Component 2 (Ez): shape is (Nx, Ny, Nz-1)
+            ix = np.minimum(indices[:, 0], shape[0] - 1)
+            iy = np.minimum(indices[:, 1], shape[1] - 1)
+            iz = np.minimum(indices[:, 2], shape[2] - 1)
 
-                data = dataset[idx[0], idx[1], idx[2], :]
-                result[i, comp] = data[0] + 1j * data[1]
+            # Read full component into memory (faster than many small reads)
+            full_data = dataset[:]  # Shape: (Nx, Ny, Nz, 2)
+
+            # Vectorized extraction using fancy indexing
+            data = full_data[ix, iy, iz, :]  # Shape: (N, 2)
+            result[:, comp] = data[:, 0] + 1j * data[:, 1]
 
     return result
 
