@@ -90,3 +90,4 @@ cloud_setup/my_*.py
 *.egg
 dist/
 build/
+.agent/
