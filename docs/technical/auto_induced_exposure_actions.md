@@ -31,10 +31,10 @@ Unlike **environmental exposure** (random plane waves hitting a phantom from var
         1. Load skin mask from any _Input.h5 (grids are identical)
         2. Search for worst-case focus point: argmax_r Σ|E_i(r)| over skin voxels
         3. Compute optimal phases: φ_i = -arg(E_i(r_max))
-        4. Combine fields: E_combined = Σ (1/√N) exp(jφ_i) × E_i
-                          H_combined = Σ (1/√N) exp(jφ_i) × H_i
-        5. Write combined_Output.h5 (copy template, replace E/H)
-        6. Run SAPD extraction via Sim4Life
+        4. Extract small cube (~50mm) around focus point from each direction
+        5. Combine fields in cube only: E_combined = Σ (1/√N) exp(jφ_i) × E_i
+        6. Write sliced combined_Output.h5 (small file, ~MBs not GBs)
+        7. Run SAPD extraction via Sim4Life on sliced H5
 ```
 
 ---
@@ -190,7 +190,7 @@ goliat combine tessellation_config.json --output-dir results/auto_induced/
 
 ---
 
-## 6. Memory Considerations
+## 6. Memory & Performance
 
 **Typical phantom at 1mm resolution:** 300×500×1900 voxels
 
@@ -198,7 +198,24 @@ goliat combine tessellation_config.json --output-dir results/auto_induced/
 - E-field: 3 components × complex64 = ~2.1 GB
 - H-field: 3 components × complex64 = ~2.1 GB
 
-**Chunked processing approach:**
+### 6.1 Sliced Combination (Recommended)
+
+**Key insight**: SAPD is highest at the focus point. We only need to combine fields in a small cube around focus, not the entire body.
+
+```python
+# Only combine in 50mm cube around focus (~35×35×35 voxels at 1.4mm)
+result = combine_fields_sliced(h5_paths, weights, template, output, 
+                               center_idx=focus_idx, side_length_mm=50)
+```
+
+- **Speed**: ~seconds instead of ~10 minutes
+- **Output size**: ~10MB instead of ~4GB
+- **Memory**: Trivial (~50MB per direction for the cube)
+
+### 6.2 Full Combination (Legacy)
+
+For cases where full field is needed (e.g., visualization):
+
 ```python
 for z_start in range(0, Nz, chunk_size):
     z_end = min(z_start + chunk_size, Nz)
@@ -207,7 +224,7 @@ for z_start in range(0, Nz, chunk_size):
         E_combined[:,:,:,z_start:z_end] += weight * E_chunk
 ```
 
-With chunk_size=50 z-slabs: ~56MB per direction per chunk—manageable.
+With chunk_size=50: ~56MB per direction per chunk.
 
 ---
 
