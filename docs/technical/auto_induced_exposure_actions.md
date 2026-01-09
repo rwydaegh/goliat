@@ -334,7 +334,7 @@ With chunk_size=50: ~56MB per direction per chunk.
 
 **DO NOT use `use_symmetry_reduction: true` for auto-induced exposure.**
 
-Symmetry reduction cuts the bounding box at x=0, resulting in different grid sizes for different incident directions. These cannot be combined.
+Symmetry reduction cuts the bounding box at x=0, keeping only the positive x (right) side of the body. This means you'd miss half the skin surface and cannot find the true worst-case focus point.
 
 Set in config:
 ```json

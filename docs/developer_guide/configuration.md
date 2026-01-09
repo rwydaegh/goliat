@@ -212,7 +212,7 @@ Auto-induced exposure simulates the worst-case scenario where a MaMIMO base stat
 
 **Important notes:**
 
-- **Symmetry reduction incompatibility**: Do not use `phantom_bbox_reduction.use_symmetry_reduction: true` with auto-induced exposure. Symmetry reduction produces grids of different sizes for different directions, which cannot be combined.
+- **Symmetry reduction incompatibility**: Do not use `phantom_bbox_reduction.use_symmetry_reduction: true` with auto-induced exposure. Symmetry reduction cuts the bounding box at x=0, keeping only one half of the body - you'd miss half the skin surface and cannot find the true worst-case focus point.
 - **Results location**: Auto-induced results are saved to `results/far_field/{phantom}/{freq}MHz/auto_induced/auto_induced_summary.json`.
 - **Caching**: The analysis is skipped if the summary file exists and is newer than all `_Output.h5` files.
 
