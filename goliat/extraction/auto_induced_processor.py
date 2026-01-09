@@ -67,26 +67,24 @@ class AutoInducedProcessor(LoggingMixin):
         cube_size_mm = auto_cfg.get("cube_size_mm", 100)
 
         self._log(
-            f"\n  --- Auto-Induced Analysis: {self.phantom_name} @ {self.freq}MHz ---",
+            f"  - Auto-induced analysis: {self.phantom_name} @ {self.freq}MHz...",
             level="progress",
-            log_type="header",
+            log_type="progress",
         )
-        self._log(f"  Found {len(h5_paths)} _Output.h5 files", log_type="info")
-        self._log(f"  Using input H5: {input_h5.name}", log_type="info")
-        self._log(f"  Output: {output_dir}", log_type="info")
+        self._log(f"    Found {len(h5_paths)} environmental sims, extracting {top_n} candidates", log_type="info")
 
         os.makedirs(output_dir, exist_ok=True)
 
         # Step 1: Focus search
-        self._log("  --- Step 1: Finding worst-case focus points ---", level="progress", log_type="progress")
+        self._log("    - Find worst-case focus points...", log_type="info")
         candidates = self._find_focus_candidates(h5_paths, input_h5, top_n)
 
         if not candidates:
-            self._log("  ERROR: No focus candidates found", log_type="error")
+            self._log("      ERROR: No focus candidates found", log_type="error")
             return {"error": "No focus candidates found", "candidates": []}
 
         # Step 2: Combine fields for each candidate
-        self._log("  --- Step 2: Combining fields ---", level="progress", log_type="progress")
+        self._log(f"    - Combine fields for {len(candidates)} candidates...", log_type="info")
         combined_h5_paths = []
         for i, candidate in enumerate(candidates):
             combined_path = self._combine_fields_for_candidate(
@@ -99,7 +97,7 @@ class AutoInducedProcessor(LoggingMixin):
             combined_h5_paths.append(combined_path)
 
         # Step 3: Extract SAPD for each candidate
-        self._log("  --- Step 3: Extracting SAPD ---", level="progress", log_type="progress")
+        self._log(f"    - Extract SAPD for {len(candidates)} candidates...", log_type="info")
         sapd_results = []
         for i, combined_h5 in enumerate(combined_h5_paths):
             if combined_h5 and combined_h5.exists():
@@ -110,6 +108,13 @@ class AutoInducedProcessor(LoggingMixin):
 
         # Find worst case
         worst_case = self._find_worst_case(sapd_results)
+
+        if worst_case and worst_case.get("peak_sapd_w_m2"):
+            self._log(
+                f"    - Worst-case SAPD: {worst_case['peak_sapd_w_m2']:.2f} W/m2 (candidate #{worst_case.get('candidate_idx')})",
+                level="progress",
+                log_type="success",
+            )
 
         return {
             "phantom": self.phantom_name,
@@ -183,7 +188,7 @@ class AutoInducedProcessor(LoggingMixin):
             self._log(f"    Found {len(candidates)} candidate(s) in {elapsed:.2f}s:", log_type="info")
             for i, c in enumerate(candidates):
                 self._log(
-                    f"      #{i + 1}: voxel {c['voxel_idx']}, Σ|E|={c['magnitude_sum']:.4e}",
+                    f"      #{i + 1}: voxel {c['voxel_idx']}, Sum|E|={c['magnitude_sum']:.4e}",
                     log_type="info",
                 )
 
@@ -265,6 +270,7 @@ class AutoInducedProcessor(LoggingMixin):
             import s4l_v1.analysis as analysis
             import s4l_v1.document as document
             import s4l_v1.model as model
+            import s4l_v1.units as units
 
             # Create SimulationExtractor for the combined H5
             sim_extractor = analysis.extractors.SimulationExtractor(inputs=[])
@@ -276,6 +282,7 @@ class AutoInducedProcessor(LoggingMixin):
             # Get EM sensor extractor
             em_sensor_extractor = sim_extractor["Overall Field"]
             em_sensor_extractor.FrequencySettings.ExtractedFrequency = "All"
+            em_sensor_extractor.UpdateAttributes()
             document.AllAlgorithms.Add(em_sensor_extractor)
             em_sensor_extractor.Update()
 
@@ -300,42 +307,38 @@ class AutoInducedProcessor(LoggingMixin):
                 surface_entity = skin_entities[0].Clone()
             surface_entity.Name = f"AutoInduced_Skin_{candidate_idx}"
 
-            # Create ModelToGridFilter
-            model_to_grid = analysis.core.ModelToGridFilter(inputs=[])
-            model_to_grid.Name = f"AutoInduced_SkinSurface_{candidate_idx}"
-            model_to_grid.Entity = surface_entity
-            model_to_grid.SetGrid(em_sensor_extractor)
-            document.AllAlgorithms.Add(model_to_grid)
-            model_to_grid.Update()
+            # Create ModelToGridFilter (matching SapdExtractor pattern)
+            model_to_grid_filter = analysis.core.ModelToGridFilter(inputs=[])
+            model_to_grid_filter.Name = f"AutoInduced_SkinSurface_{candidate_idx}"
+            model_to_grid_filter.Entity = surface_entity
+            model_to_grid_filter.UpdateAttributes()
+            document.AllAlgorithms.Add(model_to_grid_filter)
 
-            # Create SAPD evaluator
-            sapd_evaluator = analysis.postpro.GenericSAPDEvaluator(inputs=[em_sensor_extractor, model_to_grid])
-            sapd_evaluator.Name = f"AutoInduced_SAPD_{candidate_idx}"
-            sapd_evaluator.AveragingSurfaceArea = 4.0  # 4 cm^2
-            sapd_evaluator.SurfaceThreshold = 10.0  # 10mm
+            # Create SAPD evaluator with correct inputs (matching SapdExtractor)
+            # Inputs: Poynting Vector S(x,y,z,f0) and Surface
+            inputs = [em_sensor_extractor.Outputs["S(x,y,z,f0)"], model_to_grid_filter.Outputs["Surface"]]
+            sapd_evaluator = analysis.em_evaluators.GenericSAPDEvaluator(inputs=inputs)
+            sapd_evaluator.AveragingArea = 4.0, units.SquareCentiMeters
+            sapd_evaluator.Threshold = 0.01, units.Meters  # 10 mm
+            sapd_evaluator.UpdateAttributes()
             document.AllAlgorithms.Add(sapd_evaluator)
-            sapd_evaluator.Update()
 
-            # Extract results
-            outputs = sapd_evaluator.GetOutputs()
-            data = outputs[0] if outputs else None
+            # Get report and update
+            sapd_report = sapd_evaluator.Outputs["Spatial-Averaged Power Density Report"]
+            sapd_report.Update()
 
-            if data is None:
-                return {
-                    "candidate_idx": candidate_idx,
-                    "error": "SAPD evaluator returned no data",
-                }
-
-            # Get peak power density
+            # Parse results from the DataSimpleDataCollection
+            data_collection = sapd_report.Data.DataSimpleDataCollection
             peak_sapd = None
             peak_location = None
-            try:
-                peak_sapd = data["Peak Power Density"].Value
-                peak_location = list(data["Peak Power Density Details"].PeakLocation)
-            except (KeyError, AttributeError):
-                pass
 
-            self._log(f"      Peak SAPD: {peak_sapd} W/m²", log_type="info")
+            for item in data_collection:
+                if item.Name == "Peak Power Density":
+                    peak_sapd = item.Value
+                if hasattr(item, "PeakLocation"):
+                    peak_location = list(item.PeakLocation)
+
+            self._log(f"      Peak SAPD: {peak_sapd} W/m2", log_type="info")
 
             return {
                 "candidate_idx": candidate_idx,
