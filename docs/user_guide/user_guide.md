@@ -137,7 +137,15 @@ While the core GOLIAT workflow remains consistent, the specifics of scene setup 
   3.  **Simulation Run**: Multiple simulations are typically run for each frequency, covering all specified directions and polarizations (e.g., 12 simulations per frequency: 6 directions × 2 polarizations).
   4.  **Results Analysis**: Focuses on whole-body average SAR and how SAR is distributed across the entire phantom, often aggregated over various exposure scenarios.
 
--   **Auto-Induced Mode**: While currently a placeholder, this mode is envisioned for future implementations to simulate EMF exposure induced by body motion or other dynamic scenarios.
+-   **Auto-induced mode**: Simulates the worst-case scenario where a MaMIMO base station focuses its beams onto a human. After all environmental simulations complete for a (phantom, frequency) pair, GOLIAT combines the results with optimal phase weights to find the skin location with maximum constructive interference. Enable with `"auto_induced": {"enabled": true}`. The algorithm:
+    1.  Extracts skin voxel locations from `_Input.h5` (~88k voxels vs 8M total - 100× reduction)
+    2.  For each direction's `_Output.h5`, reads E-field at skin voxels only
+    3.  Finds top-N locations where Σ|E_i| is maximum (worst-case focus points)
+    4.  Computes optimal phases: φ_i = -arg(E_i(r)) for constructive interference
+    5.  Combines fields in a 100mm cube around each focus point
+    6.  Runs SAPD extraction on the combined H5 using Sim4Life (IEC-compliant)
+    
+    Results are saved to `results/far_field/{phantom}/{freq}MHz/auto_induced/auto_induced_summary.json`. See the [Configuration Guide](../developer_guide/configuration.md#auto-induced-exposure-auto_induced) for all options.
 
 -   **Multi-Sine Excitation**: For efficiency, GOLIAT can simulate multiple frequencies in a single FDTD run. Use the `"700+2450"` format in your `frequencies_mhz` array (e.g., `["700+2450", 5800]`). The simulation uses a UserDefined waveform with superimposed sinusoids and extracts SAR at each frequency via DFT post-processing. This provides ~4× speedup for widely-spaced frequencies (> 200 MHz apart) where beat period overhead is minimal. Frequency-dependent material dispersion is automatically handled through dispersion fitting. See [Technical Docs](../technical/multi_sine_excitation_analysis.md) for mathematical details.
 
