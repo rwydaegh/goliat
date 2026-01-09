@@ -113,6 +113,15 @@ class AutoInducedProcessor(LoggingMixin):
                         input_h5=input_h5,
                     )
                     sapd_results.append(result)
+
+                    # Log per-candidate progress
+                    sapd_val = result.get("peak_sapd_w_m2")
+                    sapd_str = f"{sapd_val:.4e} W/m2" if sapd_val else "ERROR"
+                    self._log(
+                        f"    Candidate #{i + 1}/{len(candidates)}: {sapd_str}",
+                        level="progress",
+                        log_type="info",
+                    )
                 else:
                     sapd_results.append({"error": f"Combined H5 not found: {combined_h5}"})
 
@@ -445,19 +454,12 @@ class AutoInducedProcessor(LoggingMixin):
                             peak_sapd = val
                             break
 
-            self.verbose_logger.info(
-                f"Candidate #{candidate_idx}: Peak SAPD = {peak_sapd:.4f} W/m2"
-                if peak_sapd
-                else f"Candidate #{candidate_idx}: Peak SAPD = None"
-            )
-
             # DEBUG: Save smash file with all algorithms for inspection
             debug_smash_path = str(combined_h5).replace("_Output.h5", "_debug.smash")
             try:
                 document.SaveAs(debug_smash_path)
-                self.verbose_logger.info(f"  DEBUG: Saved project to {debug_smash_path}")
-            except Exception as save_err:
-                self.verbose_logger.warning(f"  DEBUG: Could not save project: {save_err}")
+            except Exception:
+                pass  # Saving is optional for debugging
 
             return {
                 "candidate_idx": candidate_idx,
