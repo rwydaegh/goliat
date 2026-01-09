@@ -1,7 +1,7 @@
 site_name: GOLIAT Documentation
 site_description: Automated Python framework for near-field and far-field dosimetric assessments using Sim4Life
 site_author: rwydaegh
-site_url: https://rwydaegh.github.io/goliat/
+site_url: https://docs.goliat.waves-ugent.be/
 
 docs_dir: docs
 
