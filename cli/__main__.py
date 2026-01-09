@@ -103,23 +103,6 @@ def create_parser():
         help="If set, redo simulations even if the configuration matches a completed run.",
     )
 
-    # auto-induced command
-    auto_induced_parser = subparsers.add_parser(
-        "auto-induced",
-        help="Compute worst-case SAPD from environmental far-field simulations",
-        aliases=["autoinduced"],
-    )
-    auto_induced_parser.add_argument(
-        "config",
-        type=str,
-        help="Path to configuration file with 'auto_induced' section",
-    )
-    auto_induced_parser.add_argument(
-        "--skip-sapd",
-        action="store_true",
-        help="Skip SAPD extraction (only create combined H5 files)",
-    )
-
     # init command
     subparsers.add_parser("init", help="Initialize GOLIAT environment (install dependencies, check setup)")
 
@@ -617,18 +600,6 @@ def main():
             sys.argv.extend(["--server-url", args.server_url])
         try:
             worker_main()
-        finally:
-            sys.argv = original_argv
-
-    elif args.command in ("auto-induced", "autoinduced"):
-        from cli.run_auto_induced import main as auto_induced_main
-
-        original_argv = sys.argv[:]
-        sys.argv = ["goliat-auto-induced", args.config]
-        if args.skip_sapd:
-            sys.argv.append("--skip-sapd")
-        try:
-            auto_induced_main()
         finally:
             sys.argv = original_argv
 
