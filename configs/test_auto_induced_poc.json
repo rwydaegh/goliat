@@ -60,8 +60,6 @@
     "auto_induced": {
         "enabled": true,
         "top_n": 10,
-        "cube_size_mm": 100,
-        "skip_sapd": false,
-        "save_intermediate_files": true
+        "cube_size_mm": 100
     }
 }
