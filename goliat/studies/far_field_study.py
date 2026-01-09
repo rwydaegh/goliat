@@ -635,7 +635,8 @@ class FarFieldStudy(BaseStudy):
         for direction in incident_directions:
             for polarization in polarizations:
                 placement_name = f"environmental_{direction}_{polarization}"
-                results_dir = base_path / placement_name / f"far_field_{phantom_name.lower()}_{freq_str}MHz_{placement_name}_Results"
+                project_filename = f"far_field_{phantom_name.lower()}_{freq_str}MHz_{placement_name}"
+                results_dir = base_path / placement_name / f"{project_filename}.smash_Results"
 
                 self._log(f"    DEBUG: Checking results_dir: {results_dir}", log_type="verbose")
                 self._log(f"    DEBUG: results_dir exists: {results_dir.exists()}", log_type="verbose")
@@ -674,7 +675,8 @@ class FarFieldStudy(BaseStudy):
         for direction in incident_directions:
             for polarization in polarizations:
                 placement_name = f"environmental_{direction}_{polarization}"
-                results_dir = base_path / placement_name / f"far_field_{phantom_name.lower()}_{freq_str}MHz_{placement_name}_Results"
+                project_filename = f"far_field_{phantom_name.lower()}_{freq_str}MHz_{placement_name}"
+                results_dir = base_path / placement_name / f"{project_filename}.smash_Results"
 
                 if results_dir.exists():
                     for f in results_dir.iterdir():
