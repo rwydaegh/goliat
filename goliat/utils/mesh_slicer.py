@@ -114,8 +114,9 @@ def _cleanup_mesh(entity, xcoremodeling_module, logger: logging.Logger | None = 
     try:
         xcoremodeling_module.RepairTriangleMesh(
             [entity],
-            FillHoles=True,
-            FixSelfIntersections=True,
+            fill_holes=True,
+            repair_intersections=True,
+            min_components_size=10,  # Remove small disconnected pieces
         )
     except Exception as e:
         if logger:
@@ -136,8 +137,9 @@ def voxel_idx_to_mm(voxel_idx: list[int], grid_axes: tuple) -> list[float]:
         Center coordinates in mm [x, y, z].
     """
     x_axis, y_axis, z_axis = grid_axes
+    ix, iy, iz = voxel_idx
     return [
-        float(x_axis[voxel_idx[0]]),
-        float(y_axis[voxel_idx[1]]),
-        float(z_axis[voxel_idx[2]]),
+        float(x_axis[min(ix, len(x_axis) - 1)]),
+        float(y_axis[min(iy, len(y_axis) - 1)]),
+        float(z_axis[min(iz, len(z_axis) - 1)]),
     ]
