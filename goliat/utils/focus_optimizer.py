@@ -254,7 +254,7 @@ if __name__ == "__main__":
     print("=" * 50)
     print(f"Focus voxel indices: [{focus_idx[0]}, {focus_idx[1]}, {focus_idx[2]}]")
     print(f"Focus coordinates:   ({info['focus_coords_m'][0]:.4f}, {info['focus_coords_m'][1]:.4f}, {info['focus_coords_m'][2]:.4f}) m")
-    print(f"Max Σ|E_i|:          {info['max_magnitude_sum']:.4e}")
+    print(f"Max Σ|E_i|:          {info['max_metric_sum']:.4e}")
     print(f"Skin voxels:         {info['n_skin_voxels']:,}")
     print(f"Directions:          {info['n_directions']}")
 

@@ -56,8 +56,19 @@ This document provides a complete reference of every feature available in GOLIAT
 - Calculate whole-body average SAR
 - Aggregate results over multiple directions and polarizations
 - Create transfer functions between E-field values and absorption values
-- Support for environmental exposure scenarios (currently implemented)
-- Placeholder for auto-induced mode (future implementation)
+- Support for environmental exposure scenarios
+- Auto-induced exposure mode: Simulate worst-case MaMIMO beamforming by combining environmental results with optimal phase weights
+- Phase-only weighting with equal amplitudes (1/√N normalization) for realistic base station modeling
+- Efficient worst-case focus search: O(N) algorithm finds skin voxel where Σ|E_i| is maximum
+- Skin voxel extraction from `_Input.h5` reduces search space ~100× (88k skin voxels vs 8M total)
+- Top-N candidate evaluation: Evaluate multiple focus candidates and report worst-case SAPD
+- Configurable search metric: `E_magnitude`, `E_z_magnitude`, or `poynting_z`
+- Sliced field combination: Only combine fields in 100mm cube around focus point for speed
+- Mesh slicing via PlanarCut operations for fast SAPD computation on localized skin region
+- Automatic SAPD extraction using existing IEC-compliant `SapdExtractor` infrastructure
+- Integrated post-processing: Auto-induced runs automatically after all environmental sims complete for each (phantom, frequency) pair
+- Caching: Skip auto-induced if `auto_induced_summary.json` exists and is newer than all `_Output.h5` files
+- Spherical tessellation support: Generate arbitrary number of incident directions via `theta_divisions` and `phi_divisions`
 - Multi-sine excitation: Simulate multiple frequencies in a single run using `"700+2450"` config syntax
 - UserDefined waveform with superimposed sinusoids for multi-frequency excitation
 - Automatic DFT extraction at each frequency component via `ExtractedFrequencies` setting

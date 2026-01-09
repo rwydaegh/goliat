@@ -239,6 +239,7 @@ goliat/
 | `field_reader.py` | ✅ Done | Vectorized E/H field reading from `_Output.h5` |
 | `focus_optimizer.py` | ✅ Done | Worst-case search + phase computation + top-N candidates |
 | `field_combiner.py` | ✅ Done | Sliced combination + H5 writing via `slice_h5_output` |
+| `mesh_slicer.py` | ✅ Done | Mesh slicing via PlanarCut for fast localized SAPD |
 | `auto_induced_processor.py` | ✅ Done | Integrated processor within FarFieldStudy |
 
 ### 5.2 Usage
@@ -258,8 +259,9 @@ The config file must include an `auto_induced` section:
 {
     "auto_induced": {
         "enabled": true,
-        "top_n": 3,
-        "cube_size_mm": 100
+        "top_n": 10,
+        "cube_size_mm": 100,
+        "search_metric": "E_magnitude"
     }
 }
 ```
@@ -268,6 +270,8 @@ The config file must include an `auto_induced` section:
 - `enabled`: Enable/disable auto-induced processing (default: false)
 - `top_n`: Number of candidate focus points to evaluate (default: 3)
 - `cube_size_mm`: Side length of extraction cube in mm (default: 100)
+- `search_metric`: Search metric - `"E_magnitude"` (default), `"E_z_magnitude"`, or `"poynting_z"`
+- `save_intermediate_files`: Save .smash files after SAPD extraction for debugging (default: false)
 
 **Results:**
 - Output directory: `results/far_field/{phantom}/{freq}MHz/auto_induced/`

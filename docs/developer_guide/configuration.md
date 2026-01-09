@@ -186,6 +186,36 @@ These settings are unique to far-field (environmental exposure) studies.
 | `far_field_setup.environmental.spherical_tessellation` | object | `{"theta_divisions": 2, "phi_divisions": 4}` | Alternative to `incident_directions`. Generates arbitrary incident wave directions on the sphere. `theta_divisions` divides the polar angle (0°-180°), `phi_divisions` divides the azimuthal angle (0°-360°). Direction names use `"theta_phi"` format in degrees (e.g., `"90_180"`). Useful for comprehensive exposure assessment beyond the 6 orthogonal directions. |
 | `far_field_setup.environmental.polarizations` | array | `["theta", "phi"]` | A list of polarizations to simulate for each incident direction. `"theta"` corresponds to vertical polarization and `"phi"` to horizontal. |
 
+### Auto-induced exposure (`auto_induced`)
+
+Auto-induced exposure simulates the worst-case scenario where a MaMIMO base station focuses its beams onto a human through beamforming. After all environmental simulations complete for each (phantom, frequency) pair, GOLIAT can optionally combine the results with optimal phase weights to find the worst-case SAPD.
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `auto_induced.enabled` | boolean | `false` | If `true`, runs auto-induced analysis after environmental simulations complete for each (phantom, freq) pair. Requires `do_run: true` since it needs all `_Output.h5` files. |
+| `auto_induced.top_n` | number | `3` | Number of candidate focus points to evaluate. The algorithm finds the top N skin voxels where Σ\|E_i\| is highest, combines fields for each, and reports the worst-case SAPD. |
+| `auto_induced.cube_size_mm` | number | `100` | Side length in mm of the extraction cube around each focus point. Only fields within this cube are combined, dramatically reducing computation time and output file size. |
+| `auto_induced.search_metric` | string | `"E_magnitude"` | Metric used for worst-case focus search. Options: `"E_magnitude"` (full E-field magnitude, SAPD-consistent), `"E_z_magnitude"` (vertical component only, MRT-style), `"poynting_z"` (z-component of Poynting vector). |
+| `auto_induced.save_intermediate_files` | boolean | `false` | If `true`, saves `.smash` project files after SAPD extraction for debugging. |
+
+**Example: Enable auto-induced exposure analysis**
+```json
+{
+    "auto_induced": {
+        "enabled": true,
+        "top_n": 10,
+        "cube_size_mm": 100,
+        "search_metric": "E_magnitude"
+    }
+}
+```
+
+**Important notes:**
+
+- **Symmetry reduction incompatibility**: Do not use `phantom_bbox_reduction.use_symmetry_reduction: true` with auto-induced exposure. Symmetry reduction produces grids of different sizes for different directions, which cannot be combined.
+- **Results location**: Auto-induced results are saved to `results/far_field/{phantom}/{freq}MHz/auto_induced/auto_induced_summary.json`.
+- **Caching**: The analysis is skipped if the summary file exists and is newer than all `_Output.h5` files.
+
 <br>
 
 ## **7. Near-Field Specifics** (`near_field_config.json`)
