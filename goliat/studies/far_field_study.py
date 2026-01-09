@@ -537,12 +537,11 @@ class FarFieldStudy(BaseStudy):
 
             processor = AutoInducedProcessor(self, phantom_name, int(freq) if not isinstance(freq, list) else freq[0])
 
-            with self.subtask("auto_induced_total"):
-                results = processor.process(
-                    h5_paths=h5_paths,
-                    input_h5=input_h5,
-                    output_dir=output_dir,
-                )
+            results = processor.process(
+                h5_paths=h5_paths,
+                input_h5=input_h5,
+                output_dir=output_dir,
+            )
 
             # Save summary
             self._save_auto_induced_summary(summary_path, results)

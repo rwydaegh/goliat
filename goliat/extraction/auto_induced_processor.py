@@ -71,7 +71,11 @@ class AutoInducedProcessor(LoggingMixin):
             level="progress",
             log_type="progress",
         )
-        self._log(f"  Combining {len(h5_paths)} simulations, extracting top {top_n} candidates", log_type="info")
+        self._log(
+            f"  Combining {len(h5_paths)} simulations, extracting top {top_n} candidates",
+            level="progress",
+            log_type="info",
+        )
 
         os.makedirs(output_dir, exist_ok=True)
 
