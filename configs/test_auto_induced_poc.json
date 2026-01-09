@@ -60,6 +60,7 @@
     "auto_induced": {
         "enabled": true,
         "top_n": 10,
-        "cube_size_mm": 100
+        "cube_size_mm": 100,
+        "search_metric": "poynting_z"
     }
 }

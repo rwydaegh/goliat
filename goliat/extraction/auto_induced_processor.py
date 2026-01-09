@@ -66,6 +66,7 @@ class AutoInducedProcessor(LoggingMixin):
         top_n = auto_cfg.get("top_n", 10)
         cube_size_mm = auto_cfg.get("cube_size_mm", 100)
         save_intermediate_files = auto_cfg.get("save_intermediate_files", False)
+        search_metric = auto_cfg.get("search_metric", "E_z_magnitude")
 
         self._log(
             f"\n--- Auto-Induced Analysis: {self.phantom_name}, {self.freq}MHz ---",
@@ -82,7 +83,7 @@ class AutoInducedProcessor(LoggingMixin):
 
         # Step 1: Focus search
         with self.study.subtask("auto_induced_focus_search"):
-            candidates = self._find_focus_candidates(h5_paths, input_h5, top_n)
+            candidates = self._find_focus_candidates(h5_paths, input_h5, top_n, search_metric)
 
         if not candidates:
             self._log("    ERROR: No focus candidates found", log_type="error")
@@ -151,6 +152,7 @@ class AutoInducedProcessor(LoggingMixin):
         h5_paths: list[Path],
         input_h5: Path,
         top_n: int,
+        search_metric: str = "E_z_magnitude",
     ) -> list[dict]:
         """Find top-N worst-case focus candidates.
 
@@ -158,9 +160,10 @@ class AutoInducedProcessor(LoggingMixin):
             h5_paths: List of _Output.h5 file paths.
             input_h5: Path to _Input.h5 for skin mask.
             top_n: Number of candidates to return.
+            search_metric: "E_z_magnitude" (MRT-style) or "poynting_z" (SAPD-style).
 
         Returns:
-            List of candidate dicts with voxel indices, magnitude sums, and phase weights.
+            List of candidate dicts with voxel indices, metric sums, and phase weights.
         """
         import time
 
@@ -176,22 +179,23 @@ class AutoInducedProcessor(LoggingMixin):
                 h5_paths=[str(p) for p in h5_paths],
                 input_h5_path=str(input_h5),
                 top_n=top_n,
+                metric=search_metric,
             )
 
             # Build list of candidate dicts
             candidates: list[dict] = []
             all_indices = info.get("all_focus_indices", [focus_indices])
-            all_mag_sums = info.get("all_magnitude_sums", [info.get("max_magnitude_sum", 0.0)])
+            all_metric_sums = info.get("all_metric_sums", [info.get("max_metric_sum", 0.0)])
 
             # Ensure we're working with arrays
             if not isinstance(all_indices, np.ndarray):
                 all_indices = np.array([all_indices]) if top_n == 1 else np.array(all_indices)
-            if not isinstance(all_mag_sums, np.ndarray):
-                all_mag_sums = np.array([all_mag_sums]) if top_n == 1 else np.array(all_mag_sums)
+            if not isinstance(all_metric_sums, np.ndarray):
+                all_metric_sums = np.array([all_metric_sums]) if top_n == 1 else np.array(all_metric_sums)
 
             for i in range(min(top_n, len(all_indices))):
                 voxel_idx = all_indices[i] if top_n > 1 else all_indices
-                mag_sum = float(all_mag_sums[i]) if top_n > 1 else float(all_mag_sums[0])
+                metric_sum = float(all_metric_sums[i]) if top_n > 1 else float(all_metric_sums[0])
 
                 # Recompute weights for this specific candidate
                 phases = compute_optimal_phases([str(p) for p in h5_paths], voxel_idx)
@@ -200,7 +204,7 @@ class AutoInducedProcessor(LoggingMixin):
                 candidates.append(
                     {
                         "voxel_idx": list(voxel_idx) if hasattr(voxel_idx, "__iter__") else voxel_idx,
-                        "magnitude_sum": mag_sum,
+                        "metric_sum": metric_sum,
                         "phase_weights": candidate_weights,
                     }
                 )
@@ -208,7 +212,7 @@ class AutoInducedProcessor(LoggingMixin):
             elapsed = time.monotonic() - start_time
             self.verbose_logger.info(f"Found {len(candidates)} focus candidate(s) in {elapsed:.2f}s")
             for i, c in enumerate(candidates):
-                self.verbose_logger.info(f"  Candidate #{i + 1}: voxel {c['voxel_idx']}, Sum|E|={c['magnitude_sum']:.4e}")
+                self.verbose_logger.info(f"  Candidate #{i + 1}: voxel {c['voxel_idx']}, Sum={c['metric_sum']:.4e}")
 
             return candidates
 
