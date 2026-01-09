@@ -65,6 +65,7 @@ class AutoInducedProcessor(LoggingMixin):
         auto_cfg = self.config["auto_induced"] or {}
         top_n = auto_cfg.get("top_n", 10)
         cube_size_mm = auto_cfg.get("cube_size_mm", 100)
+        save_debug_files = auto_cfg.get("save_debug_files", False)
 
         self._log(
             f"\n--- Auto-Induced Analysis: {self.phantom_name}, {self.freq}MHz ---",
@@ -111,6 +112,7 @@ class AutoInducedProcessor(LoggingMixin):
                         candidate=candidates[i],
                         cube_size_mm=cube_size_mm,
                         input_h5=input_h5,
+                        save_debug_files=save_debug_files,
                     )
                     sapd_results.append(result)
 
@@ -271,6 +273,7 @@ class AutoInducedProcessor(LoggingMixin):
         candidate: dict,
         cube_size_mm: float,
         input_h5: Path,
+        save_debug_files: bool = False,
     ) -> dict:
         """Extract SAPD from a combined H5 file.
 
@@ -283,6 +286,7 @@ class AutoInducedProcessor(LoggingMixin):
             candidate: Candidate dict with 'voxel_idx' for center location.
             cube_size_mm: Size of the bounding box for mesh slicing.
             input_h5: Path to an input H5 to read grid axes for voxel->mm conversion.
+            save_debug_files: If True, save smash file after extraction for debugging.
 
         Returns:
             Dict with SAPD extraction results.
@@ -454,19 +458,36 @@ class AutoInducedProcessor(LoggingMixin):
                             peak_sapd = val
                             break
 
-            # DEBUG: Save smash file with all algorithms for inspection
-            debug_smash_path = str(combined_h5).replace("_Output.h5", "_debug.smash")
-            try:
-                document.SaveAs(debug_smash_path)
-            except Exception:
-                pass  # Saving is optional for debugging
+            # Optionally save debug smash file
+            if save_debug_files:
+                debug_smash_path = str(combined_h5).replace("_Output.h5", "_debug.smash")
+                try:
+                    document.SaveAs(debug_smash_path)
+                except Exception:
+                    pass
 
-            return {
+            result = {
                 "candidate_idx": candidate_idx,
                 "peak_sapd_w_m2": float(peak_sapd) if peak_sapd else None,
                 "peak_location_m": list(peak_loc) if peak_loc else None,
                 "combined_h5": str(combined_h5),
             }
+
+            # Cleanup: remove temporary entities and algorithms to avoid memory growth
+            try:
+                # Remove algorithms (in reverse order of creation)
+                document.AllAlgorithms.Remove(sapd_evaluator)
+                document.AllAlgorithms.Remove(model_to_grid_filter)
+                document.AllAlgorithms.Remove(em_sensor_extractor)
+                document.AllAlgorithms.Remove(sim_extractor)
+
+                # Remove temporary model entities
+                surface_entity.Delete()
+                united_entity.Delete()
+            except Exception:
+                pass  # Cleanup is best-effort
+
+            return result
 
         except Exception as e:
             self._log(f"      ERROR extracting SAPD: {e}", log_type="error")
