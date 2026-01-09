@@ -8,6 +8,7 @@ and grid information for post-hoc analysis.
 
 import glob
 import json
+import logging
 import os
 import pickle
 from dataclasses import asdict, dataclass, field
@@ -156,6 +157,8 @@ class MetadataExporter:
         self.frequency_mhz = frequency_mhz
         self.config_path = config_path
         self.extract_sapd = extract_sapd
+        self.logger = logging.getLogger("progress")
+        self.verbose_logger = logging.getLogger("verbose")
 
     def export(self) -> tuple[Optional[str], Optional[str]]:
         """Export metadata to pickle and JSON files.
@@ -182,10 +185,11 @@ class MetadataExporter:
             with open(json_path, "w") as f:
                 json.dump(asdict(metadata), f, indent=2, default=str)
 
+            self.logger.info("    - Metadata extraction completed.", extra={"log_type": "success"})
             return pickle_path, json_path
 
-        except Exception:
-            # Don't fail the simulation if metadata export fails
+        except Exception as e:
+            self.verbose_logger.error(f"Metadata export failed: {e}")
             return None, None
 
     def _collect_metadata(self) -> SimulationMetadata:
@@ -378,8 +382,8 @@ class MetadataExporter:
         # Clean up search dirs (remove non-existent ones)
         search_dirs = [d for d in search_dirs if d and os.path.exists(d)]
 
-        # Debug prints for troubleshooting
-        print(f"[MetadataExporter] Searching for output files in: {search_dirs}")
+        # Debug logging for troubleshooting (hidden from standard progress log)
+        self.verbose_logger.debug(f"Searching for output files in: {search_dirs}")
 
         # _Output.h5 files
         output_h5_files = []
@@ -392,32 +396,17 @@ class MetadataExporter:
             largest_h5 = max(output_h5_files, key=os.path.getsize)
             info.output_h5_bytes = os.path.getsize(largest_h5)
             info.output_h5_mb = info.output_h5_bytes / (1024 * 1024)
-            print(f"[MetadataExporter] Found largest Output.h5: {largest_h5} ({info.output_h5_mb:.2f} MB)")
+            self.verbose_logger.debug(f"Found largest Output.h5: {largest_h5} ({info.output_h5_mb:.2f} MB)")
         else:
-            print("[MetadataExporter] No *_Output.h5 files found.")
-
-        # SAPD H5 files (if extract_sapd was enabled)
-        sapd_h5_files = []
-        for d in search_dirs:
-            matches = glob.glob(os.path.join(d, "*sapd*.h5")) + glob.glob(os.path.join(d, "*SAPD*.h5"))
-            sapd_h5_files.extend(matches)
-
-        if sapd_h5_files:
-            largest_sapd = max(sapd_h5_files, key=os.path.getsize)
-            info.sapd_h5_bytes = os.path.getsize(largest_sapd)
-            info.sapd_h5_mb = info.sapd_h5_bytes / (1024 * 1024)
-            print(f"[MetadataExporter] Found largest SAPD H5: {largest_sapd} ({info.sapd_h5_mb:.2f} MB)")
-        else:
-            if self.extract_sapd:
-                print("[MetadataExporter] SAPD enabled but no *sapd*.h5 files found.")
+            self.verbose_logger.debug("No *_Output.h5 files found.")
 
         # Project .smash file
         if self.project_path and os.path.exists(self.project_path):
             info.project_smash_bytes = os.path.getsize(self.project_path)
             info.project_smash_mb = info.project_smash_bytes / (1024 * 1024)
-            print(f"[MetadataExporter] Measured project file: {self.project_path} ({info.project_smash_mb:.2f} MB)")
+            self.verbose_logger.debug(f"Measured project file: {self.project_path} ({info.project_smash_mb:.2f} MB)")
         else:
-            print(f"[MetadataExporter] Project file not found at: {self.project_path}")
+            self.verbose_logger.debug(f"Project file not found at: {self.project_path}")
 
         return info
 
