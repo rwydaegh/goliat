@@ -67,51 +67,51 @@ class AutoInducedProcessor(LoggingMixin):
         cube_size_mm = auto_cfg.get("cube_size_mm", 100)
 
         self._log(
-            f"  - Auto-induced analysis: {self.phantom_name} @ {self.freq}MHz...",
+            f"--- Auto-Induced Analysis: {self.phantom_name}, {self.freq}MHz ---",
             level="progress",
             log_type="progress",
         )
-        self._log(f"    Found {len(h5_paths)} environmental sims, extracting {top_n} candidates", log_type="info")
+        self._log(f"  Combining {len(h5_paths)} simulations, extracting top {top_n} candidates", log_type="info")
 
         os.makedirs(output_dir, exist_ok=True)
 
         # Step 1: Focus search
-        self._log("    - Find worst-case focus points...", log_type="info")
-        candidates = self._find_focus_candidates(h5_paths, input_h5, top_n)
+        with self.study.subtask("auto_induced_focus_search"):
+            candidates = self._find_focus_candidates(h5_paths, input_h5, top_n)
 
         if not candidates:
-            self._log("      ERROR: No focus candidates found", log_type="error")
+            self._log("    ERROR: No focus candidates found", log_type="error")
             return {"error": "No focus candidates found", "candidates": []}
 
         # Step 2: Combine fields for each candidate
-        self._log(f"    - Combine fields for {len(candidates)} candidates...", log_type="info")
-        combined_h5_paths = []
-        for i, candidate in enumerate(candidates):
-            combined_path = self._combine_fields_for_candidate(
-                h5_paths=h5_paths,
-                candidate=candidate,
-                output_dir=output_dir,
-                candidate_idx=i + 1,
-                cube_size_mm=cube_size_mm,
-            )
-            combined_h5_paths.append(combined_path)
+        with self.study.subtask("auto_induced_combine_fields"):
+            combined_h5_paths = []
+            for i, candidate in enumerate(candidates):
+                combined_path = self._combine_fields_for_candidate(
+                    h5_paths=h5_paths,
+                    candidate=candidate,
+                    output_dir=output_dir,
+                    candidate_idx=i + 1,
+                    cube_size_mm=cube_size_mm,
+                )
+                combined_h5_paths.append(combined_path)
 
         # Step 3: Extract SAPD for each candidate
-        self._log(f"    - Extract SAPD for {len(candidates)} candidates...", log_type="info")
-        sapd_results = []
-        for i, combined_h5 in enumerate(combined_h5_paths):
-            if combined_h5 and combined_h5.exists():
-                result = self._extract_sapd(combined_h5, i + 1)
-                sapd_results.append(result)
-            else:
-                sapd_results.append({"error": f"Combined H5 not found: {combined_h5}"})
+        with self.study.subtask("auto_induced_extract_sapd"):
+            sapd_results = []
+            for i, combined_h5 in enumerate(combined_h5_paths):
+                if combined_h5 and combined_h5.exists():
+                    result = self._extract_sapd(combined_h5, i + 1)
+                    sapd_results.append(result)
+                else:
+                    sapd_results.append({"error": f"Combined H5 not found: {combined_h5}"})
 
         # Find worst case
         worst_case = self._find_worst_case(sapd_results)
 
         if worst_case and worst_case.get("peak_sapd_w_m2"):
             self._log(
-                f"    - Worst-case SAPD: {worst_case['peak_sapd_w_m2']:.2f} W/m2 (candidate #{worst_case.get('candidate_idx')})",
+                f"  - Worst-case SAPD: {worst_case['peak_sapd_w_m2']:.2f} W/m2 (candidate #{worst_case.get('candidate_idx')})",
                 level="progress",
                 log_type="success",
             )
