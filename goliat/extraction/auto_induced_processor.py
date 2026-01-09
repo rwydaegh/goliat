@@ -443,6 +443,14 @@ class AutoInducedProcessor(LoggingMixin):
                 else f"Candidate #{candidate_idx}: Peak SAPD = None"
             )
 
+            # DEBUG: Save smash file with all algorithms for inspection
+            debug_smash_path = str(combined_h5).replace("_Output.h5", "_debug.smash")
+            try:
+                document.SaveAs(debug_smash_path)
+                self.verbose_logger.info(f"  DEBUG: Saved project to {debug_smash_path}")
+            except Exception as save_err:
+                self.verbose_logger.warning(f"  DEBUG: Could not save project: {save_err}")
+
             return {
                 "candidate_idx": candidate_idx,
                 "peak_sapd_w_m2": float(peak_sapd) if peak_sapd else None,
