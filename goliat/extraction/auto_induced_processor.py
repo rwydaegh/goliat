@@ -65,7 +65,7 @@ class AutoInducedProcessor(LoggingMixin):
         auto_cfg = self.config["auto_induced"] or {}
         top_n = auto_cfg.get("top_n", 10)
         cube_size_mm = auto_cfg.get("cube_size_mm", 100)
-        save_debug_files = auto_cfg.get("save_debug_files", False)
+        save_intermediate_files = auto_cfg.get("save_intermediate_files", False)
 
         self._log(
             f"\n--- Auto-Induced Analysis: {self.phantom_name}, {self.freq}MHz ---",
@@ -112,7 +112,7 @@ class AutoInducedProcessor(LoggingMixin):
                         candidate=candidates[i],
                         cube_size_mm=cube_size_mm,
                         input_h5=input_h5,
-                        save_debug_files=save_debug_files,
+                        save_intermediate_files=save_intermediate_files,
                     )
                     sapd_results.append(result)
 
@@ -273,7 +273,7 @@ class AutoInducedProcessor(LoggingMixin):
         candidate: dict,
         cube_size_mm: float,
         input_h5: Path,
-        save_debug_files: bool = False,
+        save_intermediate_files: bool = False,
     ) -> dict:
         """Extract SAPD from a combined H5 file.
 
@@ -286,7 +286,7 @@ class AutoInducedProcessor(LoggingMixin):
             candidate: Candidate dict with 'voxel_idx' for center location.
             cube_size_mm: Size of the bounding box for mesh slicing.
             input_h5: Path to an input H5 to read grid axes for voxel->mm conversion.
-            save_debug_files: If True, save smash file after extraction for debugging.
+            save_intermediate_files: If True, save smash file after extraction for inspection.
 
         Returns:
             Dict with SAPD extraction results.
@@ -459,8 +459,8 @@ class AutoInducedProcessor(LoggingMixin):
                             break
 
             # Optionally save debug smash file
-            if save_debug_files:
-                debug_smash_path = str(combined_h5).replace("_Output.h5", "_debug.smash")
+            if save_intermediate_files:
+                debug_smash_path = str(combined_h5).replace("_Output.h5", "_intermediate.smash")
                 try:
                     document.SaveAs(debug_smash_path)
                 except Exception:
