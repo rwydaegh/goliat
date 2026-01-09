@@ -59,7 +59,7 @@
     "extract_sapd": false,
     "auto_induced": {
         "enabled": true,
-        "top_n": 3,
+        "top_n": 10,
         "cube_size_mm": 100,
         "skip_sapd": false
     }

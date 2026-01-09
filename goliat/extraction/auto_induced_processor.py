@@ -328,21 +328,7 @@ class AutoInducedProcessor(LoggingMixin):
             document.AllAlgorithms.Add(em_sensor_extractor)
             em_sensor_extractor.Update()
 
-            # Get skin entities from config
-            skin_entity_names = self._get_skin_entity_names()
-            skin_entities = []
-            all_entities = model.AllEntities()
-            for name in skin_entity_names:
-                if name in all_entities:
-                    skin_entities.append(all_entities[name])
-
-            if not skin_entities:
-                return {
-                    "candidate_idx": candidate_idx,
-                    "error": "No skin entities found in project",
-                }
-
-            # Try to load cached skin, or create and cache it (same as SapdExtractor)
+            # Try to load cached skin first (avoids duplicate entity name issues)
             cache_dir = os.path.join(self.config.base_dir, "data", "phantoms_skin")
             cache_path = os.path.join(cache_dir, f"{self.phantom_name}_skin.sab")
             united_entity = None
@@ -352,10 +338,25 @@ class AutoInducedProcessor(LoggingMixin):
                     imported_entities = list(model.Import(cache_path))
                     if imported_entities:
                         united_entity = imported_entities[0]
+                        united_entity.Name = f"AutoInduced_CachedSkin_{candidate_idx}"
                 except Exception:
                     pass  # Fall through to create it
 
             if united_entity is None:
+                # No cache - look up skin entities and unite them
+                skin_entity_names = self._get_skin_entity_names()
+                skin_entities = []
+                all_entities = model.AllEntities()
+                for name in skin_entity_names:
+                    if name in all_entities:
+                        skin_entities.append(all_entities[name])
+
+                if not skin_entities:
+                    return {
+                        "candidate_idx": candidate_idx,
+                        "error": "No skin entities found in project",
+                    }
+
                 # Create surface entity (same pattern as SapdExtractor)
                 if len(skin_entities) > 1:
                     united_entity = model.Unite([e.Clone() for e in skin_entities])
