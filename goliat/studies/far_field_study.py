@@ -1,5 +1,7 @@
+import json
 import os
 import traceback
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from ..logging_manager import add_simulation_log_handlers, remove_simulation_log_handlers
@@ -116,6 +118,8 @@ class FarFieldStudy(BaseStudy):
             do_extract: Whether extract phase is enabled.
         """
         simulation_count = 0
+        auto_induced_enabled = self.config["auto_induced.enabled"] or False
+
         for phantom_name in phantoms:  # type: ignore
             for freq in frequencies:  # type: ignore
                 for direction_name in incident_directions:
@@ -132,6 +136,24 @@ class FarFieldStudy(BaseStudy):
                             do_run,
                             do_extract,
                         )
+
+                # After all directions/polarizations complete for this (phantom, freq),
+                # run auto-induced analysis if enabled.
+                # Auto-induced requires all _Output.h5 files to exist (from run phase).
+                if auto_induced_enabled and do_run:
+                    try:
+                        self._run_auto_induced_for_phantom_freq(
+                            phantom_name=phantom_name,
+                            freq=freq,
+                            incident_directions=incident_directions,
+                            polarizations=polarizations,
+                        )
+                    except Exception as e:
+                        self._log(
+                            f"ERROR in auto-induced processing for {phantom_name}@{freq}MHz: {e}",
+                            log_type="error",
+                        )
+                        self.verbose_logger.error(traceback.format_exc())
 
     def _generate_spherical_directions(self, tessellation_config: dict) -> list[str]:
         """Generates direction names from spherical tessellation config.
@@ -442,3 +464,228 @@ class FarFieldStudy(BaseStudy):
                 remove_simulation_log_handlers(sim_log_handlers)
             if self.project_manager and hasattr(self.project_manager.document, "IsOpen") and self.project_manager.document.IsOpen():  # type: ignore
                 self.project_manager.close()
+
+    # ==================== Auto-Induced Exposure Methods ====================
+
+    def _run_auto_induced_for_phantom_freq(
+        self,
+        phantom_name: str,
+        freq: int | list[int],
+        incident_directions: list[str],
+        polarizations: list[str],
+    ) -> None:
+        """Runs auto-induced exposure analysis for a completed (phantom, freq) set.
+
+        Prerequisites:
+        - All environmental simulations for this (phantom, freq) must be complete.
+        - All _Output.h5 files must exist.
+
+        Args:
+            phantom_name: Name of the phantom (e.g., "thelonious").
+            freq: Frequency in MHz.
+            incident_directions: List of direction names that were simulated.
+            polarizations: List of polarization names that were simulated.
+        """
+        freq_str = f"{'+'.join(str(f) for f in freq)}" if isinstance(freq, list) else str(freq)
+
+        # Get output directory for auto-induced results
+        output_dir = self._get_auto_induced_output_dir(phantom_name, freq)
+        summary_path = output_dir / "auto_induced_summary.json"
+
+        # Check if already done (caching)
+        if self._is_auto_induced_done(summary_path, phantom_name, freq, incident_directions, polarizations):
+            self._log(
+                f"  Auto-induced for {phantom_name}@{freq_str}MHz already complete, skipping.",
+                level="progress",
+                log_type="success",
+            )
+            return
+
+        # Gather all _Output.h5 files
+        h5_paths = self._gather_output_h5_files(phantom_name, freq, incident_directions, polarizations)
+        expected_count = len(incident_directions) * len(polarizations)
+
+        if len(h5_paths) < expected_count:
+            self._log(
+                f"  ERROR: Auto-induced requires all {expected_count} sims complete, found {len(h5_paths)} _Output.h5 files. Skipping.",
+                log_type="error",
+            )
+            return
+
+        # Find an _Input.h5 file (any one will do, grids are identical)
+        input_h5 = self._find_input_h5(phantom_name, freq, incident_directions, polarizations)
+        if not input_h5:
+            self._log("  ERROR: No _Input.h5 file found for auto-induced processing.", log_type="error")
+            return
+
+        # Need to open a project with the phantom to access geometry
+        # Reopen the last simulation's project
+        last_dir = incident_directions[-1]
+        last_pol = polarizations[-1]
+        self.project_manager.create_or_open_project(
+            phantom_name=phantom_name,
+            frequency_mhz=freq,
+            scenario_name="environmental",
+            position_name=last_dir,
+            orientation_name=last_pol,
+        )
+        self.project_manager.open()
+
+        try:
+            # Import and run processor
+            from ..extraction.auto_induced_processor import AutoInducedProcessor
+
+            processor = AutoInducedProcessor(self, phantom_name, int(freq) if not isinstance(freq, list) else freq[0])
+
+            results = processor.process(
+                h5_paths=h5_paths,
+                input_h5=input_h5,
+                output_dir=output_dir,
+            )
+
+            # Save summary
+            self._save_auto_induced_summary(summary_path, results)
+
+            self._log(
+                f"  Auto-induced complete for {phantom_name}@{freq_str}MHz",
+                level="progress",
+                log_type="success",
+            )
+
+        finally:
+            if self.project_manager and hasattr(self.project_manager.document, "IsOpen") and self.project_manager.document.IsOpen():  # type: ignore
+                self.project_manager.close()
+
+    def _get_auto_induced_output_dir(self, phantom_name: str, freq: int | list[int]) -> Path:
+        """Get the output directory for auto-induced results.
+
+        Args:
+            phantom_name: Phantom name.
+            freq: Frequency in MHz.
+
+        Returns:
+            Path to auto_induced output directory.
+        """
+        freq_str = f"{'+'.join(str(f) for f in freq)}" if isinstance(freq, list) else str(freq)
+        return Path(self.config.base_dir) / "results" / "far_field" / phantom_name.lower() / f"{freq_str}MHz" / "auto_induced"
+
+    def _is_auto_induced_done(
+        self,
+        summary_path: Path,
+        phantom_name: str,
+        freq: int | list[int],
+        incident_directions: list[str],
+        polarizations: list[str],
+    ) -> bool:
+        """Check if auto-induced processing is already complete.
+
+        Auto-induced is considered done if:
+        1. auto_induced_summary.json exists
+        2. It's newer than all corresponding _Output.h5 files
+
+        Args:
+            summary_path: Path to the summary JSON file.
+            phantom_name: Phantom name.
+            freq: Frequency in MHz.
+            incident_directions: List of direction names.
+            polarizations: List of polarization names.
+
+        Returns:
+            True if auto-induced is already complete.
+        """
+        if not summary_path.exists():
+            return False
+
+        summary_mtime = summary_path.stat().st_mtime
+
+        # Get all _Output.h5 files and check their modification times
+        h5_paths = self._gather_output_h5_files(phantom_name, freq, incident_directions, polarizations)
+        for h5_path in h5_paths:
+            if h5_path.stat().st_mtime > summary_mtime:
+                return False  # An H5 file is newer than summary
+
+        return True
+
+    def _gather_output_h5_files(
+        self,
+        phantom_name: str,
+        freq: int | list[int],
+        incident_directions: list[str],
+        polarizations: list[str],
+    ) -> list[Path]:
+        """Gather all _Output.h5 files for a (phantom, freq) combination.
+
+        Args:
+            phantom_name: Phantom name.
+            freq: Frequency in MHz.
+            incident_directions: List of direction names.
+            polarizations: List of polarization names.
+
+        Returns:
+            List of Path objects to _Output.h5 files.
+        """
+        freq_str = f"{'+'.join(str(f) for f in freq)}" if isinstance(freq, list) else str(freq)
+        base_path = Path(self.config.base_dir) / "results" / "far_field" / phantom_name.lower() / f"{freq_str}MHz"
+
+        h5_paths = []
+        for direction in incident_directions:
+            for polarization in polarizations:
+                placement_name = f"environmental_{direction}_{polarization}"
+                project_filename = f"far_field_{phantom_name.lower()}_{freq_str}MHz_{placement_name}"
+                results_dir = base_path / placement_name / f"{project_filename}.smash_Results"
+
+                if results_dir.exists():
+                    for f in results_dir.iterdir():
+                        if f.name.endswith("_Output.h5"):
+                            h5_paths.append(f)
+                            break  # Only one _Output.h5 per simulation
+
+        return h5_paths
+
+    def _find_input_h5(
+        self,
+        phantom_name: str,
+        freq: int | list[int],
+        incident_directions: list[str],
+        polarizations: list[str],
+    ) -> Path | None:
+        """Find any _Input.h5 file for the (phantom, freq) set.
+
+        All simulations for a (phantom, freq) have identical grids, so any _Input.h5 will work.
+
+        Args:
+            phantom_name: Phantom name.
+            freq: Frequency in MHz.
+            incident_directions: List of direction names.
+            polarizations: List of polarization names.
+
+        Returns:
+            Path to an _Input.h5 file, or None if not found.
+        """
+        freq_str = f"{'+'.join(str(f) for f in freq)}" if isinstance(freq, list) else str(freq)
+        base_path = Path(self.config.base_dir) / "results" / "far_field" / phantom_name.lower() / f"{freq_str}MHz"
+
+        for direction in incident_directions:
+            for polarization in polarizations:
+                placement_name = f"environmental_{direction}_{polarization}"
+                project_filename = f"far_field_{phantom_name.lower()}_{freq_str}MHz_{placement_name}"
+                results_dir = base_path / placement_name / f"{project_filename}.smash_Results"
+
+                if results_dir.exists():
+                    for f in results_dir.iterdir():
+                        if f.name.endswith("_Input.h5"):
+                            return f
+
+        return None
+
+    def _save_auto_induced_summary(self, summary_path: Path, results: dict) -> None:
+        """Save auto-induced results to a summary JSON file.
+
+        Args:
+            summary_path: Path to save the summary.
+            results: Results dict from AutoInducedProcessor.
+        """
+        summary_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(summary_path, "w") as f:
+            json.dump(results, f, indent=4, default=str)
+        self._log(f"  Summary saved: {summary_path}", log_type="info")

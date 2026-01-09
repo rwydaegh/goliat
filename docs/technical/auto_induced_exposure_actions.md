@@ -231,31 +231,53 @@ goliat/
 
 ## 5. Implementation Status
 
-### 5.1 Completed PRs
+### 5.1 Completed Components
 
-| PR | Component | Status | Description |
-|----|-----------|--------|-------------|
-| 1 | `skin_voxel_utils.py` | ✅ Done | Extract skin voxel mask from `_Input.h5` |
-| 2 | `field_reader.py` | ✅ Done | Vectorized E/H field reading from `_Output.h5` |
-| 3 | `focus_optimizer.py` | ✅ Done | Worst-case search + phase computation + top-N candidates |
-| 4+5 | `field_combiner.py` | ✅ Done | Sliced combination + H5 writing via `slice_h5_output` |
-| 6 | SAPD integration | ⬜ Pending | Load combined H5 into existing extraction |
-| 7 | CLI command | ⬜ Pending | `goliat combine` with config options |
+| Component | Status | Description |
+|-----------|--------|-------------|
+| `skin_voxel_utils.py` | ✅ Done | Extract skin voxel mask from `_Input.h5` |
+| `field_reader.py` | ✅ Done | Vectorized E/H field reading from `_Output.h5` |
+| `focus_optimizer.py` | ✅ Done | Worst-case search + phase computation + top-N candidates |
+| `field_combiner.py` | ✅ Done | Sliced combination + H5 writing via `slice_h5_output` |
+| `mesh_slicer.py` | ✅ Done | Mesh slicing via PlanarCut for fast localized SAPD |
+| `auto_induced_processor.py` | ✅ Done | Integrated processor within FarFieldStudy |
 
-### 5.2 CLI Usage (Current)
+### 5.2 Usage
+
+Auto-induced is now integrated into the standard `goliat study` workflow:
 
 ```bash
-python -m goliat.utils.field_combiner results/far_field/thelonious/2450MHz \
-    --input-h5 "path/to/_Input.h5" \
-    --output results/combined_Output.h5 \
-    --cube-size 100 \
-    --top-n 3
+goliat study configs/test_auto_induced_poc.json
 ```
 
-**Options:**
-- `--cube-size`: Side length of extraction cube in mm (default 100, matches SAPD extractor)
-- `--top-n`: Number of candidate focus points to generate (default 1)
-- `--full`: Use full-field combination (slow, ~10min) instead of sliced
+After all environmental simulations complete for each (phantom, frequency) pair,
+auto-induced processing automatically runs if enabled in the config.
+
+The config file must include an `auto_induced` section:
+
+```json
+{
+    "auto_induced": {
+        "enabled": true,
+        "top_n": 10,
+        "cube_size_mm": 100,
+        "search_metric": "E_magnitude"
+    }
+}
+```
+
+**Config Options:**
+- `enabled`: Enable/disable auto-induced processing (default: false)
+- `top_n`: Number of candidate focus points to evaluate (default: 3)
+- `cube_size_mm`: Side length of extraction cube in mm (default: 100)
+- `search_metric`: Search metric - `"E_magnitude"` (default), `"E_z_magnitude"`, or `"poynting_z"`
+- `save_intermediate_files`: Save .smash files after SAPD extraction for debugging (default: false)
+
+**Results:**
+- Output directory: `results/far_field/{phantom}/{freq}MHz/auto_induced/`
+- Summary file: `auto_induced_summary.json`
+- Combined H5 files: `combined_candidate{N}_Output.h5`
+
 
 ---
 
