@@ -105,7 +105,13 @@ class AutoInducedProcessor(LoggingMixin):
             sapd_results = []
             for i, combined_h5 in enumerate(combined_h5_paths):
                 if combined_h5 and combined_h5.exists():
-                    result = self._extract_sapd(combined_h5, i + 1)
+                    result = self._extract_sapd(
+                        combined_h5=combined_h5,
+                        candidate_idx=i + 1,
+                        candidate=candidates[i],
+                        cube_size_mm=cube_size_mm,
+                        input_h5=input_h5,
+                    )
                     sapd_results.append(result)
                 else:
                     sapd_results.append({"error": f"Combined H5 not found: {combined_h5}"})
@@ -249,7 +255,14 @@ class AutoInducedProcessor(LoggingMixin):
             self._log(f"      ERROR combining fields: {e}", log_type="error")
             return None
 
-    def _extract_sapd(self, combined_h5: Path, candidate_idx: int) -> dict:
+    def _extract_sapd(
+        self,
+        combined_h5: Path,
+        candidate_idx: int,
+        candidate: dict,
+        cube_size_mm: float,
+        input_h5: Path,
+    ) -> dict:
         """Extract SAPD from a combined H5 file.
 
         Uses the existing SAPD extraction infrastructure. The project should
@@ -258,11 +271,18 @@ class AutoInducedProcessor(LoggingMixin):
         Args:
             combined_h5: Path to combined _Output.h5 file.
             candidate_idx: 1-based candidate index.
+            candidate: Candidate dict with 'voxel_idx' for center location.
+            cube_size_mm: Size of the bounding box for mesh slicing.
+            input_h5: Path to an input H5 to read grid axes for voxel->mm conversion.
 
         Returns:
             Dict with SAPD extraction results.
         """
         import time
+
+        import h5py
+
+        from ..utils.mesh_slicer import slice_entity_to_box, voxel_idx_to_mm
 
         self.verbose_logger.info(f"Extracting SAPD from {combined_h5.name}")
 
@@ -270,10 +290,22 @@ class AutoInducedProcessor(LoggingMixin):
             step_start = time.monotonic()
 
             # Import here to avoid circular imports and ensure Sim4Life is available
+            import XCoreModeling
             import s4l_v1.analysis as analysis
             import s4l_v1.document as document
             import s4l_v1.model as model
             import s4l_v1.units as units
+
+            # Read grid axes from input H5 for voxel->mm conversion
+            with h5py.File(input_h5, "r") as f:
+                mesh_grp = f["Meshes/Mesh-0"]
+                x_axis = mesh_grp["x-axis"][:] * 1000  # m to mm
+                y_axis = mesh_grp["y-axis"][:] * 1000
+                z_axis = mesh_grp["z-axis"][:] * 1000
+
+            voxel_idx = candidate["voxel_idx"]
+            center_mm = voxel_idx_to_mm(voxel_idx, (x_axis, y_axis, z_axis))
+            self.verbose_logger.info(f"  Focus center: {center_mm} mm")
 
             # Create SimulationExtractor for the combined H5
             sim_extractor = analysis.extractors.SimulationExtractor(inputs=[])
@@ -313,7 +345,23 @@ class AutoInducedProcessor(LoggingMixin):
             else:
                 surface_entity = skin_entities[0].Clone()
             surface_entity.Name = f"AutoInduced_Skin_{candidate_idx}"
-            self.verbose_logger.info(f"  Surface entity: {time.monotonic() - t2:.2f}s")
+            self.verbose_logger.info(f"  Unite skin: {time.monotonic() - t2:.2f}s")
+
+            # Slice the skin mesh to a box around the focus point (critical for speed!)
+            t_slice = time.monotonic()
+            surface_entity, sliced = slice_entity_to_box(
+                entity=surface_entity,
+                center_mm=center_mm,
+                side_len_mm=cube_size_mm,
+                model_module=model,
+                xcoremodeling_module=XCoreModeling,
+                logger=self.verbose_logger,
+            )
+            if sliced:
+                surface_entity.Name = f"AutoInduced_Skin_Sliced_{candidate_idx}"
+                self.verbose_logger.info(f"  Mesh slicing: {time.monotonic() - t_slice:.2f}s")
+            else:
+                self.verbose_logger.warning("  Mesh slicing failed, using full skin mesh")
 
             # Create ModelToGridFilter (matching SapdExtractor pattern)
             t3 = time.monotonic()
