@@ -67,9 +67,9 @@ class AutoInducedProcessor(LoggingMixin):
         cube_size_mm = auto_cfg.get("cube_size_mm", 100)
 
         self._log(
-            f"--- Auto-Induced Analysis: {self.phantom_name}, {self.freq}MHz ---",
+            f"\n--- Auto-Induced Analysis: {self.phantom_name}, {self.freq}MHz ---",
             level="progress",
-            log_type="progress",
+            log_type="header",
         )
         self._log(
             f"  Combining {len(h5_paths)} simulations, extracting top {top_n} candidates",
@@ -262,9 +262,13 @@ class AutoInducedProcessor(LoggingMixin):
         Returns:
             Dict with SAPD extraction results.
         """
+        import time
+
         self.verbose_logger.info(f"Extracting SAPD from {combined_h5.name}")
 
         try:
+            step_start = time.monotonic()
+
             # Import here to avoid circular imports and ensure Sim4Life is available
             import s4l_v1.analysis as analysis
             import s4l_v1.document as document
@@ -277,15 +281,19 @@ class AutoInducedProcessor(LoggingMixin):
             sim_extractor.FileName = str(combined_h5)
             sim_extractor.UpdateAttributes()
             document.AllAlgorithms.Add(sim_extractor)
+            self.verbose_logger.info(f"  SimExtractor: {time.monotonic() - step_start:.2f}s")
 
             # Get EM sensor extractor
+            t1 = time.monotonic()
             em_sensor_extractor = sim_extractor["Overall Field"]
             em_sensor_extractor.FrequencySettings.ExtractedFrequency = "All"
             em_sensor_extractor.UpdateAttributes()
             document.AllAlgorithms.Add(em_sensor_extractor)
             em_sensor_extractor.Update()
+            self.verbose_logger.info(f"  EM Sensor Update: {time.monotonic() - t1:.2f}s")
 
             # Get skin entities from config
+            t2 = time.monotonic()
             skin_entity_names = self._get_skin_entity_names()
             skin_entities = []
             all_entities = model.AllEntities()
@@ -305,26 +313,33 @@ class AutoInducedProcessor(LoggingMixin):
             else:
                 surface_entity = skin_entities[0].Clone()
             surface_entity.Name = f"AutoInduced_Skin_{candidate_idx}"
+            self.verbose_logger.info(f"  Surface entity: {time.monotonic() - t2:.2f}s")
 
             # Create ModelToGridFilter (matching SapdExtractor pattern)
+            t3 = time.monotonic()
             model_to_grid_filter = analysis.core.ModelToGridFilter(inputs=[])
             model_to_grid_filter.Name = f"AutoInduced_SkinSurface_{candidate_idx}"
             model_to_grid_filter.Entity = surface_entity
             model_to_grid_filter.UpdateAttributes()
             document.AllAlgorithms.Add(model_to_grid_filter)
+            self.verbose_logger.info(f"  ModelToGrid: {time.monotonic() - t3:.2f}s")
 
             # Create SAPD evaluator with correct inputs (matching SapdExtractor)
             # Inputs: Poynting Vector S(x,y,z,f0) and Surface
+            t4 = time.monotonic()
             inputs = [em_sensor_extractor.Outputs["S(x,y,z,f0)"], model_to_grid_filter.Outputs["Surface"]]
             sapd_evaluator = analysis.em_evaluators.GenericSAPDEvaluator(inputs=inputs)
             sapd_evaluator.AveragingArea = 4.0, units.SquareCentiMeters
             sapd_evaluator.Threshold = 0.01, units.Meters  # 10 mm
             sapd_evaluator.UpdateAttributes()
             document.AllAlgorithms.Add(sapd_evaluator)
+            self.verbose_logger.info(f"  SAPD Evaluator setup: {time.monotonic() - t4:.2f}s")
 
             # Get report and update
+            t5 = time.monotonic()
             sapd_report = sapd_evaluator.Outputs["Spatial-Averaged Power Density Report"]
             sapd_report.Update()
+            self.verbose_logger.info(f"  SAPD Report Update: {time.monotonic() - t5:.2f}s")
 
             # Parse results from the DataSimpleDataCollection (matching SapdExtractor)
             data_collection = sapd_report.Data.DataSimpleDataCollection
