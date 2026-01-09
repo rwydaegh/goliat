@@ -3,7 +3,7 @@ import json
 import os
 import time
 from datetime import datetime
-from typing import Optional
+from typing import Iterator, Optional, Tuple
 
 from dotenv import load_dotenv
 
@@ -527,6 +527,57 @@ class Config:
             # Update in-memory data
             self.detuning_data = detuning_data
 
+    def _load_or_create_detuning_data(self, resolved_path: str) -> dict:
+        """Loads existing detuning data or returns empty dict."""
+        if os.path.exists(resolved_path):
+            try:
+                detuning_config = self._load_json(resolved_path)
+                return detuning_config.get("detuning_data", {})
+            except (json.JSONDecodeError, FileNotFoundError):
+                return {}
+        return {}
+
+    def _save_detuning_data(self, resolved_path: str, detuning_data: dict) -> None:
+        """Saves detuning data to file and updates in-memory cache."""
+        detuning_config = {"detuning_data": detuning_data}
+        os.makedirs(os.path.dirname(resolved_path), exist_ok=True)
+        with open(resolved_path, "w") as f:
+            json.dump(detuning_config, f, indent=2)
+        self.detuning_data = detuning_data
+
+    def _iter_simulation_combinations(self) -> Iterator[Tuple[str, str, str]]:
+        """Yields all (phantom_lower, freq_str, placement_name) combinations.
+
+        Flattens the 5-level nested loop over phantoms, frequencies, scenarios,
+        positions, and orientations into a single generator.
+
+        Yields:
+            Tuple of (phantom_lower, freq_str, placement_name).
+        """
+        phantoms = self.config["phantoms"] or []
+        if not isinstance(phantoms, list):
+            phantoms = [phantoms]
+
+        antenna_config = self.config["antenna_config"] or {}
+        all_scenarios = self.config["placement_scenarios"] or {}
+
+        for phantom in phantoms:
+            phantom_lower = phantom.lower()
+            for freq_key in antenna_config.keys():
+                try:
+                    freq_mhz = int(freq_key)
+                except (ValueError, TypeError):
+                    continue
+                freq_str = f"{freq_mhz}MHz"
+
+                for scenario_name, scenario_details in all_scenarios.items():
+                    positions = scenario_details.get("positions", {})
+                    orientations = scenario_details.get("orientations", {})
+                    for pos_name in positions:
+                        for orient_name in orientations:
+                            placement_name = f"{scenario_name}_{pos_name}_{orient_name}"
+                            yield phantom_lower, freq_str, placement_name
+
     def initialize_missing_detuning_entries(self) -> None:
         """Initializes missing detuning entries for all simulations in the study.
 
@@ -541,64 +592,15 @@ class Config:
             return
 
         resolved_path = self._resolve_path_relative_to_config(self.config_path, detuning_config_path)
+        detuning_data = self._load_or_create_detuning_data(resolved_path)
 
-        # Load existing data or create empty structure
-        if os.path.exists(resolved_path):
-            try:
-                detuning_config = self._load_json(resolved_path)
-                detuning_data = detuning_config.get("detuning_data", {})
-            except (json.JSONDecodeError, FileNotFoundError):
-                detuning_data = {}
-        else:
-            detuning_data = {}
-
-        # Get study parameters - use bracket notation with or fallback (preferred pattern)
-        phantoms = self.config["phantoms"] or []
-        if not isinstance(phantoms, list):
-            phantoms = [phantoms]
-
-        # For near_field studies, frequencies come from antenna_config keys (strings like "700", "835")
-        antenna_config = self.config["antenna_config"] or {}
-        frequency_keys = list(antenna_config.keys())
-
-        # Scenarios come from placement_scenarios
-        all_scenarios = self.config["placement_scenarios"] or {}
-
-        # Initialize entries for all combinations
-        for phantom in phantoms:
-            phantom_lower = phantom.lower()
+        # Initialize missing entries for all simulation combinations
+        for phantom_lower, freq_str, placement_name in self._iter_simulation_combinations():
             if phantom_lower not in detuning_data:
                 detuning_data[phantom_lower] = {}
+            if freq_str not in detuning_data[phantom_lower]:
+                detuning_data[phantom_lower][freq_str] = {}
+            if placement_name not in detuning_data[phantom_lower][freq_str]:
+                detuning_data[phantom_lower][freq_str][placement_name] = 0.0
 
-            for freq_key in frequency_keys:
-                # Convert frequency key (string) to integer for MHz format
-                try:
-                    freq_mhz = int(freq_key)
-                except (ValueError, TypeError):
-                    # Skip invalid frequency keys
-                    continue
-
-                freq_str = f"{freq_mhz}MHz"
-                if freq_str not in detuning_data[phantom_lower]:
-                    detuning_data[phantom_lower][freq_str] = {}
-
-                for scenario_name, scenario_details in all_scenarios.items():
-                    # Positions and orientations are dictionaries, not lists
-                    positions = scenario_details.get("positions", {})
-                    orientations = scenario_details.get("orientations", {})
-
-                    for pos_name in positions.keys():
-                        for orient_name in orientations.keys():
-                            placement_name = f"{scenario_name}_{pos_name}_{orient_name}"
-                            # Only add if missing (never overwrite)
-                            if placement_name not in detuning_data[phantom_lower][freq_str]:
-                                detuning_data[phantom_lower][freq_str][placement_name] = 0.0
-
-        # Save updated file
-        detuning_config = {"detuning_data": detuning_data}
-        os.makedirs(os.path.dirname(resolved_path), exist_ok=True)
-        with open(resolved_path, "w") as f:
-            json.dump(detuning_config, f, indent=2)
-
-        # Update in-memory data
-        self.detuning_data = detuning_data
+        self._save_detuning_data(resolved_path, detuning_data)
