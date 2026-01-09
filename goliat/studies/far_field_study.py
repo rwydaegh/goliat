@@ -628,18 +628,12 @@ class FarFieldStudy(BaseStudy):
         freq_str = f"{'+'.join(str(f) for f in freq)}" if isinstance(freq, list) else str(freq)
         base_path = Path(self.config.base_dir) / "results" / "far_field" / phantom_name.lower() / f"{freq_str}MHz"
 
-        self._log(f"    DEBUG: Looking for H5 files in base_path: {base_path}", log_type="verbose")
-        self._log(f"    DEBUG: base_path exists: {base_path.exists()}", log_type="verbose")
-
         h5_paths = []
         for direction in incident_directions:
             for polarization in polarizations:
                 placement_name = f"environmental_{direction}_{polarization}"
                 project_filename = f"far_field_{phantom_name.lower()}_{freq_str}MHz_{placement_name}"
                 results_dir = base_path / placement_name / f"{project_filename}.smash_Results"
-
-                self._log(f"    DEBUG: Checking results_dir: {results_dir}", log_type="verbose")
-                self._log(f"    DEBUG: results_dir exists: {results_dir.exists()}", log_type="verbose")
 
                 if results_dir.exists():
                     for f in results_dir.iterdir():

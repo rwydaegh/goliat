@@ -185,12 +185,9 @@ class AutoInducedProcessor(LoggingMixin):
                 )
 
             elapsed = time.monotonic() - start_time
-            self._log(f"    Found {len(candidates)} candidate(s) in {elapsed:.2f}s:", log_type="info")
+            self.verbose_logger.info(f"Found {len(candidates)} focus candidate(s) in {elapsed:.2f}s")
             for i, c in enumerate(candidates):
-                self._log(
-                    f"      #{i + 1}: voxel {c['voxel_idx']}, Sum|E|={c['magnitude_sum']:.4e}",
-                    log_type="info",
-                )
+                self.verbose_logger.info(f"  Candidate #{i + 1}: voxel {c['voxel_idx']}, Sum|E|={c['magnitude_sum']:.4e}")
 
             return candidates
 
@@ -226,8 +223,6 @@ class AutoInducedProcessor(LoggingMixin):
         output_filename = f"combined_candidate{candidate_idx}_Output.h5"
         output_path = output_dir / output_filename
 
-        self._log(f"    Candidate #{candidate_idx}: {output_filename}", log_type="info")
-
         start_time = time.monotonic()
 
         try:
@@ -242,7 +237,7 @@ class AutoInducedProcessor(LoggingMixin):
 
             elapsed = time.monotonic() - start_time
             sliced_shape = result.get("sliced_shape", "unknown")
-            self._log(f"      Sliced shape: {sliced_shape} ({elapsed:.2f}s)", log_type="info")
+            self.verbose_logger.info(f"Candidate #{candidate_idx}: {sliced_shape} ({elapsed:.2f}s)")
 
             return output_path
 
@@ -263,7 +258,7 @@ class AutoInducedProcessor(LoggingMixin):
         Returns:
             Dict with SAPD extraction results.
         """
-        self._log(f"    Candidate #{candidate_idx}: Extracting SAPD from {combined_h5.name}", log_type="info")
+        self.verbose_logger.info(f"Extracting SAPD from {combined_h5.name}")
 
         try:
             # Import here to avoid circular imports and ensure Sim4Life is available
@@ -327,23 +322,54 @@ class AutoInducedProcessor(LoggingMixin):
             sapd_report = sapd_evaluator.Outputs["Spatial-Averaged Power Density Report"]
             sapd_report.Update()
 
-            # Parse results from the DataSimpleDataCollection
+            # Parse results from the DataSimpleDataCollection (matching SapdExtractor)
             data_collection = sapd_report.Data.DataSimpleDataCollection
+            if not data_collection:
+                return {
+                    "candidate_idx": candidate_idx,
+                    "error": "No SAPD data available",
+                }
+
+            # Get keys and extract peak SAPD and location
+            keys = list(data_collection.Keys())
             peak_sapd = None
-            peak_location = None
+            peak_loc = None
 
-            for item in data_collection:
-                if item.Name == "Peak Power Density":
-                    peak_sapd = item.Value
-                if hasattr(item, "PeakLocation"):
-                    peak_location = list(item.PeakLocation)
+            def safe_get_value(key):
+                """Safely get value from data collection, handling nullptr."""
+                try:
+                    return data_collection.FieldValue(key, 0)
+                except TypeError:
+                    # C++ nullptr can't be converted to Python
+                    return None
 
-            self._log(f"      Peak SAPD: {peak_sapd} W/m2", log_type="info")
+            for key in keys:
+                val = safe_get_value(key)
+                if val is not None:
+                    if "Peak" in key and "Power" in key:
+                        peak_sapd = val
+                    if "Peak" in key and "Location" in key:
+                        peak_loc = val
+
+            if peak_sapd is None:
+                # Fallback: look for any power density value
+                for key in keys:
+                    if "Power" in key or "Density" in key:
+                        val = safe_get_value(key)
+                        if val is not None:
+                            peak_sapd = val
+                            break
+
+            self.verbose_logger.info(
+                f"Candidate #{candidate_idx}: Peak SAPD = {peak_sapd:.4f} W/m2"
+                if peak_sapd
+                else f"Candidate #{candidate_idx}: Peak SAPD = None"
+            )
 
             return {
                 "candidate_idx": candidate_idx,
                 "peak_sapd_w_m2": float(peak_sapd) if peak_sapd else None,
-                "peak_location_m": peak_location,
+                "peak_location_m": list(peak_loc) if peak_loc else None,
                 "combined_h5": str(combined_h5),
             }
 
