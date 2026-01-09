@@ -63,7 +63,7 @@ class AutoInducedProcessor(LoggingMixin):
             Dict with analysis results including candidates, SAPD values, and worst-case.
         """
         auto_cfg = self.config["auto_induced"] or {}
-        top_n = auto_cfg.get("top_n", 3)
+        top_n = auto_cfg.get("top_n", 10)
         cube_size_mm = auto_cfg.get("cube_size_mm", 100)
 
         self._log(
@@ -121,7 +121,7 @@ class AutoInducedProcessor(LoggingMixin):
 
         if worst_case and worst_case.get("peak_sapd_w_m2"):
             self._log(
-                f"  - Worst-case SAPD: {worst_case['peak_sapd_w_m2']:.2f} W/m2 (candidate #{worst_case.get('candidate_idx')})",
+                f"  - Worst-case SAPD: {worst_case['peak_sapd_w_m2']:.4e} W/m2 (candidate #{worst_case.get('candidate_idx')})",
                 level="progress",
                 log_type="success",
             )
@@ -278,7 +278,6 @@ class AutoInducedProcessor(LoggingMixin):
         Returns:
             Dict with SAPD extraction results.
         """
-        import time
 
         import h5py
 
@@ -287,8 +286,6 @@ class AutoInducedProcessor(LoggingMixin):
         self.verbose_logger.info(f"Extracting SAPD from {combined_h5.name}")
 
         try:
-            step_start = time.monotonic()
-
             # Import here to avoid circular imports and ensure Sim4Life is available
             import XCoreModeling
             import s4l_v1.analysis as analysis
@@ -323,19 +320,15 @@ class AutoInducedProcessor(LoggingMixin):
             sim_extractor.FileName = str(combined_h5)
             sim_extractor.UpdateAttributes()
             document.AllAlgorithms.Add(sim_extractor)
-            self.verbose_logger.info(f"  SimExtractor: {time.monotonic() - step_start:.2f}s")
 
             # Get EM sensor extractor
-            t1 = time.monotonic()
             em_sensor_extractor = sim_extractor["Overall Field"]
             em_sensor_extractor.FrequencySettings.ExtractedFrequency = "All"
             em_sensor_extractor.UpdateAttributes()
             document.AllAlgorithms.Add(em_sensor_extractor)
             em_sensor_extractor.Update()
-            self.verbose_logger.info(f"  EM Sensor Update: {time.monotonic() - t1:.2f}s")
 
             # Get skin entities from config
-            t2 = time.monotonic()
             skin_entity_names = self._get_skin_entity_names()
             skin_entities = []
             all_entities = model.AllEntities()
@@ -349,16 +342,37 @@ class AutoInducedProcessor(LoggingMixin):
                     "error": "No skin entities found in project",
                 }
 
-            # Create surface entity (same pattern as SapdExtractor)
-            if len(skin_entities) > 1:
-                surface_entity = model.Unite([e.Clone() for e in skin_entities])
-            else:
-                surface_entity = skin_entities[0].Clone()
+            # Try to load cached skin, or create and cache it (same as SapdExtractor)
+            cache_dir = os.path.join(self.config.base_dir, "data", "phantoms_skin")
+            cache_path = os.path.join(cache_dir, f"{self.phantom_name}_skin.sab")
+            united_entity = None
+
+            if os.path.exists(cache_path):
+                try:
+                    imported_entities = list(model.Import(cache_path))
+                    if imported_entities:
+                        united_entity = imported_entities[0]
+                except Exception:
+                    pass  # Fall through to create it
+
+            if united_entity is None:
+                # Create surface entity (same pattern as SapdExtractor)
+                if len(skin_entities) > 1:
+                    united_entity = model.Unite([e.Clone() for e in skin_entities])
+                else:
+                    united_entity = skin_entities[0].Clone()
+
+                # Save to cache for next time
+                try:
+                    os.makedirs(cache_dir, exist_ok=True)
+                    model.Export([united_entity], cache_path)
+                except Exception:
+                    pass  # Caching is optional
+
+            surface_entity = united_entity.Clone()  # Clone the cached entity for slicing
             surface_entity.Name = f"AutoInduced_Skin_{candidate_idx}"
-            self.verbose_logger.info(f"  Unite skin: {time.monotonic() - t2:.2f}s")
 
             # Slice the skin mesh to a box around the focus point (critical for speed!)
-            t_slice = time.monotonic()
             surface_entity, sliced = slice_entity_to_box(
                 entity=surface_entity,
                 center_mm=center_mm,
@@ -369,35 +383,28 @@ class AutoInducedProcessor(LoggingMixin):
             )
             if sliced:
                 surface_entity.Name = f"AutoInduced_Skin_Sliced_{candidate_idx}"
-                self.verbose_logger.info(f"  Mesh slicing: {time.monotonic() - t_slice:.2f}s")
             else:
                 self.verbose_logger.warning("  Mesh slicing failed, using full skin mesh")
 
             # Create ModelToGridFilter (matching SapdExtractor pattern)
-            t3 = time.monotonic()
             model_to_grid_filter = analysis.core.ModelToGridFilter(inputs=[])
             model_to_grid_filter.Name = f"AutoInduced_SkinSurface_{candidate_idx}"
             model_to_grid_filter.Entity = surface_entity
             model_to_grid_filter.UpdateAttributes()
             document.AllAlgorithms.Add(model_to_grid_filter)
-            self.verbose_logger.info(f"  ModelToGrid: {time.monotonic() - t3:.2f}s")
 
             # Create SAPD evaluator with correct inputs (matching SapdExtractor)
             # Inputs: Poynting Vector S(x,y,z,f0) and Surface
-            t4 = time.monotonic()
             inputs = [em_sensor_extractor.Outputs["S(x,y,z,f0)"], model_to_grid_filter.Outputs["Surface"]]
             sapd_evaluator = analysis.em_evaluators.GenericSAPDEvaluator(inputs=inputs)
             sapd_evaluator.AveragingArea = 4.0, units.SquareCentiMeters
             sapd_evaluator.Threshold = 0.01, units.Meters  # 10 mm
             sapd_evaluator.UpdateAttributes()
             document.AllAlgorithms.Add(sapd_evaluator)
-            self.verbose_logger.info(f"  SAPD Evaluator setup: {time.monotonic() - t4:.2f}s")
 
             # Get report and update
-            t5 = time.monotonic()
             sapd_report = sapd_evaluator.Outputs["Spatial-Averaged Power Density Report"]
             sapd_report.Update()
-            self.verbose_logger.info(f"  SAPD Report Update: {time.monotonic() - t5:.2f}s")
 
             # Parse results from the DataSimpleDataCollection (matching SapdExtractor)
             data_collection = sapd_report.Data.DataSimpleDataCollection
