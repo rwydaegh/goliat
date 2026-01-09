@@ -297,11 +297,21 @@ class AutoInducedProcessor(LoggingMixin):
             import s4l_v1.units as units
 
             # Read grid axes from input H5 for voxel->mm conversion
+            x_axis = y_axis = z_axis = None
             with h5py.File(input_h5, "r") as f:
-                mesh_grp = f["Meshes/Mesh-0"]
-                x_axis = mesh_grp["x-axis"][:] * 1000  # m to mm
-                y_axis = mesh_grp["y-axis"][:] * 1000
-                z_axis = mesh_grp["z-axis"][:] * 1000
+                for mesh_key in f["Meshes"].keys():
+                    mesh = f[f"Meshes/{mesh_key}"]
+                    if "axis_x" in mesh:
+                        x_axis = mesh["axis_x"][:] * 1000  # m to mm
+                        y_axis = mesh["axis_y"][:] * 1000
+                        z_axis = mesh["axis_z"][:] * 1000
+                        break
+
+            if x_axis is None:
+                return {
+                    "candidate_idx": candidate_idx,
+                    "error": "Could not read grid axes from input H5",
+                }
 
             voxel_idx = candidate["voxel_idx"]
             center_mm = voxel_idx_to_mm(voxel_idx, (x_axis, y_axis, z_axis))
