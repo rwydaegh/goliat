@@ -66,7 +66,7 @@ class AutoInducedProcessor(LoggingMixin):
         top_n = auto_cfg.get("top_n", 10)
         cube_size_mm = auto_cfg.get("cube_size_mm", 100)
         save_intermediate_files = auto_cfg.get("save_intermediate_files", False)
-        search_metric = auto_cfg.get("search_metric", "E_z_magnitude")
+        search_metric = auto_cfg.get("search_metric", "E_magnitude")
 
         self._log(
             f"\n--- Auto-Induced Analysis: {self.phantom_name}, {self.freq}MHz ---",

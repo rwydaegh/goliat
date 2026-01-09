@@ -20,7 +20,7 @@ from .skin_voxel_utils import extract_skin_voxels, get_skin_voxel_coordinates
 def compute_metric_sum_at_skin(
     h5_paths: Sequence[Union[str, Path]],
     skin_indices: np.ndarray,
-    metric: str = "E_z_magnitude",
+    metric: str = "E_magnitude",
 ) -> np.ndarray:
     """Compute sum of field metric at skin voxels across all directions.
 
@@ -31,8 +31,9 @@ def compute_metric_sum_at_skin(
         h5_paths: List of _Output.h5 file paths (one per direction).
         skin_indices: Array of shape (N_skin, 3) with [ix, iy, iz] indices.
         metric: Search metric to use:
+            - "E_magnitude": |E| = sqrt(|Ex|²+|Ey|²+|Ez|²) - SAPD-consistent (default)
             - "E_z_magnitude": |E_z| - vertical E-field component (MRT-consistent)
-            - "poynting_z": |Re(E × H*)_z| - z-component of Poynting vector (SAPD-consistent)
+            - "poynting_z": |Re(E × H*)_z| - z-component of Poynting vector
 
     Returns:
         Array of shape (N_skin,) with metric sum at each skin voxel.
@@ -40,10 +41,15 @@ def compute_metric_sum_at_skin(
     metric_sum = np.zeros(len(skin_indices), dtype=np.float64)
 
     for h5_path in tqdm(h5_paths, desc="Reading fields", leave=False):
-        if metric == "E_z_magnitude":
+        if metric == "E_magnitude":
+            # Read E-field, compute full vector magnitude
+            E_skin = read_field_at_indices(h5_path, skin_indices, field_type="E")
+            # |E| = sqrt(|Ex|² + |Ey|² + |Ez|²)
+            metric_values = np.linalg.norm(E_skin, axis=1)
+
+        elif metric == "E_z_magnitude":
             # Read only E-field, use z-component magnitude
             E_skin = read_field_at_indices(h5_path, skin_indices, field_type="E")
-            # E_skin shape: (N_skin, 3) complex - [Ex, Ey, Ez]
             metric_values = np.abs(E_skin[:, 2])  # |E_z| only
 
         elif metric == "poynting_z":
@@ -55,7 +61,7 @@ def compute_metric_sum_at_skin(
             metric_values = np.abs(S_z)
 
         else:
-            raise ValueError(f"Unknown metric: {metric}. Use 'E_z_magnitude' or 'poynting_z'")
+            raise ValueError(f"Unknown metric: {metric}. Use 'E_magnitude', 'E_z_magnitude', or 'poynting_z'")
 
         metric_sum += metric_values
 
