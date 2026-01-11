@@ -187,24 +187,19 @@ def find_valid_air_focus_points(
     cube_size_mm: float = 50.0,
     min_skin_volume_fraction: float = 0.05,
     skin_keywords: Optional[Sequence[str]] = None,
+    shell_size_mm: float = 10.0,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Find air voxels that are valid focus point candidates (near skin).
 
     Uses scipy.ndimage.binary_dilation for efficient vectorized detection
-    of air voxels that are within cube_size_mm of skin voxels.
-
-    Note: This function finds air voxels that have at least ONE skin voxel
-    within the cube radius (via dilation). The min_skin_volume_fraction
-    parameter is accepted for API consistency but not strictly enforced here;
-    actual skin fraction filtering happens implicitly during hotspot scoring
-    (cubes with very little skin will have low scores).
+    of air voxels that are within shell_size_mm of skin voxels.
 
     Args:
         input_h5_path: Path to _Input.h5.
-        cube_size_mm: Size of the cube (in mm) that defines "near skin".
-        min_skin_volume_fraction: Accepted for API consistency but not
-            strictly enforced. See note above.
+        cube_size_mm: Size of the cube (in mm) for scoring.
+        min_skin_volume_fraction: Accepted for API consistency.
         skin_keywords: Keywords to match skin tissues (default: ["skin"]).
+        shell_size_mm: Size of shell around skin for finding valid air points.
 
     Returns:
         Tuple of:
@@ -223,7 +218,6 @@ def find_valid_air_focus_points(
 
     logger = logging.getLogger("progress")
 
-    # Load both masks
     t0 = time.perf_counter()
     air_mask, ax_x, ax_y, ax_z, _ = extract_air_voxels(input_h5_path)
     logger.info(f"  [timing] extract_air_voxels: {time.perf_counter() - t0:.2f}s")
@@ -234,15 +228,11 @@ def find_valid_air_focus_points(
 
     logger.info(f"  Grid shape: {air_mask.shape}, Air voxels: {np.sum(air_mask):,}, Skin voxels: {np.sum(skin_mask):,}")
 
-    # Get voxel spacing
     dx = np.mean(np.diff(ax_x))
     dy = np.mean(np.diff(ax_y))
     dz = np.mean(np.diff(ax_z))
     logger.info(f"  Voxel spacing: dx={dx * 1000:.2f}mm, dy={dy * 1000:.2f}mm, dz={dz * 1000:.2f}mm")
 
-    # Use a fixed shell size (10mm) for finding air near skin
-    # This is a balance between coverage and computational speed
-    shell_size_mm = 10.0
     shell_size_m = shell_size_mm / 1000.0
     half_nx = max(1, int(np.ceil(shell_size_m / (2 * dx))))
     half_ny = max(1, int(np.ceil(shell_size_m / (2 * dy))))

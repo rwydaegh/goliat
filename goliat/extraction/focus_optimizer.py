@@ -262,12 +262,12 @@ def find_focus_and_compute_weights(
     skin_keywords: Optional[Sequence[str]] = None,
     top_n: int = 1,
     metric: str = "E_z_magnitude",
-    # New parameters for air-based search:
-    search_mode: str = "skin",  # "air" (new) or "skin" (legacy)
+    search_mode: str = "skin",
     n_samples: int = 100,
     cube_size_mm: float = 50.0,
     min_skin_volume_fraction: float = 0.05,
     random_seed: Optional[int] = None,
+    shell_size_mm: float = 10.0,
 ) -> Tuple[np.ndarray, np.ndarray, dict]:
     """Complete workflow: find worst-case focus point(s) and compute weights.
 
@@ -300,6 +300,7 @@ def find_focus_and_compute_weights(
             cube_size_mm=cube_size_mm,
             min_skin_volume_fraction=min_skin_volume_fraction,
             random_seed=random_seed,
+            shell_size_mm=shell_size_mm,
         )
     else:
         # Legacy skin-based search
@@ -367,14 +368,15 @@ def _find_focus_air_based(
     cube_size_mm: float,
     min_skin_volume_fraction: float,
     random_seed: Optional[int],
+    shell_size_mm: float = 10.0,
 ) -> Tuple[np.ndarray, np.ndarray, dict]:
     """Air-based focus search - physically correct MaMIMO beamforming model."""
-    # Step 1: Find valid air focus points (air voxels near skin)
     valid_air_indices, ax_x, ax_y, ax_z, skin_mask = find_valid_air_focus_points(
         input_h5_path=str(input_h5_path),
         cube_size_mm=cube_size_mm,
         min_skin_volume_fraction=min_skin_volume_fraction,
         skin_keywords=skin_keywords,
+        shell_size_mm=shell_size_mm,
     )
 
     n_valid = len(valid_air_indices)

@@ -1,6 +1,5 @@
 {
     "extends": "far_field_config.json",
-    "comment": "Test config for auto-induced exposure PoC (2450 MHz, 1.4mm resolution)",
     "phantoms": [
         "thelonious"
     ],
@@ -65,7 +64,8 @@
             "mode": "air",
             "n_samples": 100,
             "min_skin_volume_fraction": 0.05,
-            "random_seed": 42
+            "random_seed": 42,
+            "shell_size_mm": 10.0
         }
     }
 }

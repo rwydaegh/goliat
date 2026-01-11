@@ -180,10 +180,11 @@ class AutoInducedProcessor(LoggingMixin):
         cube_size_mm = auto_cfg.get("cube_size_mm", 50.0)
 
         # Extract search parameters
-        search_mode = search_cfg.get("mode", "skin")  # Default to skin for backward compat
+        search_mode = search_cfg.get("mode", "skin")
         n_samples = search_cfg.get("n_samples", 100)
         min_skin_volume_fraction = search_cfg.get("min_skin_volume_fraction", 0.05)
         random_seed = search_cfg.get("random_seed", None)
+        shell_size_mm = search_cfg.get("shell_size_mm", 10.0)
 
         self._log(
             f"  Search mode: {search_mode}",
@@ -192,18 +193,17 @@ class AutoInducedProcessor(LoggingMixin):
         )
 
         try:
-            # find_focus_and_compute_weights returns (focus_indices, weights, info)
             focus_indices, weights, info = find_focus_and_compute_weights(
                 h5_paths=[str(p) for p in h5_paths],
                 input_h5_path=str(input_h5),
                 top_n=top_n,
                 metric=search_metric,
-                # New air-based search parameters
                 search_mode=search_mode,
                 n_samples=n_samples,
                 cube_size_mm=cube_size_mm,
                 min_skin_volume_fraction=min_skin_volume_fraction,
                 random_seed=random_seed,
+                shell_size_mm=shell_size_mm,
             )
 
             # Build list of candidate dicts
