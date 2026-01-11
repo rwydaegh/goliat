@@ -138,6 +138,29 @@ class AutoInducedProcessor(LoggingMixin):
                 log_type="success",
             )
 
+        # Export proxy-SAPD correlation data
+        correlation_data = []
+        for i, (candidate, sapd_result) in enumerate(zip(candidates, sapd_results)):
+            proxy_score = candidate.get("hotspot_score", candidate.get("metric_sum", 0.0))
+            sapd_value = sapd_result.get("peak_sapd_w_m2")
+            if sapd_value is not None:
+                correlation_data.append({
+                    "candidate_idx": i + 1,
+                    "voxel_x": candidate["voxel_idx"][0],
+                    "voxel_y": candidate["voxel_idx"][1],
+                    "voxel_z": candidate["voxel_idx"][2],
+                    "proxy_score": proxy_score,
+                    "sapd_w_m2": sapd_value,
+                })
+        if correlation_data:
+            import csv
+            corr_path = self.output_dir / "proxy_sapd_correlation.csv"
+            with open(corr_path, "w", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=correlation_data[0].keys())
+                writer.writeheader()
+                writer.writerows(correlation_data)
+            self.verbose_logger.info(f"  Exported proxy-SAPD correlation to {corr_path.name}")
+
         return {
             "phantom": self.phantom_name,
             "frequency_mhz": self.freq,
@@ -245,6 +268,17 @@ class AutoInducedProcessor(LoggingMixin):
             self.verbose_logger.info(f"Found {len(candidates)} focus candidate(s) in {elapsed:.2f}s")
             for i, c in enumerate(candidates):
                 self.verbose_logger.info(f"  Candidate #{i + 1}: voxel {c['voxel_idx']}, {score_key}={c[score_key]:.4e}")
+
+            # Export all scores to CSV for distribution analysis
+            all_scores_data = info.get("all_scores_data", [])
+            if all_scores_data:
+                import csv
+                csv_path = self.output_dir / "all_proxy_scores.csv"
+                with open(csv_path, "w", newline="") as f:
+                    writer = csv.DictWriter(f, fieldnames=all_scores_data[0].keys())
+                    writer.writeheader()
+                    writer.writerows(all_scores_data)
+                self.verbose_logger.info(f"  Exported {len(all_scores_data)} proxy scores to {csv_path.name}")
 
             return candidates
 

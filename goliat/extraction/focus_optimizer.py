@@ -500,21 +500,21 @@ def _find_focus_air_based(
         valid_scores = hotspot_scores[hotspot_scores > 0]
         logger.info(f"  Score range: min={np.min(valid_scores):.4e}, max={np.max(valid_scores):.4e}, mean={np.mean(valid_scores):.4e}")
 
-    actual_top_n = min(top_n, len(hotspot_scores))
-    if actual_top_n == 0 or n_with_skin == 0:
+    if n_with_skin == 0:
         raise ValueError("No valid hotspot scores computed (all air points had no skin in cube)")
 
-    if actual_top_n == len(hotspot_scores):
-        # All samples are in top-N, just sort them
-        top_n_idx = np.argsort(hotspot_scores)[::-1]
-    else:
-        top_n_idx = np.argpartition(hotspot_scores, -actual_top_n)[-actual_top_n:]
-        top_n_idx = top_n_idx[np.argsort(hotspot_scores[top_n_idx])[::-1]]
+    # Select candidates with diversity constraint
+    top_air_indices, top_scores = _select_diverse_candidates(
+        sampled_air_indices=sampled_air_indices,
+        hotspot_scores=hotspot_scores,
+        top_n=top_n,
+        percentile=95.0,  # Top 5%
+        min_distance_voxels=35,  # ~50mm at 1.4mm resolution
+        ax_x=ax_x, ax_y=ax_y, ax_z=ax_z,
+    )
+    actual_top_n = len(top_air_indices)
 
-    top_air_indices = sampled_air_indices[top_n_idx]
-    top_scores = hotspot_scores[top_n_idx]
-
-    # Step 5: Compute weights for top-1
+    # Compute weights for top-1
     top_focus_idx = top_air_indices[0]
     phases = compute_optimal_phases(h5_paths, top_focus_idx)
     weights = compute_weights(phases)
@@ -528,6 +528,23 @@ def _find_focus_air_based(
             float(ax_z[min(iz, len(ax_z) - 1)]),
         ]
     )
+
+    # Prepare all scores data for export
+    all_scores_data = []
+    for i, (idx, score) in enumerate(zip(sampled_air_indices, hotspot_scores)):
+        x_mm = float(ax_x[min(idx[0], len(ax_x) - 1)]) * 1000
+        y_mm = float(ax_y[min(idx[1], len(ax_y) - 1)]) * 1000
+        z_mm = float(ax_z[min(idx[2], len(ax_z) - 1)]) * 1000
+        all_scores_data.append({
+            "idx": i,
+            "voxel_x": int(idx[0]),
+            "voxel_y": int(idx[1]),
+            "voxel_z": int(idx[2]),
+            "x_mm": x_mm,
+            "y_mm": y_mm,
+            "z_mm": z_mm,
+            "proxy_score": float(score),
+        })
 
     info = {
         "search_mode": "air",
@@ -543,12 +560,89 @@ def _find_focus_air_based(
         "all_hotspot_scores": top_scores,
         "cube_size_mm": cube_size_mm,
         "random_seed": random_seed,
+        "all_scores_data": all_scores_data,  # For CSV export
     }
 
     if actual_top_n == 1:
         return top_focus_idx, weights, info
     else:
         return top_air_indices, weights, info
+
+
+def _select_diverse_candidates(
+    sampled_air_indices: np.ndarray,
+    hotspot_scores: np.ndarray,
+    top_n: int,
+    percentile: float,
+    min_distance_voxels: int,
+    ax_x: np.ndarray,
+    ax_y: np.ndarray,
+    ax_z: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Select top candidates with diversity constraint.
+
+    Instead of just taking top-N, we:
+    1. Filter to top percentile (e.g., top 5%)
+    2. From those, greedily select candidates that are at least min_distance apart
+
+    Args:
+        sampled_air_indices: All sampled voxel indices (N, 3)
+        hotspot_scores: Corresponding scores (N,)
+        top_n: Maximum number of candidates to return
+        percentile: Only consider scores above this percentile
+        min_distance_voxels: Minimum voxel distance between candidates
+
+    Returns:
+        Tuple of (selected_indices, selected_scores)
+    """
+    logger = logging.getLogger("progress")
+
+    # Filter to top percentile
+    valid_mask = hotspot_scores > 0
+    if not np.any(valid_mask):
+        raise ValueError("No valid scores")
+
+    threshold = np.percentile(hotspot_scores[valid_mask], percentile)
+    top_mask = hotspot_scores >= threshold
+    n_in_percentile = np.sum(top_mask)
+    logger.info(f"  Selection: {n_in_percentile} points in top {100-percentile:.0f}% (threshold={threshold:.4e})")
+
+    # Get indices sorted by score (descending)
+    top_indices = np.where(top_mask)[0]
+    sorted_order = np.argsort(hotspot_scores[top_indices])[::-1]
+    top_indices = top_indices[sorted_order]
+
+    # Greedy selection with diversity
+    selected = []
+    selected_positions = []
+
+    for idx in top_indices:
+        if len(selected) >= top_n:
+            break
+
+        pos = sampled_air_indices[idx]
+
+        # Check distance to all already selected
+        is_diverse = True
+        for prev_pos in selected_positions:
+            dist = np.sqrt(np.sum((pos - prev_pos) ** 2))
+            if dist < min_distance_voxels:
+                is_diverse = False
+                break
+
+        if is_diverse:
+            selected.append(idx)
+            selected_positions.append(pos)
+
+    if len(selected) == 0:
+        # Fallback: just take top-N without diversity
+        logger.info("  Warning: diversity constraint too strict, falling back to top-N")
+        selected = top_indices[:top_n].tolist()
+
+    selected = np.array(selected)
+    logger.info(f"  Selected {len(selected)} diverse candidates from top {100-percentile:.0f}%")
+
+    return sampled_air_indices[selected], hotspot_scores[selected]
 
 
 # --- CLI for testing ---
