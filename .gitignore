@@ -64,6 +64,8 @@ configs/*
 !configs/test_sapd_far_field.json
 !configs/test_auto_induced_poc.json
 !configs/generate_skin_cache.json
+!configs/skin_mesh_config.json
+!configs/skin_voxel*.json
 
 # Generated files
 *.csv

@@ -1,0 +1,30 @@
+{
+    "extends": "far_field_config.json",
+    "phantoms": ["thelonious", "duke", "eartha", "ella"],
+    "frequencies_mhz": [450],
+    "execution_control": {
+        "do_setup": true,
+        "do_run": true,
+        "only_write_input_file": true,
+        "do_extract": false,
+        "auto_cleanup_previous_results": []
+    },
+    "far_field_setup": {
+        "type": "environmental",
+        "environmental": {
+            "incident_directions": ["x_pos"],
+            "polarizations": ["theta"]
+        }
+    },
+    "simulation_parameters": {
+        "auto_reduce_bbox": true,
+        "use_symmetry_reduction": true,
+        "simulation_time_multiplier": 0.01,
+        "convergence_level_dB": -5
+    },
+    "gridding_parameters": {
+        "global_gridding_per_frequency": {
+            "450": 1.0
+        }
+    }
+}
