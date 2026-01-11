@@ -182,7 +182,6 @@ class AutoInducedProcessor(LoggingMixin):
         # Extract search parameters
         search_mode = search_cfg.get("mode", "skin")
         n_samples = search_cfg.get("n_samples", 100)
-        min_skin_volume_fraction = search_cfg.get("min_skin_volume_fraction", 0.05)
         random_seed = search_cfg.get("random_seed", None)
         shell_size_mm = search_cfg.get("shell_size_mm", 10.0)
 
@@ -201,7 +200,6 @@ class AutoInducedProcessor(LoggingMixin):
                 search_mode=search_mode,
                 n_samples=n_samples,
                 cube_size_mm=cube_size_mm,
-                min_skin_volume_fraction=min_skin_volume_fraction,
                 random_seed=random_seed,
                 shell_size_mm=shell_size_mm,
             )

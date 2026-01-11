@@ -350,7 +350,6 @@ def find_focus_and_compute_weights(
     search_mode: str = "skin",
     n_samples: int = 100,
     cube_size_mm: float = 50.0,
-    min_skin_volume_fraction: float = 0.05,
     random_seed: Optional[int] = None,
     shell_size_mm: float = 10.0,
 ) -> Tuple[np.ndarray, np.ndarray, dict]:
@@ -366,7 +365,6 @@ def find_focus_and_compute_weights(
         search_mode: "air" (new, physically correct) or "skin" (legacy).
         n_samples: Number of air points to sample (only for mode="air").
         cube_size_mm: Cube size for validity check and scoring (only for mode="air").
-        min_skin_volume_fraction: Min skin fraction in cube (only for mode="air").
         random_seed: Random seed for sampling (only for mode="air").
 
     Returns:
@@ -383,7 +381,6 @@ def find_focus_and_compute_weights(
             top_n=top_n,
             n_samples=n_samples,
             cube_size_mm=cube_size_mm,
-            min_skin_volume_fraction=min_skin_volume_fraction,
             random_seed=random_seed,
             shell_size_mm=shell_size_mm,
         )
@@ -451,7 +448,6 @@ def _find_focus_air_based(
     top_n: int,
     n_samples: int,
     cube_size_mm: float,
-    min_skin_volume_fraction: float,
     random_seed: Optional[int],
     shell_size_mm: float = 10.0,
 ) -> Tuple[np.ndarray, np.ndarray, dict]:
@@ -459,7 +455,6 @@ def _find_focus_air_based(
     valid_air_indices, ax_x, ax_y, ax_z, skin_mask = find_valid_air_focus_points(
         input_h5_path=str(input_h5_path),
         cube_size_mm=cube_size_mm,
-        min_skin_volume_fraction=min_skin_volume_fraction,
         skin_keywords=skin_keywords,
         shell_size_mm=shell_size_mm,
     )
@@ -547,7 +542,6 @@ def _find_focus_air_based(
         "all_focus_indices": top_air_indices,
         "all_hotspot_scores": top_scores,
         "cube_size_mm": cube_size_mm,
-        "min_skin_volume_fraction": min_skin_volume_fraction,
         "random_seed": random_seed,
     }
 

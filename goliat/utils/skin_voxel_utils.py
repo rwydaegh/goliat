@@ -185,7 +185,6 @@ def extract_air_voxels(
 def find_valid_air_focus_points(
     input_h5_path: str,
     cube_size_mm: float = 50.0,
-    min_skin_volume_fraction: float = 0.05,
     skin_keywords: Optional[Sequence[str]] = None,
     shell_size_mm: float = 10.0,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -197,7 +196,6 @@ def find_valid_air_focus_points(
     Args:
         input_h5_path: Path to _Input.h5.
         cube_size_mm: Size of the cube (in mm) for scoring.
-        min_skin_volume_fraction: Accepted for API consistency.
         skin_keywords: Keywords to match skin tissues (default: ["skin"]).
         shell_size_mm: Size of shell around skin for finding valid air points.
 
@@ -263,9 +261,8 @@ def find_valid_air_focus_points(
 
     if len(valid_air_indices) == 0:
         raise ValueError(
-            f"No valid air focus points found. Try increasing cube_size_mm "
-            f"(current: {cube_size_mm}mm) or decreasing min_skin_volume_fraction "
-            f"(current: {min_skin_volume_fraction})."
+            f"No valid air focus points found. Try increasing shell_size_mm "
+            f"(current: {shell_size_mm}mm)."
         )
 
     return valid_air_indices, ax_x, ax_y, ax_z, skin_mask
