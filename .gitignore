@@ -13,6 +13,7 @@ __pycache__/
 
 # Build and results
 results/
+!results/analysis_plots/
 /plots/
 !plots/organ_scatter/
 paper/
