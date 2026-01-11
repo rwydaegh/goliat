@@ -473,11 +473,17 @@ def _find_focus_air_based(
     if random_seed is not None:
         np.random.seed(random_seed)
 
-    n_to_sample = min(n_samples, n_valid)
+    # Support coverage percentage: if n_samples <= 1.0, treat as fraction of valid points
+    if n_samples <= 1.0:
+        n_to_sample = max(100, int(n_valid * n_samples))  # At least 100 samples
+        logging.getLogger("progress").info(f"Coverage mode: {n_samples*100:.1f}% → {n_to_sample:,} samples")
+    else:
+        n_to_sample = min(int(n_samples), n_valid)
+
     sampled_idx = np.random.choice(n_valid, size=n_to_sample, replace=False)
     sampled_air_indices = valid_air_indices[sampled_idx]
 
-    logging.getLogger("progress").info(f"Sampling {n_to_sample} air points for hotspot scoring")
+    logging.getLogger("progress").info(f"Sampling {n_to_sample:,} air points for hotspot scoring")
 
     # Pre-load all E-fields into cache to avoid memory thrashing
     field_cache = FieldCache(h5_paths, field_type="E")
