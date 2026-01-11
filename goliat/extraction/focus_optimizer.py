@@ -496,9 +496,17 @@ def _find_focus_air_based(
 
     hotspot_scores = np.array(hotspot_scores)
 
-    # Step 4: Select top-N by score
+    # Log scoring statistics
+    n_with_skin = np.sum(hotspot_scores > 0)
+    n_no_skin = np.sum(hotspot_scores == 0)
+    logger = logging.getLogger("progress")
+    logger.info(f"  Scoring stats: {n_with_skin}/{len(hotspot_scores)} points had skin in cube, {n_no_skin} had no skin (score=0)")
+    if n_with_skin > 0:
+        valid_scores = hotspot_scores[hotspot_scores > 0]
+        logger.info(f"  Score range: min={np.min(valid_scores):.4e}, max={np.max(valid_scores):.4e}, mean={np.mean(valid_scores):.4e}")
+
     actual_top_n = min(top_n, len(hotspot_scores))
-    if actual_top_n == 0:
+    if actual_top_n == 0 or n_with_skin == 0:
         raise ValueError("No valid hotspot scores computed (all air points had no skin in cube)")
 
     if actual_top_n == len(hotspot_scores):
