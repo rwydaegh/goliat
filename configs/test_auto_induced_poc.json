@@ -60,6 +60,7 @@
         "enabled": true,
         "top_n": 10,
         "cube_size_mm": 50,
+        "save_intermediate_files": true,
         "search": {
             "mode": "air",
             "n_samples": 100,
