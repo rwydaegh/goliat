@@ -50,7 +50,7 @@ class FieldCache:
         for h5_path in tqdm(self.h5_paths, desc=f"Loading {field_type}-fields"):
             self._load_field(h5_path)
 
-        total_mb = sum(f.nbytes for f in self.fields.values()) / 1e6
+        total_mb = sum(sum(c.nbytes for c in comps) for comps in self.fields.values()) / 1e6
         logger.info(f"  [timing] Field cache loaded: {time.perf_counter() - t0:.2f}s, {total_mb:.0f} MB")
 
     def _load_field(self, h5_path: str):
