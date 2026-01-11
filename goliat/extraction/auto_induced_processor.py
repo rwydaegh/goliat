@@ -83,7 +83,7 @@ class AutoInducedProcessor(LoggingMixin):
 
         # Step 1: Focus search
         with self.study.subtask("auto_induced_focus_search"):
-            candidates = self._find_focus_candidates(h5_paths, input_h5, top_n, search_metric)
+            candidates = self._find_focus_candidates(h5_paths, input_h5, top_n, search_metric, output_dir)
 
         if not candidates:
             self._log("    ERROR: No focus candidates found", log_type="error")
@@ -154,7 +154,7 @@ class AutoInducedProcessor(LoggingMixin):
                 })
         if correlation_data:
             import csv
-            corr_path = self.output_dir / "proxy_sapd_correlation.csv"
+            corr_path = Path(output_dir) / "proxy_sapd_correlation.csv"
             with open(corr_path, "w", newline="") as f:
                 writer = csv.DictWriter(f, fieldnames=correlation_data[0].keys())
                 writer.writeheader()
@@ -176,6 +176,7 @@ class AutoInducedProcessor(LoggingMixin):
         input_h5: Path,
         top_n: int,
         search_metric: str = "E_z_magnitude",
+        output_dir: Path = None,
     ) -> list[dict]:
         """Find top-N worst-case focus candidates.
 
@@ -185,6 +186,7 @@ class AutoInducedProcessor(LoggingMixin):
             top_n: Number of candidates to return.
             search_metric: "E_z_magnitude" (MRT-style) or "poynting_z" (SAPD-style).
                 Only used in skin mode.
+            output_dir: Directory for output files (CSV exports).
 
         Returns:
             List of candidate dicts with voxel indices, scores, and phase weights.
@@ -275,9 +277,9 @@ class AutoInducedProcessor(LoggingMixin):
 
             # Export all scores to CSV for distribution analysis
             all_scores_data = info.get("all_scores_data", [])
-            if all_scores_data:
+            if all_scores_data and output_dir:
                 import csv
-                csv_path = self.output_dir / "all_proxy_scores.csv"
+                csv_path = Path(output_dir) / "all_proxy_scores.csv"
                 with open(csv_path, "w", newline="") as f:
                     writer = csv.DictWriter(f, fieldnames=all_scores_data[0].keys())
                     writer.writeheader()
