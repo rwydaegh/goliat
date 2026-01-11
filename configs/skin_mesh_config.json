@@ -1,0 +1,55 @@
+{
+    "_comment": "Configuration for skin voxel to optimized mesh extraction. Run with Blender Python.",
+    "input": {
+        "h5_path": "results/far_field/thelonious/450MHz/x_pos_theta/Thelonious_FDTD_Input.h5",
+        "_comment": "Path to Sim4Life _Input.h5 file (relative to project root or absolute)"
+    },
+    "output": {
+        "directory": "results/skin_mesh",
+        "mesh_filename": "skin_mesh.stl",
+        "save_voxel_pickle": true,
+        "pickle_filename": "skin_voxels.pkl",
+        "save_blend_file": true,
+        "blend_filename": "skin_mesh_debug.blend"
+    },
+    "tissue_extraction": {
+        "tissue_keyword": "skin",
+        "_comment": "Case-insensitive keyword to match tissue names in the phantom"
+    },
+    "morphological_processing": {
+        "enabled": true,
+        "method": "dilate-erode",
+        "dilate_iterations": 2,
+        "erode_iterations": 1,
+        "_comment": "Dilate-erode connects thin tissue layers. Use dilate > erode for best results."
+    },
+    "marching_cubes": {
+        "smooth_sigma": 0.8,
+        "_comment": "Gaussian smoothing sigma before marching cubes. 0 = disabled."
+    },
+    "mesh_processing": {
+        "min_component_fraction": 0.001,
+        "fill_holes": true,
+        "_comment": "Remove components with fewer than this fraction of total faces (0.001 = 0.1%)"
+    },
+    "blender_optimization": {
+        "enabled": true,
+        "remesh": {
+            "enabled": true,
+            "mode": "VOXEL",
+            "voxel_size_m": 0.001,
+            "adaptivity": 0.3
+        },
+        "decimate": {
+            "enabled": true,
+            "mode": "COLLAPSE",
+            "ratio": 0.3,
+            "_comment": "Fraction of faces to keep (0.3 = 30%)"
+        },
+        "scale": {
+            "enabled": true,
+            "factor": 1000,
+            "_comment": "Scale factor, typically 1000 to convert meters to millimeters"
+        }
+    }
+}
