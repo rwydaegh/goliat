@@ -1,6 +1,19 @@
 {
     "extends": "base_config.json",
     "study_type": "far_field",
+    "auto_induced": {
+        "enabled": false,
+        "top_n": 10,
+        "cube_size_mm": 50,
+        "search_metric": "E_magnitude",
+        "save_intermediate_files": false,
+        "search": {
+            "mode": "air",
+            "n_samples": 100,
+            "min_skin_volume_fraction": 0.05,
+            "random_seed": 42
+        }
+    },
     "execution_control": {
         "do_setup": true,
         "only_write_input_file": false,
@@ -40,9 +53,6 @@
                 "theta",
                 "phi"
             ]
-        },
-        "auto_induced": {
-            "grid_resolution_deg": 15
         }
     },
     "simulation_parameters": {

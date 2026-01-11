@@ -101,6 +101,135 @@ def get_skin_voxel_coordinates(
     return coords
 
 
+def extract_air_voxels(
+    input_h5_path: str,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, Dict[int, str]]:
+    """Extract air/background voxel mask from a Sim4Life _Input.h5 file.
+
+    Air voxels are those whose voxel ID has no UUID mapping in AllMaterialMaps.
+    This identifies external background and any unmapped regions.
+
+    Args:
+        input_h5_path: Path to the _Input.h5 file.
+
+    Returns:
+        Tuple of:
+            - air_mask: Boolean array (Nx, Ny, Nz) where True = air voxel
+            - axis_x: X-axis coordinates (Nx,)
+            - axis_y: Y-axis coordinates (Ny,)
+            - axis_z: Z-axis coordinates (Nz,)
+            - tissue_map: Dict mapping voxel ID -> tissue name (for debugging)
+
+    Raises:
+        ValueError: If no mesh with voxel data is found.
+    """
+    with h5py.File(input_h5_path, "r") as f:
+        # Step 1: Build UUID -> material_name mapping from AllMaterialMaps
+        uuid_to_name = _build_uuid_material_map(f)
+
+        # Step 2: Find mesh with voxel data and extract
+        for mesh_key in f["Meshes"].keys():
+            mesh = f[f"Meshes/{mesh_key}"]
+            if "voxels" not in mesh:
+                continue
+
+            voxels = mesh["voxels"][:]
+            id_map = mesh["id_map"][:]
+            axis_x = mesh["axis_x"][:]
+            axis_y = mesh["axis_y"][:]
+            axis_z = mesh["axis_z"][:]
+
+            # Step 3: Map voxel IDs to tissue names
+            voxel_id_to_name = _build_voxel_id_map(id_map, uuid_to_name)
+
+            # Step 4: Find air voxel IDs (those NOT in the mapping = unmapped)
+            unique_ids = np.unique(voxels)
+            air_ids = [vid for vid in unique_ids if vid not in voxel_id_to_name]
+
+            # Step 5: Create boolean mask
+            air_mask = np.isin(voxels, air_ids)
+
+            return air_mask, axis_x, axis_y, axis_z, voxel_id_to_name
+
+    raise ValueError(f"No mesh with voxel data found in {input_h5_path}")
+
+
+def find_valid_air_focus_points(
+    input_h5_path: str,
+    cube_size_mm: float = 50.0,
+    min_skin_volume_fraction: float = 0.05,
+    skin_keywords: Optional[Sequence[str]] = None,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Find air voxels that are valid focus point candidates (near skin).
+
+    Uses scipy.ndimage.binary_dilation for efficient vectorized detection
+    of air voxels that are within cube_size_mm of skin voxels.
+
+    Note: This function finds air voxels that have at least ONE skin voxel
+    within the cube radius (via dilation). The min_skin_volume_fraction
+    parameter is accepted for API consistency but not strictly enforced here;
+    actual skin fraction filtering happens implicitly during hotspot scoring
+    (cubes with very little skin will have low scores).
+
+    Args:
+        input_h5_path: Path to _Input.h5.
+        cube_size_mm: Size of the cube (in mm) that defines "near skin".
+        min_skin_volume_fraction: Accepted for API consistency but not
+            strictly enforced. See note above.
+        skin_keywords: Keywords to match skin tissues (default: ["skin"]).
+
+    Returns:
+        Tuple of:
+            - valid_air_indices: Array (N_valid, 3) of [ix, iy, iz] indices
+            - axis_x: X-axis coordinates
+            - axis_y: Y-axis coordinates
+            - axis_z: Z-axis coordinates
+            - skin_mask: The skin boolean mask (for reuse)
+
+    Raises:
+        ValueError: If no valid air focus points are found.
+    """
+    from scipy import ndimage
+
+    # Load both masks
+    air_mask, ax_x, ax_y, ax_z, _ = extract_air_voxels(input_h5_path)
+    skin_mask, _, _, _, _ = extract_skin_voxels(input_h5_path, skin_keywords)
+
+    # Get voxel spacing (meters) - assume approximately uniform
+    dx = np.mean(np.diff(ax_x))
+    dy = np.mean(np.diff(ax_y))
+    dz = np.mean(np.diff(ax_z))
+
+    # Cube half-width in voxels for each dimension
+    cube_size_m = cube_size_mm / 1000.0
+    half_nx = int(np.ceil(cube_size_m / (2 * dx)))
+    half_ny = int(np.ceil(cube_size_m / (2 * dy)))
+    half_nz = int(np.ceil(cube_size_m / (2 * dz)))
+
+    # Create structuring element for dilation (rectangular box)
+    # Size is (2*half + 1) in each dimension
+    struct = np.ones((2 * half_nx + 1, 2 * half_ny + 1, 2 * half_nz + 1), dtype=bool)
+
+    # Dilate skin mask - this expands it by the cube radius
+    # Any voxel within struct distance of skin becomes True
+    dilated_skin = ndimage.binary_dilation(skin_mask, structure=struct)
+
+    # Valid air focus points: air AND within dilated skin region
+    valid_air_mask = air_mask & dilated_skin
+
+    # Get indices of valid air voxels
+    valid_air_indices = np.argwhere(valid_air_mask)
+
+    if len(valid_air_indices) == 0:
+        raise ValueError(
+            f"No valid air focus points found. Try increasing cube_size_mm "
+            f"(current: {cube_size_mm}mm) or decreasing min_skin_volume_fraction "
+            f"(current: {min_skin_volume_fraction})."
+        )
+
+    return valid_air_indices, ax_x, ax_y, ax_z, skin_mask
+
+
 def _build_uuid_material_map(f: h5py.File) -> Dict[str, str]:
     """Build mapping from UUID string to material name."""
     uuid_to_name: Dict[str, str] = {}

@@ -161,9 +161,10 @@ class AutoInducedProcessor(LoggingMixin):
             input_h5: Path to _Input.h5 for skin mask.
             top_n: Number of candidates to return.
             search_metric: "E_z_magnitude" (MRT-style) or "poynting_z" (SAPD-style).
+                Only used in skin mode.
 
         Returns:
-            List of candidate dicts with voxel indices, metric sums, and phase weights.
+            List of candidate dicts with voxel indices, scores, and phase weights.
         """
         import time
 
@@ -173,6 +174,23 @@ class AutoInducedProcessor(LoggingMixin):
 
         start_time = time.monotonic()
 
+        # Get search config
+        auto_cfg = self.config["auto_induced"] or {}
+        search_cfg = auto_cfg.get("search", {})
+        cube_size_mm = auto_cfg.get("cube_size_mm", 50.0)
+
+        # Extract search parameters
+        search_mode = search_cfg.get("mode", "skin")  # Default to skin for backward compat
+        n_samples = search_cfg.get("n_samples", 100)
+        min_skin_volume_fraction = search_cfg.get("min_skin_volume_fraction", 0.05)
+        random_seed = search_cfg.get("random_seed", None)
+
+        self._log(
+            f"  Search mode: {search_mode}",
+            level="progress",
+            log_type="info",
+        )
+
         try:
             # find_focus_and_compute_weights returns (focus_indices, weights, info)
             focus_indices, weights, info = find_focus_and_compute_weights(
@@ -180,22 +198,35 @@ class AutoInducedProcessor(LoggingMixin):
                 input_h5_path=str(input_h5),
                 top_n=top_n,
                 metric=search_metric,
+                # New air-based search parameters
+                search_mode=search_mode,
+                n_samples=n_samples,
+                cube_size_mm=cube_size_mm,
+                min_skin_volume_fraction=min_skin_volume_fraction,
+                random_seed=random_seed,
             )
 
             # Build list of candidate dicts
             candidates: list[dict] = []
             all_indices = info.get("all_focus_indices", [focus_indices])
-            all_metric_sums = info.get("all_metric_sums", [info.get("max_metric_sum", 0.0)])
+
+            # Get the appropriate score array based on search mode
+            if search_mode == "air":
+                all_scores = info.get("all_hotspot_scores", [info.get("max_hotspot_score", 0.0)])
+                score_key = "hotspot_score"
+            else:
+                all_scores = info.get("all_metric_sums", [info.get("max_metric_sum", 0.0)])
+                score_key = "metric_sum"
 
             # Ensure we're working with arrays
             if not isinstance(all_indices, np.ndarray):
                 all_indices = np.array([all_indices]) if top_n == 1 else np.array(all_indices)
-            if not isinstance(all_metric_sums, np.ndarray):
-                all_metric_sums = np.array([all_metric_sums]) if top_n == 1 else np.array(all_metric_sums)
+            if not isinstance(all_scores, np.ndarray):
+                all_scores = np.array([all_scores]) if top_n == 1 else np.array(all_scores)
 
             for i in range(min(top_n, len(all_indices))):
                 voxel_idx = all_indices[i] if top_n > 1 else all_indices
-                metric_sum = float(all_metric_sums[i]) if top_n > 1 else float(all_metric_sums[0])
+                score = float(all_scores[i]) if top_n > 1 else float(all_scores[0])
 
                 # Recompute weights for this specific candidate
                 phases = compute_optimal_phases([str(p) for p in h5_paths], voxel_idx)
@@ -204,15 +235,18 @@ class AutoInducedProcessor(LoggingMixin):
                 candidates.append(
                     {
                         "voxel_idx": list(voxel_idx) if hasattr(voxel_idx, "__iter__") else voxel_idx,
-                        "metric_sum": metric_sum,
+                        score_key: score,
+                        # Keep metric_sum for backward compatibility
+                        "metric_sum": score,
                         "phase_weights": candidate_weights,
+                        "search_mode": search_mode,
                     }
                 )
 
             elapsed = time.monotonic() - start_time
             self.verbose_logger.info(f"Found {len(candidates)} focus candidate(s) in {elapsed:.2f}s")
             for i, c in enumerate(candidates):
-                self.verbose_logger.info(f"  Candidate #{i + 1}: voxel {c['voxel_idx']}, Sum={c['metric_sum']:.4e}")
+                self.verbose_logger.info(f"  Candidate #{i + 1}: voxel {c['voxel_idx']}, {score_key}={c[score_key]:.4e}")
 
             return candidates
 

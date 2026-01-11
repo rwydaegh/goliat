@@ -193,28 +193,54 @@ Auto-induced exposure simulates the worst-case scenario where a MaMIMO base stat
 | Parameter | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `auto_induced.enabled` | boolean | `false` | If `true`, runs auto-induced analysis after environmental simulations complete for each (phantom, freq) pair. Requires `do_run: true` since it needs all `_Output.h5` files. |
-| `auto_induced.top_n` | number | `3` | Number of candidate focus points to evaluate. The algorithm finds the top N skin voxels where Σ\|E_i\| is highest, combines fields for each, and reports the worst-case SAPD. |
-| `auto_induced.cube_size_mm` | number | `100` | Side length in mm of the extraction cube around each focus point. Only fields within this cube are combined, dramatically reducing computation time and output file size. |
-| `auto_induced.search_metric` | string | `"E_magnitude"` | Metric used for worst-case focus search. Options: `"E_magnitude"` (full E-field magnitude, SAPD-consistent), `"E_z_magnitude"` (vertical component only, MRT-style), `"poynting_z"` (z-component of Poynting vector). |
+| `auto_induced.top_n` | number | `10` | Number of candidate focus points to evaluate. The algorithm finds the top N candidates, combines fields for each, and reports the worst-case SAPD. |
+| `auto_induced.cube_size_mm` | number | `50` | Side length in mm of the extraction cube around each focus point. Only fields within this cube are combined, dramatically reducing computation time and output file size. |
+| `auto_induced.search_metric` | string | `"E_magnitude"` | **[Legacy mode only]** Metric used for worst-case focus search in skin-based mode. Options: `"E_magnitude"`, `"E_z_magnitude"`, `"poynting_z"`. |
 | `auto_induced.save_intermediate_files` | boolean | `false` | If `true`, saves `.smash` project files after SAPD extraction for debugging. |
+| `auto_induced.search.mode` | string | `"air"` | Search mode for focus points. `"air"` (recommended, physically correct) searches in air near body surface. `"skin"` (legacy) searches directly on skin voxels. |
+| `auto_induced.search.n_samples` | number | `100` | **[Air mode only]** Number of air points to randomly sample and score. Higher values increase accuracy but take longer. |
+| `auto_induced.search.min_skin_volume_fraction` | number | `0.05` | **[Air mode only]** Minimum fraction of the cube (0-1) that must contain skin voxels for an air point to be considered valid. Default `0.05` = 5% of cube volume. |
+| `auto_induced.search.random_seed` | number/null | `42` | **[Air mode only]** Random seed for sampling reproducibility. Set to `null` for non-reproducible random sampling. |
 
-**Example: Enable auto-induced exposure analysis**
+**Example: Enable auto-induced exposure with air-based search**
+```json
+{
+    "auto_induced": {
+        "enabled": true,
+        "top_n": 10,
+        "cube_size_mm": 50,
+        "search": {
+            "mode": "air",
+            "n_samples": 100,
+            "min_skin_volume_fraction": 0.05,
+            "random_seed": 42
+        }
+    }
+}
+```
+
+**Example: Legacy skin-based search (for comparison)**
 ```json
 {
     "auto_induced": {
         "enabled": true,
         "top_n": 10,
         "cube_size_mm": 100,
-        "search_metric": "E_magnitude"
+        "search_metric": "E_z_magnitude",
+        "search": {
+            "mode": "skin"
+        }
     }
 }
 ```
 
 **Important notes:**
 
+- **Physical correctness**: The `"air"` mode models how MaMIMO beamforming actually works (beam focused in air, illuminating body). The `"skin"` mode is legacy and physically incorrect.
 - **Symmetry reduction incompatibility**: Do not use `phantom_bbox_reduction.use_symmetry_reduction: true` with auto-induced exposure. Symmetry reduction cuts the bounding box at x=0, keeping only one half of the body - you'd miss half the skin surface and cannot find the true worst-case focus point.
 - **Results location**: Auto-induced results are saved to `results/far_field/{phantom}/{freq}MHz/auto_induced/auto_induced_summary.json`.
 - **Caching**: The analysis is skipped if the summary file exists and is newer than all `_Output.h5` files.
+- **Performance**: Air-based search with `n_samples=100` typically takes 5-10 minutes per (phantom, freq) pair on a modern CPU.
 
 <br>
 

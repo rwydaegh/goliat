@@ -15,7 +15,11 @@ import numpy as np
 from tqdm import tqdm
 
 from .field_reader import read_field_at_indices
-from ..utils.skin_voxel_utils import extract_skin_voxels, get_skin_voxel_coordinates
+from ..utils.skin_voxel_utils import (
+    extract_skin_voxels,
+    get_skin_voxel_coordinates,
+    find_valid_air_focus_points,
+)
 
 
 def compute_metric_sum_at_skin(
@@ -164,12 +168,106 @@ def compute_weights(phases: np.ndarray) -> np.ndarray:
     return amplitude * np.exp(1j * phases).astype(np.complex64)
 
 
+def compute_hotspot_score_at_air_point(
+    h5_paths: Sequence[Union[str, Path]],
+    air_focus_idx: np.ndarray,
+    skin_mask: np.ndarray,
+    axis_x: np.ndarray,
+    axis_y: np.ndarray,
+    axis_z: np.ndarray,
+    cube_size_mm: float = 50.0,
+) -> float:
+    """Compute hotspot score for an air focus point.
+
+    The hotspot score is the mean |E_combined|² over skin voxels in a cube
+    around the air focus point, where E_combined is the field resulting from
+    MRT beamforming focused at that air point.
+
+    This score predicts how much SAPD would result from focusing at this point.
+
+    Args:
+        h5_paths: List of _Output.h5 files (one per direction/polarization).
+        air_focus_idx: [ix, iy, iz] of the air focus point.
+        skin_mask: Boolean mask of skin voxels.
+        axis_x, axis_y, axis_z: Grid axes.
+        cube_size_mm: Size of cube around focus to evaluate (mm).
+
+    Returns:
+        Hotspot score (mean |E_combined|² over skin voxels in cube).
+    """
+    # Step 1: Read E_z at air focus point from all directions to get phases
+    focus_idx_array = air_focus_idx.reshape(1, 3)
+    E_z_at_focus = []
+
+    for h5_path in h5_paths:
+        E_focus = read_field_at_indices(h5_path, focus_idx_array, field_type="E")
+        E_z_at_focus.append(E_focus[0, 2])  # E_z component
+
+    E_z_at_focus = np.array(E_z_at_focus)  # (N_directions,)
+
+    # Step 2: Compute MRT phases and weights
+    phases = -np.angle(E_z_at_focus)
+    N = len(phases)
+    weights = (1.0 / np.sqrt(N)) * np.exp(1j * phases)
+
+    # Step 3: Find skin voxels in cube around focus
+    dx = np.mean(np.diff(axis_x))
+    dy = np.mean(np.diff(axis_y))
+    dz = np.mean(np.diff(axis_z))
+
+    cube_size_m = cube_size_mm / 1000.0
+    half_nx = int(np.ceil(cube_size_m / (2 * dx)))
+    half_ny = int(np.ceil(cube_size_m / (2 * dy)))
+    half_nz = int(np.ceil(cube_size_m / (2 * dz)))
+
+    ix, iy, iz = air_focus_idx
+    ix_min = max(0, ix - half_nx)
+    ix_max = min(skin_mask.shape[0], ix + half_nx + 1)
+    iy_min = max(0, iy - half_ny)
+    iy_max = min(skin_mask.shape[1], iy + half_ny + 1)
+    iz_min = max(0, iz - half_nz)
+    iz_max = min(skin_mask.shape[2], iz + half_nz + 1)
+
+    # Extract skin voxels in cube
+    skin_cube = skin_mask[ix_min:ix_max, iy_min:iy_max, iz_min:iz_max]
+    skin_indices_local = np.argwhere(skin_cube)
+
+    if len(skin_indices_local) == 0:
+        return 0.0  # No skin in cube
+
+    # Convert to global indices
+    skin_indices_global = skin_indices_local + np.array([ix_min, iy_min, iz_min])
+
+    # Step 4: Read E-field at all skin voxels for all directions (batched)
+    # Shape: (n_skin, 3) for each direction
+    E_all_dirs = []
+    for h5_path in h5_paths:
+        E = read_field_at_indices(h5_path, skin_indices_global, field_type="E")
+        E_all_dirs.append(E)  # (n_skin, 3)
+
+    E_all_dirs = np.array(E_all_dirs)  # (n_directions, n_skin, 3)
+
+    # Step 5: Combine with weights: E_combined = Σ w_i * E_i
+    # weights shape: (n_directions,), broadcast to (n_directions, 1, 1)
+    E_combined = np.sum(weights[:, np.newaxis, np.newaxis] * E_all_dirs, axis=0)  # (n_skin, 3)
+
+    # Step 6: Compute |E_combined|² for each skin voxel and take mean
+    E_combined_sq = np.sum(np.abs(E_combined) ** 2, axis=1)  # (n_skin,)
+    return float(np.mean(E_combined_sq))
+
+
 def find_focus_and_compute_weights(
     h5_paths: Sequence[Union[str, Path]],
     input_h5_path: Union[str, Path],
     skin_keywords: Optional[Sequence[str]] = None,
     top_n: int = 1,
     metric: str = "E_z_magnitude",
+    # New parameters for air-based search:
+    search_mode: str = "skin",  # "air" (new) or "skin" (legacy)
+    n_samples: int = 100,
+    cube_size_mm: float = 50.0,
+    min_skin_volume_fraction: float = 0.05,
+    random_seed: Optional[int] = None,
 ) -> Tuple[np.ndarray, np.ndarray, dict]:
     """Complete workflow: find worst-case focus point(s) and compute weights.
 
@@ -179,6 +277,12 @@ def find_focus_and_compute_weights(
         skin_keywords: Keywords to match skin tissues.
         top_n: Number of candidate focus points to return.
         metric: Search metric - "E_z_magnitude" (default) or "poynting_z".
+            Only used in skin mode.
+        search_mode: "air" (new, physically correct) or "skin" (legacy).
+        n_samples: Number of air points to sample (only for mode="air").
+        cube_size_mm: Cube size for validity check and scoring (only for mode="air").
+        min_skin_volume_fraction: Min skin fraction in cube (only for mode="air").
+        random_seed: Random seed for sampling (only for mode="air").
 
     Returns:
         Tuple of:
@@ -186,6 +290,36 @@ def find_focus_and_compute_weights(
             - weights: Complex weights for each direction (for top-1 focus)
             - info: Dict with additional info
     """
+    if search_mode == "air":
+        return _find_focus_air_based(
+            h5_paths=h5_paths,
+            input_h5_path=input_h5_path,
+            skin_keywords=skin_keywords,
+            top_n=top_n,
+            n_samples=n_samples,
+            cube_size_mm=cube_size_mm,
+            min_skin_volume_fraction=min_skin_volume_fraction,
+            random_seed=random_seed,
+        )
+    else:
+        # Legacy skin-based search
+        return _find_focus_skin_based(
+            h5_paths=h5_paths,
+            input_h5_path=input_h5_path,
+            skin_keywords=skin_keywords,
+            top_n=top_n,
+            metric=metric,
+        )
+
+
+def _find_focus_skin_based(
+    h5_paths: Sequence[Union[str, Path]],
+    input_h5_path: Union[str, Path],
+    skin_keywords: Optional[Sequence[str]],
+    top_n: int,
+    metric: str,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    """Legacy skin-based focus search."""
     # Find worst-case focus points
     focus_voxel_indices, skin_indices, metric_sums = find_worst_case_focus_point(
         h5_paths, input_h5_path, skin_keywords, top_n=top_n, metric=metric
@@ -204,6 +338,7 @@ def find_focus_and_compute_weights(
     focus_coords_m = coords[skin_indices[0]]
 
     info = {
+        "search_mode": "skin",
         "phases_rad": phases,
         "phases_deg": np.degrees(phases),
         "max_metric_sum": float(metric_sums[0]),
@@ -221,6 +356,107 @@ def find_focus_and_compute_weights(
         return top_focus_idx, weights, info
     else:
         return focus_voxel_indices, weights, info
+
+
+def _find_focus_air_based(
+    h5_paths: Sequence[Union[str, Path]],
+    input_h5_path: Union[str, Path],
+    skin_keywords: Optional[Sequence[str]],
+    top_n: int,
+    n_samples: int,
+    cube_size_mm: float,
+    min_skin_volume_fraction: float,
+    random_seed: Optional[int],
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    """Air-based focus search - physically correct MaMIMO beamforming model."""
+    # Step 1: Find valid air focus points (air voxels near skin)
+    valid_air_indices, ax_x, ax_y, ax_z, skin_mask = find_valid_air_focus_points(
+        input_h5_path=str(input_h5_path),
+        cube_size_mm=cube_size_mm,
+        min_skin_volume_fraction=min_skin_volume_fraction,
+        skin_keywords=skin_keywords,
+    )
+
+    n_valid = len(valid_air_indices)
+    logging.getLogger("progress").info(f"Found {n_valid:,} valid air focus points near skin")
+
+    # Step 2: Random subsample
+    if random_seed is not None:
+        np.random.seed(random_seed)
+
+    n_to_sample = min(n_samples, n_valid)
+    sampled_idx = np.random.choice(n_valid, size=n_to_sample, replace=False)
+    sampled_air_indices = valid_air_indices[sampled_idx]
+
+    logging.getLogger("progress").info(f"Sampling {n_to_sample} air points for hotspot scoring")
+
+    # Step 3: Score each sampled point
+    hotspot_scores = []
+    for air_idx in tqdm(sampled_air_indices, desc="Scoring air focus points"):
+        score = compute_hotspot_score_at_air_point(
+            h5_paths=h5_paths,
+            air_focus_idx=air_idx,
+            skin_mask=skin_mask,
+            axis_x=ax_x,
+            axis_y=ax_y,
+            axis_z=ax_z,
+            cube_size_mm=cube_size_mm,
+        )
+        hotspot_scores.append(score)
+
+    hotspot_scores = np.array(hotspot_scores)
+
+    # Step 4: Select top-N by score
+    actual_top_n = min(top_n, len(hotspot_scores))
+    if actual_top_n == 0:
+        raise ValueError("No valid hotspot scores computed (all air points had no skin in cube)")
+
+    if actual_top_n == len(hotspot_scores):
+        # All samples are in top-N, just sort them
+        top_n_idx = np.argsort(hotspot_scores)[::-1]
+    else:
+        top_n_idx = np.argpartition(hotspot_scores, -actual_top_n)[-actual_top_n:]
+        top_n_idx = top_n_idx[np.argsort(hotspot_scores[top_n_idx])[::-1]]
+
+    top_air_indices = sampled_air_indices[top_n_idx]
+    top_scores = hotspot_scores[top_n_idx]
+
+    # Step 5: Compute weights for top-1
+    top_focus_idx = top_air_indices[0]
+    phases = compute_optimal_phases(h5_paths, top_focus_idx)
+    weights = compute_weights(phases)
+
+    # Get physical coordinates of focus point
+    ix, iy, iz = top_focus_idx
+    focus_coords_m = np.array(
+        [
+            float(ax_x[min(ix, len(ax_x) - 1)]),
+            float(ax_y[min(iy, len(ax_y) - 1)]),
+            float(ax_z[min(iz, len(ax_z) - 1)]),
+        ]
+    )
+
+    info = {
+        "search_mode": "air",
+        "phases_rad": phases,
+        "phases_deg": np.degrees(phases),
+        "max_hotspot_score": float(top_scores[0]),
+        "focus_coords_m": focus_coords_m,
+        "n_directions": len(h5_paths),
+        "n_valid_air_points": n_valid,
+        "n_sampled": n_to_sample,
+        "top_n": actual_top_n,
+        "all_focus_indices": top_air_indices,
+        "all_hotspot_scores": top_scores,
+        "cube_size_mm": cube_size_mm,
+        "min_skin_volume_fraction": min_skin_volume_fraction,
+        "random_seed": random_seed,
+    }
+
+    if actual_top_n == 1:
+        return top_focus_idx, weights, info
+    else:
+        return top_air_indices, weights, info
 
 
 # --- CLI for testing ---
