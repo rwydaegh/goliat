@@ -352,6 +352,8 @@ def find_focus_and_compute_weights(
     cube_size_mm: float = 50.0,
     random_seed: Optional[int] = None,
     shell_size_mm: float = 10.0,
+    selection_percentile: float = 95.0,
+    min_candidate_distance_mm: float = 50.0,
 ) -> Tuple[np.ndarray, np.ndarray, dict]:
     """Complete workflow: find worst-case focus point(s) and compute weights.
 
@@ -366,6 +368,8 @@ def find_focus_and_compute_weights(
         n_samples: Number of air points to sample (only for mode="air").
         cube_size_mm: Cube size for validity check and scoring (only for mode="air").
         random_seed: Random seed for sampling (only for mode="air").
+        selection_percentile: Percentile threshold for candidate selection (e.g., 95 = top 5%).
+        min_candidate_distance_mm: Minimum distance between selected candidates.
 
     Returns:
         Tuple of:
@@ -383,6 +387,8 @@ def find_focus_and_compute_weights(
             cube_size_mm=cube_size_mm,
             random_seed=random_seed,
             shell_size_mm=shell_size_mm,
+            selection_percentile=selection_percentile,
+            min_candidate_distance_mm=min_candidate_distance_mm,
         )
     else:
         # Legacy skin-based search
@@ -450,6 +456,8 @@ def _find_focus_air_based(
     cube_size_mm: float,
     random_seed: Optional[int],
     shell_size_mm: float = 10.0,
+    selection_percentile: float = 95.0,
+    min_candidate_distance_mm: float = 50.0,
 ) -> Tuple[np.ndarray, np.ndarray, dict]:
     """Air-based focus search - physically correct MaMIMO beamforming model."""
     valid_air_indices, ax_x, ax_y, ax_z, skin_mask = find_valid_air_focus_points(
@@ -504,12 +512,16 @@ def _find_focus_air_based(
         raise ValueError("No valid hotspot scores computed (all air points had no skin in cube)")
 
     # Select candidates with diversity constraint
+    # Convert distance from mm to voxels (approximate using mean voxel spacing)
+    dx_mm = np.mean(np.diff(ax_x)) * 1000
+    min_distance_voxels = int(min_candidate_distance_mm / dx_mm)
+    
     top_air_indices, top_scores = _select_diverse_candidates(
         sampled_air_indices=sampled_air_indices,
         hotspot_scores=hotspot_scores,
         top_n=top_n,
-        percentile=95.0,  # Top 5%
-        min_distance_voxels=35,  # ~50mm at 1.4mm resolution
+        percentile=selection_percentile,
+        min_distance_voxels=min_distance_voxels,
         ax_x=ax_x, ax_y=ax_y, ax_z=ax_z,
     )
     actual_top_n = len(top_air_indices)

@@ -9,9 +9,11 @@
         "save_intermediate_files": false,
         "search": {
             "mode": "air",
-            "n_samples": 100,
+            "n_samples": 10000,
             "random_seed": 42,
-            "shell_size_mm": 10.0
+            "shell_size_mm": 10.0,
+            "selection_percentile": 95.0,
+            "min_candidate_distance_mm": 50.0
         }
     },
     "execution_control": {

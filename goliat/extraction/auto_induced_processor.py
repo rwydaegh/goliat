@@ -207,6 +207,8 @@ class AutoInducedProcessor(LoggingMixin):
         n_samples = search_cfg.get("n_samples", 100)
         random_seed = search_cfg.get("random_seed", None)
         shell_size_mm = search_cfg.get("shell_size_mm", 10.0)
+        selection_percentile = search_cfg.get("selection_percentile", 95.0)
+        min_candidate_distance_mm = search_cfg.get("min_candidate_distance_mm", 50.0)
 
         self._log(
             f"  Search mode: {search_mode}",
@@ -225,6 +227,8 @@ class AutoInducedProcessor(LoggingMixin):
                 cube_size_mm=cube_size_mm,
                 random_seed=random_seed,
                 shell_size_mm=shell_size_mm,
+                selection_percentile=selection_percentile,
+                min_candidate_distance_mm=min_candidate_distance_mm,
             )
 
             # Build list of candidate dicts
