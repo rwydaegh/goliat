@@ -2,6 +2,8 @@
 
 import pandas as pd
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')  # Non-interactive backend for headless servers
 import matplotlib.pyplot as plt
 from pathlib import Path
 from scipy.stats import spearmanr
@@ -13,13 +15,31 @@ plt.rcParams['axes.labelsize'] = 12
 plt.rcParams['axes.titlesize'] = 13
 plt.rcParams['figure.facecolor'] = 'white'
 
-base_dir = Path(r"c:\Users\rwydaegh\OneDrive - UGent\rwydaegh\GOLIAT code\goliat")
+# Use relative paths from script location
+script_dir = Path(__file__).parent
+base_dir = script_dir.parent
 output_dir = base_dir / "results" / "analysis_plots"
-output_dir.mkdir(exist_ok=True)
+output_dir.mkdir(parents=True, exist_ok=True)
 
-# Load data
-proxy_df = pd.read_csv(base_dir / "results" / "all_proxy_scores.csv")
-corr_df = pd.read_csv(base_dir / "results" / "proxy_sapd_correlation.csv")
+# Load data - try multiple locations
+proxy_csv = base_dir / "results" / "all_proxy_scores.csv"
+if not proxy_csv.exists():
+    # Try far_field subdirectory
+    alt = list(base_dir.rglob("all_proxy_scores.csv"))
+    if alt:
+        proxy_csv = alt[0]
+
+corr_csv = base_dir / "results" / "proxy_sapd_correlation.csv"
+if not corr_csv.exists():
+    alt = list(base_dir.rglob("proxy_sapd_correlation.csv"))
+    if alt:
+        corr_csv = alt[0]
+
+print(f"Proxy CSV: {proxy_csv}")
+print(f"Correlation CSV: {corr_csv}")
+
+proxy_df = pd.read_csv(proxy_csv)
+corr_df = pd.read_csv(corr_csv)
 
 print(f"Loaded {len(proxy_df):,} proxy scores")
 print(f"Loaded {len(corr_df)} correlation data points")
