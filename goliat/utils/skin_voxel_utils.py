@@ -233,18 +233,25 @@ def find_valid_air_focus_points(
     dz = np.mean(np.diff(ax_z))
     logger.info(f"  Voxel spacing: dx={dx * 1000:.2f}mm, dy={dy * 1000:.2f}mm, dz={dz * 1000:.2f}mm")
 
-    shell_size_m = shell_size_mm / 1000.0
-    half_nx = max(1, int(np.ceil(shell_size_m / (2 * dx))))
-    half_ny = max(1, int(np.ceil(shell_size_m / (2 * dy))))
-    half_nz = max(1, int(np.ceil(shell_size_m / (2 * dz))))
+    # Use iterative dilation for large shells (much faster than single large kernel)
+    step_size_mm = 10.0
+    n_iterations = max(1, int(np.ceil(shell_size_mm / step_size_mm)))
+    effective_step_mm = shell_size_mm / n_iterations
+
+    step_size_m = effective_step_mm / 1000.0
+    half_nx = max(1, int(np.ceil(step_size_m / (2 * dx))))
+    half_ny = max(1, int(np.ceil(step_size_m / (2 * dy))))
+    half_nz = max(1, int(np.ceil(step_size_m / (2 * dz))))
 
     struct_size = (2 * half_nx + 1, 2 * half_ny + 1, 2 * half_nz + 1)
-    logger.info(f"  Dilation kernel: {struct_size} voxels (~{shell_size_mm}mm shell)")
+    logger.info(f"  Dilation: {n_iterations} iterations × {struct_size} kernel (~{shell_size_mm}mm total)")
 
     t0 = time.perf_counter()
     struct = np.ones(struct_size, dtype=bool)
-    dilated_skin = ndimage.binary_dilation(skin_mask, structure=struct)
-    logger.info(f"  [timing] binary_dilation: {time.perf_counter() - t0:.2f}s")
+    dilated_skin = skin_mask.copy()
+    for i in range(n_iterations):
+        dilated_skin = ndimage.binary_dilation(dilated_skin, structure=struct)
+    logger.info(f"  [timing] binary_dilation ({n_iterations}x): {time.perf_counter() - t0:.2f}s")
 
     # Valid air focus points: air AND within shell around skin
     valid_air_mask = air_mask & dilated_skin
