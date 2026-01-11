@@ -8,18 +8,99 @@ argmax_r Σ|E_i(r)| - no optimization needed during search.
 """
 
 import logging
+import time
 from pathlib import Path
-from typing import Sequence, Tuple, Union, Optional
+from typing import Sequence, Tuple, Union, Optional, Dict
 
+import h5py
 import numpy as np
 from tqdm import tqdm
 
-from .field_reader import read_field_at_indices
+from .field_reader import read_field_at_indices, find_overall_field_group, get_field_path
 from ..utils.skin_voxel_utils import (
     extract_skin_voxels,
     get_skin_voxel_coordinates,
     find_valid_air_focus_points,
 )
+
+
+class FieldCache:
+    """Cache for pre-loaded E-field data from multiple H5 files.
+
+    This avoids the memory thrashing from loading full fields repeatedly.
+    Fields are loaded once and kept in memory for fast indexed access.
+    """
+
+    def __init__(self, h5_paths: Sequence[Union[str, Path]], field_type: str = "E"):
+        """Load all fields into memory.
+
+        Args:
+            h5_paths: Paths to _Output.h5 files.
+            field_type: 'E' or 'H'.
+        """
+        self.h5_paths = [str(p) for p in h5_paths]
+        self.field_type = field_type
+        self.fields: Dict[str, np.ndarray] = {}
+        self.shapes: Dict[str, Tuple[int, int, int]] = {}
+
+        logger = logging.getLogger("progress")
+        logger.info(f"  Pre-loading {field_type}-fields from {len(h5_paths)} files...")
+        t0 = time.perf_counter()
+
+        for h5_path in tqdm(self.h5_paths, desc=f"Loading {field_type}-fields"):
+            self._load_field(h5_path)
+
+        total_mb = sum(f.nbytes for f in self.fields.values()) / 1e6
+        logger.info(f"  [timing] Field cache loaded: {time.perf_counter() - t0:.2f}s, {total_mb:.0f} MB")
+
+    def _load_field(self, h5_path: str):
+        """Load a single field file into the cache."""
+        with h5py.File(h5_path, "r") as f:
+            fg_path = find_overall_field_group(f)
+            if fg_path is None:
+                raise ValueError(f"No 'Overall Field' found in {h5_path}")
+
+            field_path = get_field_path(fg_path, self.field_type)
+
+            # Load all 3 components into a combined array
+            components = []
+            for comp in range(3):
+                dataset = f[f"{field_path}/comp{comp}"]
+                data = dataset[:]
+                complex_data = data[..., 0] + 1j * data[..., 1]
+                components.append(complex_data)
+                if comp == 0:
+                    self.shapes[h5_path] = dataset.shape[:3]
+
+            # Store as (Nx, Ny, Nz, 3) but components have different shapes due to Yee
+            # We'll handle indexing in read_at_indices
+            self.fields[h5_path] = components
+
+    def read_at_indices(self, h5_path: str, indices: np.ndarray) -> np.ndarray:
+        """Read field values at specific indices from cached data.
+
+        Args:
+            h5_path: Which file to read from.
+            indices: (N, 3) array of [ix, iy, iz] indices.
+
+        Returns:
+            (N, 3) complex array of field values.
+        """
+        components = self.fields[h5_path]
+        result = np.zeros((len(indices), 3), dtype=np.complex64)
+
+        for comp in range(3):
+            data = components[comp]
+            shape = data.shape
+
+            # Clamp indices to valid range for this component
+            ix = np.minimum(indices[:, 0], shape[0] - 1)
+            iy = np.minimum(indices[:, 1], shape[1] - 1)
+            iz = np.minimum(indices[:, 2], shape[2] - 1)
+
+            result[:, comp] = data[ix, iy, iz]
+
+        return result
 
 
 def compute_metric_sum_at_skin(
@@ -176,6 +257,7 @@ def compute_hotspot_score_at_air_point(
     axis_y: np.ndarray,
     axis_z: np.ndarray,
     cube_size_mm: float = 50.0,
+    field_cache: Optional[FieldCache] = None,
 ) -> float:
     """Compute hotspot score for an air focus point.
 
@@ -183,34 +265,37 @@ def compute_hotspot_score_at_air_point(
     around the air focus point, where E_combined is the field resulting from
     MRT beamforming focused at that air point.
 
-    This score predicts how much SAPD would result from focusing at this point.
-
     Args:
         h5_paths: List of _Output.h5 files (one per direction/polarization).
         air_focus_idx: [ix, iy, iz] of the air focus point.
         skin_mask: Boolean mask of skin voxels.
         axis_x, axis_y, axis_z: Grid axes.
         cube_size_mm: Size of cube around focus to evaluate (mm).
+        field_cache: Optional pre-loaded field cache (recommended for performance).
 
     Returns:
         Hotspot score (mean |E_combined|² over skin voxels in cube).
     """
-    # Step 1: Read E_z at air focus point from all directions to get phases
     focus_idx_array = air_focus_idx.reshape(1, 3)
     E_z_at_focus = []
 
+    # Read E_z at focus from all directions
     for h5_path in h5_paths:
-        E_focus = read_field_at_indices(h5_path, focus_idx_array, field_type="E")
-        E_z_at_focus.append(E_focus[0, 2])  # E_z component
+        h5_str = str(h5_path)
+        if field_cache is not None:
+            E_focus = field_cache.read_at_indices(h5_str, focus_idx_array)
+        else:
+            E_focus = read_field_at_indices(h5_str, focus_idx_array, field_type="E")
+        E_z_at_focus.append(E_focus[0, 2])
 
-    E_z_at_focus = np.array(E_z_at_focus)  # (N_directions,)
+    E_z_at_focus = np.array(E_z_at_focus)
 
-    # Step 2: Compute MRT phases and weights
+    # Compute MRT phases and weights
     phases = -np.angle(E_z_at_focus)
     N = len(phases)
     weights = (1.0 / np.sqrt(N)) * np.exp(1j * phases)
 
-    # Step 3: Find skin voxels in cube around focus
+    # Find skin voxels in cube around focus
     dx = np.mean(np.diff(axis_x))
     dy = np.mean(np.diff(axis_y))
     dz = np.mean(np.diff(axis_z))
@@ -228,31 +313,31 @@ def compute_hotspot_score_at_air_point(
     iz_min = max(0, iz - half_nz)
     iz_max = min(skin_mask.shape[2], iz + half_nz + 1)
 
-    # Extract skin voxels in cube
     skin_cube = skin_mask[ix_min:ix_max, iy_min:iy_max, iz_min:iz_max]
     skin_indices_local = np.argwhere(skin_cube)
 
     if len(skin_indices_local) == 0:
-        return 0.0  # No skin in cube
+        return 0.0
 
-    # Convert to global indices
     skin_indices_global = skin_indices_local + np.array([ix_min, iy_min, iz_min])
 
-    # Step 4: Read E-field at all skin voxels for all directions (batched)
-    # Shape: (n_skin, 3) for each direction
+    # Read E-field at all skin voxels for all directions
     E_all_dirs = []
     for h5_path in h5_paths:
-        E = read_field_at_indices(h5_path, skin_indices_global, field_type="E")
-        E_all_dirs.append(E)  # (n_skin, 3)
+        h5_str = str(h5_path)
+        if field_cache is not None:
+            E = field_cache.read_at_indices(h5_str, skin_indices_global)
+        else:
+            E = read_field_at_indices(h5_str, skin_indices_global, field_type="E")
+        E_all_dirs.append(E)
 
-    E_all_dirs = np.array(E_all_dirs)  # (n_directions, n_skin, 3)
+    E_all_dirs = np.array(E_all_dirs)
 
-    # Step 5: Combine with weights: E_combined = Σ w_i * E_i
-    # weights shape: (n_directions,), broadcast to (n_directions, 1, 1)
-    E_combined = np.sum(weights[:, np.newaxis, np.newaxis] * E_all_dirs, axis=0)  # (n_skin, 3)
+    # Combine with weights
+    E_combined = np.sum(weights[:, np.newaxis, np.newaxis] * E_all_dirs, axis=0)
 
-    # Step 6: Compute |E_combined|² for each skin voxel and take mean
-    E_combined_sq = np.sum(np.abs(E_combined) ** 2, axis=1)  # (n_skin,)
+    # Compute |E_combined|² and return mean
+    E_combined_sq = np.sum(np.abs(E_combined) ** 2, axis=1)
     return float(np.mean(E_combined_sq))
 
 
@@ -382,7 +467,6 @@ def _find_focus_air_based(
     n_valid = len(valid_air_indices)
     logging.getLogger("progress").info(f"Found {n_valid:,} valid air focus points near skin")
 
-    # Step 2: Random subsample
     if random_seed is not None:
         np.random.seed(random_seed)
 
@@ -392,7 +476,10 @@ def _find_focus_air_based(
 
     logging.getLogger("progress").info(f"Sampling {n_to_sample} air points for hotspot scoring")
 
-    # Step 3: Score each sampled point
+    # Pre-load all E-fields into cache to avoid memory thrashing
+    field_cache = FieldCache(h5_paths, field_type="E")
+
+    # Score each sampled point using cached fields
     hotspot_scores = []
     for air_idx in tqdm(sampled_air_indices, desc="Scoring air focus points"):
         score = compute_hotspot_score_at_air_point(
@@ -403,6 +490,7 @@ def _find_focus_air_based(
             axis_y=ax_y,
             axis_z=ax_z,
             cube_size_mm=cube_size_mm,
+            field_cache=field_cache,
         )
         hotspot_scores.append(score)
 
