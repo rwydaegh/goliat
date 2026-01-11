@@ -103,14 +103,18 @@ def get_skin_voxel_coordinates(
 
 def extract_air_voxels(
     input_h5_path: str,
+    background_keywords: Optional[Sequence[str]] = None,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, Dict[int, str]]:
     """Extract air/background voxel mask from a Sim4Life _Input.h5 file.
 
-    Air voxels are those whose voxel ID has no UUID mapping in AllMaterialMaps.
-    This identifies external background and any unmapped regions.
+    Detects air/background voxels using multiple strategies:
+    1. Look for materials matching background_keywords (default: "background")
+    2. Find unmapped voxel IDs (not in AllMaterialMaps)
+    3. If still no air found, log a warning
 
     Args:
         input_h5_path: Path to the _Input.h5 file.
+        background_keywords: Keywords to match background materials (default: ["background"]).
 
     Returns:
         Tuple of:
@@ -123,6 +127,13 @@ def extract_air_voxels(
     Raises:
         ValueError: If no mesh with voxel data is found.
     """
+    import logging
+
+    logger = logging.getLogger("progress")
+
+    if background_keywords is None:
+        background_keywords = ["background", "air", "vacuum", "free space"]
+
     with h5py.File(input_h5_path, "r") as f:
         # Step 1: Build UUID -> material_name mapping from AllMaterialMaps
         uuid_to_name = _build_uuid_material_map(f)
@@ -142,12 +153,29 @@ def extract_air_voxels(
             # Step 3: Map voxel IDs to tissue names
             voxel_id_to_name = _build_voxel_id_map(id_map, uuid_to_name)
 
-            # Step 4: Find air voxel IDs (those NOT in the mapping = unmapped)
-            unique_ids = np.unique(voxels)
-            air_ids = [vid for vid in unique_ids if vid not in voxel_id_to_name]
+            # Strategy 1: Find IDs mapped to background-like materials
+            background_ids = []
+            for vid, name in voxel_id_to_name.items():
+                name_lower = name.lower()
+                if any(kw.lower() in name_lower for kw in background_keywords):
+                    background_ids.append(vid)
+                    logger.info(f"  Found background material: ID {vid} = '{name}'")
 
-            # Step 5: Create boolean mask
-            air_mask = np.isin(voxels, air_ids)
+            # Strategy 2: Find unmapped IDs
+            unique_ids = np.unique(voxels)
+            unmapped_ids = [vid for vid in unique_ids if vid not in voxel_id_to_name]
+            if unmapped_ids:
+                logger.info(f"  Found {len(unmapped_ids)} unmapped voxel IDs (treating as air)")
+                background_ids.extend(unmapped_ids)
+
+            # Create boolean mask
+            if background_ids:
+                air_mask = np.isin(voxels, background_ids)
+            else:
+                # Fallback: everything NOT a body tissue is air
+                # This is a last resort - treat voxel ID 0 as background
+                logger.warning("  No background material found, using voxel ID 0 as fallback")
+                air_mask = voxels == 0
 
             return air_mask, axis_x, axis_y, axis_z, voxel_id_to_name
 
@@ -206,16 +234,29 @@ def find_valid_air_focus_points(
 
     logger.info(f"  Grid shape: {air_mask.shape}, Air voxels: {np.sum(air_mask):,}, Skin voxels: {np.sum(skin_mask):,}")
 
-    # FAST approach: Find air voxels that are directly ADJACENT to skin
-    # This uses a small 3x3x3 structuring element (immediate neighbors only)
-    # Much faster than large-cube dilation - O(27) instead of O(cube_volume)
+    # Get voxel spacing
+    dx = np.mean(np.diff(ax_x))
+    dy = np.mean(np.diff(ax_y))
+    dz = np.mean(np.diff(ax_z))
+    logger.info(f"  Voxel spacing: dx={dx * 1000:.2f}mm, dy={dy * 1000:.2f}mm, dz={dz * 1000:.2f}mm")
+
+    # Use a fixed shell size (10mm) for finding air near skin
+    # This is a balance between coverage and computational speed
+    shell_size_mm = 10.0
+    shell_size_m = shell_size_mm / 1000.0
+    half_nx = max(1, int(np.ceil(shell_size_m / (2 * dx))))
+    half_ny = max(1, int(np.ceil(shell_size_m / (2 * dy))))
+    half_nz = max(1, int(np.ceil(shell_size_m / (2 * dz))))
+
+    struct_size = (2 * half_nx + 1, 2 * half_ny + 1, 2 * half_nz + 1)
+    logger.info(f"  Dilation kernel: {struct_size} voxels (~{shell_size_mm}mm shell)")
 
     t0 = time.perf_counter()
-    struct_small = np.ones((3, 3, 3), dtype=bool)
-    dilated_skin = ndimage.binary_dilation(skin_mask, structure=struct_small)
-    logger.info(f"  [timing] binary_dilation (3x3x3): {time.perf_counter() - t0:.2f}s")
+    struct = np.ones(struct_size, dtype=bool)
+    dilated_skin = ndimage.binary_dilation(skin_mask, structure=struct)
+    logger.info(f"  [timing] binary_dilation: {time.perf_counter() - t0:.2f}s")
 
-    # Valid air focus points: air AND adjacent to skin
+    # Valid air focus points: air AND within shell around skin
     valid_air_mask = air_mask & dilated_skin
 
     # Get indices of valid air voxels
