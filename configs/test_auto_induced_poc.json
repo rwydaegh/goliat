@@ -63,7 +63,7 @@
         "save_intermediate_files": true,
         "search": {
             "mode": "air",
-            "n_samples": 500,
+            "n_samples": 10000,
             "random_seed": 42,
             "shell_size_mm": 25
         }
