@@ -189,36 +189,39 @@ def find_valid_air_focus_points(
     Raises:
         ValueError: If no valid air focus points are found.
     """
+    import time
+    import logging
     from scipy import ndimage
 
+    logger = logging.getLogger("progress")
+
     # Load both masks
+    t0 = time.perf_counter()
     air_mask, ax_x, ax_y, ax_z, _ = extract_air_voxels(input_h5_path)
+    logger.info(f"  [timing] extract_air_voxels: {time.perf_counter() - t0:.2f}s")
+
+    t0 = time.perf_counter()
     skin_mask, _, _, _, _ = extract_skin_voxels(input_h5_path, skin_keywords)
+    logger.info(f"  [timing] extract_skin_voxels: {time.perf_counter() - t0:.2f}s")
 
-    # Get voxel spacing (meters) - assume approximately uniform
-    dx = np.mean(np.diff(ax_x))
-    dy = np.mean(np.diff(ax_y))
-    dz = np.mean(np.diff(ax_z))
+    logger.info(f"  Grid shape: {air_mask.shape}, Air voxels: {np.sum(air_mask):,}, Skin voxels: {np.sum(skin_mask):,}")
 
-    # Cube half-width in voxels for each dimension
-    cube_size_m = cube_size_mm / 1000.0
-    half_nx = int(np.ceil(cube_size_m / (2 * dx)))
-    half_ny = int(np.ceil(cube_size_m / (2 * dy)))
-    half_nz = int(np.ceil(cube_size_m / (2 * dz)))
+    # FAST approach: Find air voxels that are directly ADJACENT to skin
+    # This uses a small 3x3x3 structuring element (immediate neighbors only)
+    # Much faster than large-cube dilation - O(27) instead of O(cube_volume)
 
-    # Create structuring element for dilation (rectangular box)
-    # Size is (2*half + 1) in each dimension
-    struct = np.ones((2 * half_nx + 1, 2 * half_ny + 1, 2 * half_nz + 1), dtype=bool)
+    t0 = time.perf_counter()
+    struct_small = np.ones((3, 3, 3), dtype=bool)
+    dilated_skin = ndimage.binary_dilation(skin_mask, structure=struct_small)
+    logger.info(f"  [timing] binary_dilation (3x3x3): {time.perf_counter() - t0:.2f}s")
 
-    # Dilate skin mask - this expands it by the cube radius
-    # Any voxel within struct distance of skin becomes True
-    dilated_skin = ndimage.binary_dilation(skin_mask, structure=struct)
-
-    # Valid air focus points: air AND within dilated skin region
+    # Valid air focus points: air AND adjacent to skin
     valid_air_mask = air_mask & dilated_skin
 
     # Get indices of valid air voxels
+    t0 = time.perf_counter()
     valid_air_indices = np.argwhere(valid_air_mask)
+    logger.info(f"  [timing] argwhere: {time.perf_counter() - t0:.2f}s, found {len(valid_air_indices):,} valid air points")
 
     if len(valid_air_indices) == 0:
         raise ValueError(
