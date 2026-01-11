@@ -165,7 +165,8 @@ class SapdExtractor(LoggingMixin):
             Tuple of (model_to_grid_filter, sapd_evaluator).
         """
         # Prepare skin surface
-        mesh_side_len_mm = float(self.config["simulation_parameters.sapd_mesh_slicing_side_length_mm"] or 100.0)
+        mesh_side_cfg = self.config["simulation_parameters.sapd_mesh_slicing_side_length_mm"]
+        mesh_side_len_mm = float(mesh_side_cfg) if isinstance(mesh_side_cfg, (int, float)) else 100.0
         center_mm = [c * 1000.0 for c in center_m] if center_m else None
         surface_source_entity = self._prepare_skin_group(skin_entities, center_mm, mesh_side_len_mm)
 

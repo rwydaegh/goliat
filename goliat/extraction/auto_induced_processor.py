@@ -14,8 +14,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from ..logging_manager import LoggingMixin
-from ..utils.field_combiner import combine_fields_sliced
-from ..utils.focus_optimizer import find_focus_and_compute_weights
+from .field_combiner import combine_fields_sliced
+from .focus_optimizer import find_focus_and_compute_weights
 
 if TYPE_CHECKING:
     from ..studies.far_field_study import FarFieldStudy
@@ -169,7 +169,7 @@ class AutoInducedProcessor(LoggingMixin):
 
         import numpy as np
 
-        from ..utils.focus_optimizer import compute_optimal_phases, compute_weights
+        from .focus_optimizer import compute_optimal_phases, compute_weights
 
         start_time = time.monotonic()
 
