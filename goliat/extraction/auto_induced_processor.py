@@ -496,8 +496,13 @@ class AutoInducedProcessor(LoggingMixin):
                             peak_sapd = val
                             break
 
-            # Optionally save debug smash file
+            # Optionally save debug smash file with focus center marker
             if save_intermediate_files:
+                try:
+                    focus_point = model.CreatePoint(model.Vec3(center_mm[0], center_mm[1], center_mm[2]))
+                    focus_point.Name = f"Focus_Center_Candidate{candidate_idx}"
+                except Exception:
+                    pass
                 debug_smash_path = str(combined_h5).replace("_Output.h5", "_intermediate.smash")
                 try:
                     document.SaveAs(debug_smash_path)
