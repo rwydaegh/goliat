@@ -15,8 +15,22 @@ from goliat.utils.setup import initial_setup
 if not os.environ.get("PYTEST_CURRENT_TEST") and not os.environ.get("CI"):
     initial_setup()
 
+# --- S4L 9.2 Compatibility Fix ---
+# Sim4Life 9.2 crashes (segfault) if PySide6 is imported BEFORE S4L starts.
+# Solution: Start S4L early, before any PySide6 imports.
+# See: tests/test_s4l_final_diagnostic.py for diagnosis details.
+if not os.environ.get("PYTEST_CURRENT_TEST") and not os.environ.get("CI"):
+    try:
+        from s4l_v1._api import application as _s4l_app  # noqa: E402
+
+        if _s4l_app.get_app_safe() is None:
+            _s4l_app.run_application(disable_ui_plugins=True)
+    except ImportError:
+        pass  # Not running in S4L environment, skip
+# --- End S4L 9.2 Fix ---
+
 try:
-    from PySide6.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication  # noqa: E402
 except ImportError:
     # In the cloud, the python executable is not in a path containing "Sim4Life", but we can detect the OS.
     is_sim4life_interpreter = "Sim4Life" in sys.executable or "aws" in platform.release()
