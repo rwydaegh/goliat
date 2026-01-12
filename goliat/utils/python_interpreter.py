@@ -106,8 +106,9 @@ def check_python_interpreter(base_dir=None):
         logging.warning("You are not using a Sim4Life Python interpreter.")
 
     if not viable_pythons:
-        logging.error("No viable Sim4Life Python executables (v8.2) found on this system.")
-        sys.exit(1)
+        logging.warning("No Sim4Life Python executables (v8.2) found on this system.")
+        logging.warning("Continuing with current interpreter - some features may not work as expected.")
+        return
 
     print("Found the following supported Sim4Life Python executables (8.2):")
     for i, p in enumerate(viable_pythons):
