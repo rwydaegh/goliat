@@ -4,6 +4,10 @@ import traceback
 from queue import Empty
 from typing import TYPE_CHECKING, Dict, Any, Optional
 
+from colorama import Style
+
+from goliat.colors import get_color
+
 if TYPE_CHECKING:
     from goliat.gui.progress_gui import ProgressGUI
 
@@ -52,8 +56,9 @@ class QueueHandler:
         log_type = msg.get("log_type", "default")
         # Update GUI
         self.gui.update_status(message, log_type)
-        # Also print to terminal (child process stdout may be broken on S4L 9.2)
-        print(message)
+        # Also print to terminal with colors (child process stdout may be broken on S4L 9.2)
+        color = get_color(log_type)
+        print(f"{color}{message}{Style.RESET_ALL}")
 
     def _handle_overall_progress(self, msg: Dict[str, Any]) -> None:
         """Handles overall progress message type."""
