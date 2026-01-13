@@ -250,16 +250,28 @@ Child Process runs the study:
 
 ```
 Child Process:
-  └── QueueGUI.log() → queue.put({type: "status", message: "...", log_type: "..."})
+  └── LoggingMixin._log() calls:
+      ├── progress_logger.info() (file handler)
+      └── self.gui.log(level="progress") → queue.put({type: "status", ...})
+      
+      OR for verbose:
+      ├── verbose_logger.info() (file handler)  
+      └── self.gui.log(level="verbose") → queue.put({type: "terminal_only", ...})
 
 Main Process (QueueHandler):
   └── queue.get() → receives message
-  └── _handle_status():
-      ├── self.gui.update_status() → Updates GUI (as before)
-      └── print(f"{color}{message}") → NEW: Echoes to terminal ✓
+  └── For type="status":
+      ├── self.gui.update_status() → Updates GUI
+      └── print(f"{color}{message}") → Echoes to terminal ✓
+  └── For type="terminal_only":
+      └── print(f"{color}{message}") → Only prints to terminal (no GUI update)
 ```
 
-**The solution**: Since the queue communication still works, and the main process's stdout is fine, we add a `print()` in the main process to echo messages to the terminal. The colors come from the same `get_color(log_type)` function that `ColorFormatter` uses.
+**The solution**: Since the queue communication still works, and the main process's stdout is fine, we add a `print()` in the main process to echo messages to the terminal. Both progress and verbose logs are now sent through the queue:
+- **Progress logs**: type="status" → Updates GUI AND prints to terminal
+- **Verbose logs**: type="terminal_only" → Only prints to terminal (doesn't clutter GUI)
+
+The colors come from the same `get_color(log_type)` function that `ColorFormatter` uses.
 
 ### What's the Same vs Different
 
@@ -269,8 +281,11 @@ Main Process (QueueHandler):
 | **Color system used** | ColorFormatter → get_color() | Directly get_color() |
 | **COLOR_MAP used** | goliat/colors.py | goliat/colors.py (same) |
 | **log_type values** | Passed via logger extra dict | Passed via queue message |
+| **Progress logs to terminal** | ✓ via StreamHandler | ✓ via queue → print() |
+| **Verbose logs to terminal** | ✓ via StreamHandler | ✓ via queue → print() |
 | **File logging** | Works | Works (unchanged) |
 | **GUI updates** | Works via queue | Works via queue (unchanged) |
+| **Web dashboard** | Works via queue | Works via queue (gets both types) |
 
 ### Colors Should Be Identical
 
@@ -298,7 +313,9 @@ If colors look wrong, the issue is likely that the `log_type` being passed throu
 | File | Change |
 |------|--------|
 | `cli/run_study.py` | Conditional S4L/PySide6 init based on main/child process |
-| `goliat/gui/components/queue_handler.py` | Print status messages to terminal with colors |
+| `goliat/gui/components/queue_handler.py` | Handle 'status' and 'terminal_only' message types, print both to terminal |
+| `goliat/gui/queue_gui.py` | Send all log levels through queue (progress as 'status', verbose as 'terminal_only') |
+| `goliat/logging_manager.py` | Send verbose logs through GUI too (for terminal output on S4L 9.2) |
 | `goliat/runners/keep_awake_handler.py` | Guard `sys.stdout.flush()` with None check |
 
 ---
