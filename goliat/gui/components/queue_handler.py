@@ -48,7 +48,12 @@ class QueueHandler:
 
     def _handle_status(self, msg: Dict[str, Any]) -> None:
         """Handles status message type."""
-        self.gui.update_status(msg["message"], msg.get("log_type", "default"))
+        message = msg["message"]
+        log_type = msg.get("log_type", "default")
+        # Update GUI
+        self.gui.update_status(message, log_type)
+        # Also print to terminal (child process stdout may be broken on S4L 9.2)
+        print(message)
 
     def _handle_overall_progress(self, msg: Dict[str, Any]) -> None:
         """Handles overall progress message type."""
