@@ -258,4 +258,7 @@ class LoggingMixin:
                 self.gui.log(message, level="progress", log_type=log_type)
         else:  # verbose
             self.verbose_logger.info(message, extra=extra)
-            # Do not send verbose logs to the GUI status box
+            if hasattr(self, "gui") and self.gui:
+                # Send to GUI for terminal output (S4L 9.2 fix - child stdout is broken)
+                # QueueGUI will send as 'terminal_only' type, which prints but doesn't update GUI
+                self.gui.log(message, level="verbose", log_type=log_type)

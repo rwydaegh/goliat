@@ -40,6 +40,7 @@ class QueueHandler:
         self.gui: "ProgressGUI" = gui_instance
         self._MESSAGE_HANDLERS = {
             "status": self._handle_status,
+            "terminal_only": self._handle_terminal_only,  # Verbose logs - terminal only, no GUI update
             "overall_progress": self._handle_overall_progress,
             "stage_progress": self._handle_stage_progress,
             "start_animation": self._handle_start_animation,
@@ -57,6 +58,18 @@ class QueueHandler:
         # Update GUI
         self.gui.update_status(message, log_type)
         # Also print to terminal with colors (child process stdout may be broken on S4L 9.2)
+        color = get_color(log_type)
+        print(f"{color}{message}{Style.RESET_ALL}")
+
+    def _handle_terminal_only(self, msg: Dict[str, Any]) -> None:
+        """Handles terminal_only message type (verbose logs).
+
+        These messages only print to terminal, not to GUI status box.
+        This is for verbose logs that would clutter the GUI.
+        """
+        message = msg["message"]
+        log_type = msg.get("log_type", "default")
+        # Only print to terminal, don't update GUI
         color = get_color(log_type)
         print(f"{color}{message}{Style.RESET_ALL}")
 
