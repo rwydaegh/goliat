@@ -7,7 +7,7 @@
 
 GOLIAT worked perfectly on Sim4Life 8.2 but exhibited these issues on Sim4Life 9.2:
 - **`use_gui=false`**: Segmentation fault
-- **`use_gui=true`**: Hangs forever
+- **`use_gui=true`**: Hangs forever, then later worked but no terminal logging
 
 Initial hypothesis was that `multiprocessing.Queue` was incompatible with S4L 9.2, but this turned out to be wrong.
 
@@ -59,268 +59,162 @@ Tested specific orderings:
 | **5** | **matplotlib.use() FIRST, then PySide6** | **PASSED** |
 | **6** | **S4L FIRST, then PySide6** | **PASSED** |
 
+### Test 6: Full Study Flow (`test_full_study_flow.py`)
+This test mimics the exact `goliat study` flow:
+- Main process imports run_study.py (triggers S4L + PySide6 at module level)
+- Main process spawns child process
+- Child process should print to terminal
+
+**Result on 8.2**: Child output appears in terminal ✓
+**Result on 9.2**: Child output MISSING from terminal ✗
+
+This isolated the second issue: when main process has S4L running before spawn, child stdout is broken.
+
 ---
 
-## The Root Cause
+## Root Cause Analysis
 
-**Sim4Life 9.2 crashes if PySide6 is imported BEFORE Sim4Life starts.**
-
+### Issue 1: Segfault on S4L 9.2
+**Cause**: Sim4Life 9.2 crashes if PySide6 is imported BEFORE Sim4Life starts.
 This is a breaking change from 8.2 where the order didn't matter.
 
-The issue is NOT:
-- ❌ `multiprocessing.Queue`
-- ❌ `matplotlib.use("Qt5Agg")`
-- ❌ Any specific GOLIAT component
+### Issue 2: Child process stdout broken
+**Cause**: When the main process starts S4L and then spawns a child process using `multiprocessing.spawn`, the child inherits broken stdout/stderr file descriptors from the parent. This appears to be something S4L 9.2 does to stdout/stderr that wasn't an issue in 8.2.
 
-The issue IS:
-- ✅ **Import order**: PySide6 must be imported AFTER S4L starts
+The child process still writes to log files correctly, and QueueGUI messages still reach the main process's GUI. Only the direct console output from the child is lost.
 
 ---
 
-## The Fix
+## The Final Solution
 
-Modified `cli/run_study.py` to start S4L at module level, BEFORE any PySide6 imports:
+The fix required changes to three files:
+
+### 1. `cli/run_study.py` - Module-level initialization
 
 ```python
+# --- Pre-check and Setup ---
+# Only run initial_setup in main process (not in spawned children)
+_is_main_process = multiprocessing.current_process().name == "MainProcess"
+if _is_main_process and not os.environ.get("PYTEST_CURRENT_TEST") and not os.environ.get("CI"):
+    initial_setup()
+
 # --- S4L 9.2 Compatibility Fix ---
 # Sim4Life 9.2 crashes (segfault) if PySide6 is imported BEFORE S4L starts.
-# This affects BOTH the main process AND spawned child processes, since both
-# re-import this module and thus import PySide6 at module level.
-# Solution: Start S4L early in ALL processes, before any PySide6 imports.
-if not os.environ.get("PYTEST_CURRENT_TEST") and not os.environ.get("CI"):
+# IMPORTANT: We only do early S4L init in the MAIN process.
+# Child processes skip this because when the main process has S4L running,
+# spawning a child inherits broken stdout/stderr file descriptors.
+# Child processes will init S4L later via ensure_s4l_running() in study_process_wrapper.
+if _is_main_process and not os.environ.get("PYTEST_CURRENT_TEST") and not os.environ.get("CI"):
     try:
         from s4l_v1._api import application as _s4l_app
         if _s4l_app.get_app_safe() is None:
             _s4l_app.run_application(disable_ui_plugins=True)
     except ImportError:
-        pass  # Not running in S4L environment, skip
-# --- End S4L 9.2 Fix ---
+        pass
 
-# NOW it's safe to import PySide6
-from PySide6.QtWidgets import QApplication
-```
-
-### Critical Learning: Must Run in ALL Processes
-
-Initially I tried to only run this in the main process:
-```python
-if multiprocessing.current_process().name == "MainProcess":
-```
-
-This caused the child process to hang because:
-1. Child process re-imports `run_study.py`
-2. Child process imports PySide6 at module level
-3. Child process hasn't started S4L yet
-4. → Hang/segfault
-
-**Both main AND child processes need S4L started before PySide6 import.**
-
----
-
-## GOLIAT Startup Flow
-
-### When `goliat study config.json` is run:
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ 1. CLI Entry Point (cli/run_study.py)                           │
-│    - Module-level imports happen                                │
-│    - S4L 9.2 fix: Start S4L early (before PySide6)              │
-│    - initial_setup() runs                                       │
-│    - PySide6 is imported (now safe)                             │
-│    - Config, LoggingMixin, etc. imported                        │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│ 2. main() function                                              │
-│    - Parse arguments                                            │
-│    - Load Config                                                │
-│    - Setup loggers                                              │
-│    - Check use_gui setting                                      │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-         ┌────────────────────┴────────────────────┐
-         ↓                                         ↓
-┌─────────────────────┐                 ┌─────────────────────────┐
-│ use_gui=false       │                 │ use_gui=true            │
-│ (Headless Mode)     │                 │ (GUI Mode)              │
-│                     │                 │                         │
-│ - ConsoleLogger     │                 │ - Spawn child process   │
-│ - Run study in      │                 │ - Main: run GUI         │
-│   main process      │                 │ - Child: run study      │
-└─────────────────────┘                 └─────────────────────────┘
-```
-
-### GUI Mode Multi-Process Architecture:
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        MAIN PROCESS                              │
-│                                                                  │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │ QApplication (PySide6 event loop)                       │    │
-│  │                                                         │    │
-│  │  ┌─────────────────────────────────────────────────┐   │    │
-│  │  │ ProgressGUI                                      │   │    │
-│  │  │  - Shows progress bars                          │   │    │
-│  │  │  - Status text log                              │   │    │
-│  │  │  - Pie charts, graphs                           │   │    │
-│  │  │                                                 │   │    │
-│  │  │  QueueHandler polls queue every 100ms           │   │    │
-│  │  │  ↑                                              │   │    │
-│  │  └──│──────────────────────────────────────────────┘   │    │
-│  │     │                                                   │    │
-│  └─────│───────────────────────────────────────────────────┘    │
-│        │                                                         │
-│        │ multiprocessing.Queue                                   │
-│        │ (messages flow from child → main)                       │
-│        │                                                         │
-└────────│─────────────────────────────────────────────────────────┘
-         │
-         │
-┌────────│─────────────────────────────────────────────────────────┐
-│        ↓                        CHILD PROCESS                     │
-│                                                                   │
-│  ┌─────────────────────────────────────────────────────────┐     │
-│  │ study_process_wrapper()                                  │     │
-│  │                                                          │     │
-│  │  - Re-imports run_study.py (→ S4L starts early)          │     │
-│  │  - Creates QueueGUI (proxy to Queue)                     │     │
-│  │  - Creates Profiler                                      │     │
-│  │  - Loads Config                                          │     │
-│  │  - Runs the actual study (NearFieldStudy/FarFieldStudy)  │     │
-│  │                                                          │     │
-│  │  QueueGUI.log() → queue.put({...})                       │     │
-│  │  QueueGUI.update_progress() → queue.put({...})           │     │
-│  │                                                          │     │
-│  └─────────────────────────────────────────────────────────┘     │
-│                                                                   │
-└───────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Logging Architecture
-
-GOLIAT has two main loggers:
-1. **`progress`** - High-level progress messages for GUI/user
-2. **`verbose`** - Detailed technical logs
-
-### Logger Setup (`logging_manager.py`):
-
-```python
-setup_loggers() returns:
-- progress_logger: logging.Logger
-- verbose_logger: logging.Logger  
-- session_timestamp: str
-
-Each logger has:
-- FileHandler → writes to logs/{timestamp}.log and logs/{timestamp}.progress.log
-- StreamHandler → writes to stdout (terminal)
-```
-
-### Logging in Different Contexts:
-
-| Context | Logger Location | File Output | Console Output | GUI Output |
-|---------|-----------------|-------------|----------------|------------|
-| Headless (use_gui=false) | Main process | ✓ | ✓ | N/A |
-| GUI Main Process | Main process | ✓ | ✓ | Via ProgressGUI |
-| GUI Child Process | Child process | ✓ writes to files | Depends on stdout | Via QueueGUI → Queue → GUI |
-
-### QueueGUI: The IPC Bridge
-
-`QueueGUI` is a proxy class that looks like `ProgressGUI` but routes all calls through a `multiprocessing.Queue`:
-
-```python
-class QueueGUI:
-    def __init__(self, queue, stop_event, profiler, progress_logger, verbose_logger):
-        self.queue = queue
-        # ...
+# --- PySide6 and GUI imports (main process only) ---
+# Child processes don't need PySide6 or ProgressGUI. Importing ProgressGUI triggers
+# matplotlib.use("Qt5Agg") which conflicts with S4L 9.2 if S4L hasn't started yet.
+if _is_main_process:
+    try:
+        from PySide6.QtWidgets import QApplication
+    except ImportError:
+        # ... error handling ...
     
-    def log(self, message, level="verbose", log_type="default"):
-        # Log locally to file
-        # Also send to queue for GUI
-        self._send("log", message=message, level=level, log_type=log_type)
+    from goliat.gui_manager import ProgressGUI, QueueGUI
+    # ... rest of imports ...
+else:
+    # Child process - set these to None
+    QApplication = None
+    ProgressGUI = None
+    QueueGUI = None  # Will be imported directly in study_process_wrapper
+```
+
+### 2. `cli/run_study.py` - study_process_wrapper function
+
+```python
+def study_process_wrapper(queue, stop_event, config_filename, process_id, no_cache=False, session_timestamp=None):
+    # ... setup loggers ...
     
-    def update_overall_progress(self, current, total):
-        self._send("overall_progress", current=current, total=total)
-    
-    def _send(self, msg_type, **kwargs):
-        self.queue.put({"type": msg_type, **kwargs})
+    try:
+        # Import QueueGUI directly here (not at module level) because child processes
+        # skip the gui_manager import to avoid PySide6/matplotlib conflicts on S4L 9.2.
+        from goliat.gui.queue_gui import QueueGUI as _QueueGUI
+
+        gui_proxy = _QueueGUI(queue, stop_event, profiler, progress_logger, verbose_logger)
+        # ... rest of study setup ...
 ```
 
-The main process's `QueueHandler` dequeues these and calls the real `ProgressGUI` methods.
+### 3. `goliat/gui/components/queue_handler.py` - Terminal output
+
+```python
+from colorama import Style
+from goliat.colors import get_color
+
+class QueueHandler:
+    def _handle_status(self, msg: Dict[str, Any]) -> None:
+        """Handles status message type."""
+        message = msg["message"]
+        log_type = msg.get("log_type", "default")
+        # Update GUI
+        self.gui.update_status(message, log_type)
+        # Also print to terminal with colors (child process stdout may be broken on S4L 9.2)
+        color = get_color(log_type)
+        print(f"{color}{message}{Style.RESET_ALL}")
+```
 
 ---
 
-## Key Technical Details
+## Why This Solution Works
 
-### multiprocessing.spawn on Windows
+### Main Process Flow:
+1. `_is_main_process` check → True
+2. `initial_setup()` runs (version warnings, etc.)
+3. S4L starts early (before PySide6) → **Avoids segfault**
+4. PySide6 imported → Safe now that S4L is running
+5. `gui_manager` imported → ProgressGUI and matplotlib configured
+6. Child process spawned
+7. QApplication.exec() runs (GUI event loop)
+8. QueueHandler receives messages from queue and **prints to terminal**
 
-Windows uses `spawn` context which:
-1. Creates a fresh Python interpreter for child process
-2. Re-imports the main module
-3. Does NOT share memory with parent
-4. Does NOT inherit stdout/stderr connection to parent's terminal
-
-This is why:
-- Child process logs to files correctly
-- Child process console output may not appear in parent terminal
-- Queue is needed for IPC
-
-### S4L Integration Points
-
-```python
-from s4l_v1._api import application
-
-# Check if S4L is running
-app = application.get_app_safe()  # Returns None if not running
-
-# Start S4L
-application.run_application(disable_ui_plugins=True)
-
-# Create documents, simulations, etc.
-from s4l_v1 import document
-doc = document.New()
-```
-
-### The `ensure_s4l_running()` Function
-
-Found in `goliat/utils/core.py`:
-```python
-def ensure_s4l_running():
-    """Ensures Sim4Life is running, starting it if necessary."""
-    if application.get_app_safe() is None:
-        application.run_application(disable_ui_plugins=True)
-```
-
-This was previously where S4L started. The 9.2 fix moves this earlier in the module.
+### Child Process Flow:
+1. Re-imports run_study.py at module level
+2. `_is_main_process` check → False
+3. Skips `initial_setup()` → No duplicate warnings
+4. Skips S4L early init → **Avoids inheriting broken stdout**
+5. Skips PySide6 imports → Doesn't need them
+6. `study_process_wrapper()` starts
+7. Imports `QueueGUI` directly from `queue_gui.py` (not `gui_manager`)
+8. S4L starts via `ensure_s4l_running()` inside the study
+9. All log messages sent through queue → **Main process prints them**
 
 ---
 
-## Other Issues Discovered
+## Key Technical Insights
 
-### 1. `sys.stdout.flush()` crash
+### Why child stdout is broken on 9.2
 
-When S4L starts early, `sys.stdout` can be `None` in some contexts. Fixed by guarding:
-```python
-if sys.stdout is not None:
-    sys.stdout.flush()
-```
+When S4L 9.2 starts, it appears to do something to the underlying file descriptors for stdout/stderr. On Windows with `multiprocessing.spawn`, the child process may inherit these modified descriptors. Even though we restore `sys.stdout` and `sys.stderr` in Python, the underlying C-level file descriptors remain affected.
 
-### 2. Port 8080 conflict (noted in earlier conversation)
+### Why importing QueueGUI directly works
 
-S4L's internal web server conflicts with other processes. This was a known issue.
+The import chain matters:
+- `from goliat.gui_manager import QueueGUI` → imports `progress_gui.py` → calls `matplotlib.use("Qt5Agg")` → imports PySide6 internals
+- `from goliat.gui.queue_gui import QueueGUI` → only imports what QueueGUI needs (no matplotlib, no PySide6)
+
+### Why printing in main process works
+
+The main process's stdout is fine - it's the parent, not affected by spawn inheritance. Since QueueGUI already sends all log messages through the multiprocessing queue, we just add a `print()` call in `QueueHandler._handle_status()` to echo them to terminal.
 
 ---
 
-## Lessons Learned
+## Files Changed
 
-1. **Order matters** - Module-level import order can cause subtle issues
-2. **Multiprocessing is tricky** - Child processes re-import modules, executing module-level code again
-3. **Test incrementally** - Binary search approach (test_s4l_import_bisect.py) was effective
-4. **Document the tests** - Created comprehensive test suite for future debugging
-5. **Check all processes** - Issues can appear differently in main vs child processes
+| File | Change |
+|------|--------|
+| `cli/run_study.py` | Conditional S4L/PySide6 init based on main/child process |
+| `goliat/gui/components/queue_handler.py` | Print status messages to terminal with colors |
+| `goliat/runners/keep_awake_handler.py` | Guard `sys.stdout.flush()` with None check |
 
 ---
 
@@ -332,42 +226,27 @@ All in `tests/`:
 - `test_s4l_import_order.py` - Import order tests
 - `test_s4l_import_bisect.py` - Binary search for problematic imports
 - `test_s4l_final_diagnostic.py` - Final isolation tests
-
-These can be used to diagnose future S4L version compatibility issues.
+- `test_child_console.py` - Basic child process stdout test
+- `test_child_console_s4l.py` - Child stdout with S4L in child
+- `test_child_mimics_study.py` - Child imports run_study.py
+- `test_full_study_flow.py` - Full main+child flow test
 
 ---
 
-## Summary
+## Lessons Learned
 
-The Sim4Life 9.2 compatibility issue was caused by a breaking change in how S4L interacts with PySide6/Qt. The fix required two changes:
+1. **Import order matters** - Module-level import order can cause segfaults in external C libraries
+2. **File descriptors vs Python objects** - Restoring `sys.stdout` doesn't fix underlying fd issues
+3. **Spawn context inheritance** - Child processes may inherit unexpected state from parent
+4. **Test incrementally** - Binary search approach was essential for diagnosis
+5. **Route around the problem** - When child stdout is broken, print in the main process instead
+6. **Main vs child context** - Use `multiprocessing.current_process().name == "MainProcess"` to differentiate
 
-### Issue 1: Segfault
-**Cause**: PySide6 imported before S4L starts.
-**Fix**: Start S4L early at module level in main process, before any PySide6 imports.
+---
 
-### Issue 2: Child process stdout broken
-**Cause**: When main process has S4L running and spawns a child process, the child inherits broken stdout/stderr file descriptors.
-**Fix**: 
-1. Only do early S4L init in main process
-2. Only import PySide6/ProgressGUI in main process  
-3. Child process imports QueueGUI directly (not through gui_manager which triggers matplotlib/PySide6)
-4. Since QueueGUI already sends messages through the queue, have the main process's QueueHandler print them to terminal
+## Verification
 
-### Final Architecture
-
-```
-Main Process:
-  - initial_setup() runs once
-  - S4L starts early (before PySide6)
-  - PySide6/ProgressGUI imported
-  - QueueHandler receives messages and PRINTS them to terminal
-  
-Child Process:
-  - Skips initial_setup (already done)
-  - Skips PySide6 imports (doesn't need them)
-  - Imports QueueGUI directly inside study_process_wrapper
-  - Sends all log messages through queue
-  - S4L starts later via ensure_s4l_running()
-```
-
-This ensures both S4L compatibility and terminal output work correctly on S4L 9.2.
+To verify the fix works:
+1. On S4L 8.2: `goliat study far_field_FR3_barebones` → Works with terminal output ✓
+2. On S4L 9.2: `goliat study far_field_FR3_barebones` → Works with terminal output ✓
+3. Both versions: GUI shows progress, logs written to files, no segfault, no hang
