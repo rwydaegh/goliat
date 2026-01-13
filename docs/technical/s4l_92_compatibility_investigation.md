@@ -339,4 +339,35 @@ These can be used to diagnose future S4L version compatibility issues.
 
 ## Summary
 
-The Sim4Life 9.2 compatibility issue was caused by a breaking change in how S4L interacts with PySide6/Qt. The fix is simple: **start S4L before importing PySide6**. This must happen in both the main process and any spawned child processes.
+The Sim4Life 9.2 compatibility issue was caused by a breaking change in how S4L interacts with PySide6/Qt. The fix required two changes:
+
+### Issue 1: Segfault
+**Cause**: PySide6 imported before S4L starts.
+**Fix**: Start S4L early at module level in main process, before any PySide6 imports.
+
+### Issue 2: Child process stdout broken
+**Cause**: When main process has S4L running and spawns a child process, the child inherits broken stdout/stderr file descriptors.
+**Fix**: 
+1. Only do early S4L init in main process
+2. Only import PySide6/ProgressGUI in main process  
+3. Child process imports QueueGUI directly (not through gui_manager which triggers matplotlib/PySide6)
+4. Since QueueGUI already sends messages through the queue, have the main process's QueueHandler print them to terminal
+
+### Final Architecture
+
+```
+Main Process:
+  - initial_setup() runs once
+  - S4L starts early (before PySide6)
+  - PySide6/ProgressGUI imported
+  - QueueHandler receives messages and PRINTS them to terminal
+  
+Child Process:
+  - Skips initial_setup (already done)
+  - Skips PySide6 imports (doesn't need them)
+  - Imports QueueGUI directly inside study_process_wrapper
+  - Sends all log messages through queue
+  - S4L starts later via ensure_s4l_running()
+```
+
+This ensures both S4L compatibility and terminal output work correctly on S4L 9.2.
