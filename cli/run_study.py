@@ -268,7 +268,9 @@ def study_process_wrapper(queue, stop_event, config_filename, process_id, no_cac
     """
     # Each process needs to set up its own loggers.
     # Use the same session_timestamp as main process to write to the same log file
-    progress_logger, verbose_logger, _ = setup_loggers(process_id=process_id, session_timestamp=session_timestamp)
+    # Pass queue to setup_loggers so all logs go through queue for terminal output.
+    # This is needed on S4L 9.2 where child process stdout is broken.
+    progress_logger, verbose_logger, _ = setup_loggers(process_id=process_id, session_timestamp=session_timestamp, queue=queue)
 
     try:
         from goliat.config import Config
