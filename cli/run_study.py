@@ -17,11 +17,11 @@ if not os.environ.get("PYTEST_CURRENT_TEST") and not os.environ.get("CI"):
 
 # --- S4L 9.2 Compatibility Fix ---
 # Sim4Life 9.2 crashes (segfault) if PySide6 is imported BEFORE S4L starts.
-# Solution: Start S4L early, before any PySide6 imports.
-# IMPORTANT: Only do this in the main process, not in spawned children.
+# This affects BOTH the main process AND spawned child processes, since both
+# re-import this module and thus import PySide6 at module level.
+# Solution: Start S4L early in ALL processes, before any PySide6 imports.
 # See: tests/test_s4l_final_diagnostic.py for diagnosis details.
-_is_main_process = multiprocessing.current_process().name == "MainProcess"
-if _is_main_process and not os.environ.get("PYTEST_CURRENT_TEST") and not os.environ.get("CI"):
+if not os.environ.get("PYTEST_CURRENT_TEST") and not os.environ.get("CI"):
     try:
         from s4l_v1._api import application as _s4l_app  # noqa: E402
 
