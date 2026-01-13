@@ -29,6 +29,13 @@ if _is_main_process and not os.environ.get("PYTEST_CURRENT_TEST") and not os.env
 
         if _s4l_app.get_app_safe() is None:
             _s4l_app.run_application(disable_ui_plugins=True)
+            # S4L 9.2: Enable stdout logging for S4L internal messages
+            try:
+                import XCore  # noqa: E402
+
+                XCore.RedirectToStdOut(True)
+            except (ImportError, AttributeError):
+                pass
     except ImportError:
         pass  # Not running in S4L environment, skip
 # --- End S4L 9.2 Fix ---

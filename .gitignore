@@ -41,6 +41,10 @@ commit_message.txt
 
 # Sim4Life Documentation
 PythonAPIReference/
+PythonAPIReference_DIFF_8_2_to_9_2/
+!API_CHANGES_SUMMARY.md
+PythonAPIReference_8_2/
+PythonAPIReference_9_2/
 hybridizer/
 Sim4Life.pdf
 Sim4Life_Manual.pdf
