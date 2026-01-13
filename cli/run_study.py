@@ -20,8 +20,11 @@ if not os.environ.get("PYTEST_CURRENT_TEST") and not os.environ.get("CI"):
 # This affects BOTH the main process AND spawned child processes, since both
 # re-import this module and thus import PySide6 at module level.
 # Solution: Start S4L early in ALL processes, before any PySide6 imports.
+# Also: S4L 9.2 may redirect stdout/stderr, so we save and restore them.
 # See: tests/test_s4l_final_diagnostic.py for diagnosis details.
 if not os.environ.get("PYTEST_CURRENT_TEST") and not os.environ.get("CI"):
+    _original_stdout = sys.stdout
+    _original_stderr = sys.stderr
     try:
         from s4l_v1._api import application as _s4l_app  # noqa: E402
 
@@ -29,6 +32,10 @@ if not os.environ.get("PYTEST_CURRENT_TEST") and not os.environ.get("CI"):
             _s4l_app.run_application(disable_ui_plugins=True)
     except ImportError:
         pass  # Not running in S4L environment, skip
+    finally:
+        # Restore stdout/stderr in case S4L redirected them
+        sys.stdout = _original_stdout
+        sys.stderr = _original_stderr
 # --- End S4L 9.2 Fix ---
 
 try:
