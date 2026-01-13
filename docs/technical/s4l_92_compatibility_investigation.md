@@ -208,6 +208,91 @@ The main process's stdout is fine - it's the parent, not affected by spawn inher
 
 ---
 
+## Logging Architecture Change Explained
+
+### Before (S4L 8.2 - Terminal Output Worked)
+
+```
+Child Process runs the study:
+  ├── progress_logger (Python logging.Logger)
+  │   ├── FileHandler → writes to logs/*.log files ✓
+  │   └── StreamHandler → writes to sys.stdout
+  │       └── ColorFormatter applies colors based on log_type
+  │       └── Output appears in TERMINAL ✓
+  │
+  └── QueueGUI sends messages to main process via Queue
+      └── Main process updates GUI ✓
+```
+
+**How it worked**: The child process's `progress_logger` had a `StreamHandler` that wrote directly to `sys.stdout`. The `ColorFormatter` applied colors based on `log_type`. This output appeared in the terminal.
+
+### After S4L 9.2 Fix (Child stdout BROKEN)
+
+```
+Main Process:
+  └── Starts S4L early (before PySide6)
+  └── Spawns child process
+  └── Child inherits BROKEN stdout/stderr file descriptors
+
+Child Process runs the study:
+  ├── progress_logger (Python logging.Logger)
+  │   ├── FileHandler → writes to logs/*.log files ✓ (STILL WORKS)
+  │   └── StreamHandler → writes to sys.stdout
+  │       └── But sys.stdout points to broken file descriptor
+  │       └── Output DOES NOT appear in terminal ✗
+  │
+  └── QueueGUI sends messages to main process via Queue ✓ (STILL WORKS)
+```
+
+**The problem**: When the main process starts S4L 9.2, something happens to stdout/stderr at the OS level. When the child is spawned, it inherits these broken file descriptors. The child's `StreamHandler` writes to what it thinks is stdout, but the data goes nowhere.
+
+### The Workaround (Print in Main Process)
+
+```
+Child Process:
+  └── QueueGUI.log() → queue.put({type: "status", message: "...", log_type: "..."})
+
+Main Process (QueueHandler):
+  └── queue.get() → receives message
+  └── _handle_status():
+      ├── self.gui.update_status() → Updates GUI (as before)
+      └── print(f"{color}{message}") → NEW: Echoes to terminal ✓
+```
+
+**The solution**: Since the queue communication still works, and the main process's stdout is fine, we add a `print()` in the main process to echo messages to the terminal. The colors come from the same `get_color(log_type)` function that `ColorFormatter` uses.
+
+### What's the Same vs Different
+
+| Aspect | Before (8.2) | After (9.2 fix) |
+|--------|--------------|-----------------|
+| **Where terminal output comes from** | Child process StreamHandler | Main process print() |
+| **Color system used** | ColorFormatter → get_color() | Directly get_color() |
+| **COLOR_MAP used** | goliat/colors.py | goliat/colors.py (same) |
+| **log_type values** | Passed via logger extra dict | Passed via queue message |
+| **File logging** | Works | Works (unchanged) |
+| **GUI updates** | Works via queue | Works via queue (unchanged) |
+
+### Colors Should Be Identical
+
+Both systems use the same `get_color(log_type)` function from `goliat/colors.py`:
+
+```python
+COLOR_MAP = {
+    "default": Fore.WHITE,      # Titles/headers should be white
+    "progress": Fore.GREEN,     # Progress messages green
+    "info": Fore.CYAN,
+    "success": Fore.GREEN + Style.BRIGHT,
+    "warning": Fore.YELLOW,
+    "error": Fore.RED,
+    "fatal": Fore.MAGENTA,
+    ...
+}
+```
+
+If colors look wrong, the issue is likely that the `log_type` being passed through the queue isn't what's expected. Check what `log_type` value is being set when calling `self._log(message, level="progress", log_type="...")` in the study code.
+
+---
+
 ## Files Changed
 
 | File | Change |
