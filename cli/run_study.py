@@ -11,8 +11,9 @@ from typing import Optional
 from goliat.utils.setup import initial_setup
 
 # --- Pre-check and Setup ---
-# Only run initial_setup if not in test/CI environment
-if not os.environ.get("PYTEST_CURRENT_TEST") and not os.environ.get("CI"):
+# Only run initial_setup in main process (not in spawned children)
+_is_main_process = multiprocessing.current_process().name == "MainProcess"
+if _is_main_process and not os.environ.get("PYTEST_CURRENT_TEST") and not os.environ.get("CI"):
     initial_setup()
 
 # --- S4L 9.2 Compatibility Fix ---
@@ -22,7 +23,6 @@ if not os.environ.get("PYTEST_CURRENT_TEST") and not os.environ.get("CI"):
 # spawning a child inherits broken stdout/stderr file descriptors.
 # Child processes will init S4L later via ensure_s4l_running() in study_process_wrapper.
 # See: tests/test_full_study_flow.py for diagnosis details.
-_is_main_process = multiprocessing.current_process().name == "MainProcess"
 if _is_main_process and not os.environ.get("PYTEST_CURRENT_TEST") and not os.environ.get("CI"):
     try:
         from s4l_v1._api import application as _s4l_app  # noqa: E402
