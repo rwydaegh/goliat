@@ -47,17 +47,26 @@ class PowerExtractor(LoggingMixin):
         Args:
             simulation_extractor: Results extractor from the simulation.
         """
+        import time
+
         self._log("    - Extract input power...", level="progress", log_type="progress")
+        print(f"[POWER DEBUG] extract_input_power: Starting (study_type={self.study_type})...")
+        pipeline_start = time.time()
+
         try:
             elapsed = 0.0
             if self.parent.study:
                 with self.parent.study.profiler.subtask("extract_input_power"):  # type: ignore
                     if self.study_type == "far_field":
+                        print("[POWER DEBUG] extract_input_power: Calling _extract_far_field_power...")
                         self._extract_far_field_power(simulation_extractor)
                     else:
+                        print("[POWER DEBUG] extract_input_power: Calling _extract_near_field_power...")
                         self._extract_near_field_power(simulation_extractor)
 
                 elapsed = self.parent.study.profiler.subtask_times["extract_input_power"][-1]
+
+            print(f"[POWER DEBUG] === TOTAL INPUT POWER EXTRACTION: {time.time() - pipeline_start:.2f}s ===")
             self._log(f"      - Subtask 'extract_input_power' done in {elapsed:.2f}s", log_type="verbose")
             self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
         except Exception as e:
@@ -94,6 +103,8 @@ class PowerExtractor(LoggingMixin):
         Args:
             simulation_extractor: Results extractor from the simulation.
         """
+        import time
+
         self._log(
             "  - Far-field study: using theoretical model for input power.",
             log_type="info",
@@ -101,6 +112,8 @@ class PowerExtractor(LoggingMixin):
         import s4l_v1.model
 
         # Calculate theoretical power
+        print("[POWER DEBUG]   _extract_far_field_power: Calculating theoretical power...")
+        t0 = time.time()
         try:
             bbox_entity = next(
                 (e for e in s4l_v1.model.AllEntities() if hasattr(e, "Name") and e.Name == "far_field_simulation_bbox"),
@@ -110,6 +123,7 @@ class PowerExtractor(LoggingMixin):
                 raise RuntimeError("Could not find 'far_field_simulation_bbox' entity in the project.")
             sim_bbox = s4l_v1.model.GetBoundingBox([bbox_entity])
         except RuntimeError as e:
+            print(f"[POWER DEBUG]   _extract_far_field_power: Theoretical calc FAILED ({time.time() - t0:.2f}s)")
             self._log(
                 f"  - WARNING: Could not calculate theoretical input power. {e}",
                 log_type="warning",
@@ -126,8 +140,9 @@ class PowerExtractor(LoggingMixin):
             e_field_v_m, z0 = 1.0, 377.0
             power_density_w_m2 = (e_field_v_m**2) / (2 * z0)
 
-            # e.g., 'environmental_x_pos_theta' -> 'x'
-            direction = self.parent.orientation_name
+            # Get direction from position_name (for far-field: position_name = direction like 'x_pos')
+            # orientation_name contains polarization (theta/phi), not direction
+            direction = self.parent.position_name
             dims = total_max - total_min  # This is a 3-element array [dx, dy, dz]
 
             if "x" in direction:
@@ -141,6 +156,7 @@ class PowerExtractor(LoggingMixin):
                 area_m2 = (dims[0] * dims[1]) / 1e6
 
             theoretical_power = power_density_w_m2 * area_m2
+            print(f"[POWER DEBUG]   _extract_far_field_power: Theoretical power = {theoretical_power:.4e} W ({time.time() - t0:.2f}s)")
             self.results_data.update(
                 {
                     "input_power_W": float(theoretical_power),
@@ -153,17 +169,44 @@ class PowerExtractor(LoggingMixin):
             )
 
         # Extract power from s4l for comparison
+        print("[POWER DEBUG]   _extract_far_field_power: Extracting manual power from S4L for comparison...")
         manual_power = None
         try:
+            print("[POWER DEBUG]   _extract_far_field_power: Getting 'Overall Field' extractor...")
+            t0 = time.time()
             em_sensor_extractor = simulation_extractor["Overall Field"]
+            print(f"[POWER DEBUG]   _extract_far_field_power: Got 'Overall Field' ({time.time() - t0:.2f}s)")
+
+            print("[POWER DEBUG]   _extract_far_field_power: Adding to AllAlgorithms...")
+            t0 = time.time()
             self.document.AllAlgorithms.Add(em_sensor_extractor)
+            print(f"[POWER DEBUG]   _extract_far_field_power: Added ({time.time() - t0:.2f}s)")
+
+            print("[POWER DEBUG]   _extract_far_field_power: Calling em_sensor_extractor.Update()...")
+            t0 = time.time()
             em_sensor_extractor.Update()
+            print(f"[POWER DEBUG]   _extract_far_field_power: Update() done ({time.time() - t0:.2f}s)")
 
+            print("[POWER DEBUG]   _extract_far_field_power: Getting 'EM Input Power(f)' output...")
+            t0 = time.time()
             input_power_output = em_sensor_extractor.Outputs["EM Input Power(f)"]
-            if input_power_output:
-                input_power_output.Update()
+            print(
+                f"[POWER DEBUG]   _extract_far_field_power: Got output (exists={input_power_output is not None}) ({time.time() - t0:.2f}s)"
+            )
 
+            if input_power_output:
+                print("[POWER DEBUG]   _extract_far_field_power: Calling input_power_output.Update()...")
+                t0 = time.time()
+                input_power_output.Update()
+                print(f"[POWER DEBUG]   _extract_far_field_power: input_power_output.Update() done ({time.time() - t0:.2f}s)")
+
+                print("[POWER DEBUG]   _extract_far_field_power: Getting power data...")
+                t0 = time.time()
                 power_data = input_power_output.Data.GetComponent(0)
+                print(
+                    f"[POWER DEBUG]   _extract_far_field_power: Got power data (size={power_data.size if power_data is not None else 'None'}) ({time.time() - t0:.2f}s)"
+                )
+
                 if power_data is not None and power_data.size > 0:
                     if power_data.size == 1:
                         manual_power = power_data.item()
@@ -188,6 +231,7 @@ class PowerExtractor(LoggingMixin):
                     log_type="warning",
                 )
         except Exception as e:
+            print(f"[POWER DEBUG]   _extract_far_field_power: Exception during manual extraction: {e}")
             self._log(
                 f"  - WARNING: Could not extract manual input power from s4l: {e}",
                 log_type="warning",
@@ -203,12 +247,28 @@ class PowerExtractor(LoggingMixin):
         Args:
             simulation_extractor: Results extractor from the simulation.
         """
+        import time
+
+        print("[POWER DEBUG]   _extract_near_field_power: Getting 'Input Power' extractor...")
+        t0 = time.time()
         input_power_extractor = simulation_extractor["Input Power"]
+        print(f"[POWER DEBUG]   _extract_near_field_power: Got 'Input Power' ({time.time() - t0:.2f}s)")
+
+        print("[POWER DEBUG]   _extract_near_field_power: Adding to AllAlgorithms...")
+        t0 = time.time()
         self.document.AllAlgorithms.Add(input_power_extractor)
+        print(f"[POWER DEBUG]   _extract_near_field_power: Added ({time.time() - t0:.2f}s)")
+
+        print("[POWER DEBUG]   _extract_near_field_power: Calling Update()...")
+        t0 = time.time()
         input_power_extractor.Update()
+        print(f"[POWER DEBUG]   _extract_near_field_power: Update() done ({time.time() - t0:.2f}s)")
 
         if hasattr(input_power_extractor, "GetPower"):
+            print("[POWER DEBUG]   _extract_near_field_power: Using GetPower()...")
+            t0 = time.time()
             power_w, _ = input_power_extractor.GetPower(0)
+            print(f"[POWER DEBUG]   _extract_near_field_power: GetPower() = {power_w:.4e} W ({time.time() - t0:.2f}s)")
             self.results_data.update(
                 {
                     "input_power_W": float(power_w),
@@ -216,15 +276,26 @@ class PowerExtractor(LoggingMixin):
                 }
             )
         else:
+            print("[POWER DEBUG]   _extract_near_field_power: GetPower not available, using fallback...")
             self._log(
                 "  - GetPower() not available, falling back to manual extraction.",
                 log_type="warning",
             )
+            print("[POWER DEBUG]   _extract_near_field_power: Getting 'EM Input Power(f)' output...")
+            t0 = time.time()
             input_power_output = input_power_extractor.Outputs["EM Input Power(f)"]
+            print(f"[POWER DEBUG]   _extract_near_field_power: Got output ({time.time() - t0:.2f}s)")
+
+            print("[POWER DEBUG]   _extract_near_field_power: Calling output.Update()...")
+            t0 = time.time()
             input_power_output.Update()
+            print(f"[POWER DEBUG]   _extract_near_field_power: output.Update() done ({time.time() - t0:.2f}s)")
 
             if hasattr(input_power_output, "GetHarmonicData"):
+                print("[POWER DEBUG]   _extract_near_field_power: Using GetHarmonicData()...")
+                t0 = time.time()
                 power_complex = input_power_output.GetHarmonicData(0)
+                print(f"[POWER DEBUG]   _extract_near_field_power: GetHarmonicData() done ({time.time() - t0:.2f}s)")
                 self.results_data.update(
                     {
                         "input_power_W": float(abs(power_complex)),
@@ -232,7 +303,13 @@ class PowerExtractor(LoggingMixin):
                     }
                 )
             else:
+                print("[POWER DEBUG]   _extract_near_field_power: Using Data.GetComponent(0)...")
+                t0 = time.time()
                 power_data = input_power_output.Data.GetComponent(0)
+                print(
+                    f"[POWER DEBUG]   _extract_near_field_power: GetComponent done (size={power_data.size if power_data is not None else 'None'}) ({time.time() - t0:.2f}s)"
+                )
+
                 if power_data is not None and power_data.size > 0:
                     if power_data.size == 1:
                         input_power_w, freq_mhz = (

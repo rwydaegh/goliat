@@ -375,7 +375,33 @@ class SarExtractor(LoggingMixin):
 
             data_collection = peak_sar_output.Data.DataSimpleDataCollection  # type: ignore
             if data_collection:
-                self.results_data["peak_sar_details"] = {key: data_collection.FieldValue(key, 0) for key in data_collection.Keys()}  # type: ignore
+                # Sim4Life 9.2+ may return null for some keys, causing errors
+                # Extract each key value individually and filter out None/null
+                peak_sar_details = {}
+                try:
+                    keys = list(data_collection.Keys())  # type: ignore
+                    for key in keys:
+                        try:
+                            value = data_collection.FieldValue(key, 0)  # type: ignore
+                            if value is not None:
+                                peak_sar_details[key] = value
+                        except Exception as key_err:
+                            self._log(
+                                f"  - WARNING: Could not extract peak SAR detail for key '{key}': {key_err}",
+                                log_type="warning",
+                            )
+                    if peak_sar_details:
+                        self.results_data["peak_sar_details"] = peak_sar_details
+                    else:
+                        self._log(
+                            "  - WARNING: Peak SAR data collection was empty after filtering.",
+                            log_type="warning",
+                        )
+                except Exception as coll_err:
+                    self._log(
+                        f"  - WARNING: Error iterating peak SAR data collection: {coll_err}",
+                        log_type="warning",
+                    )
             else:
                 self._log(
                     "  - WARNING: Could not extract peak SAR details.",
