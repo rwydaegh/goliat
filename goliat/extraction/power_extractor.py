@@ -104,10 +104,24 @@ class PowerExtractor(LoggingMixin):
         e_field_v_m, z0 = 1.0, 377.0
         power_density_w_m2 = (e_field_v_m**2) / (2 * z0)
 
-        # Get direction from position_name (e.g., 'environmental_x_pos_theta' -> 'x_pos')
+        # Get direction from position_name
+        # Format can be: 'environmental_x_pos_theta', 'x_pos_theta', 'x_pos', etc.
         direction = self.parent.position_name
-        # Extract just the direction part (e.g., 'x_pos' from 'environmental_x_pos_theta')
-        direction_part = direction.replace("environmental_", "").rsplit("_", 1)[0]
+        # Remove 'environmental_' prefix if present
+        direction = direction.replace("environmental_", "")
+
+        # Extract direction part by checking for known patterns
+        # Try to match orthogonal directions first
+        direction_part = None
+        for candidate in ["x_pos", "x_neg", "y_pos", "y_neg", "z_pos", "z_neg"]:
+            if direction.startswith(candidate):
+                direction_part = candidate
+                break
+
+        # If no orthogonal match, assume spherical format (e.g., "45_90")
+        if direction_part is None:
+            # Remove trailing polarization suffix if present (e.g., "45_90_theta" -> "45_90")
+            direction_part = direction.rsplit("_", 1)[0] if "_" in direction else direction
 
         # Convert direction to (theta, phi) in radians
         # Standard orthogonal directions
@@ -143,7 +157,13 @@ class PowerExtractor(LoggingMixin):
         if os.path.exists(cross_section_path):
             try:
                 with open(cross_section_path, "rb") as f:
-                    cs_data = pickle.load(f)
+                    # Try standard load first
+                    try:
+                        cs_data = pickle.load(f)
+                    except ModuleNotFoundError:
+                        # Numpy version mismatch - try with encoding fallback
+                        f.seek(0)
+                        cs_data = pickle.load(f, encoding="latin1")
 
                 if theta_rad is not None and phi_rad is not None:
                     # Find nearest grid point
