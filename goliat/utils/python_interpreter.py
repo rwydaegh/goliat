@@ -154,29 +154,62 @@ def check_python_interpreter(base_dir=None):
         logging.warning("Continuing with current interpreter - some features may not work as expected.")
         return
 
-    print("\nFound the following supported Sim4Life Python executables:")
+    # Show helpful header
+    print("\n" + "=" * 70)
+    print("GOLIAT - Sim4Life Version Selection")
+    print("=" * 70)
+    print("\nGOLIAT needs to use a Sim4Life Python interpreter.")
+    print("The following supported versions were found on your system:\n")
+
     for i, p in enumerate(viable_pythons):
-        print(f"  [{i + 1}] {p}")
+        # Extract version from path for cleaner display
+        import re
+
+        match = re.search(r"Sim4Life[_-](\d+\.\d+\.\d+)", p)
+        version_str = match.group(1) if match else "unknown"
+        recommended = " (recommended)" if i == 0 else ""
+        print(f"  [{i + 1}] Sim4Life {version_str}{recommended}")
+        print(f"      Path: {p}")
+
+    print("\n" + "-" * 70)
+    print("TIP: Version 9.2 is recommended for new projects.")
+    print("     You can change this later by running: goliat config set-version")
+    print("-" * 70)
 
     try:
-        choice = input("\nSelect the version to use (e.g., '1') or press Enter to cancel: ")
-        if not choice:
-            print("Operation cancelled by user.")
-            sys.exit(0)
+        choice = input("\nSelect a version (e.g., '1'), or press Enter for recommended: ")
 
-        selected_index = int(choice) - 1
-        if not 0 <= selected_index < len(viable_pythons):
-            raise ValueError
+        if not choice:
+            # Default to first (recommended) option
+            selected_index = 0
+            print(f"\nUsing recommended version: {viable_pythons[0]}")
+        else:
+            selected_index = int(choice) - 1
+            if not 0 <= selected_index < len(viable_pythons):
+                raise ValueError
 
         selected_python = viable_pythons[selected_index]
 
+        # Save to preferences
+        from .preferences import set_sim4life_python_path
+
+        set_sim4life_python_path(base_dir, selected_python)
+
+        # Update bashrc
         update_bashrc(selected_python, base_dir=base_dir)
 
-        print(
-            "\n.bashrc file updated. Please restart your terminal, run 'source .bashrc', and run the script again with the correct Python."
-        )
+        print("\n" + "=" * 70)
+        print("SUCCESS! Your Sim4Life version has been configured.")
+        print("=" * 70)
+        print(f"\nSelected: {selected_python}")
+        print("\nNext steps:")
+        print("  1. Restart your terminal (or run: source .bashrc)")
+        print("  2. Run your GOLIAT command again")
+        print("\nTo change versions later, run: goliat config set-version")
+        print("=" * 70)
         sys.exit(0)
 
     except (ValueError, IndexError):
-        print("Invalid selection. Exiting.")
+        print("\nInvalid selection. Please enter a number from the list.")
+        print("You can run GOLIAT again to retry.")
         sys.exit(1)

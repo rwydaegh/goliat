@@ -54,6 +54,16 @@ goliat init
 
 This creates `configs/` and `data/` directories and downloads required models.
 
+!!! tip "Changing Sim4Life Versions"
+    GOLIAT will prompt you to select a Sim4Life version on first run. You can change this anytime:
+    
+    ```bash
+    goliat config set-version    # Interactive version picker
+    goliat config show           # View current settings
+    ```
+    
+    Your choice is saved in `data/.goliat_preferences.json`.
+
 ### Developer install (editable)
 
 If you need to modify code or access repository tools:
