@@ -183,12 +183,15 @@ def ensure_s4l_running():
 
         # S4L 9.2: Enable stdout logging for S4L internal messages
         # This was automatic in 8.2 but needs explicit call in 9.2
-        try:
-            import XCore
+        from .version import is_sim4life_92_or_later
 
-            XCore.RedirectToStdOut(True)
-        except (ImportError, AttributeError):
-            pass  # Not available or not needed
+        if is_sim4life_92_or_later():
+            try:
+                import XCore
+
+                XCore.RedirectToStdOut(True)
+            except (ImportError, AttributeError):
+                pass  # Not available
 
 
 def open_project(project_path: str):

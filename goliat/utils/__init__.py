@@ -26,6 +26,15 @@ from .skin_voxel_utils import (
     get_skin_voxel_coordinates,
 )
 
+# Version detection utilities
+from .version import (
+    get_sim4life_version,
+    get_sim4life_major_minor,
+    get_version_display_string,
+    is_sim4life_92_or_later,
+    is_version_supported,
+)
+
 __all__ = [
     "StudyCancelledError",
     "Profiler",
@@ -39,4 +48,10 @@ __all__ = [
     "initial_setup",
     "extract_skin_voxels",
     "get_skin_voxel_coordinates",
+    # Version utilities
+    "get_sim4life_version",
+    "get_sim4life_major_minor",
+    "get_version_display_string",
+    "is_sim4life_92_or_later",
+    "is_version_supported",
 ]

@@ -1,6 +1,13 @@
 """Sim4Life Python interpreter detection and management.
 
 This module provides functions for finding and checking Sim4Life Python interpreters.
+
+Supported versions:
+- 8.2.x: Original supported version
+- 9.2.x: Added in 2026
+
+NOT supported:
+- 9.0.x: Internal/beta release
 """
 
 import glob
@@ -10,12 +17,25 @@ import platform
 import sys
 
 from .bashrc import update_bashrc
+from .version import (
+    get_sim4life_version,
+    get_version_display_string,
+    is_sim4life_92_or_later,
+    is_version_supported,
+    sort_versions_by_preference,
+)
 
 
 def find_sim4life_python_executables():
     """
-    Scans all drives for Sim4Life Python directories (version 8.2).
+    Scans all drives for Sim4Life Python directories (versions 8.2 and 9.2).
     Windows-only function - should not be called on Linux/AWS.
+
+    Returns paths sorted by preference (9.2 before 8.2), excluding unsupported
+    versions like 9.0.
+
+    Returns:
+        list: Sorted list of paths to Sim4Life Python directories.
     """
     if sys.platform != "win32":
         return []
@@ -24,10 +44,13 @@ def find_sim4life_python_executables():
     found_python_dirs = []
 
     for drive in drives:
-        pattern = os.path.join(drive, "Program Files", "Sim4Life_8.2*", "Python")
-        found_python_dirs.extend(m for m in glob.glob(pattern) if os.path.isdir(m))
+        # Support both 8.x and 9.x versions
+        for version_pattern in ["Sim4Life_8.*", "Sim4Life_9.*"]:
+            pattern = os.path.join(drive, "Program Files", version_pattern, "Python")
+            found_python_dirs.extend(m for m in glob.glob(pattern) if os.path.isdir(m))
 
-    return found_python_dirs
+    # Sort by preference (9.2 first) and filter out unsupported versions (9.0)
+    return sort_versions_by_preference(found_python_dirs)
 
 
 def _verify_s4l_root(path):
@@ -43,7 +66,7 @@ def find_sim4life_root():
     Sim4Life Python using --system-site-packages.
 
     Returns:
-        str: Path to Sim4Life root directory (e.g., C:\\Program Files\\Sim4Life_8.2.0.16876)
+        str: Path to Sim4Life root directory (e.g., C:\\Program Files\\Sim4Life_9.2.0.12345)
 
     Raises:
         FileNotFoundError: If Sim4Life installation cannot be found
@@ -74,6 +97,8 @@ def check_python_interpreter(base_dir=None):
     Checks if the correct Sim4Life Python interpreter is being used.
     If not, it prompts the user to select a valid one and updates .bashrc.
 
+    Supports Sim4Life 8.2 and 9.2. Version 9.0 is explicitly not supported.
+
     Args:
         base_dir: Optional base directory of the project. If provided, will check
                   user preferences for auto-syncing .bashrc to home directory.
@@ -94,28 +119,47 @@ def check_python_interpreter(base_dir=None):
     if "Sim4Life" in sys.executable:
         sys_executable_dir = os.path.normpath(os.path.dirname(sys.executable))
         viable_dirs = [os.path.normpath(p) for p in viable_pythons]
+
+        # Check if current interpreter is in the list of viable (supported) interpreters
         if sys_executable_dir in viable_dirs:
-            logging.info("Correct Sim4Life Python interpreter detected.")
+            detected_version = get_version_display_string()
+            if is_sim4life_92_or_later():
+                logging.info(f"Sim4Life {detected_version} detected (9.2+ mode enabled).")
+            else:
+                logging.info(f"Sim4Life {detected_version} detected.")
             return
-        logging.warning(f"You are using an unsupported Sim4Life Python interpreter: {sys.executable}")
-        logging.warning("This project requires Sim4Life version 8.2.")
+
+        # Current interpreter is Sim4Life but not in viable list (e.g., 9.0.x)
+        detected_version = get_sim4life_version()
+        if detected_version and not is_version_supported(detected_version):
+            logging.warning(f"You are using Sim4Life {get_version_display_string()}, which is not officially supported.")
+            logging.warning("GOLIAT supports Sim4Life versions 8.2 and 9.2. Version 9.0 is not supported.")
+        else:
+            logging.warning(f"You are using an unsupported Sim4Life Python interpreter: {sys.executable}")
+            logging.warning("GOLIAT supports Sim4Life versions 8.2 and 9.2.")
+
     elif s4l_v1_available:
-        logging.info("Sim4Life Python packages detected (venv with system-site-packages).")
+        # Running in a venv with system-site-packages
+        detected_version = get_version_display_string()
+        if is_sim4life_92_or_later():
+            logging.info(f"Sim4Life {detected_version} packages detected via venv (9.2+ mode enabled).")
+        else:
+            logging.info(f"Sim4Life {detected_version} packages detected (venv with system-site-packages).")
         return
     else:
         logging.warning("You are not using a Sim4Life Python interpreter.")
 
     if not viable_pythons:
-        logging.warning("No Sim4Life Python executables (v8.2) found on this system.")
+        logging.warning("No supported Sim4Life Python executables (v8.2 or v9.2) found on this system.")
         logging.warning("Continuing with current interpreter - some features may not work as expected.")
         return
 
-    print("Found the following supported Sim4Life Python executables (8.2):")
+    print("\nFound the following supported Sim4Life Python executables:")
     for i, p in enumerate(viable_pythons):
         print(f"  [{i + 1}] {p}")
 
     try:
-        choice = input("Select the version to use (e.g., '1') or press Enter to cancel: ")
+        choice = input("\nSelect the version to use (e.g., '1') or press Enter to cancel: ")
         if not choice:
             print("Operation cancelled by user.")
             sys.exit(0)
@@ -129,7 +173,7 @@ def check_python_interpreter(base_dir=None):
         update_bashrc(selected_python, base_dir=base_dir)
 
         print(
-            "\n .bashrc file updated. Please restart your terminal, run source .bashrc, and run the script again this time with the correct python."
+            "\n.bashrc file updated. Please restart your terminal, run 'source .bashrc', and run the script again with the correct Python."
         )
         sys.exit(0)
 
