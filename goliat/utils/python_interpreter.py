@@ -203,7 +203,7 @@ def check_python_interpreter(base_dir=None):
         print("=" * 70)
         print(f"\nSelected: {selected_python}")
         print("\nNext steps:")
-        print("  1. Restart your terminal (or run: source .bashrc)")
+        print("  1. Run: source .bashrc  (required to apply changes in this session)")
         print("  2. Run your GOLIAT command again")
         print("\nTo change versions later, run: goliat config set-version")
         print("=" * 70)

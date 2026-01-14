@@ -310,7 +310,7 @@ def config_set_version(base_dir: str = None):
         print("=" * 60)
         print(f"\nNew version: {selected_python}")
         print("\nNext steps:")
-        print("  1. Restart your terminal (or run: source .bashrc)")
+        print("  1. Run: source .bashrc  (required to apply changes in this session)")
         print("  2. Your next GOLIAT command will use the new version.")
         print("=" * 60 + "\n")
 
