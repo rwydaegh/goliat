@@ -177,7 +177,7 @@ class PowerExtractor(LoggingMixin):
 
                     area_m2 = float(areas[i_theta, i_phi])
                     self._log(
-                        f"  - Phantom cross-section at θ={np.degrees(theta_rad):.1f}°, φ={np.degrees(phi_rad):.1f}°: {area_m2:.4f} m²",
+                        f"  - Phantom cross-section at theta={np.degrees(theta_rad):.1f} deg, phi={np.degrees(phi_rad):.1f} deg: {area_m2:.4f} m2",
                         log_type="verbose",
                     )
                 else:
