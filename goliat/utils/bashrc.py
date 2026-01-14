@@ -65,9 +65,45 @@ def sync_bashrc_to_home(base_dir):
         with open(home_bashrc, "w", encoding="utf-8") as f:
             f.write(new_content)
 
+        # Ensure ~/.bash_profile sources ~/.bashrc (Git Bash/MINGW64 compatibility)
+        _ensure_bash_profile_sources_bashrc()
+
         logging.info("Synced .bashrc to ~/.bashrc (preference enabled)")
     except Exception as e:
         logging.warning(f"Could not sync .bashrc to home directory: {e}")
+
+
+def _ensure_bash_profile_sources_bashrc():
+    """Ensure ~/.bash_profile sources ~/.bashrc.
+
+    Git Bash/MINGW64 on Windows reads ~/.bash_profile but not ~/.bashrc by default.
+    This adds the standard sourcing snippet if not already present.
+    """
+    bash_profile = os.path.join(os.path.expanduser("~"), ".bash_profile")
+    source_snippet = """
+# Source ~/.bashrc if it exists
+if [ -f ~/.bashrc ]; then
+    source ~/.bashrc
+fi
+"""
+
+    try:
+        existing_content = ""
+        if os.path.exists(bash_profile):
+            with open(bash_profile, "r", encoding="utf-8") as f:
+                existing_content = f.read()
+
+        # Check if already sourcing .bashrc
+        if "source ~/.bashrc" in existing_content or ". ~/.bashrc" in existing_content:
+            return  # Already configured
+
+        # Append the sourcing snippet
+        with open(bash_profile, "a", encoding="utf-8") as f:
+            f.write(source_snippet)
+
+        logging.info("Updated ~/.bash_profile to source ~/.bashrc")
+    except Exception as e:
+        logging.warning(f"Could not update ~/.bash_profile: {e}")
 
 
 def update_bashrc(selected_python_path, base_dir=None):
