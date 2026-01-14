@@ -205,8 +205,18 @@ def setup_loggers(
         verbose_logger.addHandler(verbose_stream_handler)
     verbose_logger.propagate = False
 
-    progress_logger.info(f"--- Progress logging started for file: {os.path.abspath(progress_log_filename)} ---")
-    verbose_logger.info(f"--- Main logging started for file: {os.path.abspath(main_log_filename)} ---")
+    # Log startup messages only to files, not to GUI/terminal
+    # These are internal setup messages that shouldn't clutter the GUI
+    progress_startup_record = logging.LogRecord(
+        "progress", logging.INFO, "", 0, f"--- Progress logging started for file: {os.path.abspath(progress_log_filename)} ---", None, None
+    )
+    progress_file_handler.emit(progress_startup_record)
+    main_file_handler.emit(progress_startup_record)
+
+    verbose_startup_record = logging.LogRecord(
+        "verbose", logging.INFO, "", 0, f"--- Main logging started for file: {os.path.abspath(main_log_filename)} ---", None, None
+    )
+    main_file_handler.emit(verbose_startup_record)
 
     return progress_logger, verbose_logger, session_timestamp
 
