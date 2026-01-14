@@ -275,6 +275,25 @@ def study_process_wrapper(queue, stop_event, config_filename, process_id, no_cac
     # This is needed on S4L 9.2 where child process stdout is broken.
     progress_logger, verbose_logger, _ = setup_loggers(process_id=process_id, session_timestamp=session_timestamp, queue=queue)
 
+    # Redirect stdout/stderr through the queue so print() statements appear in terminal
+    # This is essential for Sim4Life 9.2 where child process stdout doesn't work normally
+    class QueueStdout:
+        """File-like object that writes to a multiprocessing queue."""
+
+        def __init__(self, q, stream_name="stdout"):
+            self.queue = q
+            self.stream_name = stream_name
+
+        def write(self, text):
+            if text and text.strip():  # Skip empty lines
+                self.queue.put({"type": "print", "message": text.rstrip(), "stream": self.stream_name})
+
+        def flush(self):
+            pass  # No-op, queue handles it
+
+    sys.stdout = QueueStdout(queue, "stdout")
+    sys.stderr = QueueStdout(queue, "stderr")
+
     try:
         from goliat.config import Config
         from goliat.profiler import Profiler
