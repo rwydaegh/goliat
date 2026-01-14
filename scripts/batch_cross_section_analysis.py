@@ -6,14 +6,14 @@ This script:
 1. Scans data/skin_meshes/ for available phantoms with reduced.stl files
 2. Computes cross-sectional area for many viewing directions
 3. Generates visualization plots (PNG)
-4. Saves pattern data as pickle files for later use
+4. Saves pattern data as JSON files for later use (version-agnostic)
 
 Usage:
     python scripts/batch_cross_section_analysis.py [--resolution N] [--force]
 """
 
 import argparse
-import pickle
+import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -119,9 +119,9 @@ def compute_area_pattern(mesh: trimesh.Trimesh, n_theta: int = 36, n_phi: int = 
         input_units = "m"
 
     return {
-        "theta": THETA,
-        "phi": PHI,
-        "areas": areas,
+        "theta": THETA.tolist(),
+        "phi": PHI.tolist(),
+        "areas": areas.tolist(),
         "units": units,
         "input_units": input_units,
         "n_theta": n_theta,
@@ -145,9 +145,9 @@ def compute_area_pattern(mesh: trimesh.Trimesh, n_theta: int = 36, n_phi: int = 
 
 def plot_antenna_pattern(pattern_data: dict, phantom_name: str, output_path: Path):
     """Create a 3D antenna pattern visualization."""
-    THETA = pattern_data["theta"]
-    PHI = pattern_data["phi"]
-    areas = pattern_data["areas"]
+    THETA = np.array(pattern_data["theta"])
+    PHI = np.array(pattern_data["phi"])
+    areas = np.array(pattern_data["areas"])
 
     # Normalize areas
     areas_norm = areas / areas.max()
@@ -212,9 +212,9 @@ def plot_antenna_pattern(pattern_data: dict, phantom_name: str, output_path: Pat
 
 def plot_heatmap(pattern_data: dict, phantom_name: str, output_path: Path):
     """Create a 2D heatmap visualization."""
-    THETA = pattern_data["theta"]
-    PHI = pattern_data["phi"]
-    areas = pattern_data["areas"]
+    THETA = np.array(pattern_data["theta"])
+    PHI = np.array(pattern_data["phi"])
+    areas = np.array(pattern_data["areas"])
 
     plt.style.use("dark_background")
     fig, ax = plt.subplots(figsize=(12, 6))
@@ -309,17 +309,17 @@ def process_phantom(phantom: dict, resolution: int, force: bool = False) -> dict
     stl_path = phantom["stl_path"]
 
     # Output paths
-    pickle_path = phantom_dir / "cross_section_pattern.pkl"
+    json_path = phantom_dir / "cross_section_pattern.json"
     pattern_png = phantom_dir / "cross_section_pattern.png"
     heatmap_png = phantom_dir / "cross_section_heatmap.png"
 
     # Check if already processed
-    if pickle_path.exists() and not force:
+    if json_path.exists() and not force:
         print("  Already processed (use --force to recompute)")
 
         # Load existing data
-        with open(pickle_path, "rb") as f:
-            return pickle.load(f)
+        with open(json_path) as f:
+            return json.load(f)
 
     # Load mesh
     print(f"  Loading mesh: {stl_path.name} ({phantom['size_mb']:.1f} MB)")
@@ -337,10 +337,10 @@ def process_phantom(phantom: dict, resolution: int, force: bool = False) -> dict
     stats = pattern_data["stats"]
     print(f"  Area stats: min={stats['min']:.4f}, max={stats['max']:.4f}, " + f"ratio={stats['ratio']:.2f}")
 
-    # Save pickle
-    with open(pickle_path, "wb") as f:
-        pickle.dump(pattern_data, f)
-    print(f"  Saved: {pickle_path.name}")
+    # Save JSON (version-agnostic, works across numpy versions)
+    with open(json_path, "w") as f:
+        json.dump(pattern_data, f, indent=2)
+    print(f"  Saved: {json_path.name}")
 
     # Generate visualizations
     plot_antenna_pattern(pattern_data, phantom_name, pattern_png)
