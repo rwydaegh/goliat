@@ -2,6 +2,9 @@
     "use_gui": true,
     "use_web": true,
     "extract_sapd": false,
+    "power_balance": {
+        "input_method": "bounding_box"
+    },
     "execution_control": {
         "do_setup": true,
         "do_run": true,
