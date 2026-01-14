@@ -311,7 +311,11 @@ def config_set_version(base_dir: str = None):
         print(f"\nNew version: {selected_python}")
         print("\nNext steps:")
         print("  1. Open a new terminal window")
-        print("  2. Your next GOLIAT command will use the new version.")
+        print("     (If you haven't synced .bashrc to home, run: source .bashrc)")
+        print("  2. Reinstall GOLIAT for the new Python:")
+        print("     pip install goliat          # or")
+        print("     pip install -e .            # for editable install")
+        print("  3. Run your GOLIAT command")
         print("=" * 60 + "\n")
 
     except (ValueError, IndexError):
