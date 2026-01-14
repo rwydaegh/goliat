@@ -19,7 +19,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 
 
-def test_scenario(name, setup_steps):
+def run_scenario(name, setup_steps):
     """Run a test scenario and return True if S4L starts successfully."""
     print(f"\n{'=' * 70}")
     print(f"TEST: {name}")
@@ -147,7 +147,7 @@ def main():
 
     if args.test in tests:
         name, steps = tests[args.test]
-        result = test_scenario(name, steps)
+        result = run_scenario(name, steps)
         return 0 if result else 1
     else:
         print(f"Unknown test: {args.test}")
