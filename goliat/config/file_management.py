@@ -32,7 +32,7 @@ def cleanup_old_data_files(data_dir: str):
             try:
                 old_file = data_files.pop(0)
                 os.remove(old_file)
-                logging.getLogger("verbose").info(f"Removed old data file: {os.path.basename(old_file)}")
+                logging.getLogger("verbose").debug(f"Removed old data file: {os.path.basename(old_file)}")
             except OSError as e:
                 if old_file:
                     logging.getLogger("verbose").warning(f"Failed to remove {os.path.basename(old_file)}: {e}")

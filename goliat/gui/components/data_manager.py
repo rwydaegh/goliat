@@ -152,7 +152,7 @@ class DataManager:
                 try:
                     old_file = data_files.pop(0)
                     os.remove(old_file)
-                    self.verbose_logger.info(f"Removed old data file: {os.path.basename(old_file)}")
+                    self.verbose_logger.debug(f"Removed old data file: {os.path.basename(old_file)}")
                 except OSError as e:
                     if old_file:
                         self.verbose_logger.warning(f"Failed to remove {os.path.basename(old_file)}: {e}")
