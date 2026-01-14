@@ -275,14 +275,6 @@ def study_process_wrapper(queue, stop_event, config_filename, process_id, no_cac
     # This is needed on S4L 9.2 where child process stdout is broken.
     progress_logger, verbose_logger, _ = setup_loggers(process_id=process_id, session_timestamp=session_timestamp, queue=queue)
 
-    # Debug: Log environment and encoding info to diagnose issues
-    import os
-    import sys
-
-    verbose_logger.info(f"[Child Process Env] PYTHONIOENCODING={os.environ.get('PYTHONIOENCODING', 'NOT SET')}")
-    verbose_logger.info(f"[Child Process Env] AX_USE_UNSUPPORTED_CARDS={os.environ.get('AX_USE_UNSUPPORTED_CARDS', 'NOT SET')}")
-    verbose_logger.info(f"[Child Process Env] sys.stdout.encoding={getattr(sys.stdout, 'encoding', 'N/A')}")
-
     # Redirect stdout/stderr through the queue so print() statements appear in terminal
     # This is essential for Sim4Life 9.2 where child process stdout doesn't work normally
     class QueueStdout:
