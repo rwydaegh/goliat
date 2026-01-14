@@ -165,9 +165,12 @@ class HTTPClient(LoggingMixin):
         """
         error_type = str(type(e).__name__)
         if "Timeout" in error_type:
+            # Timeouts are expected during normal operation (e.g., offline mode)
+            # Log as debug to avoid cluttering output
             timeout_msg = f" (timeout: {timeout}s)" if timeout is not None else ""
-            self._log(f"HTTP request timeout for {message_type}{timeout_msg}", level="verbose", log_type="warning")
+            self.verbose_logger.debug(f"HTTP request timeout for {message_type}{timeout_msg}")
         elif "ConnectionError" in error_type:
-            self._log(f"{message_type} connection error", level="verbose", log_type="warning")
+            # Connection errors are also expected (e.g., no internet, server down)
+            self.verbose_logger.debug(f"{message_type} connection error")
         else:
             self._log(f"Unexpected error sending {message_type}: {e}", level="verbose", log_type="error")
