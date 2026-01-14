@@ -55,6 +55,7 @@ configs/*
 !configs/base_config.json
 !configs/far_field_config.json
 !configs/far_field_sim4life_web.json
+!configs/far_field_FR3_barebones.json
 !configs/near_field_config.json
 !configs/near_field_config_no_subgrid.json
 !configs/near_field_harmonic.json
