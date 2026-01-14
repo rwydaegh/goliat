@@ -250,9 +250,17 @@ def add_simulation_log_handlers(simulation_dir: str) -> list[logging.Handler]:
     progress_logger.addHandler(progress_file_handler)
     verbose_logger.addHandler(verbose_file_handler)
 
-    # Log that simulation-specific logging has started
-    progress_logger.info(f"--- Simulation-specific progress logging started: {progress_log_path} ---")
-    verbose_logger.info(f"--- Simulation-specific verbose logging started: {verbose_log_path} ---")
+    # Log that simulation-specific logging has started (only to file, not GUI)
+    # Use the file handlers directly to avoid sending to queue/GUI
+    file_formatter = CustomFormatter("%(asctime)s - %(levelname)s - %(message)s")
+    progress_record = logging.LogRecord(
+        "progress", logging.INFO, "", 0, f"--- Simulation-specific progress logging started: {progress_log_path} ---", None, None
+    )
+    progress_file_handler.emit(progress_record)
+    verbose_record = logging.LogRecord(
+        "verbose", logging.INFO, "", 0, f"--- Simulation-specific verbose logging started: {verbose_log_path} ---", None, None
+    )
+    verbose_file_handler.emit(verbose_record)
 
     return [progress_file_handler, verbose_file_handler]
 
