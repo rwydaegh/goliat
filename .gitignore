@@ -34,6 +34,14 @@ data/*
 !data/itis_v5.db
 !data/detuning*.json
 !data/.goliat_pricing.json
+# Allow phantom_skins directory structure
+!data/phantom_skins/
+# Ignore large binary mesh files
+data/phantom_skins/**/*.stl
+# Ignore generated visualizations (can regenerate from pkl)
+data/phantom_skins/**/*.png
+# Track cross-section pattern data (small, useful)
+!data/phantom_skins/**/*.pkl
 
 # Logs
 logs/

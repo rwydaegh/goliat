@@ -501,13 +501,26 @@ def main():
 
     config = load_config(config_path)
 
-    # Resolve paths with command-line overrides
+    # Resolve H5 input path
     h5_path = args.h5_path or get_nested(config, "input", "h5_path")
     h5_path = Path(h5_path)
     if not h5_path.is_absolute():
         h5_path = project_root / h5_path
 
-    output_dir = Path(args.output_dir or get_nested(config, "output", "directory", default="results/skin_mesh"))
+    output_cfg = config.get("output", {})
+
+    # Support new structure: base_directory/phantom_name
+    # Fall back to legacy "directory" for backwards compatibility
+    if args.output_dir:
+        output_dir = Path(args.output_dir)
+    elif "base_directory" in output_cfg and "phantom_name" in output_cfg:
+        base_dir = Path(output_cfg["base_directory"])
+        phantom_name = output_cfg["phantom_name"]
+        output_dir = base_dir / phantom_name
+    else:
+        # Legacy: single "directory" key
+        output_dir = Path(output_cfg.get("directory", "data/phantom_skins/unknown"))
+
     if not output_dir.is_absolute():
         output_dir = project_root / output_dir
     output_dir.mkdir(parents=True, exist_ok=True)

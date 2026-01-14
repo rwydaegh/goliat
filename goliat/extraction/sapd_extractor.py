@@ -103,61 +103,30 @@ class SapdExtractor(LoggingMixin):
             simulation_extractor: The simulation results extractor.
             ctx: Extraction context to store intermediate state.
         """
-        import time
-
-        pipeline_start = time.time()
-
         # Phase 0: Slicing optimization
-        print("[SAPD DEBUG] Phase 0: Getting peak SAR location...")
-        t0 = time.time()
         ctx.center_m = self._get_peak_sar_location()
-        print(f"[SAPD DEBUG] Phase 0: Peak SAR location = {ctx.center_m} ({time.time() - t0:.2f}s)")
 
         if ctx.center_m:
-            print("[SAPD DEBUG] Phase 0: Creating sliced H5...")
-            t0 = time.time()
             ctx.sliced_h5_path = self._create_sliced_h5(ctx.center_m)
-            print(f"[SAPD DEBUG] Phase 0: Sliced H5 done ({time.time() - t0:.2f}s)")
 
         # Phase 1: Setup extractors
-        print("[SAPD DEBUG] Phase 1: Setting up extractors...")
-        t0 = time.time()
         ctx.active_extractor, ctx.sliced_extractor = self._setup_extractor(simulation_extractor, ctx.sliced_h5_path)
-        print(f"[SAPD DEBUG] Phase 1: Extractors ready ({time.time() - t0:.2f}s)")
 
         # Phase 2: Get and validate skin entities
-        print("[SAPD DEBUG] Phase 2: Getting skin entities...")
-        t0 = time.time()
         skin_entities = self._get_skin_entities()
-        print(f"[SAPD DEBUG] Phase 2: Found {len(skin_entities)} skin entities ({time.time() - t0:.2f}s)")
         if not skin_entities:
             self._log("      - WARNING: No skin entities found for SAPD extraction.", log_type="warning")
             return
 
         # Phase 3: Setup surface and SAPD evaluator
-        print("[SAPD DEBUG] Phase 3a: Setting up EM sensor extractor...")
-        t0 = time.time()
         ctx.em_sensor_extractor = self._setup_em_sensor_extractor(ctx.active_extractor)
-        print(f"[SAPD DEBUG] Phase 3a: EM sensor extractor ready ({time.time() - t0:.2f}s)")
-
-        print("[SAPD DEBUG] Phase 3b: Setting up SAPD evaluator (includes mesh prep)...")
-        t0 = time.time()
         ctx.model_to_grid_filter, ctx.sapd_evaluator = self._setup_sapd_evaluator(skin_entities, ctx.center_m, ctx.em_sensor_extractor)
-        print(f"[SAPD DEBUG] Phase 3b: SAPD evaluator ready ({time.time() - t0:.2f}s)")
 
         # Phase 4: Extract and store results
-        print("[SAPD DEBUG] Phase 4: Extracting results...")
-        t0 = time.time()
         success = self._extract_and_store_results(ctx.sapd_evaluator)
-        print(f"[SAPD DEBUG] Phase 4: Results extracted, success={success} ({time.time() - t0:.2f}s)")
 
         # Phase 5: Cleanup
-        print("[SAPD DEBUG] Phase 5: Cleanup...")
-        t0 = time.time()
         self._cleanup_algorithms(ctx)
-        print(f"[SAPD DEBUG] Phase 5: Cleanup done ({time.time() - t0:.2f}s)")
-
-        print(f"[SAPD DEBUG] === TOTAL SAPD PIPELINE: {time.time() - pipeline_start:.2f}s ===")
 
         if not success:
             return
@@ -196,30 +165,20 @@ class SapdExtractor(LoggingMixin):
         Returns:
             Tuple of (model_to_grid_filter, sapd_evaluator).
         """
-        import time
-
         # Prepare skin surface
-        print("[SAPD DEBUG]   _setup_sapd_evaluator: Preparing skin surface...")
-        t0 = time.time()
         mesh_side_cfg = self.config["simulation_parameters.sapd_mesh_slicing_side_length_mm"]
         mesh_side_len_mm = float(mesh_side_cfg) if isinstance(mesh_side_cfg, (int, float)) else 100.0
         center_mm = [c * 1000.0 for c in center_m] if center_m else None
         surface_source_entity = self._prepare_skin_group(skin_entities, center_mm, mesh_side_len_mm)
-        print(f"[SAPD DEBUG]   _setup_sapd_evaluator: Skin surface ready ({time.time() - t0:.2f}s)")
 
         # Create ModelToGridFilter
-        print("[SAPD DEBUG]   _setup_sapd_evaluator: Creating ModelToGridFilter...")
-        t0 = time.time()
         model_to_grid_filter = self.analysis.core.ModelToGridFilter(inputs=[])
         model_to_grid_filter.Name = "Skin_Surface_Source"
         model_to_grid_filter.Entity = surface_source_entity
         model_to_grid_filter.UpdateAttributes()
         self.document.AllAlgorithms.Add(model_to_grid_filter)
-        print(f"[SAPD DEBUG]   _setup_sapd_evaluator: ModelToGridFilter ready ({time.time() - t0:.2f}s)")
 
         # Create SAPD evaluator
-        print("[SAPD DEBUG]   _setup_sapd_evaluator: Creating GenericSAPDEvaluator...")
-        t0 = time.time()
         inputs = [
             em_sensor_extractor.Outputs["S(x,y,z,f0)"],
             model_to_grid_filter.Outputs["Surface"],
@@ -229,7 +188,6 @@ class SapdExtractor(LoggingMixin):
         sapd_evaluator.Threshold = 0.01, self.units.Meters  # 10 mm
         sapd_evaluator.UpdateAttributes()
         self.document.AllAlgorithms.Add(sapd_evaluator)
-        print(f"[SAPD DEBUG]   _setup_sapd_evaluator: GenericSAPDEvaluator ready ({time.time() - t0:.2f}s)")
 
         return model_to_grid_filter, sapd_evaluator
 
@@ -239,30 +197,15 @@ class SapdExtractor(LoggingMixin):
         Returns:
             True if extraction succeeded, False otherwise.
         """
-        import time
-
-        print("[SAPD DEBUG]   _extract_and_store_results: Getting SAPD report...")
-        t0 = time.time()
         sapd_report = sapd_evaluator.Outputs["Spatial-Averaged Power Density Report"]
-        print(f"[SAPD DEBUG]   _extract_and_store_results: Got report output ({time.time() - t0:.2f}s)")
-
-        print("[SAPD DEBUG]   _extract_and_store_results: Calling sapd_report.Update()...")
-        t0 = time.time()
         sapd_report.Update()
-        print(f"[SAPD DEBUG]   _extract_and_store_results: sapd_report.Update() done ({time.time() - t0:.2f}s)")
 
-        print("[SAPD DEBUG]   _extract_and_store_results: Getting data collection...")
-        t0 = time.time()
         data_collection = sapd_report.Data.DataSimpleDataCollection
-        print(f"[SAPD DEBUG]   _extract_and_store_results: Data collection retrieved ({time.time() - t0:.2f}s)")
         if not data_collection:
             self._log("      - WARNING: No SAPD data available.", log_type="warning")
             return False
 
-        print("[SAPD DEBUG]   _extract_and_store_results: Parsing SAPD data...")
-        t0 = time.time()
         peak_sapd, peak_loc = self._parse_sapd_data(data_collection)
-        print(f"[SAPD DEBUG]   _extract_and_store_results: Parsed data ({time.time() - t0:.2f}s)")
 
         if peak_sapd is None:
             self._log("      - WARNING: Could not extract peak SAPD value.", log_type="warning")
@@ -440,46 +383,33 @@ class SapdExtractor(LoggingMixin):
 
     def _get_or_create_united_skin(self, entities: List["model.Entity"]) -> "model.Entity":
         """Loads cached skin or creates united skin from entities."""
-        import time
 
         cache_dir = os.path.join(self.parent.config.base_dir, "data", "phantoms_skin")
         cache_path = os.path.join(cache_dir, f"{self.phantom_name}_skin.sab")
 
         # Try loading from cache
         if os.path.exists(cache_path):
-            print("[SAPD DEBUG]   _get_or_create_united_skin: Loading cached skin...")
             self._log(f"      - Loading cached skin from {cache_path}...", log_type="info")
-            t0 = time.time()
             try:
                 imported_entities = list(self.model.Import(cache_path))
-                print(f"[SAPD DEBUG]   _get_or_create_united_skin: Cache loaded ({time.time() - t0:.2f}s)")
                 if imported_entities:
                     united_entity = imported_entities[0]
                     self._temp_group = united_entity
                     return united_entity
             except Exception as e:
-                print(f"[SAPD DEBUG]   _get_or_create_united_skin: Cache load FAILED ({time.time() - t0:.2f}s)")
                 self._log(
                     f"      - WARNING: Could not import skin cache: {e}. Re-creating.",
                     log_type="warning",
                 )
-        else:
-            print(f"[SAPD DEBUG]   _get_or_create_united_skin: No cache found at {cache_path}")
 
         # Create from scratch
-        print(f"[SAPD DEBUG]   _get_or_create_united_skin: Merging {len(entities)} entities...")
         self._log(f"      - Merging {len(entities)} skin entities into one (takes a while)...", log_type="info")
-        t0 = time.time()
         united_entity = self._unite_skin_entities(entities)
-        print(f"[SAPD DEBUG]   _get_or_create_united_skin: Merge done ({time.time() - t0:.2f}s)")
 
         # Export to cache
         try:
-            print("[SAPD DEBUG]   _get_or_create_united_skin: Exporting to cache...")
-            t0 = time.time()
             os.makedirs(cache_dir, exist_ok=True)
             self.model.Export([united_entity], cache_path)
-            print(f"[SAPD DEBUG]   _get_or_create_united_skin: Cache exported ({time.time() - t0:.2f}s)")
             self._log(f"      - Exported merged skin to cache: {cache_path}", log_type="info")
         except Exception as e:
             self._log(f"      - WARNING: Could not export skin cache: {e}", log_type="warning")
@@ -584,12 +514,7 @@ class SapdExtractor(LoggingMixin):
 
         Duplicates logic from SarExtractor to keep modules independent.
         """
-        import time
-
-        print("[SAPD DEBUG]   _setup_em_sensor_extractor: Getting 'Overall Field'...")
-        t0 = time.time()
         em_sensor_extractor = simulation_extractor["Overall Field"]
-        print(f"[SAPD DEBUG]   _setup_em_sensor_extractor: Got 'Overall Field' ({time.time() - t0:.2f}s)")
 
         excitation_type = self.config["simulation_parameters.excitation_type"] or "Harmonic"
         excitation_type_lower = excitation_type.lower() if isinstance(excitation_type, str) else "harmonic"
@@ -610,14 +535,7 @@ class SapdExtractor(LoggingMixin):
         else:
             em_sensor_extractor.FrequencySettings.ExtractedFrequency = "All"
 
-        print("[SAPD DEBUG]   _setup_em_sensor_extractor: Adding to AllAlgorithms...")
-        t0 = time.time()
         self.document.AllAlgorithms.Add(em_sensor_extractor)
-        print(f"[SAPD DEBUG]   _setup_em_sensor_extractor: Added ({time.time() - t0:.2f}s)")
-
-        print("[SAPD DEBUG]   _setup_em_sensor_extractor: Calling Update()...")
-        t0 = time.time()
         em_sensor_extractor.Update()
-        print(f"[SAPD DEBUG]   _setup_em_sensor_extractor: Update() done ({time.time() - t0:.2f}s)")
 
         return em_sensor_extractor
