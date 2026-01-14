@@ -62,6 +62,9 @@
         "simulation_bbox_points": 8,
         "number_of_point_sensors": 2
     },
+    "solver_settings": {
+        "kernel": "cuda"
+    },
     "gridding_parameters": {
         "global_gridding": {
             "grid_mode": "manual",
