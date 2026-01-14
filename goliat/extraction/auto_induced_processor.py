@@ -14,8 +14,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from ..logging_manager import LoggingMixin
-from ..utils.field_combiner import combine_fields_sliced
-from ..utils.focus_optimizer import find_focus_and_compute_weights
+from .field_combiner import combine_fields_sliced
+from .focus_optimizer import find_focus_and_compute_weights
 
 if TYPE_CHECKING:
     from ..studies.far_field_study import FarFieldStudy
@@ -83,7 +83,7 @@ class AutoInducedProcessor(LoggingMixin):
 
         # Step 1: Focus search
         with self.study.subtask("auto_induced_focus_search"):
-            candidates = self._find_focus_candidates(h5_paths, input_h5, top_n, search_metric)
+            candidates = self._find_focus_candidates(h5_paths, input_h5, top_n, search_metric, output_dir)
 
         if not candidates:
             self._log("    ERROR: No focus candidates found", log_type="error")
@@ -138,6 +138,32 @@ class AutoInducedProcessor(LoggingMixin):
                 log_type="success",
             )
 
+        # Export proxy-SAPD correlation data
+        correlation_data = []
+        for i, (candidate, sapd_result) in enumerate(zip(candidates, sapd_results)):
+            proxy_score = candidate.get("hotspot_score", candidate.get("metric_sum", 0.0))
+            sapd_value = sapd_result.get("peak_sapd_w_m2")
+            if sapd_value is not None:
+                correlation_data.append(
+                    {
+                        "candidate_idx": i + 1,
+                        "voxel_x": candidate["voxel_idx"][0],
+                        "voxel_y": candidate["voxel_idx"][1],
+                        "voxel_z": candidate["voxel_idx"][2],
+                        "proxy_score": proxy_score,
+                        "sapd_w_m2": sapd_value,
+                    }
+                )
+        if correlation_data:
+            import csv
+
+            corr_path = Path(output_dir) / "proxy_sapd_correlation.csv"
+            with open(corr_path, "w", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=correlation_data[0].keys())
+                writer.writeheader()
+                writer.writerows(correlation_data)
+            self.verbose_logger.info(f"  Exported proxy-SAPD correlation to {corr_path.name}")
+
         return {
             "phantom": self.phantom_name,
             "frequency_mhz": self.freq,
@@ -153,6 +179,7 @@ class AutoInducedProcessor(LoggingMixin):
         input_h5: Path,
         top_n: int,
         search_metric: str = "E_z_magnitude",
+        output_dir: Path | None = None,
     ) -> list[dict]:
         """Find top-N worst-case focus candidates.
 
@@ -161,41 +188,75 @@ class AutoInducedProcessor(LoggingMixin):
             input_h5: Path to _Input.h5 for skin mask.
             top_n: Number of candidates to return.
             search_metric: "E_z_magnitude" (MRT-style) or "poynting_z" (SAPD-style).
+                Only used in skin mode.
+            output_dir: Directory for output files (CSV exports).
 
         Returns:
-            List of candidate dicts with voxel indices, metric sums, and phase weights.
+            List of candidate dicts with voxel indices, scores, and phase weights.
         """
         import time
 
         import numpy as np
 
-        from ..utils.focus_optimizer import compute_optimal_phases, compute_weights
+        from .focus_optimizer import compute_optimal_phases, compute_weights
 
         start_time = time.monotonic()
 
+        # Get search config
+        auto_cfg = self.config["auto_induced"] or {}
+        search_cfg = auto_cfg.get("search", {})
+        cube_size_mm = auto_cfg.get("cube_size_mm", 50.0)
+
+        # Extract search parameters
+        search_mode = search_cfg.get("mode", "skin")
+        n_samples = search_cfg.get("n_samples", 100)
+        random_seed = search_cfg.get("random_seed", None)
+        shell_size_mm = search_cfg.get("shell_size_mm", 10.0)
+        selection_percentile = search_cfg.get("selection_percentile", 95.0)
+        min_candidate_distance_mm = search_cfg.get("min_candidate_distance_mm", 50.0)
+
+        self._log(
+            f"  Search mode: {search_mode}",
+            level="progress",
+            log_type="info",
+        )
+
         try:
-            # find_focus_and_compute_weights returns (focus_indices, weights, info)
             focus_indices, weights, info = find_focus_and_compute_weights(
                 h5_paths=[str(p) for p in h5_paths],
                 input_h5_path=str(input_h5),
                 top_n=top_n,
                 metric=search_metric,
+                search_mode=search_mode,
+                n_samples=n_samples,
+                cube_size_mm=cube_size_mm,
+                random_seed=random_seed,
+                shell_size_mm=shell_size_mm,
+                selection_percentile=selection_percentile,
+                min_candidate_distance_mm=min_candidate_distance_mm,
             )
 
             # Build list of candidate dicts
             candidates: list[dict] = []
             all_indices = info.get("all_focus_indices", [focus_indices])
-            all_metric_sums = info.get("all_metric_sums", [info.get("max_metric_sum", 0.0)])
+
+            # Get the appropriate score array based on search mode
+            if search_mode == "air":
+                all_scores = info.get("all_hotspot_scores", [info.get("max_hotspot_score", 0.0)])
+                score_key = "hotspot_score"
+            else:
+                all_scores = info.get("all_metric_sums", [info.get("max_metric_sum", 0.0)])
+                score_key = "metric_sum"
 
             # Ensure we're working with arrays
             if not isinstance(all_indices, np.ndarray):
                 all_indices = np.array([all_indices]) if top_n == 1 else np.array(all_indices)
-            if not isinstance(all_metric_sums, np.ndarray):
-                all_metric_sums = np.array([all_metric_sums]) if top_n == 1 else np.array(all_metric_sums)
+            if not isinstance(all_scores, np.ndarray):
+                all_scores = np.array([all_scores]) if top_n == 1 else np.array(all_scores)
 
             for i in range(min(top_n, len(all_indices))):
                 voxel_idx = all_indices[i] if top_n > 1 else all_indices
-                metric_sum = float(all_metric_sums[i]) if top_n > 1 else float(all_metric_sums[0])
+                score = float(all_scores[i]) if top_n > 1 else float(all_scores[0])
 
                 # Recompute weights for this specific candidate
                 phases = compute_optimal_phases([str(p) for p in h5_paths], voxel_idx)
@@ -204,15 +265,30 @@ class AutoInducedProcessor(LoggingMixin):
                 candidates.append(
                     {
                         "voxel_idx": list(voxel_idx) if hasattr(voxel_idx, "__iter__") else voxel_idx,
-                        "metric_sum": metric_sum,
+                        score_key: score,
+                        # Keep metric_sum for backward compatibility
+                        "metric_sum": score,
                         "phase_weights": candidate_weights,
+                        "search_mode": search_mode,
                     }
                 )
 
             elapsed = time.monotonic() - start_time
             self.verbose_logger.info(f"Found {len(candidates)} focus candidate(s) in {elapsed:.2f}s")
             for i, c in enumerate(candidates):
-                self.verbose_logger.info(f"  Candidate #{i + 1}: voxel {c['voxel_idx']}, Sum={c['metric_sum']:.4e}")
+                self.verbose_logger.info(f"  Candidate #{i + 1}: voxel {c['voxel_idx']}, {score_key}={c[score_key]:.4e}")
+
+            # Export all scores to CSV for distribution analysis
+            all_scores_data = info.get("all_scores_data", [])
+            if all_scores_data and output_dir:
+                import csv
+
+                csv_path = Path(output_dir) / "all_proxy_scores.csv"
+                with open(csv_path, "w", newline="") as f:
+                    writer = csv.DictWriter(f, fieldnames=all_scores_data[0].keys())
+                    writer.writeheader()
+                    writer.writerows(all_scores_data)
+                self.verbose_logger.info(f"  Exported {len(all_scores_data)} proxy scores to {csv_path.name}")
 
             return candidates
 
@@ -346,7 +422,7 @@ class AutoInducedProcessor(LoggingMixin):
             em_sensor_extractor.Update()
 
             # Try to load cached skin first (avoids duplicate entity name issues)
-            cache_dir = os.path.join(self.config.base_dir, "data", "phantoms_skin")
+            cache_dir = os.path.join(self.config.base_dir, "data", "phantom_skins")
             cache_path = os.path.join(cache_dir, f"{self.phantom_name}_skin.sab")
             united_entity = None
 
@@ -462,8 +538,13 @@ class AutoInducedProcessor(LoggingMixin):
                             peak_sapd = val
                             break
 
-            # Optionally save debug smash file
+            # Optionally save debug smash file with focus center marker
             if save_intermediate_files:
+                try:
+                    focus_point = model.CreatePoint(model.Vec3(center_mm[0], center_mm[1], center_mm[2]))
+                    focus_point.Name = f"Focus_Center_Candidate{candidate_idx}"
+                except Exception:
+                    pass
                 debug_smash_path = str(combined_h5).replace("_Output.h5", "_intermediate.smash")
                 try:
                     document.SaveAs(debug_smash_path)

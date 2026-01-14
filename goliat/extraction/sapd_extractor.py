@@ -105,6 +105,7 @@ class SapdExtractor(LoggingMixin):
         """
         # Phase 0: Slicing optimization
         ctx.center_m = self._get_peak_sar_location()
+
         if ctx.center_m:
             ctx.sliced_h5_path = self._create_sliced_h5(ctx.center_m)
 
@@ -165,7 +166,8 @@ class SapdExtractor(LoggingMixin):
             Tuple of (model_to_grid_filter, sapd_evaluator).
         """
         # Prepare skin surface
-        mesh_side_len_mm = float(self.config["simulation_parameters.sapd_mesh_slicing_side_length_mm"] or 100.0)
+        mesh_side_cfg = self.config["simulation_parameters.sapd_mesh_slicing_side_length_mm"]
+        mesh_side_len_mm = float(mesh_side_cfg) if isinstance(mesh_side_cfg, (int, float)) else 100.0
         center_mm = [c * 1000.0 for c in center_m] if center_m else None
         surface_source_entity = self._prepare_skin_group(skin_entities, center_mm, mesh_side_len_mm)
 
@@ -381,7 +383,8 @@ class SapdExtractor(LoggingMixin):
 
     def _get_or_create_united_skin(self, entities: List["model.Entity"]) -> "model.Entity":
         """Loads cached skin or creates united skin from entities."""
-        cache_dir = os.path.join(self.parent.config.base_dir, "data", "phantoms_skin")
+
+        cache_dir = os.path.join(self.parent.config.base_dir, "data", "phantom_skins")
         cache_path = os.path.join(cache_dir, f"{self.phantom_name}_skin.sab")
 
         # Try loading from cache
@@ -534,4 +537,5 @@ class SapdExtractor(LoggingMixin):
 
         self.document.AllAlgorithms.Add(em_sensor_extractor)
         em_sensor_extractor.Update()
+
         return em_sensor_extractor

@@ -54,8 +54,9 @@ All parameters are specified in `configs/skin_mesh_config.json`:
         "h5_path": "path/to/Input.h5"
     },
     "output": {
-        "directory": "results/skin_mesh",
-        "mesh_filename": "skin_mesh.stl",
+        "base_directory": "data/phantom_skins",
+        "phantom_name": "thelonious",
+        "mesh_filename": "reduced.stl",
         "save_voxel_pickle": true,
         "save_blend_file": true
     },
@@ -89,6 +90,8 @@ All parameters are specified in `configs/skin_mesh_config.json`:
     }
 }
 ```
+
+> **Note**: Output will be saved to `base_directory/phantom_name/` (e.g., `data/phantom_skins/thelonious/`)
 
 ## Input H5 File Requirements
 

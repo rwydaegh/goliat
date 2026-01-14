@@ -42,7 +42,59 @@ class CustomFormatter(logging.Formatter):
         return base_message
 
 
-def setup_loggers(process_id: Optional[str] = None, session_timestamp: Optional[str] = None) -> tuple[logging.Logger, logging.Logger, str]:
+class QueueLogHandler(logging.Handler):
+    """Logging handler that forwards records to a multiprocessing queue.
+
+    Used in child processes on S4L 9.2 where stdout is broken. Sends log
+    messages through the queue to the main process for terminal output.
+    """
+
+    def __init__(self, queue, level: str = "verbose"):
+        """Initialize the handler.
+
+        Args:
+            queue: Multiprocessing queue to send messages to.
+            level: Log level name ('progress' or 'verbose') for message type.
+        """
+        super().__init__()
+        self.queue = queue
+        self.level_name = level
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """Send log record through the queue."""
+        try:
+            import time as time_module
+
+            log_type = getattr(record, "log_type", "default")
+
+            # 'status' updates GUI AND prints to terminal
+            # 'terminal_only' only prints to terminal
+            msg_type = "status" if self.level_name == "progress" else "terminal_only"
+
+            # For GUI messages, send raw message without caller_info
+            # For terminal-only, include caller_info for debugging
+            if msg_type == "status":
+                # Raw message without formatting (GUI handles its own colors)
+                message = record.getMessage()
+            else:
+                # Full formatted message with caller_info for terminal
+                message = self.format(record)
+
+            self.queue.put(
+                {
+                    "type": msg_type,
+                    "message": message,
+                    "log_type": log_type,
+                    "timestamp": time_module.time(),
+                }
+            )
+        except Exception:
+            self.handleError(record)
+
+
+def setup_loggers(
+    process_id: Optional[str] = None, session_timestamp: Optional[str] = None, queue=None
+) -> tuple[logging.Logger, logging.Logger, str]:
     """Sets up dual logging system with rotation.
 
     Creates 'progress' and 'verbose' loggers with file and console handlers.
@@ -53,6 +105,9 @@ def setup_loggers(process_id: Optional[str] = None, session_timestamp: Optional[
         process_id: Optional ID to make log filenames unique for parallel runs.
         session_timestamp: Optional timestamp to use for log filenames. If not provided,
             generates a new timestamp. Useful for ensuring multiple processes use the same log file.
+        queue: Optional multiprocessing queue. If provided, adds QueueLogHandler to both
+            loggers so messages are forwarded to main process for terminal output.
+            This is needed on S4L 9.2 where child process stdout is broken.
 
     Returns:
         Tuple of (progress_logger, verbose_logger, session_timestamp).
@@ -119,9 +174,16 @@ def setup_loggers(process_id: Optional[str] = None, session_timestamp: Optional[
 
     progress_logger.addHandler(main_file_handler)
 
-    progress_stream_handler = logging.StreamHandler()
-    progress_stream_handler.setFormatter(console_formatter)
-    progress_logger.addHandler(progress_stream_handler)
+    # Add queue handler if provided (for S4L 9.2 child process terminal output)
+    if queue is not None:
+        progress_queue_handler = QueueLogHandler(queue, level="progress")
+        progress_queue_handler.setFormatter(console_formatter)
+        progress_logger.addHandler(progress_queue_handler)
+    else:
+        # Only add StreamHandler if not using queue (main process or S4L 8.2)
+        progress_stream_handler = logging.StreamHandler()
+        progress_stream_handler.setFormatter(console_formatter)
+        progress_logger.addHandler(progress_stream_handler)
     progress_logger.propagate = False
 
     verbose_logger = logging.getLogger("verbose")
@@ -131,13 +193,30 @@ def setup_loggers(process_id: Optional[str] = None, session_timestamp: Optional[
 
     verbose_logger.addHandler(main_file_handler)
 
-    verbose_stream_handler = logging.StreamHandler()
-    verbose_stream_handler.setFormatter(console_formatter)
-    verbose_logger.addHandler(verbose_stream_handler)
+    # Add queue handler if provided (for S4L 9.2 child process terminal output)
+    if queue is not None:
+        verbose_queue_handler = QueueLogHandler(queue, level="verbose")
+        verbose_queue_handler.setFormatter(console_formatter)
+        verbose_logger.addHandler(verbose_queue_handler)
+    else:
+        # Only add StreamHandler if not using queue (main process or S4L 8.2)
+        verbose_stream_handler = logging.StreamHandler()
+        verbose_stream_handler.setFormatter(console_formatter)
+        verbose_logger.addHandler(verbose_stream_handler)
     verbose_logger.propagate = False
 
-    progress_logger.info(f"--- Progress logging started for file: {os.path.abspath(progress_log_filename)} ---")
-    verbose_logger.info(f"--- Main logging started for file: {os.path.abspath(main_log_filename)} ---")
+    # Log startup messages only to files, not to GUI/terminal
+    # These are internal setup messages that shouldn't clutter the GUI
+    progress_startup_record = logging.LogRecord(
+        "progress", logging.INFO, "", 0, f"--- Progress logging started for file: {os.path.abspath(progress_log_filename)} ---", None, None
+    )
+    progress_file_handler.emit(progress_startup_record)
+    main_file_handler.emit(progress_startup_record)
+
+    verbose_startup_record = logging.LogRecord(
+        "verbose", logging.INFO, "", 0, f"--- Main logging started for file: {os.path.abspath(main_log_filename)} ---", None, None
+    )
+    main_file_handler.emit(verbose_startup_record)
 
     return progress_logger, verbose_logger, session_timestamp
 
@@ -189,9 +268,17 @@ def add_simulation_log_handlers(simulation_dir: str) -> list[logging.Handler]:
     progress_logger.addHandler(progress_file_handler)
     verbose_logger.addHandler(verbose_file_handler)
 
-    # Log that simulation-specific logging has started
-    progress_logger.info(f"--- Simulation-specific progress logging started: {progress_log_path} ---")
-    verbose_logger.info(f"--- Simulation-specific verbose logging started: {verbose_log_path} ---")
+    # Log that simulation-specific logging has started (only to file, not GUI)
+    # Use the file handlers directly to avoid sending to queue/GUI
+    file_formatter = CustomFormatter("%(asctime)s - %(levelname)s - %(message)s")
+    progress_record = logging.LogRecord(
+        "progress", logging.INFO, "", 0, f"--- Simulation-specific progress logging started: {progress_log_path} ---", None, None
+    )
+    progress_file_handler.emit(progress_record)
+    verbose_record = logging.LogRecord(
+        "verbose", logging.INFO, "", 0, f"--- Simulation-specific verbose logging started: {verbose_log_path} ---", None, None
+    )
+    verbose_file_handler.emit(verbose_record)
 
     return [progress_file_handler, verbose_file_handler]
 
@@ -253,9 +340,9 @@ class LoggingMixin:
 
         if level == "progress":
             self.progress_logger.info(message, extra=extra)
-            if hasattr(self, "gui") and self.gui:
-                # Send to GUI with log_type for counters
-                self.gui.log(message, level="progress", log_type=log_type)
+            # Note: Terminal output is handled by QueueLogHandler (added to logger in setup_loggers)
+            # GUI status box update: QueueLogHandler sends 'status' type for progress level
         else:  # verbose
             self.verbose_logger.info(message, extra=extra)
-            # Do not send verbose logs to the GUI status box
+            # Note: Terminal output is handled by QueueLogHandler (added to logger in setup_loggers)
+            # Verbose logs use 'terminal_only' type, so they don't update GUI status box

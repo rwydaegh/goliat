@@ -4,6 +4,10 @@ import traceback
 from queue import Empty
 from typing import TYPE_CHECKING, Dict, Any, Optional
 
+from colorama import Style
+
+from goliat.colors import get_color
+
 if TYPE_CHECKING:
     from goliat.gui.progress_gui import ProgressGUI
 
@@ -36,6 +40,8 @@ class QueueHandler:
         self.gui: "ProgressGUI" = gui_instance
         self._MESSAGE_HANDLERS = {
             "status": self._handle_status,
+            "terminal_only": self._handle_terminal_only,  # Verbose logs - terminal only, no GUI update
+            "print": self._handle_print,  # stdout/stderr from child process
             "overall_progress": self._handle_overall_progress,
             "stage_progress": self._handle_stage_progress,
             "start_animation": self._handle_start_animation,
@@ -48,7 +54,42 @@ class QueueHandler:
 
     def _handle_status(self, msg: Dict[str, Any]) -> None:
         """Handles status message type."""
-        self.gui.update_status(msg["message"], msg.get("log_type", "default"))
+        message = msg["message"]
+        log_type = msg.get("log_type", "default")
+        # Update GUI
+        self.gui.update_status(message, log_type)
+        # Also print to terminal with colors (child process stdout may be broken on S4L 9.2)
+        color = get_color(log_type)
+        print(f"{color}{message}{Style.RESET_ALL}")
+
+    def _handle_terminal_only(self, msg: Dict[str, Any]) -> None:
+        """Handles terminal_only message type (verbose logs).
+
+        These messages only print to terminal, not to GUI status box.
+        This is for verbose logs that would clutter the GUI.
+        """
+        message = msg["message"]
+        log_type = msg.get("log_type", "default")
+        # Only print to terminal, don't update GUI
+        color = get_color(log_type)
+        print(f"{color}{message}{Style.RESET_ALL}")
+
+    def _handle_print(self, msg: Dict[str, Any]) -> None:
+        """Handles print message type (stdout/stderr from child process).
+
+        This enables print() statements in the child process to appear in the
+        main terminal. Essential for Sim4Life 9.2 where child process stdout
+        doesn't work normally.
+        """
+        message = msg.get("message", "")
+        stream = msg.get("stream", "stdout")
+        if stream == "stderr":
+            # Print stderr in warning color
+            color = get_color("warning")
+            print(f"{color}{message}{Style.RESET_ALL}")
+        else:
+            # Print stdout as-is (no color modification)
+            print(message)
 
     def _handle_overall_progress(self, msg: Dict[str, Any]) -> None:
         """Handles overall progress message type."""

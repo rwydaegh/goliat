@@ -90,37 +90,48 @@ class TestCheckRepoRoot:
 class TestFindSim4LifePythonExecutables:
     """Tests for find_sim4life_python_executables function."""
 
-    @patch("goliat.utils.setup.sys.platform", "win32")
-    @patch("goliat.utils.setup.os.path.exists")
-    @patch("glob.glob")
-    def test_finds_sim4life_executables(self, mock_glob, mock_exists):
+    @patch("goliat.utils.python_interpreter.sys.platform", "win32")
+    @patch("goliat.utils.python_interpreter.glob")
+    @patch("goliat.utils.python_interpreter.os.path")
+    def test_finds_sim4life_executables(self, mock_os_path, mock_glob):
         """Test finding Sim4Life Python executables."""
 
         # Mock drive existence - only C drive exists
         def exists_side_effect(path):
             if path.endswith(":\\"):
                 return path == "C:\\"
-            return False
+            return True  # Default for other paths
 
-        mock_exists.side_effect = exists_side_effect
+        mock_os_path.exists.side_effect = exists_side_effect
+        mock_os_path.isdir.return_value = True
+        mock_os_path.join.side_effect = lambda *args: "\\".join(args)
 
-        # Mock glob results - return unique results (no duplicates)
-        mock_glob.return_value = [
-            "C:\\Program Files\\Sim4Life_8.2.0.16876\\Python",
-            "C:\\Program Files\\Sim4Life_9.0.0.12345\\Python",
-        ]
+        # Mock glob to return different results based on the pattern
+        def glob_side_effect(pattern):
+            if "Sim4Life_8.*" in pattern:
+                return ["C:\\Program Files\\Sim4Life_8.2.0.16876\\Python"]
+            elif "Sim4Life_9.*" in pattern:
+                return [
+                    "C:\\Program Files\\Sim4Life_9.0.0.18820\\Python",  # Unsupported
+                    "C:\\Program Files\\Sim4Life_9.2.1.19976\\Python",  # Supported
+                ]
+            return []
 
-        with patch("goliat.utils.setup.os.path.isdir", return_value=True):
-            results = find_sim4life_python_executables()
-            # The function checks both versions (8.2 and 9.0) for each drive
-            # Since we only have C drive and return 2 results, we should get 2
-            assert len(results) >= 2
-            assert any("Sim4Life_8.2" in r for r in results)
-            assert any("Sim4Life_9.0" in r for r in results)
+        mock_glob.glob.side_effect = glob_side_effect
 
-    @patch("goliat.utils.setup.sys.platform", "win32")
-    @patch("goliat.utils.setup.os.path.exists")
-    @patch("glob.glob")
+        results = find_sim4life_python_executables()
+        # 9.0 is filtered out as unsupported, so we get 8.2 and 9.2
+        assert len(results) == 2
+        assert any("Sim4Life_8.2" in r for r in results)
+        assert any("Sim4Life_9.2" in r for r in results)
+        # 9.0 should be filtered out
+        assert not any("Sim4Life_9.0" in r for r in results)
+        # Results should be sorted with 9.2 first (higher version preferred)
+        assert "Sim4Life_9.2" in results[0]
+
+    @patch("goliat.utils.python_interpreter.sys.platform", "win32")
+    @patch("goliat.utils.python_interpreter.os.path.exists")
+    @patch("goliat.utils.python_interpreter.glob.glob")
     def test_finds_no_executables(self, mock_glob, mock_exists):
         """Test when no Sim4Life executables are found."""
 

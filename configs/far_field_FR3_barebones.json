@@ -1,0 +1,80 @@
+{
+    "extends": "base_config.json",
+    "study_type": "far_field",
+    "extract_sapd": true,
+    "execution_control": {
+        "do_setup": true,
+        "only_write_input_file": false,
+        "do_run": true,
+        "do_extract": true,
+        "batch_run": false,
+        "auto_cleanup_previous_results": [
+            "output"
+        ]
+    },
+    "phantoms": [
+        "thelonious"
+    ],
+    "frequencies_mhz": [
+        7000,
+        9000,
+        11000,
+        13000,
+        15000
+    ],
+    "far_field_setup": {
+        "type": "environmental",
+        "environmental": {
+            "incident_directions": [
+                "x_neg"
+            ],
+            "polarizations": [
+                "theta"
+            ]
+        },
+        "auto_induced": {
+            "grid_resolution_deg": 15
+        }
+    },
+    "simulation_parameters": {
+        "bbox_padding_mm": 10,
+        "simulation_bbox_points": 8,
+        "number_of_point_sensors": 0,
+        "simulation_time_multiplier": 1.0
+    },
+    "solver_settings": {
+        "kernel": "cuda"
+    },
+    "gridding_parameters": {
+        "global_gridding": {
+            "grid_mode": "manual",
+            "manual_fallback_max_step_mm": 3.0
+        },
+        "global_gridding_per_frequency": {
+            "7000": 0.6,
+            "9000": 0.5,
+            "11000": 0.5,
+            "13000": 0.45,
+            "15000": 0.4
+        },
+        "padding": {
+            "padding_mode": "manual",
+            "manual_bottom_padding_mm": [
+                0,
+                0,
+                0
+            ],
+            "manual_top_padding_mm": [
+                0,
+                0,
+                0
+            ]
+        },
+        "phantom_bbox_reduction": {
+            "auto_reduce_bbox": true,
+            "reference_frequency_mhz": 9000,
+            "use_symmetry_reduction": true,
+            "height_limit_per_frequency_mm": {}
+        }
+    }
+}

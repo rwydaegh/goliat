@@ -89,6 +89,11 @@ __all__ = [
 ]
 
 
+# Flag to prevent double execution (e.g., when __main__.py calls it
+# and then run_study.py module-level also calls it)
+_setup_already_run = False
+
+
 def initial_setup():
     """
     Performs all initial checks and setup procedures.
@@ -98,6 +103,13 @@ def initial_setup():
     - Sets up config files in current directory.
     - Prepares data files.
     """
+    global _setup_already_run
+
+    # Guard against double execution
+    if _setup_already_run:
+        return
+    _setup_already_run = True
+
     # Skip everything in CI/test environment
     if os.environ.get("CI") or os.environ.get("PYTEST_CURRENT_TEST"):
         return

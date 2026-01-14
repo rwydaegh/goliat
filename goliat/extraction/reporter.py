@@ -176,9 +176,13 @@ class Reporter:
         html_content += sar_df.to_html()
 
         html_content += "<h2>Peak SAR Details</h2>"
-        peak_sar_df = pd.DataFrame.from_dict(results_data.get("peak_sar_details", {}), orient="index")
-        peak_sar_df.columns = ["Value"]
-        peak_sar_df.index.name = "Parameter"
-        html_content += peak_sar_df.to_html()
+        peak_sar_details = results_data.get("peak_sar_details", {})
+        if peak_sar_details:
+            peak_sar_df = pd.DataFrame.from_dict(peak_sar_details, orient="index")
+            peak_sar_df.columns = ["Value"]
+            peak_sar_df.index.name = "Parameter"
+            html_content += peak_sar_df.to_html()
+        else:
+            html_content += "<p><em>Peak SAR details not available.</em></p>"
 
         return html_content

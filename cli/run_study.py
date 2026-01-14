@@ -11,72 +11,113 @@ from typing import Optional
 from goliat.utils.setup import initial_setup
 
 # --- Pre-check and Setup ---
-# Only run initial_setup if not in test/CI environment
-if not os.environ.get("PYTEST_CURRENT_TEST") and not os.environ.get("CI"):
+# Only run initial_setup in main process (not in spawned children)
+_is_main_process = multiprocessing.current_process().name == "MainProcess"
+if _is_main_process and not os.environ.get("PYTEST_CURRENT_TEST") and not os.environ.get("CI"):
     initial_setup()
 
-try:
-    from PySide6.QtWidgets import QApplication
-except ImportError:
-    # In the cloud, the python executable is not in a path containing "Sim4Life", but we can detect the OS.
-    is_sim4life_interpreter = "Sim4Life" in sys.executable or "aws" in platform.release()
+# --- S4L 9.2 Compatibility Fix ---
+# Sim4Life 9.2 crashes (segfault) if PySide6 is imported BEFORE S4L starts.
+# IMPORTANT: We only do early S4L init in the MAIN process.
+# Child processes skip this because when the main process has S4L running,
+# spawning a child inherits broken stdout/stderr file descriptors.
+# Child processes will init S4L later via ensure_s4l_running() in study_process_wrapper.
+# See: tests/test_full_study_flow.py for diagnosis details.
+if _is_main_process and not os.environ.get("PYTEST_CURRENT_TEST") and not os.environ.get("CI"):
+    try:
+        from s4l_v1._api import application as _s4l_app  # noqa: E402
 
-    # Don't exit during test collection or CI - let tests handle missing PySide6
-    if os.environ.get("PYTEST_CURRENT_TEST") or os.environ.get("CI"):
-        QApplication = None  # Set to None so tests can mock it
-    else:
-        print("=" * 80)
-        print("ERROR: Could not start the application.")
+        if _s4l_app.get_app_safe() is None:
+            _s4l_app.run_application(disable_ui_plugins=True)
+            # S4L 9.2: Enable stdout logging for S4L internal messages
+            from goliat.utils.version import is_sim4life_92_or_later
 
-        if not is_sim4life_interpreter:
-            print("You are not using a Sim4Life Python interpreter.")
-            print("Please ensure you are using the Python executable from your Sim4Life installation.")
-            print("See the documentation for instructions on how to set up your environment.")
+            if is_sim4life_92_or_later():
+                try:
+                    import XCore  # noqa: E402
+
+                    XCore.RedirectToStdOut(True)
+                except (ImportError, AttributeError):
+                    pass
+    except ImportError:
+        pass  # Not running in S4L environment, skip
+# --- End S4L 9.2 Fix ---
+
+# --- PySide6 and GUI imports (main process only) ---
+# Child processes don't need PySide6 or ProgressGUI. Importing ProgressGUI triggers
+# matplotlib.use("Qt5Agg") which conflicts with S4L 9.2 if S4L hasn't started yet.
+# Child processes will import QueueGUI directly inside study_process_wrapper.
+if _is_main_process:
+    try:
+        from PySide6.QtWidgets import QApplication  # noqa: E402
+    except ImportError:
+        # In the cloud, the python executable is not in a path containing "Sim4Life", but we can detect the OS.
+        is_sim4life_interpreter = "Sim4Life" in sys.executable or "aws" in platform.release()
+
+        # Don't exit during test collection or CI - let tests handle missing PySide6
+        if os.environ.get("PYTEST_CURRENT_TEST") or os.environ.get("CI"):
+            QApplication = None  # Set to None so tests can mock it
         else:
-            print("Critical dependencies are missing.")
-            print("This can happen if you haven't installed the project dependencies.")
-            print("Attempting to install now...")
             print("=" * 80)
-            try:
-                # Fallback: Try to install the package (only for initial setup phase)
-                # This is only reached if PySide6 is missing before initial_setup() completes
-                # Get project root (go up from cli to repo root)
-                base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-                import subprocess
+            print("ERROR: Could not start the application.")
 
-                print("\nInstalling GOLIAT package and dependencies...")
-                subprocess.check_call([sys.executable, "-m", "pip", "install", "-e", base_dir])
-                print("\nDependencies installed. Restarting the script...")
-                # Restart the script to ensure new packages are loaded
-                executable = f'"{sys.executable}"' if " " in sys.executable else sys.executable
-                os.execv(executable, [executable] + sys.argv)
-            except Exception as e:
-                print(f"\nFailed to install dependencies automatically: {e}")
-                print("Please run the following command in your terminal:")
-                print(f"   {sys.executable} -m pip install -e .")
+            if not is_sim4life_interpreter:
+                print("You are not using a Sim4Life Python interpreter.")
+                print("Please ensure you are using the Python executable from your Sim4Life installation.")
+                print("See the documentation for instructions on how to set up your environment.")
+            else:
+                print("Critical dependencies are missing.")
+                print("This can happen if you haven't installed the project dependencies.")
+                print("Attempting to install now...")
+                print("=" * 80)
+                try:
+                    # Fallback: Try to install the package (only for initial setup phase)
+                    # This is only reached if PySide6 is missing before initial_setup() completes
+                    # Get project root (go up from cli to repo root)
+                    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+                    import subprocess
 
-        print("=" * 80)
-        sys.exit(1)
-# --- End Pre-check ---
+                    print("\nInstalling GOLIAT package and dependencies...")
+                    subprocess.check_call([sys.executable, "-m", "pip", "install", "-e", base_dir])
+                    print("\nDependencies installed. Restarting the script...")
+                    # Restart the script to ensure new packages are loaded
+                    executable = f'"{sys.executable}"' if " " in sys.executable else sys.executable
+                    os.execv(executable, [executable] + sys.argv)
+                except Exception as e:
+                    print(f"\nFailed to install dependencies automatically: {e}")
+                    print("Please run the following command in your terminal:")
+                    print(f"   {sys.executable} -m pip install -e .")
 
+            print("=" * 80)
+            sys.exit(1)
+
+    # Import GUI components - only in main process
+    from goliat.gui_manager import ProgressGUI, QueueGUI  # noqa: E402
+
+    # Only import osparc batch runner if GUI is available (it requires PySide6)
+    if QApplication is not None:
+        from goliat.osparc_batch.runner import main as run_osparc_batch  # noqa: E402
+    else:
+        # Mock function for CI/test environments
+        def run_osparc_batch(config_filename):
+            raise RuntimeError("oSPARC batch execution requires PySide6 and is not available in CI/test environments")
+else:
+    # Child process - set these to None, will be imported locally where needed
+    QApplication = None
+    ProgressGUI = None
+    QueueGUI = None  # Will be imported directly in study_process_wrapper
+
+    def run_osparc_batch(config_filename):
+        raise RuntimeError("oSPARC batch execution is not available in child processes")
+
+
+# --- Common imports (for both main and child processes) ---
 from goliat.config import Config  # noqa: E402
 from goliat.logging_manager import LoggingMixin, setup_loggers, shutdown_loggers  # noqa: E402
 from goliat.studies.base_study import StudyCancelledError  # noqa: E402
 
-# Import GUI components - will be None if PySide6 not available
-from goliat.gui_manager import ProgressGUI, QueueGUI  # noqa: E402
-
-# Only import osparc batch runner if GUI is available (it requires PySide6)
-if QApplication is not None:
-    from goliat.osparc_batch.runner import main as run_osparc_batch  # noqa: E402
-else:
-    # Mock function for CI/test environments
-    def run_osparc_batch(config_filename):
-        raise RuntimeError("oSPARC batch execution requires PySide6 and is not available in CI/test environments")
-
-
 # Base directory for config files
-from cli.utils import get_base_dir
+from cli.utils import get_base_dir  # noqa: E402
 
 base_dir = get_base_dir()
 
@@ -230,7 +271,28 @@ def study_process_wrapper(queue, stop_event, config_filename, process_id, no_cac
     """
     # Each process needs to set up its own loggers.
     # Use the same session_timestamp as main process to write to the same log file
-    progress_logger, verbose_logger, _ = setup_loggers(process_id=process_id, session_timestamp=session_timestamp)
+    # Pass queue to setup_loggers so all logs go through queue for terminal output.
+    # This is needed on S4L 9.2 where child process stdout is broken.
+    progress_logger, verbose_logger, _ = setup_loggers(process_id=process_id, session_timestamp=session_timestamp, queue=queue)
+
+    # Redirect stdout/stderr through the queue so print() statements appear in terminal
+    # This is essential for Sim4Life 9.2 where child process stdout doesn't work normally
+    class QueueStdout:
+        """File-like object that writes to a multiprocessing queue."""
+
+        def __init__(self, q, stream_name="stdout"):
+            self.queue = q
+            self.stream_name = stream_name
+
+        def write(self, text):
+            if text and text.strip():  # Skip empty lines
+                self.queue.put({"type": "print", "message": text.rstrip(), "stream": self.stream_name})
+
+        def flush(self):
+            pass  # No-op, queue handles it
+
+    sys.stdout = QueueStdout(queue, "stdout")
+    sys.stderr = QueueStdout(queue, "stderr")
 
     try:
         from goliat.config import Config
@@ -250,11 +312,11 @@ def study_process_wrapper(queue, stop_event, config_filename, process_id, no_cac
         )
 
         # The study will use the QueueGUI to send updates back to the main process.
-        # Fallback to ConsoleLogger if GUI not available (CI/test environments)
-        if QueueGUI is None:
-            gui_proxy = ConsoleLogger(progress_logger, verbose_logger)
-        else:
-            gui_proxy = QueueGUI(queue, stop_event, profiler, progress_logger, verbose_logger)
+        # Import QueueGUI directly here (not at module level) because child processes
+        # skip the gui_manager import to avoid PySide6/matplotlib conflicts on S4L 9.2.
+        from goliat.gui.queue_gui import QueueGUI as _QueueGUI  # noqa: E402
+
+        gui_proxy = _QueueGUI(queue, stop_event, profiler, progress_logger, verbose_logger)
 
         if study_type == "near_field":
             study = NearFieldStudy(study_type="near_field", config_filename=config_filename, gui=gui_proxy, no_cache=no_cache)
