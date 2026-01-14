@@ -199,10 +199,10 @@ Auto-induced exposure simulates the worst-case scenario where a MaMIMO base stat
 | `auto_induced.search_metric` | string | `"E_magnitude"` | **[Legacy mode only]** Metric used for worst-case focus search in skin-based mode. Options: `"E_magnitude"`, `"E_z_magnitude"`, `"poynting_z"`. |
 | `auto_induced.save_intermediate_files` | boolean | `false` | If `true`, saves `.smash` project files after SAPD extraction for debugging. |
 | `auto_induced.search.mode` | string | `"air"` | Search mode for focus points. `"air"` (recommended, physically correct) searches in air near body surface. `"skin"` (legacy) searches directly on skin voxels. |
-| `auto_induced.search.n_samples` | number | `0.01` | **[Air mode only]** Fraction of valid air points to sample (if < 1) or absolute count (if ≥ 1). Default `0.01` = 1% of all valid air voxels. Higher values increase accuracy but take longer. |
-| `auto_induced.search.shell_size_mm` | number | `25` | **[Air mode only]** Maximum distance from skin surface for valid air focus points (in mm). Points farther from the body are excluded. |
-| `auto_induced.search.selection_percentile` | number | `95.0` | **[Air mode only]** Percentile threshold for candidate selection. Default `95.0` means only air points in the top 5% of proxy scores are considered as candidates. |
-| `auto_induced.search.min_candidate_distance_mm` | number | `50.0` | **[Air mode only]** Minimum distance in mm between selected candidates (diversity constraint). Prevents clustering of candidates in one region. |
+| `auto_induced.search.n_samples` | number | `10000` | **[Air mode only]** Number of air points to randomly sample and score. Can be an integer (exact count) or a float < 1 (fraction of valid points, e.g., `0.01` = 1%). |
+| `auto_induced.search.shell_size_mm` | number | `10.0` | **[Air mode only]** Maximum distance from skin surface for a valid air focus point. Smaller values keep focus points closer to the body. |
+| `auto_induced.search.selection_percentile` | number | `95.0` | **[Air mode only]** Percentile threshold for candidate selection. Only points scoring above this percentile are considered. Default `95.0` = top 5%. |
+| `auto_induced.search.min_candidate_distance_mm` | number | `50.0` | **[Air mode only]** Minimum distance in mm between selected candidates. Ensures spatial diversity across the body surface. |
 | `auto_induced.search.random_seed` | number/null | `42` | **[Air mode only]** Random seed for sampling reproducibility. Set to `null` for non-reproducible random sampling. |
 
 **Example: Enable auto-induced exposure with air-based search**
@@ -210,12 +210,12 @@ Auto-induced exposure simulates the worst-case scenario where a MaMIMO base stat
 {
     "auto_induced": {
         "enabled": true,
-        "top_n": 30,
+        "top_n": 10,
         "cube_size_mm": 50,
         "search": {
             "mode": "air",
-            "n_samples": 0.01,
-            "shell_size_mm": 25,
+            "n_samples": 10000,
+            "shell_size_mm": 10.0,
             "selection_percentile": 95.0,
             "min_candidate_distance_mm": 50.0,
             "random_seed": 42
