@@ -384,7 +384,7 @@ class SapdExtractor(LoggingMixin):
     def _get_or_create_united_skin(self, entities: List["model.Entity"]) -> "model.Entity":
         """Loads cached skin or creates united skin from entities."""
 
-        cache_dir = os.path.join(self.parent.config.base_dir, "data", "phantoms_skin")
+        cache_dir = os.path.join(self.parent.config.base_dir, "data", "phantom_skins")
         cache_path = os.path.join(cache_dir, f"{self.phantom_name}_skin.sab")
 
         # Try loading from cache

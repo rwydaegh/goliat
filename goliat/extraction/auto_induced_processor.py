@@ -144,16 +144,19 @@ class AutoInducedProcessor(LoggingMixin):
             proxy_score = candidate.get("hotspot_score", candidate.get("metric_sum", 0.0))
             sapd_value = sapd_result.get("peak_sapd_w_m2")
             if sapd_value is not None:
-                correlation_data.append({
-                    "candidate_idx": i + 1,
-                    "voxel_x": candidate["voxel_idx"][0],
-                    "voxel_y": candidate["voxel_idx"][1],
-                    "voxel_z": candidate["voxel_idx"][2],
-                    "proxy_score": proxy_score,
-                    "sapd_w_m2": sapd_value,
-                })
+                correlation_data.append(
+                    {
+                        "candidate_idx": i + 1,
+                        "voxel_x": candidate["voxel_idx"][0],
+                        "voxel_y": candidate["voxel_idx"][1],
+                        "voxel_z": candidate["voxel_idx"][2],
+                        "proxy_score": proxy_score,
+                        "sapd_w_m2": sapd_value,
+                    }
+                )
         if correlation_data:
             import csv
+
             corr_path = Path(output_dir) / "proxy_sapd_correlation.csv"
             with open(corr_path, "w", newline="") as f:
                 writer = csv.DictWriter(f, fieldnames=correlation_data[0].keys())
@@ -176,7 +179,7 @@ class AutoInducedProcessor(LoggingMixin):
         input_h5: Path,
         top_n: int,
         search_metric: str = "E_z_magnitude",
-        output_dir: Path = None,
+        output_dir: Path | None = None,
     ) -> list[dict]:
         """Find top-N worst-case focus candidates.
 
@@ -279,6 +282,7 @@ class AutoInducedProcessor(LoggingMixin):
             all_scores_data = info.get("all_scores_data", [])
             if all_scores_data and output_dir:
                 import csv
+
                 csv_path = Path(output_dir) / "all_proxy_scores.csv"
                 with open(csv_path, "w", newline="") as f:
                     writer = csv.DictWriter(f, fieldnames=all_scores_data[0].keys())
@@ -418,7 +422,7 @@ class AutoInducedProcessor(LoggingMixin):
             em_sensor_extractor.Update()
 
             # Try to load cached skin first (avoids duplicate entity name issues)
-            cache_dir = os.path.join(self.config.base_dir, "data", "phantoms_skin")
+            cache_dir = os.path.join(self.config.base_dir, "data", "phantom_skins")
             cache_path = os.path.join(cache_dir, f"{self.phantom_name}_skin.sab")
             united_entity = None
 
