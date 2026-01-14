@@ -16,7 +16,7 @@ sys.path.insert(0, BASE_DIR)
 # This import triggers module-level S4L init in the MAIN process
 # (just like when you run `goliat study`)
 print("[Main] About to import run_study (triggers S4L init in main)...")
-from cli.run_study import setup_loggers, shutdown_loggers
+from cli.run_study import setup_loggers, shutdown_loggers  # noqa: E402
 
 print("[Main] Import complete")
 

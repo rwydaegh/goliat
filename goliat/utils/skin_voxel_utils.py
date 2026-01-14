@@ -260,10 +260,7 @@ def find_valid_air_focus_points(
     logger.info(f"  [timing] argwhere: {time.perf_counter() - t0:.2f}s, found {len(valid_air_indices):,} valid air points")
 
     if len(valid_air_indices) == 0:
-        raise ValueError(
-            f"No valid air focus points found. Try increasing shell_size_mm "
-            f"(current: {shell_size_mm}mm)."
-        )
+        raise ValueError(f"No valid air focus points found. Try increasing shell_size_mm (current: {shell_size_mm}mm).")
 
     return valid_air_indices, ax_x, ax_y, ax_z, skin_mask
 

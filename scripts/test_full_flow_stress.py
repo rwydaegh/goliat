@@ -108,10 +108,6 @@ def test_scoring_loop(
 
         skin_global = skin_local + np.array([ix_min, iy_min, iz_min])
 
-        # Read E-field at focus
-        focus_arr = air_idx.reshape(1, 3)
-        E_focus = read_field_at_indices(output_h5_path, focus_arr, field_type="E")
-
         # Read E-field at skin voxels
         E_skin = read_field_at_indices(output_h5_path, skin_global, field_type="E")
 

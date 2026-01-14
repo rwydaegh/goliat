@@ -185,6 +185,7 @@ These settings are unique to far-field (environmental exposure) studies.
 | `far_field_setup.environmental.incident_directions` | array | `["x_pos", "y_neg"]` | A list of plane wave incident directions. Supported values are single-axis directions: `"x_pos"`, `"x_neg"`, `"y_pos"`, `"y_neg"`, `"z_pos"`, `"z_neg"`. **Mutually exclusive with `spherical_tessellation`.** |
 | `far_field_setup.environmental.spherical_tessellation` | object | `{"theta_divisions": 2, "phi_divisions": 4}` | Alternative to `incident_directions`. Generates arbitrary incident wave directions on the sphere. `theta_divisions` divides the polar angle (0°-180°), `phi_divisions` divides the azimuthal angle (0°-360°). Direction names use `"theta_phi"` format in degrees (e.g., `"90_180"`). Useful for comprehensive exposure assessment beyond the 6 orthogonal directions. |
 | `far_field_setup.environmental.polarizations` | array | `["theta", "phi"]` | A list of polarizations to simulate for each incident direction. `"theta"` corresponds to vertical polarization and `"phi"` to horizontal. |
+| `power_balance.input_method` | string | `"bounding_box"` | Method for computing input power in far-field power balance. `"bounding_box"` uses simulation domain cross-section (default, gives ~100% balance). `"phantom_cross_section"` uses pre-computed phantom projected area (physically meaningful but gives >100% balance). See [power normalization](../technical/power_normalization_philosophy.md) for details. |
 
 ### Auto-induced exposure (`auto_induced`)
 
@@ -198,8 +199,10 @@ Auto-induced exposure simulates the worst-case scenario where a MaMIMO base stat
 | `auto_induced.search_metric` | string | `"E_magnitude"` | **[Legacy mode only]** Metric used for worst-case focus search in skin-based mode. Options: `"E_magnitude"`, `"E_z_magnitude"`, `"poynting_z"`. |
 | `auto_induced.save_intermediate_files` | boolean | `false` | If `true`, saves `.smash` project files after SAPD extraction for debugging. |
 | `auto_induced.search.mode` | string | `"air"` | Search mode for focus points. `"air"` (recommended, physically correct) searches in air near body surface. `"skin"` (legacy) searches directly on skin voxels. |
-| `auto_induced.search.n_samples` | number | `100` | **[Air mode only]** Number of air points to randomly sample and score. Higher values increase accuracy but take longer. |
-| `auto_induced.search.min_skin_volume_fraction` | number | `0.05` | **[Air mode only]** Minimum fraction of the cube (0-1) that must contain skin voxels for an air point to be considered valid. Default `0.05` = 5% of cube volume. |
+| `auto_induced.search.n_samples` | number | `0.01` | **[Air mode only]** Fraction of valid air points to sample (if < 1) or absolute count (if ≥ 1). Default `0.01` = 1% of all valid air voxels. Higher values increase accuracy but take longer. |
+| `auto_induced.search.shell_size_mm` | number | `25` | **[Air mode only]** Maximum distance from skin surface for valid air focus points (in mm). Points farther from the body are excluded. |
+| `auto_induced.search.selection_percentile` | number | `95.0` | **[Air mode only]** Percentile threshold for candidate selection. Default `95.0` means only air points in the top 5% of proxy scores are considered as candidates. |
+| `auto_induced.search.min_candidate_distance_mm` | number | `50.0` | **[Air mode only]** Minimum distance in mm between selected candidates (diversity constraint). Prevents clustering of candidates in one region. |
 | `auto_induced.search.random_seed` | number/null | `42` | **[Air mode only]** Random seed for sampling reproducibility. Set to `null` for non-reproducible random sampling. |
 
 **Example: Enable auto-induced exposure with air-based search**
@@ -207,12 +210,14 @@ Auto-induced exposure simulates the worst-case scenario where a MaMIMO base stat
 {
     "auto_induced": {
         "enabled": true,
-        "top_n": 10,
+        "top_n": 30,
         "cube_size_mm": 50,
         "search": {
             "mode": "air",
-            "n_samples": 100,
-            "min_skin_volume_fraction": 0.05,
+            "n_samples": 0.01,
+            "shell_size_mm": 25,
+            "selection_percentile": 95.0,
+            "min_candidate_distance_mm": 50.0,
             "random_seed": 42
         }
     }

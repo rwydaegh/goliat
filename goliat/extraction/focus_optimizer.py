@@ -476,7 +476,7 @@ def _find_focus_air_based(
     # Support coverage percentage: if n_samples <= 1.0, treat as fraction of valid points
     if n_samples <= 1.0:
         n_to_sample = max(100, int(n_valid * n_samples))  # At least 100 samples
-        logging.getLogger("progress").info(f"Coverage mode: {n_samples*100:.1f}% → {n_to_sample:,} samples")
+        logging.getLogger("progress").info(f"Coverage mode: {n_samples * 100:.1f}% → {n_to_sample:,} samples")
     else:
         n_to_sample = min(int(n_samples), n_valid)
 
@@ -521,14 +521,16 @@ def _find_focus_air_based(
     # Convert distance from mm to voxels (approximate using mean voxel spacing)
     dx_mm = np.mean(np.diff(ax_x)) * 1000
     min_distance_voxels = int(min_candidate_distance_mm / dx_mm)
-    
+
     top_air_indices, top_scores = _select_diverse_candidates(
         sampled_air_indices=sampled_air_indices,
         hotspot_scores=hotspot_scores,
         top_n=top_n,
         percentile=selection_percentile,
         min_distance_voxels=min_distance_voxels,
-        ax_x=ax_x, ax_y=ax_y, ax_z=ax_z,
+        ax_x=ax_x,
+        ax_y=ax_y,
+        ax_z=ax_z,
     )
     actual_top_n = len(top_air_indices)
 
@@ -553,16 +555,18 @@ def _find_focus_air_based(
         x_mm = float(ax_x[min(idx[0], len(ax_x) - 1)]) * 1000
         y_mm = float(ax_y[min(idx[1], len(ax_y) - 1)]) * 1000
         z_mm = float(ax_z[min(idx[2], len(ax_z) - 1)]) * 1000
-        all_scores_data.append({
-            "idx": i,
-            "voxel_x": int(idx[0]),
-            "voxel_y": int(idx[1]),
-            "voxel_z": int(idx[2]),
-            "x_mm": x_mm,
-            "y_mm": y_mm,
-            "z_mm": z_mm,
-            "proxy_score": float(score),
-        })
+        all_scores_data.append(
+            {
+                "idx": i,
+                "voxel_x": int(idx[0]),
+                "voxel_y": int(idx[1]),
+                "voxel_z": int(idx[2]),
+                "x_mm": x_mm,
+                "y_mm": y_mm,
+                "z_mm": z_mm,
+                "proxy_score": float(score),
+            }
+        )
 
     info = {
         "search_mode": "air",
@@ -623,7 +627,7 @@ def _select_diverse_candidates(
     threshold = np.percentile(hotspot_scores[valid_mask], percentile)
     top_mask = hotspot_scores >= threshold
     n_in_percentile = np.sum(top_mask)
-    logger.info(f"  Selection: {n_in_percentile} points in top {100-percentile:.0f}% (threshold={threshold:.4e})")
+    logger.info(f"  Selection: {n_in_percentile} points in top {100 - percentile:.0f}% (threshold={threshold:.4e})")
 
     # Get indices sorted by score (descending)
     top_indices = np.where(top_mask)[0]
@@ -658,7 +662,7 @@ def _select_diverse_candidates(
         selected = top_indices[:top_n].tolist()
 
     selected = np.array(selected)
-    logger.info(f"  Selected {len(selected)} diverse candidates from top {100-percentile:.0f}%")
+    logger.info(f"  Selected {len(selected)} diverse candidates from top {100 - percentile:.0f}%")
 
     return sampled_air_indices[selected], hotspot_scores[selected]
 
