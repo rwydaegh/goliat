@@ -93,7 +93,6 @@ class PowerExtractor(LoggingMixin):
             simulation_extractor: Results extractor from the simulation.
         """
         import os
-        import pickle
 
         self._log(
             "  - Far-field study: calculating input power from phantom cross-section.",
@@ -149,27 +148,23 @@ class PowerExtractor(LoggingMixin):
                 )
                 theta_rad, phi_rad = None, None
 
-        # Load phantom cross-section data
+        # Load phantom cross-section data (JSON format for numpy version compatibility)
         phantom_name = str(self.config["phantom_name"] or self.parent.phantom_name)
-        cross_section_path = os.path.join(str(self.config.base_dir), "data", "phantom_skins", phantom_name, "cross_section_pattern.pkl")
+        cross_section_path = os.path.join(str(self.config.base_dir), "data", "phantom_skins", phantom_name, "cross_section_pattern.json")
 
         area_m2 = None
         if os.path.exists(cross_section_path):
             try:
-                with open(cross_section_path, "rb") as f:
-                    # Try standard load first
-                    try:
-                        cs_data = pickle.load(f)
-                    except ModuleNotFoundError:
-                        # Numpy version mismatch - try with encoding fallback
-                        f.seek(0)
-                        cs_data = pickle.load(f, encoding="latin1")
+                import json
+
+                with open(cross_section_path) as f:
+                    cs_data = json.load(f)
 
                 if theta_rad is not None and phi_rad is not None:
-                    # Find nearest grid point
-                    theta_grid = cs_data["theta"]  # (n_theta, n_phi)
-                    phi_grid = cs_data["phi"]
-                    areas = cs_data["areas"]
+                    # Convert lists to numpy arrays for indexing
+                    theta_grid = np.array(cs_data["theta"])  # (n_theta, n_phi)
+                    phi_grid = np.array(cs_data["phi"])
+                    areas = np.array(cs_data["areas"])
 
                     # Normalize phi to [0, 2π]
                     phi_rad = phi_rad % (2 * np.pi)
@@ -177,17 +172,17 @@ class PowerExtractor(LoggingMixin):
                     # Find closest indices
                     theta_vals = theta_grid[:, 0]  # Unique theta values
                     phi_vals = phi_grid[0, :]  # Unique phi values
-                    i_theta = np.argmin(np.abs(theta_vals - theta_rad))
-                    i_phi = np.argmin(np.abs(phi_vals - phi_rad))
+                    i_theta = int(np.argmin(np.abs(theta_vals - theta_rad)))
+                    i_phi = int(np.argmin(np.abs(phi_vals - phi_rad)))
 
-                    area_m2 = areas[i_theta, i_phi]
+                    area_m2 = float(areas[i_theta, i_phi])
                     self._log(
                         f"  - Phantom cross-section at θ={np.degrees(theta_rad):.1f}°, φ={np.degrees(phi_rad):.1f}°: {area_m2:.4f} m²",
                         log_type="verbose",
                     )
                 else:
                     # Use mean cross-section as fallback
-                    area_m2 = cs_data["stats"]["mean"]
+                    area_m2 = float(cs_data["stats"]["mean"])
                     self._log(
                         f"  - Using mean phantom cross-section: {area_m2:.4f} m²",
                         log_type="verbose",

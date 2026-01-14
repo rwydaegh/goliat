@@ -41,20 +41,23 @@ data/phantom_skins/
 ## How to Load the Data
 
 ```python
-import pickle
+import json
 import numpy as np
 
-with open("data/phantom_skins/duke/cross_section_pattern.pkl", "rb") as f:
-    data = pickle.load(f)
+with open("data/phantom_skins/duke/cross_section_pattern.json") as f:
+    data = json.load(f)
 
 # Available keys:
-# - data["theta"]      : (36, 72) array of polar angles in radians
-# - data["phi"]        : (36, 72) array of azimuthal angles in radians
-# - data["areas"]      : (36, 72) array of cross-sectional areas in m²
+# - data["theta"]      : (36, 72) list of polar angles in radians
+# - data["phi"]        : (36, 72) list of azimuthal angles in radians
+# - data["areas"]      : (36, 72) list of cross-sectional areas in m²
 # - data["stats"]      : dict with min, max, mean, ratio
 # - data["bounding_box"]: [x, y, z] extents of mesh
 # - data["phantom_name"]: "duke", "ella", etc.
 # - data["units"]      : "m²"
+
+# Convert to numpy arrays for numerical operations
+areas = np.array(data["areas"])
 ```
 
 ## Coordinate System

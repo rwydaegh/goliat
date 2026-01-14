@@ -38,10 +38,12 @@ data/*
 !data/phantom_skins/
 # Ignore large binary mesh files
 data/phantom_skins/**/*.stl
-# Ignore generated visualizations (can regenerate from pkl)
+# Ignore generated visualizations (can regenerate)
 data/phantom_skins/**/*.png
-# Track cross-section pattern data (small, useful)
-!data/phantom_skins/**/*.pkl
+# Ignore pickle files (numpy version issues)
+data/phantom_skins/**/*.pkl
+# Track cross-section JSON data (portable, version-agnostic)
+!data/phantom_skins/**/*.json
 
 # Logs
 logs/
