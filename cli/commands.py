@@ -309,13 +309,11 @@ def config_set_version(base_dir: str = None):
         print("SUCCESS! Sim4Life version updated.")
         print("=" * 60)
         print(f"\nNew version: {selected_python}")
-        print("\nNext steps:")
-        print("  1. Open a new terminal window")
-        print("     (If you haven't synced .bashrc to home, run: source .bashrc)")
-        print("  2. Reinstall GOLIAT for the new Python:")
-        print("     pip install goliat          # or")
-        print("     pip install -e .            # for editable install")
-        print("  3. Run your GOLIAT command")
+        print("\nTo apply changes, run:")
+        print("  source .bashrc")
+        print("\nThen, if you haven't already, reinstall GOLIAT:")
+        print("  pip install -e .            # for editable install, or")
+        print("  pip install goliat          # from PyPI")
         print("=" * 60 + "\n")
 
     except (ValueError, IndexError):
