@@ -5,12 +5,14 @@
         "_comment": "Path to Sim4Life _Input.h5 file (relative to project root or absolute)"
     },
     "output": {
-        "directory": "results/skin_mesh",
-        "mesh_filename": "skin_mesh.stl",
+        "base_directory": "data/phantom_skins",
+        "phantom_name": "thelonious",
+        "_comment_directory": "Output will be: base_directory/phantom_name/",
+        "mesh_filename": "reduced.stl",
         "save_voxel_pickle": true,
         "pickle_filename": "skin_voxels.pkl",
         "save_blend_file": true,
-        "blend_filename": "skin_mesh_debug.blend"
+        "blend_filename": "debug.blend"
     },
     "tissue_extraction": {
         "tissue_keyword": "skin",

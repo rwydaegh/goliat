@@ -192,3 +192,129 @@ def show_version():
                 print("GOLIAT version unknown")
         except Exception:
             print("GOLIAT version unknown")
+
+
+def config_show(base_dir: str = None):
+    """Show current GOLIAT configuration and preferences."""
+    if base_dir is None:
+        from cli.utils import get_base_dir
+
+        base_dir = get_base_dir()
+
+    from goliat.utils.preferences import get_user_preferences
+
+    prefs = get_user_preferences(base_dir)
+
+    print("\n" + "=" * 60)
+    print("GOLIAT Configuration")
+    print("=" * 60)
+
+    # Sim4Life version
+    s4l_path = prefs.get("sim4life_python_path")
+    if s4l_path:
+        import re
+
+        match = re.search(r"Sim4Life[_-](\d+\.\d+\.\d+)", s4l_path)
+        version_str = match.group(1) if match else "unknown"
+        print(f"\nSim4Life version: {version_str}")
+        print(f"  Path: {s4l_path}")
+    else:
+        print("\nSim4Life version: Not configured")
+        print("  Run 'goliat config set-version' to select a version.")
+
+    # Bashrc sync
+    sync_bashrc = prefs.get("sync_bashrc_to_home", False)
+    print(f"\nAuto-sync .bashrc to home: {'Yes' if sync_bashrc else 'No'}")
+
+    # Preferences file location
+    prefs_file = os.path.join(base_dir, "data", ".goliat_preferences.json")
+    print(f"\nPreferences file: {prefs_file}")
+
+    print("=" * 60 + "\n")
+
+
+def config_set_version(base_dir: str = None):
+    """Interactively change the Sim4Life version."""
+    if base_dir is None:
+        from cli.utils import get_base_dir
+
+        base_dir = get_base_dir()
+
+    from goliat.utils.bashrc import update_bashrc
+    from goliat.utils.preferences import get_sim4life_python_path, set_sim4life_python_path
+    from goliat.utils.python_interpreter import find_sim4life_python_executables
+
+    viable_pythons = find_sim4life_python_executables()
+
+    if not viable_pythons:
+        print("\nNo supported Sim4Life installations found (8.2 or 9.2).")
+        print("Please install Sim4Life first.")
+        return
+
+    current_path = get_sim4life_python_path(base_dir)
+
+    print("\n" + "=" * 60)
+    print("GOLIAT - Change Sim4Life Version")
+    print("=" * 60)
+
+    if current_path:
+        import re
+
+        match = re.search(r"Sim4Life[_-](\d+\.\d+\.\d+)", current_path)
+        current_version = match.group(1) if match else "unknown"
+        print(f"\nCurrent version: Sim4Life {current_version}")
+    else:
+        print("\nNo version currently configured.")
+
+    print("\nAvailable versions:\n")
+
+    import re
+
+    for i, p in enumerate(viable_pythons):
+        match = re.search(r"Sim4Life[_-](\d+\.\d+\.\d+)", p)
+        version_str = match.group(1) if match else "unknown"
+        current_marker = " (current)" if p == current_path else ""
+        recommended = " (recommended)" if i == 0 and not current_marker else ""
+        print(f"  [{i + 1}] Sim4Life {version_str}{current_marker}{recommended}")
+
+    print("\n" + "-" * 60)
+    print("TIP: Your choice is saved and can be changed anytime with")
+    print("     'goliat config set-version'")
+    print("-" * 60)
+
+    try:
+        choice = input("\nSelect a version, or press Enter to cancel: ")
+
+        if not choice:
+            print("\nNo changes made.")
+            return
+
+        selected_index = int(choice) - 1
+        if not 0 <= selected_index < len(viable_pythons):
+            raise ValueError
+
+        selected_python = viable_pythons[selected_index]
+
+        if selected_python == current_path:
+            print("\nThat's already your current version. No changes needed.")
+            return
+
+        # Save to preferences
+        set_sim4life_python_path(base_dir, selected_python)
+
+        # Update bashrc
+        update_bashrc(selected_python, base_dir=base_dir)
+
+        print("\n" + "=" * 60)
+        print("SUCCESS! Sim4Life version updated.")
+        print("=" * 60)
+        print(f"\nNew version: {selected_python}")
+        print("\nTo apply changes, run:")
+        print("  source .bashrc")
+        print("\nThen, if you haven't already, reinstall GOLIAT:")
+        print("  pip install -e .            # for editable install, or")
+        print("  pip install goliat          # from PyPI")
+        print("=" * 60 + "\n")
+
+    except (ValueError, IndexError):
+        print("\nInvalid selection. No changes made.")

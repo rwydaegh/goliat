@@ -116,6 +116,24 @@ def create_parser():
     # version command
     subparsers.add_parser("version", help="Show GOLIAT version information")
 
+    # config command with subcommands
+    config_parser = subparsers.add_parser(
+        "config",
+        help="Manage GOLIAT configuration and preferences",
+        description="View or modify GOLIAT user preferences (Sim4Life version, bashrc sync, etc.)",
+    )
+    config_subparsers = config_parser.add_subparsers(dest="config_command", help="Config subcommands")
+
+    # config show
+    config_subparsers.add_parser("show", help="Show current configuration and preferences")
+
+    # config set-version
+    config_subparsers.add_parser(
+        "set-version",
+        help="Change the Sim4Life version",
+        description="Interactively select which Sim4Life version to use.",
+    )
+
     # AI assistant commands
     ask_parser = subparsers.add_parser("ask", help="Ask AI assistant about GOLIAT")
     ask_parser.add_argument("question", type=str, nargs="?", help="Question to ask")
@@ -379,6 +397,24 @@ def main():
             validate_config(args.config, base_dir=base_dir)
         except ImportError:
             print("Error: GOLIAT package not installed. Run 'goliat study' to install.")
+        return
+
+    elif args.command == "config":
+        from cli.commands import config_show, config_set_version
+        from cli.utils import get_base_dir
+
+        base_dir = get_base_dir()
+
+        if args.config_command == "show":
+            config_show(base_dir=base_dir)
+        elif args.config_command == "set-version":
+            config_set_version(base_dir=base_dir)
+        else:
+            # No subcommand given, show help
+            print("Usage: goliat config <command>")
+            print("\nAvailable commands:")
+            print("  show         Show current configuration and preferences")
+            print("  set-version  Change the Sim4Life version")
         return
 
     elif args.command == "ask":

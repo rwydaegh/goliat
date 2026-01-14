@@ -63,8 +63,9 @@ class ResultsExtractor(LoggingMixin):
         self.phantom_name = context.phantom_name
         self.frequency_mhz = context.frequency_mhz
         self.scenario_name = context.scenario_name
+        self.position_name = context.position_name  # For far-field: direction. For near-field: position.
         self.placement_name = f"{context.scenario_name}_{context.position_name}_{context.orientation_name}"
-        self.orientation_name = context.orientation_name
+        self.orientation_name = context.orientation_name  # For far-field: polarization. For near-field: orientation.
         self.study_type = context.study_type
         self.verbose_logger = context.verbose_logger
         self.progress_logger = context.progress_logger
@@ -244,9 +245,8 @@ class ResultsExtractor(LoggingMixin):
                 # Build simulation name
                 if self.study_type == "far_field":
                     # For far-field: EM_FDTD_{phantom}_{freq}MHz_{direction}_{polarization}
-                    sim_name = (
-                        f"EM_FDTD_{self.phantom_name}_{self.frequency_mhz}MHz_{self.orientation_name}_{self.placement_name.split('_')[-1]}"
-                    )
+                    # position_name = direction, orientation_name = polarization
+                    sim_name = f"EM_FDTD_{self.phantom_name}_{self.frequency_mhz}MHz_{self.position_name}_{self.orientation_name}"
                 else:
                     # For near-field: EM_FDTD_{phantom}_{freq}MHz_{placement}
                     sim_name = f"EM_FDTD_{self.phantom_name}_{self.frequency_mhz}MHz_{self.placement_name}"

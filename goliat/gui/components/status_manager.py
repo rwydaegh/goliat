@@ -49,8 +49,9 @@ class StatusManager:
     def format_message(self, message: str, log_type: str = "default") -> str:
         """Formats message with HTML color styling.
 
-        Preserves leading spaces by converting them to &nbsp; entities, then
-        wraps message in a <span> tag with appropriate color style.
+        Strips any ANSI escape codes (from terminal formatters), preserves
+        leading spaces by converting them to &nbsp; entities, then wraps
+        message in a <span> tag with appropriate color style.
 
         Args:
             message: Message text to format.
@@ -59,8 +60,14 @@ class StatusManager:
         Returns:
             HTML-formatted message string ready for QTextEdit.
         """
+        import re
+
+        # Strip ANSI escape codes (e.g., \x1b[35m, \x1b[0m)
+        ansi_pattern = re.compile(r"\x1b\[[0-9;]*m")
+        clean_message = ansi_pattern.sub("", message)
+
         # Preserve leading spaces by converting them to &nbsp;
-        preserved_message = message.replace(" ", "&nbsp;")
+        preserved_message = clean_message.replace(" ", "&nbsp;")
         color = self.get_color(log_type)
         return f'<span style="color:{color};">{preserved_message}</span>'
 

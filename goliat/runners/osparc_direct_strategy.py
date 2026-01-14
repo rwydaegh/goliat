@@ -60,7 +60,7 @@ class OSPARCDirectStrategy(ExecutionStrategy, LoggingMixin):
                 log_type="error",
             )
             self._log(
-                "Please ensure you are using Sim4Life version 8.2.0.",
+                "Please ensure you are using Sim4Life version 8.2 or 9.2.",
                 level="progress",
                 log_type="info",
             )

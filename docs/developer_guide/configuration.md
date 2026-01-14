@@ -185,6 +185,7 @@ These settings are unique to far-field (environmental exposure) studies.
 | `far_field_setup.environmental.incident_directions` | array | `["x_pos", "y_neg"]` | A list of plane wave incident directions. Supported values are single-axis directions: `"x_pos"`, `"x_neg"`, `"y_pos"`, `"y_neg"`, `"z_pos"`, `"z_neg"`. **Mutually exclusive with `spherical_tessellation`.** |
 | `far_field_setup.environmental.spherical_tessellation` | object | `{"theta_divisions": 2, "phi_divisions": 4}` | Alternative to `incident_directions`. Generates arbitrary incident wave directions on the sphere. `theta_divisions` divides the polar angle (0°-180°), `phi_divisions` divides the azimuthal angle (0°-360°). Direction names use `"theta_phi"` format in degrees (e.g., `"90_180"`). Useful for comprehensive exposure assessment beyond the 6 orthogonal directions. |
 | `far_field_setup.environmental.polarizations` | array | `["theta", "phi"]` | A list of polarizations to simulate for each incident direction. `"theta"` corresponds to vertical polarization and `"phi"` to horizontal. |
+| `power_balance.input_method` | string | `"bounding_box"` | Method for computing input power in far-field power balance. `"bounding_box"` uses simulation domain cross-section (default, gives ~100% balance). `"phantom_cross_section"` uses pre-computed phantom projected area (physically meaningful but gives >100% balance). See [power normalization](../technical/power_normalization_philosophy.md) for details. |
 
 ### Auto-induced exposure (`auto_induced`)
 
@@ -193,28 +194,58 @@ Auto-induced exposure simulates the worst-case scenario where a MaMIMO base stat
 | Parameter | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `auto_induced.enabled` | boolean | `false` | If `true`, runs auto-induced analysis after environmental simulations complete for each (phantom, freq) pair. Requires `do_run: true` since it needs all `_Output.h5` files. |
-| `auto_induced.top_n` | number | `3` | Number of candidate focus points to evaluate. The algorithm finds the top N skin voxels where Σ\|E_i\| is highest, combines fields for each, and reports the worst-case SAPD. |
-| `auto_induced.cube_size_mm` | number | `100` | Side length in mm of the extraction cube around each focus point. Only fields within this cube are combined, dramatically reducing computation time and output file size. |
-| `auto_induced.search_metric` | string | `"E_magnitude"` | Metric used for worst-case focus search. Options: `"E_magnitude"` (full E-field magnitude, SAPD-consistent), `"E_z_magnitude"` (vertical component only, MRT-style), `"poynting_z"` (z-component of Poynting vector). |
+| `auto_induced.top_n` | number | `10` | Number of candidate focus points to evaluate. The algorithm finds the top N candidates, combines fields for each, and reports the worst-case SAPD. |
+| `auto_induced.cube_size_mm` | number | `50` | Side length in mm of the extraction cube around each focus point. Only fields within this cube are combined, dramatically reducing computation time and output file size. |
+| `auto_induced.search_metric` | string | `"E_magnitude"` | **[Legacy mode only]** Metric used for worst-case focus search in skin-based mode. Options: `"E_magnitude"`, `"E_z_magnitude"`, `"poynting_z"`. |
 | `auto_induced.save_intermediate_files` | boolean | `false` | If `true`, saves `.smash` project files after SAPD extraction for debugging. |
+| `auto_induced.search.mode` | string | `"air"` | Search mode for focus points. `"air"` (recommended, physically correct) searches in air near body surface. `"skin"` (legacy) searches directly on skin voxels. |
+| `auto_induced.search.n_samples` | number | `0.01` | **[Air mode only]** Fraction of valid air points to sample (if < 1) or absolute count (if ≥ 1). Default `0.01` = 1% of all valid air voxels. Higher values increase accuracy but take longer. |
+| `auto_induced.search.shell_size_mm` | number | `25` | **[Air mode only]** Maximum distance from skin surface for valid air focus points (in mm). Points farther from the body are excluded. |
+| `auto_induced.search.selection_percentile` | number | `95.0` | **[Air mode only]** Percentile threshold for candidate selection. Default `95.0` means only air points in the top 5% of proxy scores are considered as candidates. |
+| `auto_induced.search.min_candidate_distance_mm` | number | `50.0` | **[Air mode only]** Minimum distance in mm between selected candidates (diversity constraint). Prevents clustering of candidates in one region. |
+| `auto_induced.search.random_seed` | number/null | `42` | **[Air mode only]** Random seed for sampling reproducibility. Set to `null` for non-reproducible random sampling. |
 
-**Example: Enable auto-induced exposure analysis**
+**Example: Enable auto-induced exposure with air-based search**
+```json
+{
+    "auto_induced": {
+        "enabled": true,
+        "top_n": 30,
+        "cube_size_mm": 50,
+        "search": {
+            "mode": "air",
+            "n_samples": 0.01,
+            "shell_size_mm": 25,
+            "selection_percentile": 95.0,
+            "min_candidate_distance_mm": 50.0,
+            "random_seed": 42
+        }
+    }
+}
+```
+
+**Example: Legacy skin-based search (for comparison)**
 ```json
 {
     "auto_induced": {
         "enabled": true,
         "top_n": 10,
         "cube_size_mm": 100,
-        "search_metric": "E_magnitude"
+        "search_metric": "E_z_magnitude",
+        "search": {
+            "mode": "skin"
+        }
     }
 }
 ```
 
 **Important notes:**
 
+- **Physical correctness**: The `"air"` mode models how MaMIMO beamforming actually works (beam focused in air, illuminating body). The `"skin"` mode is legacy and physically incorrect.
 - **Symmetry reduction incompatibility**: Do not use `phantom_bbox_reduction.use_symmetry_reduction: true` with auto-induced exposure. Symmetry reduction cuts the bounding box at x=0, keeping only one half of the body - you'd miss half the skin surface and cannot find the true worst-case focus point.
 - **Results location**: Auto-induced results are saved to `results/far_field/{phantom}/{freq}MHz/auto_induced/auto_induced_summary.json`.
 - **Caching**: The analysis is skipped if the summary file exists and is newer than all `_Output.h5` files.
+- **Performance**: Air-based search with `n_samples=100` typically takes 5-10 minutes per (phantom, freq) pair on a modern CPU.
 
 <br>
 

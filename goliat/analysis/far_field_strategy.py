@@ -83,12 +83,15 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
                     analyzer._process_single_result(freq, "environmental", placement_name, "")
 
     def get_normalization_factor(self, frequency_mhz: int, simulated_power_w: float) -> float:
-        """Returns normalization factor for far-field (always 1.0).
+        """Returns normalization factor for far-field.
 
-        Far-field simulations are normalized to 1 W/m^2 in the simulation itself,
-        so no additional normalization is needed.
+        Far-field simulations run at E = 1 V/m (power density = 1.326 mW/m²).
+        To normalize to 1 W/m² (our "1 W" convention for comparison with near-field),
+        we scale by 754 (since SAR scales as E², and E for 1 W/m² is 27.46 V/m).
+
+        See docs/technical/power_normalization_philosophy.md for full derivation.
         """
-        return 1.0
+        return 754.0
 
     def extract_data(
         self,
@@ -109,8 +112,12 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
             "placement": placement_name,
             "scenario": scenario_name,
             "input_power_w": sim_power,
-            "SAR_whole_body": summary_results.get("whole_body_sar", pd.NA),
-            "peak_sar": summary_results.get("peak_sar_10g_W_kg", pd.NA),
+            "SAR_whole_body": summary_results.get("whole_body_sar", pd.NA) * norm_factor
+            if pd.notna(summary_results.get("whole_body_sar"))
+            else pd.NA,
+            "peak_sar": summary_results.get("peak_sar_10g_W_kg", pd.NA) * norm_factor
+            if pd.notna(summary_results.get("peak_sar_10g_W_kg"))
+            else pd.NA,
         }
 
         # Extract psSAR10g for each tissue group (brain, eyes, skin, genitals)
@@ -119,7 +126,7 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
             if isinstance(stats, dict):
                 key = f"psSAR10g_{group_name.replace('_group', '')}"
                 peak_sar = stats.get("peak_sar", pd.NA)
-                result_entry[key] = peak_sar * 1000 if pd.notna(peak_sar) else pd.NA
+                result_entry[key] = peak_sar * norm_factor * 1000 if pd.notna(peak_sar) else pd.NA
 
         # Extract power balance data if available
         power_balance = None
@@ -144,8 +151,10 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
                         "frequency_mhz": frequency_mhz,
                         "placement": placement_name,
                         "tissue": _clean_tissue_name(row["Tissue"]),  # Clean tissue name early
-                        "mass_avg_sar_mw_kg": row["Mass-Averaged SAR"] * 1000,  # Already normalized in extractor
-                        "peak_sar_10g_mw_kg": row.get(peak_sar_col, pd.NA) * 1000,  # Already normalized
+                        "mass_avg_sar_mw_kg": row["Mass-Averaged SAR"] * norm_factor * 1000,
+                        "peak_sar_10g_mw_kg": row.get(peak_sar_col, pd.NA) * norm_factor * 1000
+                        if pd.notna(row.get(peak_sar_col))
+                        else pd.NA,
                     }
                 )
         return result_entry, organ_entries

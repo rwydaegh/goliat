@@ -16,7 +16,7 @@ By the end of this guide, you will have:
 
 Before you begin, please ensure you have the following:
 
-- **Sim4Life**: Version 8.2.0 with a valid license. Download from [ZMT Zurich](https://zmt.swiss/zurich-model-of-the-human-body/) if needed. GOLIAT has only been tested on Sim4Life 8.2.0; newer versions may not work correctly.
+- **Sim4Life**: Version 8.2 or 9.2 with a valid license. Download from [ZMT Zurich](https://zmt.swiss/zurich-model-of-the-human-body/) if needed. Version 9.2 is recommended for new installations.
 - **Python**: Version 3.11. GOLIAT uses the Python distribution bundled with Sim4Life, so you typically don't need a separate Python installation.
 - **Digital Phantom Models**: GOLIAT automatically downloads phantom models (e.g., "thelonious" for a child, "eartha" for an adult) when you first run a simulation. You may be prompted to provide your email for licensing purposes.
 - **Antenna Models**: Antenna models for various frequencies are downloaded automatically as needed.
@@ -36,12 +36,12 @@ GOLIAT supports two installation methods. Choose based on your needs:
 Most users (i.e., those that just want to get simulating ASAP) should create a virtual environment with Sim4Life Python:
 
 ```bash
-C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe -m venv venv --system-site-packages
+C:\Program Files\Sim4Life_9.2.0.xxxxx\Python\python.exe -m venv venv --system-site-packages
 source venv/Scripts/activate
 python -m pip install goliat
 ```
 
-The `--system-site-packages` flag allows the venv to access Sim4Life's packages (like `s4l_v1`). You can find your Sim4Life Python interpreter in your Sim4Life installation directory (e.g., `C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe`).
+The `--system-site-packages` flag allows the venv to access Sim4Life's packages (like `s4l_v1`). You can find your Sim4Life Python interpreter in your Sim4Life installation directory (e.g., `C:\Program Files\Sim4Life_9.2.0.xxxxx\Python\python.exe`).
 
 **Note**: PyPI installation gives you the latest released version. For unreleased features or bug fixes, use editable installation.
 
@@ -53,6 +53,16 @@ goliat init
 ```
 
 This creates `configs/` and `data/` directories and downloads required models.
+
+!!! tip "Changing Sim4Life Versions"
+    GOLIAT will prompt you to select a Sim4Life version on first run. You can change this anytime:
+    
+    ```bash
+    goliat config set-version    # Interactive version picker
+    goliat config show           # View current settings
+    ```
+    
+    Your choice is saved in `data/.goliat_preferences.json`.
 
 ### Developer install (editable)
 

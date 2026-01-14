@@ -181,6 +181,18 @@ def ensure_s4l_running():
         application.run_application(disable_ui_plugins=True)
         logging.getLogger("verbose").info("Sim4Life application started.", extra={"log_type": "success"})
 
+        # S4L 9.2: Enable stdout logging for S4L internal messages
+        # This was automatic in 8.2 but needs explicit call in 9.2
+        from .version import is_sim4life_92_or_later
+
+        if is_sim4life_92_or_later():
+            try:
+                import XCore
+
+                XCore.RedirectToStdOut(True)
+            except (ImportError, AttributeError):
+                pass  # Not available
+
 
 def open_project(project_path: str):
     """Opens a Sim4Life project file, or creates a new project if missing."""

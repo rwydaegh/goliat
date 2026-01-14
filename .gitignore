@@ -13,6 +13,7 @@ __pycache__/
 
 # Build and results
 results/
+!results/analysis_plots/
 /plots/
 !plots/organ_scatter/
 paper/
@@ -33,6 +34,16 @@ data/*
 !data/itis_v5.db
 !data/detuning*.json
 !data/.goliat_pricing.json
+# Allow phantom_skins directory structure
+!data/phantom_skins/
+# Ignore large binary mesh files
+data/phantom_skins/**/*.stl
+# Ignore generated visualizations (can regenerate)
+data/phantom_skins/**/*.png
+# Ignore pickle files (numpy version issues)
+data/phantom_skins/**/*.pkl
+# Track cross-section JSON data (portable, version-agnostic)
+!data/phantom_skins/**/*.json
 
 # Logs
 logs/
@@ -40,6 +51,10 @@ commit_message.txt
 
 # Sim4Life Documentation
 PythonAPIReference/
+PythonAPIReference_8_2/
+PythonAPIReference_9_2/
+PythonAPIReference_DIFF_8_2_to_9_2/*
+!PythonAPIReference_DIFF_8_2_to_9_2/API_CHANGES_SUMMARY.md
 hybridizer/
 Sim4Life.pdf
 Sim4Life_Manual.pdf
@@ -50,6 +65,7 @@ configs/*
 !configs/base_config.json
 !configs/far_field_config.json
 !configs/far_field_sim4life_web.json
+!configs/far_field_FR3_barebones.json
 !configs/near_field_config.json
 !configs/near_field_config_no_subgrid.json
 !configs/near_field_harmonic.json

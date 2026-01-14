@@ -46,35 +46,40 @@ class QueueGUI(LoggingMixin):
     def log(self, message: str, level: str = "verbose", log_type: str = "default") -> None:
         """Sends a log message to the GUI via queue.
 
-        Only 'progress' level messages are forwarded to reduce queue traffic.
+        All messages are forwarded through the queue for terminal output (S4L 9.2 fix).
+        Progress messages update the GUI status box; verbose messages only print to terminal.
 
         Args:
             message: Log message text.
-            level: Log level (only 'progress' forwarded).
+            level: Log level ('progress' or 'verbose').
             log_type: Type for color coding in GUI.
         """
-        if level == "progress":
-            import time
+        import time
 
-            # Use monotonic time with a small increment to ensure unique timestamps
-            # even for messages sent in rapid succession
-            if not hasattr(self, "_last_timestamp"):
-                self._last_timestamp = 0.0
-            current_time = time.time()
-            # Ensure timestamp is always increasing, even if system clock jumps backward
-            if current_time <= self._last_timestamp:
-                self._last_timestamp += 0.000001  # 1 microsecond increment
-            else:
-                self._last_timestamp = current_time
+        # Use monotonic time with a small increment to ensure unique timestamps
+        # even for messages sent in rapid succession
+        if not hasattr(self, "_last_timestamp"):
+            self._last_timestamp = 0.0
+        current_time = time.time()
+        # Ensure timestamp is always increasing, even if system clock jumps backward
+        if current_time <= self._last_timestamp:
+            self._last_timestamp += 0.000001  # 1 microsecond increment
+        else:
+            self._last_timestamp = current_time
 
-            self.queue.put(
-                {
-                    "type": "status",
-                    "message": message,
-                    "log_type": log_type,
-                    "timestamp": self._last_timestamp,  # Add timestamp when message is created for proper ordering
-                }
-            )
+        # Determine message type based on level
+        # 'status' messages update GUI status box AND print to terminal
+        # 'terminal_only' messages only print to terminal (for verbose logs)
+        msg_type = "status" if level == "progress" else "terminal_only"
+
+        self.queue.put(
+            {
+                "type": msg_type,
+                "message": message,
+                "log_type": log_type,
+                "timestamp": self._last_timestamp,
+            }
+        )
 
     def update_simulation_details(self, sim_count: int, total_sims: int, details: str) -> None:
         """Sends current simulation case details to GUI.

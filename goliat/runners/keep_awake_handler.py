@@ -36,7 +36,8 @@ class KeepAwakeHandler:
             keep_awake()
         except Exception as e:
             print(f"Warning: keep_awake() failed: {e}")
-            sys.stdout.flush()
+            if sys.stdout is not None:
+                sys.stdout.flush()
 
     def trigger_on_progress(self) -> None:
         """Trigger keep_awake script on first progress update."""

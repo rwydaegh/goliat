@@ -1,6 +1,5 @@
 {
     "extends": "far_field_config.json",
-    "comment": "Test config for auto-induced exposure PoC (2450 MHz, 1.4mm resolution)",
     "phantoms": [
         "thelonious"
     ],
@@ -59,7 +58,16 @@
     "extract_sapd": false,
     "auto_induced": {
         "enabled": true,
-        "top_n": 10,
-        "cube_size_mm": 100
+        "top_n": 30,
+        "cube_size_mm": 50,
+        "save_intermediate_files": true,
+        "search": {
+            "mode": "air",
+            "n_samples": 0.01,
+            "random_seed": 42,
+            "shell_size_mm": 25,
+            "selection_percentile": 95.0,
+            "min_candidate_distance_mm": 50.0
+        }
     }
 }

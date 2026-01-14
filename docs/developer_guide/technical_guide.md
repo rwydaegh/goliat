@@ -237,7 +237,7 @@ GOLIAT groups individual tissues into logical categories (e.g., eyes, brain, ski
 
 GOLIAT extracts the power density absorbed at the skin surface for frequencies above 6 GHz. This automated workflow uses Sim4Life's `GenericSAPDEvaluator` plugin.
 
-1. Surface preparation: The system unites the Skin and Ear_skin entities (defined in the material mapping) into a single Skin_Merged_For_SAPD entity. This merged mesh is cached in data/phantoms_skin/ as a .sab file.
+1. Surface preparation: The system unites the Skin and Ear_skin entities (defined in the material mapping) into a single Skin_Merged_For_SAPD entity. This merged mesh is cached in `data/phantom_skins/` as a `.sab` file.
 2. Speed optimizations:
     - HDF5 slicing: Creates a sub-sampled H5 output file around the peak SAR location to reduce memory overhead.
     - Mesh slicing: Clips the skin mesh to a 100 mm box using 6 planar cuts.
