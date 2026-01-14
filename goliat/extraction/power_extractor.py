@@ -71,89 +71,133 @@ class PowerExtractor(LoggingMixin):
             self.verbose_logger.error(traceback.format_exc())
 
     def _extract_far_field_power(self, simulation_extractor: "analysis.Extractor"):  # type: ignore
-        """Calculates theoretical input power for a plane wave excitation.
+        """Calculates input power for a plane wave using phantom cross-section.
 
         Far-field simulations use plane waves with a fixed E-field amplitude (1 V/m).
-        This method calculates the total power incident on the simulation volume based
-        on the power density and the cross-sectional area perpendicular to the wave
-        direction.
+        This method calculates the power intercepted by the phantom based on the
+        power density and the phantom's projected cross-sectional area for the
+        given direction of incidence.
 
         The calculation:
-        1. Gets simulation bounding box dimensions (including padding)
-        2. Determines which plane (XY, XZ, or YZ) is perpendicular to wave direction
-        3. Calculates power density: P = E²/(2×Z₀) where Z₀ = 377Ω (free space impedance)
-        4. Multiplies power density by cross-sectional area to get total power
+        1. Loads pre-computed phantom cross-section data from data/phantom_skins/
+        2. Converts incident direction to (theta, phi) angles
+        3. Looks up the cross-sectional area for that direction
+        4. Calculates power: P = S × A_phantom where S = E²/(2×Z₀)
 
-        For example, if wave travels in +X direction, it's incident on the YZ plane,
-        so area = height × depth. The result gives the total power that would be
-        incident on that plane, which is used for SAR normalization.
+        This gives a physically meaningful "input power" for power balance
+        calculations, representing the actual power intercepted by the body.
 
-        The calculated power is stored in results_data and used later for normalizing
-        SAR values to a standard reference power level.
-
-        Also attempts to extract power from s4l for comparison with theoretical value.
+        See docs/technical/power_normalization_philosophy.md for full discussion.
 
         Args:
             simulation_extractor: Results extractor from the simulation.
         """
+        import os
+        import pickle
+
         self._log(
-            "  - Far-field study: using theoretical model for input power.",
+            "  - Far-field study: calculating input power from phantom cross-section.",
             log_type="info",
         )
-        import s4l_v1.model
 
-        # Calculate theoretical power
-        try:
-            bbox_entity = next(
-                (e for e in s4l_v1.model.AllEntities() if hasattr(e, "Name") and e.Name == "far_field_simulation_bbox"),
-                None,
-            )
-            if not bbox_entity:
-                raise RuntimeError("Could not find 'far_field_simulation_bbox' entity in the project.")
-            sim_bbox = s4l_v1.model.GetBoundingBox([bbox_entity])
-        except RuntimeError as e:
+        # Power density at E = 1 V/m
+        e_field_v_m, z0 = 1.0, 377.0
+        power_density_w_m2 = (e_field_v_m**2) / (2 * z0)
+
+        # Get direction from position_name (e.g., 'environmental_x_pos_theta' -> 'x_pos')
+        direction = self.parent.position_name
+        # Extract just the direction part (e.g., 'x_pos' from 'environmental_x_pos_theta')
+        direction_part = direction.replace("environmental_", "").rsplit("_", 1)[0]
+
+        # Convert direction to (theta, phi) in radians
+        # Standard orthogonal directions
+        orthogonal_map = {
+            "x_pos": (np.pi / 2, 0),  # θ=90°, φ=0° (front)
+            "x_neg": (np.pi / 2, np.pi),  # θ=90°, φ=180° (back)
+            "y_pos": (np.pi / 2, np.pi / 2),  # θ=90°, φ=90° (left)
+            "y_neg": (np.pi / 2, 3 * np.pi / 2),  # θ=90°, φ=270° (right)
+            "z_pos": (0, 0),  # θ=0° (top)
+            "z_neg": (np.pi, 0),  # θ=180° (bottom)
+        }
+
+        if direction_part in orthogonal_map:
+            theta_rad, phi_rad = orthogonal_map[direction_part]
+        else:
+            # Spherical tessellation format: "theta_phi" in degrees
+            try:
+                parts = direction_part.split("_")
+                theta_rad = np.deg2rad(float(parts[0]))
+                phi_rad = np.deg2rad(float(parts[1]))
+            except (ValueError, IndexError):
+                self._log(
+                    f"  - WARNING: Could not parse direction '{direction_part}', using mean cross-section.",
+                    log_type="warning",
+                )
+                theta_rad, phi_rad = None, None
+
+        # Load phantom cross-section data
+        phantom_name = str(self.config["phantom_name"] or self.parent.phantom_name)
+        cross_section_path = os.path.join(str(self.config.base_dir), "data", "phantom_skins", phantom_name, "cross_section_pattern.pkl")
+
+        area_m2 = None
+        if os.path.exists(cross_section_path):
+            try:
+                with open(cross_section_path, "rb") as f:
+                    cs_data = pickle.load(f)
+
+                if theta_rad is not None and phi_rad is not None:
+                    # Find nearest grid point
+                    theta_grid = cs_data["theta"]  # (n_theta, n_phi)
+                    phi_grid = cs_data["phi"]
+                    areas = cs_data["areas"]
+
+                    # Normalize phi to [0, 2π]
+                    phi_rad = phi_rad % (2 * np.pi)
+
+                    # Find closest indices
+                    theta_vals = theta_grid[:, 0]  # Unique theta values
+                    phi_vals = phi_grid[0, :]  # Unique phi values
+                    i_theta = np.argmin(np.abs(theta_vals - theta_rad))
+                    i_phi = np.argmin(np.abs(phi_vals - phi_rad))
+
+                    area_m2 = areas[i_theta, i_phi]
+                    self._log(
+                        f"  - Phantom cross-section at θ={np.degrees(theta_rad):.1f}°, φ={np.degrees(phi_rad):.1f}°: {area_m2:.4f} m²",
+                        log_type="verbose",
+                    )
+                else:
+                    # Use mean cross-section as fallback
+                    area_m2 = cs_data["stats"]["mean"]
+                    self._log(
+                        f"  - Using mean phantom cross-section: {area_m2:.4f} m²",
+                        log_type="verbose",
+                    )
+            except Exception as e:
+                self._log(
+                    f"  - WARNING: Could not load cross-section data: {e}",
+                    log_type="warning",
+                )
+
+        if area_m2 is None:
+            # Fallback to typical adult frontal area
+            area_m2 = 0.5
             self._log(
-                f"  - WARNING: Could not calculate theoretical input power. {e}",
+                f"  - WARNING: Using fallback cross-section: {area_m2} m²",
                 log_type="warning",
             )
-            theoretical_power = None
-        else:
-            # sim_bbox is a list of two points: [min_corner, max_corner]
-            sim_min, sim_max = np.array(sim_bbox[0]), np.array(sim_bbox[1])
-            padding_bottom = np.array(self.config["gridding_parameters.padding.manual_bottom_padding_mm"] or [0, 0, 0])
-            padding_top = np.array(self.config["gridding_parameters.padding.manual_top_padding_mm"] or [0, 0, 0])
-            total_min = sim_min - padding_bottom
-            total_max = sim_max + padding_top
 
-            e_field_v_m, z0 = 1.0, 377.0
-            power_density_w_m2 = (e_field_v_m**2) / (2 * z0)
-
-            # Get direction from position_name (for far-field: position_name = direction like 'x_pos')
-            # orientation_name contains polarization (theta/phi), not direction
-            direction = self.parent.position_name
-            dims = total_max - total_min  # This is a 3-element array [dx, dy, dz]
-
-            if "x" in direction:
-                # Area of the YZ plane
-                area_m2 = (dims[1] * dims[2]) / 1e6
-            elif "y" in direction:
-                # Area of the XZ plane
-                area_m2 = (dims[0] * dims[2]) / 1e6
-            else:  # Default to z-direction
-                # Area of the XY plane
-                area_m2 = (dims[0] * dims[1]) / 1e6
-
-            theoretical_power = power_density_w_m2 * area_m2
-            self.results_data.update(
-                {
-                    "input_power_W": float(theoretical_power),
-                    "input_power_frequency_MHz": float(self.frequency_mhz),  # type: ignore
-                }
-            )
-            self._log(
-                f"  - THEORETICAL input power: {float(theoretical_power):.4e} W",
-                log_type="info",
-            )
+        theoretical_power = power_density_w_m2 * area_m2
+        self.results_data.update(
+            {
+                "input_power_W": float(theoretical_power),
+                "input_power_frequency_MHz": float(self.frequency_mhz),  # type: ignore
+                "phantom_cross_section_m2": float(area_m2),
+            }
+        )
+        self._log(
+            f"  - Input power (at 1 V/m): {float(theoretical_power):.4e} W (cross-section: {area_m2:.4f} m²)",
+            log_type="info",
+        )
 
         # NOTE: Manual power extraction from S4L is disabled.
         # The "EM Input Power(f)" output is not available for far-field plane wave simulations
