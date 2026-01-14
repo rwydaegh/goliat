@@ -58,15 +58,19 @@ This document provides a complete reference of every feature available in GOLIAT
 - Create transfer functions between E-field values and absorption values
 - Support for environmental exposure scenarios
 - Auto-induced exposure mode: Simulate worst-case MaMIMO beamforming by combining environmental results with optimal phase weights
+- Air-based focus search: Searches for beam focus points in air near the body surface (physically correct model of MaMIMO beamforming)
+- Shell-based validity: Only air points within configurable distance (`shell_size_mm`) from skin surface are considered
+- Hotspot scoring: Ranks focus candidates by mean |E_combined|² over nearby skin voxels (proxy for SAPD)
+- Percentile-based selection: Candidates selected from top percentile (`selection_percentile`) of scored points
+- Diversity constraint: Minimum distance between candidates (`min_candidate_distance_mm`) ensures body-wide coverage
 - Phase-only weighting with equal amplitudes (1/√N normalization) for realistic base station modeling
-- Efficient worst-case focus search: O(N) algorithm finds skin voxel where Σ|E_i| is maximum
-- Skin voxel extraction from `_Input.h5` reduces search space ~100× (88k skin voxels vs 8M total)
+- Legacy skin-based search mode available for comparison (`search.mode: "skin"`)
 - Top-N candidate evaluation: Evaluate multiple focus candidates and report worst-case SAPD
-- Configurable search metric: `E_magnitude`, `E_z_magnitude`, or `poynting_z`
-- Sliced field combination: Only combine fields in 100mm cube around focus point for speed
+- Sliced field combination: Only combine fields in configurable cube around focus point for speed
 - Mesh slicing via PlanarCut operations for fast SAPD computation on localized skin region
 - Automatic SAPD extraction using existing IEC-compliant `SapdExtractor` infrastructure
 - Integrated post-processing: Auto-induced runs automatically after all environmental sims complete for each (phantom, frequency) pair
+- CSV export of all proxy scores and proxy-SAPD correlation data for analysis
 - Caching: Skip auto-induced if `auto_induced_summary.json` exists and is newer than all `_Output.h5` files
 - Spherical tessellation support: Generate arbitrary number of incident directions via `theta_divisions` and `phi_divisions`
 - Multi-sine excitation: Simulate multiple frequencies in a single run using `"700+2450"` config syntax
