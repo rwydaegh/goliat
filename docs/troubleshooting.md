@@ -104,6 +104,9 @@ This section addresses common issues encountered when using GOLIAT. Issues are g
   3. Check `logs/*.log` for solver errors (e.g., grid too fine).
   4. Ensure `manual_isolve: true` in config.
 
+!!! note "Blackwell GPUs (RTX 5090, B100)"
+    Sim4Life 9.2.1.19976 does not support aXware on Blackwell cards. Use CUDA kernel instead.
+
 ### Parallel execution limitations
 
 - **Symptom**: Running `goliat parallel` with multiple splits, but simulations take as long as sequential runs.

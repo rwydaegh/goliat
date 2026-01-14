@@ -31,6 +31,9 @@ if is_sim4life_92_or_later():
 ### NOT Supported
 - **9.0.x**: Internal/beta release, explicitly excluded
 
+### Hardware Note: Blackwell GPUs
+- **RTX 5090, B100, etc.**: On Sim4Life 9.2.1.19976, aXware is not supported on Blackwell architecture GPUs. Only the CUDA solver is available.
+
 ---
 
 ## 2. Code Updates Completed ✓

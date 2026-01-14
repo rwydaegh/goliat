@@ -361,23 +361,7 @@ class SarExtractor(LoggingMixin):
             em_sensor_extractor: The 'Overall Field' results extractor containing
                                the SAR field data.
         """
-        from ..utils import is_sim4life_92_or_later
-
         self._log("  - Extracting peak SAR details...", log_type="progress")
-
-        if is_sim4life_92_or_later():
-            # Sim4Life 9.2+: Use MinMaxEvaluator for more reliable location extraction
-            self._extract_peak_sar_details_92(em_sensor_extractor)
-        else:
-            # Sim4Life 8.2: Use the original DataSimpleDataCollection method
-            self._extract_peak_sar_details_82(em_sensor_extractor)
-
-    def _extract_peak_sar_details_82(self, em_sensor_extractor: "analysis.Extractor") -> None:  # type: ignore
-        """Extract peak SAR details using the 8.2 DataSimpleDataCollection method.
-
-        Args:
-            em_sensor_extractor: The 'Overall Field' results extractor.
-        """
         try:
             inputs = [em_sensor_extractor.Outputs["SAR(x,y,z,f0)"]]
             average_sar_field_evaluator = self.analysis.em_evaluators.AverageSarFieldEvaluator(inputs=inputs)
@@ -391,7 +375,23 @@ class SarExtractor(LoggingMixin):
 
             data_collection = peak_sar_output.Data.DataSimpleDataCollection  # type: ignore
             if data_collection:
-                self.results_data["peak_sar_details"] = {key: data_collection.FieldValue(key, 0) for key in data_collection.Keys()}
+                # Extract values, filtering out None (which can occur in Sim4Life 9.2+)
+                peak_sar_details = {}
+                for key in data_collection.Keys():
+                    try:
+                        value = data_collection.FieldValue(key, 0)
+                        if value is not None:
+                            peak_sar_details[key] = value
+                    except Exception:
+                        pass  # Skip keys that fail to extract
+
+                if peak_sar_details:
+                    self.results_data["peak_sar_details"] = peak_sar_details
+                else:
+                    self._log(
+                        "  - WARNING: Peak SAR data collection was empty after filtering None values.",
+                        log_type="warning",
+                    )
             else:
                 self._log(
                     "  - WARNING: Could not extract peak SAR details.",
@@ -403,106 +403,6 @@ class SarExtractor(LoggingMixin):
         except Exception as e:
             self._log(
                 f"  - ERROR: An exception occurred during peak SAR detail extraction: {e}",
-                log_type="error",
-            )
-            self.verbose_logger.error(traceback.format_exc())
-
-    def _extract_peak_sar_details_92(self, em_sensor_extractor: "analysis.Extractor") -> None:  # type: ignore
-        """Extract peak SAR details using MinMaxEvaluator for Sim4Life 9.2+.
-
-        In Sim4Life 9.2, the DataSimpleDataCollection.FieldValue() method can return
-        null values causing json.exception.type_error.305 errors. This method uses
-        MinMaxEvaluator to directly find the peak SAR location from the field data.
-
-        Args:
-            em_sensor_extractor: The 'Overall Field' results extractor.
-        """
-        try:
-            # Use MinMaxEvaluator to find the max SAR location directly
-            sar_output = em_sensor_extractor.Outputs["SAR(x,y,z,f0)"]
-            minmax_evaluator = self.analysis.core.MinMaxEvaluator(inputs=[sar_output])
-            minmax_evaluator.UpdateAttributes()
-            self.document.AllAlgorithms.Add(minmax_evaluator)
-            minmax_evaluator.Update()
-
-            location = None
-            peak_sar_value = None
-
-            # Try to get max center (location of peak)
-            max_center_output = minmax_evaluator.Outputs.get("Max Center")
-            if max_center_output:
-                max_center_output.Update()
-                data = max_center_output.Data
-                if data:
-                    data_collection = getattr(data, "DataSimpleDataCollection", None)
-                    if data_collection:
-                        for key in data_collection.Keys():
-                            try:
-                                value = data_collection.FieldValue(key, 0)
-                                if value is not None and hasattr(value, "__len__") and len(value) == 3:
-                                    location = list(value)
-                                    break
-                            except Exception:
-                                continue
-
-            # Try to get max value
-            max_output = minmax_evaluator.Outputs.get("Max")
-            if max_output:
-                max_output.Update()
-                data = max_output.Data
-                if data:
-                    data_collection = getattr(data, "DataSimpleDataCollection", None)
-                    if data_collection:
-                        for key in data_collection.Keys():
-                            try:
-                                value = data_collection.FieldValue(key, 0)
-                                if value is not None:
-                                    peak_sar_value = float(value)
-                                    break
-                            except Exception:
-                                continue
-
-            # Fallback: Try to get location from Max Index + Grid
-            if not location:
-                max_index_output = minmax_evaluator.Outputs.get("Max Index")
-                if max_index_output:
-                    max_index_output.Update()
-                    sar_output.Update()
-                    sar_data = sar_output.Data
-                    if hasattr(sar_data, "Grid"):
-                        grid = sar_data.Grid
-                        max_idx_data = max_index_output.Data
-                        if max_idx_data and hasattr(max_idx_data, "DataSimpleDataCollection"):
-                            idx_collection = max_idx_data.DataSimpleDataCollection
-                            if idx_collection:
-                                for key in idx_collection.Keys():
-                                    try:
-                                        idx_value = idx_collection.FieldValue(key, 0)
-                                        if idx_value is not None:
-                                            cell_center = grid.GetCellCenter(int(idx_value))
-                                            location = [float(cell_center[0]), float(cell_center[1]), float(cell_center[2])]
-                                            break
-                                    except Exception:
-                                        continue
-
-            # Build peak_sar_details dict
-            if location:
-                peak_sar_details: dict[str, list[float] | float] = {"PeakLocation": location}
-                if peak_sar_value is not None:
-                    peak_sar_details["psSAR_10g"] = peak_sar_value
-                self.results_data["peak_sar_details"] = peak_sar_details
-                self._log(f"  - Peak SAR location (9.2 method): {location}", log_type="info")
-            else:
-                self._log(
-                    "  - WARNING: Could not extract peak SAR location in Sim4Life 9.2.",
-                    log_type="warning",
-                )
-
-            self.document.AllAlgorithms.Remove(minmax_evaluator)
-
-        except Exception as e:
-            self._log(
-                f"  - ERROR: Peak SAR extraction failed (9.2 method): {e}",
                 log_type="error",
             )
             self.verbose_logger.error(traceback.format_exc())
