@@ -71,21 +71,21 @@ class PowerExtractor(LoggingMixin):
             self.verbose_logger.error(traceback.format_exc())
 
     def _extract_far_field_power(self, simulation_extractor: "analysis.Extractor"):  # type: ignore
-        """Calculates input power for a plane wave using phantom cross-section.
+        """Calculates input power for a plane wave using configurable method.
 
         Far-field simulations use plane waves with a fixed E-field amplitude (1 V/m).
-        This method calculates the power intercepted by the phantom based on the
-        power density and the phantom's projected cross-sectional area for the
-        given direction of incidence.
+        This method supports two approaches for defining "input power" for power balance:
 
-        The calculation:
-        1. Loads pre-computed phantom cross-section data from data/phantom_skins/
-        2. Converts incident direction to (theta, phi) angles
-        3. Looks up the cross-sectional area for that direction
-        4. Calculates power: P = S × A_phantom where S = E²/(2×Z₀)
+        1. "bounding_box" (default): Uses the projected area of the simulation bounding box
+           as seen from the incident direction. This is consistent with Sim4Life's RadPower
+           output, which includes all power flux through the boundaries (not just scattered).
+           Gives ~100% power balance but the metric depends on simulation domain size.
 
-        This gives a physically meaningful "input power" for power balance
-        calculations, representing the actual power intercepted by the body.
+        2. "phantom_cross_section": Uses the phantom's projected cross-sectional area.
+           Represents actual power intercepted by the body, but gives >100% balance because
+           RadPower includes power that bypassed the phantom entirely.
+
+        The method is configured via config["power_balance.input_method"].
 
         See docs/technical/power_normalization_philosophy.md for full discussion.
 
@@ -94,8 +94,10 @@ class PowerExtractor(LoggingMixin):
         """
         import os
 
+        # Determine which method to use
+        input_method = self.config["power_balance.input_method"] or "bounding_box"
         self._log(
-            "  - Far-field study: calculating input power from phantom cross-section.",
+            f"  - Far-field study: calculating input power using '{input_method}' method.",
             log_type="info",
         )
 
@@ -103,14 +105,10 @@ class PowerExtractor(LoggingMixin):
         e_field_v_m, z0 = 1.0, 377.0
         power_density_w_m2 = (e_field_v_m**2) / (2 * z0)
 
-        # Get direction from position_name
-        # Format can be: 'environmental_x_pos_theta', 'x_pos_theta', 'x_pos', etc.
-        direction = self.parent.position_name
-        # Remove 'environmental_' prefix if present
-        direction = direction.replace("environmental_", "")
+        # Parse direction from position_name
+        direction = self.parent.position_name.replace("environmental_", "")
 
         # Extract direction part by checking for known patterns
-        # Try to match orthogonal directions first
         direction_part = None
         for candidate in ["x_pos", "x_neg", "y_pos", "y_neg", "z_pos", "z_neg"]:
             if direction.startswith(candidate):
@@ -119,148 +117,175 @@ class PowerExtractor(LoggingMixin):
 
         # If no orthogonal match, assume spherical format (e.g., "45_90")
         if direction_part is None:
-            # Remove trailing polarization suffix if present (e.g., "45_90_theta" -> "45_90")
             direction_part = direction.rsplit("_", 1)[0] if "_" in direction else direction
 
         # Convert direction to (theta, phi) in radians
-        # Standard orthogonal directions
         orthogonal_map = {
-            "x_pos": (np.pi / 2, 0),  # θ=90°, φ=0° (front)
-            "x_neg": (np.pi / 2, np.pi),  # θ=90°, φ=180° (back)
-            "y_pos": (np.pi / 2, np.pi / 2),  # θ=90°, φ=90° (left)
-            "y_neg": (np.pi / 2, 3 * np.pi / 2),  # θ=90°, φ=270° (right)
-            "z_pos": (0, 0),  # θ=0° (top)
-            "z_neg": (np.pi, 0),  # θ=180° (bottom)
+            "x_pos": (np.pi / 2, 0),
+            "x_neg": (np.pi / 2, np.pi),
+            "y_pos": (np.pi / 2, np.pi / 2),
+            "y_neg": (np.pi / 2, 3 * np.pi / 2),
+            "z_pos": (0, 0),
+            "z_neg": (np.pi, 0),
         }
 
         if direction_part in orthogonal_map:
             theta_rad, phi_rad = orthogonal_map[direction_part]
         else:
-            # Spherical tessellation format: "theta_phi" in degrees
             try:
                 parts = direction_part.split("_")
                 theta_rad = np.deg2rad(float(parts[0]))
                 phi_rad = np.deg2rad(float(parts[1]))
             except (ValueError, IndexError):
                 self._log(
-                    f"  - WARNING: Could not parse direction '{direction_part}', using mean cross-section.",
+                    f"  - WARNING: Could not parse direction '{direction_part}'.",
                     log_type="warning",
                 )
-                theta_rad, phi_rad = None, None
+                theta_rad, phi_rad = np.pi / 2, 0  # Default to x_pos
 
-        # Load phantom cross-section data (JSON format for numpy version compatibility)
-        phantom_name = str(self.config["phantom_name"] or self.parent.phantom_name)
-        cross_section_path = os.path.join(str(self.config.base_dir), "data", "phantom_skins", phantom_name, "cross_section_pattern.json")
-
-        area_m2 = None
-        if os.path.exists(cross_section_path):
-            try:
-                import json
-
-                with open(cross_section_path) as f:
-                    cs_data = json.load(f)
-
-                if theta_rad is not None and phi_rad is not None:
-                    # Convert lists to numpy arrays for indexing
-                    theta_grid = np.array(cs_data["theta"])  # (n_theta, n_phi)
-                    phi_grid = np.array(cs_data["phi"])
-                    areas = np.array(cs_data["areas"])
-
-                    # Normalize phi to [0, 2π]
-                    phi_rad = phi_rad % (2 * np.pi)
-
-                    # Find closest indices
-                    theta_vals = theta_grid[:, 0]  # Unique theta values
-                    phi_vals = phi_grid[0, :]  # Unique phi values
-                    i_theta = int(np.argmin(np.abs(theta_vals - theta_rad)))
-                    i_phi = int(np.argmin(np.abs(phi_vals - phi_rad)))
-
-                    area_m2 = float(areas[i_theta, i_phi])
-                    self._log(
-                        f"  - Phantom cross-section at theta={np.degrees(theta_rad):.1f} deg, phi={np.degrees(phi_rad):.1f} deg: {area_m2:.4f} m2",
-                        log_type="verbose",
-                    )
-                else:
-                    # Use mean cross-section as fallback
-                    area_m2 = float(cs_data["stats"]["mean"])
-                    self._log(
-                        f"  - Using mean phantom cross-section: {area_m2:.4f} m²",
-                        log_type="verbose",
-                    )
-            except Exception as e:
-                self._log(
-                    f"  - WARNING: Could not load cross-section data: {e}",
-                    log_type="warning",
-                )
-
-        if area_m2 is None:
-            # Fallback to typical adult frontal area
-            area_m2 = 0.5
-            self._log(
-                f"  - WARNING: Using fallback cross-section: {area_m2} m²",
-                log_type="warning",
-            )
+        # Calculate area based on selected method
+        if input_method == "bounding_box":
+            area_m2, area_source = self._calculate_bbox_cross_section(theta_rad, phi_rad, direction_part)
+        else:  # phantom_cross_section
+            area_m2, area_source = self._calculate_phantom_cross_section(theta_rad, phi_rad, os)
 
         theoretical_power = power_density_w_m2 * area_m2
         self.results_data.update(
             {
                 "input_power_W": float(theoretical_power),
                 "input_power_frequency_MHz": float(self.frequency_mhz),  # type: ignore
-                "phantom_cross_section_m2": float(area_m2),
+                "power_balance_input_method": input_method,
+                "cross_section_m2": float(area_m2),
+                "cross_section_source": area_source,
             }
         )
         self._log(
-            f"  - Input power (at 1 V/m): {float(theoretical_power):.4e} W (cross-section: {area_m2:.4f} m²)",
+            f"  - Input power (at 1 V/m): {float(theoretical_power):.4e} W ({area_source}: {area_m2:.4f} m2)",
             log_type="info",
         )
 
-        # NOTE: Manual power extraction from S4L is disabled.
-        # The "EM Input Power(f)" output is not available for far-field plane wave simulations
-        # in either Sim4Life 8.2 or 9.2. See docs/technical/power_normalization_philosophy.md
-        # for discussion of far-field power normalization.
-        #
-        # # Extract power from s4l for comparison
-        # manual_power = None
-        # try:
-        #     em_sensor_extractor = simulation_extractor["Overall Field"]
-        #     self.document.AllAlgorithms.Add(em_sensor_extractor)
-        #     em_sensor_extractor.Update()
-        #
-        #     input_power_output = em_sensor_extractor.Outputs["EM Input Power(f)"]
-        #
-        #     if input_power_output:
-        #         input_power_output.Update()
-        #         power_data = input_power_output.Data.GetComponent(0)
-        #
-        #         if power_data is not None and power_data.size > 0:
-        #             if power_data.size == 1:
-        #                 manual_power = power_data.item()
-        #             else:
-        #                 center_freq_hz = self.frequency_mhz * 1e6  # type: ignore
-        #                 axis = input_power_output.Data.Axis
-        #                 target_index = np.argmin(np.abs(axis - center_freq_hz))
-        #                 manual_power = power_data[target_index]
-        #
-        #             self._log(
-        #                 f"  - MANUAL input power (from s4l): {float(manual_power):.4e} W",
-        #                 log_type="info",
-        #             )
-        #         else:
-        #             self._log(
-        #                 "  - WARNING: Could not extract manual input power from s4l (empty data).",
-        #                 log_type="warning",
-        #             )
-        #     else:
-        #         self._log(
-        #             "  - WARNING: 'EM Input Power(f)' output not available from Overall Field sensor.",
-        #             log_type="warning",
-        #         )
-        # except Exception as e:
-        #     self._log(
-        #         f"  - WARNING: Could not extract manual input power from s4l: {e}",
-        #         log_type="warning",
-        #     )
-        #     self.verbose_logger.error(traceback.format_exc())
+    def _calculate_bbox_cross_section(self, theta_rad: float, phi_rad: float, direction_part: str) -> tuple[float, str]:
+        """Calculates the projected cross-sectional area of the bounding box.
+
+        For orthogonal directions, this is simply the area of the corresponding face.
+        For non-orthogonal directions (spherical tessellation), computes the projected
+        area of the axis-aligned bbox onto a plane perpendicular to the incident direction.
+
+        Args:
+            theta_rad: Polar angle in radians (0 = +z, pi = -z).
+            phi_rad: Azimuthal angle in radians (0 = +x, pi/2 = +y).
+            direction_part: Direction string (e.g., "x_pos", "45_90").
+
+        Returns:
+            Tuple of (area in m², description string).
+        """
+        import s4l_v1.model
+
+        try:
+            bbox_entity = next(
+                (e for e in s4l_v1.model.AllEntities() if hasattr(e, "Name") and e.Name == "far_field_simulation_bbox"),
+                None,
+            )
+            if not bbox_entity:
+                raise RuntimeError("Could not find 'far_field_simulation_bbox' entity.")
+            sim_bbox = s4l_v1.model.GetBoundingBox([bbox_entity])
+        except RuntimeError as e:
+            self._log(f"  - WARNING: Could not get bbox: {e}. Using fallback.", log_type="warning")
+            return 0.5, "fallback"
+
+        sim_min, sim_max = np.array(sim_bbox[0]), np.array(sim_bbox[1])
+        padding_bottom = np.array(self.config["gridding_parameters.padding.manual_bottom_padding_mm"] or [0, 0, 0])
+        padding_top = np.array(self.config["gridding_parameters.padding.manual_top_padding_mm"] or [0, 0, 0])
+        total_min = sim_min - padding_bottom
+        total_max = sim_max + padding_top
+        dims_mm = total_max - total_min  # [dx, dy, dz] in mm
+
+        # Face areas in m² (dims are in mm)
+        A_yz = (dims_mm[1] * dims_mm[2]) / 1e6  # x-facing
+        A_xz = (dims_mm[0] * dims_mm[2]) / 1e6  # y-facing
+        A_xy = (dims_mm[0] * dims_mm[1]) / 1e6  # z-facing
+
+        # Orthogonal directions: use the perpendicular face directly
+        orthogonal_areas = {
+            "x_pos": A_yz,
+            "x_neg": A_yz,
+            "y_pos": A_xz,
+            "y_neg": A_xz,
+            "z_pos": A_xy,
+            "z_neg": A_xy,
+        }
+
+        if direction_part in orthogonal_areas:
+            area_m2 = orthogonal_areas[direction_part]
+            self._log(f"  - Bbox cross-section ({direction_part}): {area_m2:.4f} m2", log_type="verbose")
+            return area_m2, f"bbox_{direction_part}"
+
+        # Non-orthogonal: compute projected area
+        # Incident direction unit vector (where wave comes FROM, pointing toward origin)
+        # In spherical coords: n = (sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta))
+        n_x = np.sin(theta_rad) * np.cos(phi_rad)
+        n_y = np.sin(theta_rad) * np.sin(phi_rad)
+        n_z = np.cos(theta_rad)
+
+        # Projected area = |n·x̂|*A_yz + |n·ŷ|*A_xz + |n·ẑ|*A_xy
+        area_m2 = abs(n_x) * A_yz + abs(n_y) * A_xz + abs(n_z) * A_xy
+        self._log(
+            f"  - Bbox projected cross-section (theta={np.degrees(theta_rad):.1f} deg, phi={np.degrees(phi_rad):.1f} deg): {area_m2:.4f} m2",
+            log_type="verbose",
+        )
+        return area_m2, f"bbox_projected_{direction_part}"
+
+    def _calculate_phantom_cross_section(self, theta_rad: float, phi_rad: float, os_module) -> tuple[float, str]:
+        """Calculates the phantom's projected cross-sectional area for the direction.
+
+        Loads pre-computed cross-section pattern from data/phantom_skins/.
+
+        Args:
+            theta_rad: Polar angle in radians.
+            phi_rad: Azimuthal angle in radians.
+            os_module: The os module (passed to avoid reimport).
+
+        Returns:
+            Tuple of (area in m², description string).
+        """
+        import json
+
+        phantom_name = str(self.config["phantom_name"] or self.parent.phantom_name)
+        cross_section_path = os_module.path.join(
+            str(self.config.base_dir), "data", "phantom_skins", phantom_name, "cross_section_pattern.json"
+        )
+
+        if not os_module.path.exists(cross_section_path):
+            self._log(f"  - WARNING: Cross-section data not found at {cross_section_path}", log_type="warning")
+            return 0.5, "phantom_fallback"
+
+        try:
+            with open(cross_section_path) as f:
+                cs_data = json.load(f)
+
+            theta_grid = np.array(cs_data["theta"])
+            phi_grid = np.array(cs_data["phi"])
+            areas = np.array(cs_data["areas"])
+
+            # Normalize phi to [0, 2π]
+            phi_rad_norm = phi_rad % (2 * np.pi)
+
+            # Find closest indices
+            theta_vals = theta_grid[:, 0]
+            phi_vals = phi_grid[0, :]
+            i_theta = int(np.argmin(np.abs(theta_vals - theta_rad)))
+            i_phi = int(np.argmin(np.abs(phi_vals - phi_rad_norm)))
+
+            area_m2 = float(areas[i_theta, i_phi])
+            self._log(
+                f"  - Phantom cross-section ({phantom_name}) at theta={np.degrees(theta_rad):.1f} deg, "
+                f"phi={np.degrees(phi_rad_norm):.1f} deg: {area_m2:.4f} m2",
+                log_type="verbose",
+            )
+            return area_m2, f"phantom_{phantom_name}"
+        except Exception as e:
+            self._log(f"  - WARNING: Could not load cross-section data: {e}", log_type="warning")
+            return 0.5, "phantom_fallback"
 
     def _extract_near_field_power(self, simulation_extractor: "analysis.Extractor"):  # type: ignore
         """Extracts input power from port sensor for near-field simulations.

@@ -108,21 +108,75 @@ This data is stored in `data/phantom_skins/{phantom}/cross_section_pattern.pkl`.
 
 Power balance = (P_absorbed + P_radiated) / P_input × 100%
 
-For near-field, P_input is unambiguous (power to antenna). For far-field, there's no discrete "input."
+For near-field, P_input is unambiguous (power to antenna). For far-field, there's no discrete "input" — the plane wave extends infinitely.
 
-### Current Implementation
+### Understanding Sim4Life's RadPower
 
-We now use **phantom cross-section** for P_input, giving physically meaningful power balance:
+When Sim4Life reports `RadPower` in the power balance, it computes the **total Poynting flux through the simulation boundaries**. For a plane wave incident on a phantom:
 
-$$P_{\text{input}}(\theta, \phi) = S \times A_{\text{phantom}}(\theta, \phi)$$
+- Power enters through one face of the bounding box
+- Some power is absorbed by the phantom → `DielLoss`
+- The remaining power exits through all faces → `RadPower`
 
-The extraction code (`power_extractor.py`):
-1. Loads pre-computed cross-section data from `data/phantom_skins/{phantom}/cross_section_pattern.pkl`
-2. Looks up the cross-sectional area for the incident direction
-3. Computes input power as power density × phantom area
-4. Reports both `input_power_W` and `phantom_cross_section_m2` in results
+Crucially, `RadPower` includes both:
+1. **Scattered power**: Power redirected by the phantom
+2. **Transmitted power**: The portion of the plane wave that missed the phantom and passed straight through
 
-This gives **true absorption efficiency**: what fraction of power intercepted by the phantom is actually absorbed.
+This is why `RadPower` is closely related to the bounding box size, not just the phantom.
+
+---
+
+### Two Approaches for P_input
+
+GOLIAT supports two configurable methods for defining "input power" in far-field power balance. Configure via:
+
+```json
+{
+    "power_balance": {
+        "input_method": "bounding_box"  // or "phantom_cross_section"
+    }
+}
+```
+
+#### 1. Bounding Box Method (Default)
+
+$$P_{\text{input}} = S \times A_{\text{bbox}}(\theta, \phi)$$
+
+Uses the projected cross-sectional area of the simulation bounding box as seen from the incident direction.
+
+**Advantages:**
+- **Consistent with Sim4Life**: `RadPower + DielLoss ≈ S × A_bbox`, so balance ≈ 100%
+- **Sanity check**: Deviations from 100% indicate numerical issues
+
+**Disadvantages:**
+- **Domain-dependent**: Larger bbox → larger P_input (but same SAR)
+- **No physical meaning**: Just verifies FDTD energy conservation
+
+**For non-orthogonal directions**: The projected bbox area is computed as:
+$$A_{\text{projected}} = |n_x| A_{yz} + |n_y| A_{xz} + |n_z| A_{xy}$$
+where $\hat{n} = (\sin\theta\cos\phi, \sin\theta\sin\phi, \cos\theta)$ is the incident direction.
+
+#### 2. Phantom Cross-Section Method
+
+$$P_{\text{input}} = S \times A_{\text{phantom}}(\theta, \phi)$$
+
+Uses the pre-computed projected cross-sectional area of the phantom from `data/phantom_skins/`.
+
+**Advantages:**
+- **Physically meaningful**: Represents actual power intercepted by the body
+- **Domain-independent**: Same value regardless of simulation bbox size
+- **Enables absorption efficiency**: Balance shows what fraction of intercepted power is accounted for
+
+**Disadvantages:**
+- **Balance >> 100%**: Expected! `RadPower` includes power that bypassed the phantom
+- **Not a sanity check**: Can't detect numerical errors from balance alone
+
+### Interpreting the Balance
+
+| Method | Expected Balance | Interpretation |
+|--------|-----------------|----------------|
+| `bounding_box` | ~100% | Energy conservation verified; values ≠ 100% suggest issues |
+| `phantom_cross_section` | 150–300% | Normal; extra power is plane wave that missed the phantom |
 
 ---
 
@@ -133,7 +187,26 @@ This gives **true absorption efficiency**: what fraction of power intercepted by
 1. **Simulations run at E = 1 V/m** (standard Sim4Life plane wave)
 2. **Analysis scales by 754** (`far_field_strategy.get_normalization_factor()` returns 754.0)
 3. **Results reported as "SAR at 1 W/m² incident power density"**
-4. **Power balance uses phantom cross-section** (`power_extractor.py` loads direction-specific A(θ,φ))
+4. **Power balance uses configurable method** (default: `bounding_box`)
+
+### Configuration
+
+```json
+// In far_field_config.json
+{
+    "power_balance": {
+        "input_method": "bounding_box"  // Options: "bounding_box", "phantom_cross_section"
+    }
+}
+```
+
+### Output Fields
+
+The extraction writes these fields to `sar_results.json`:
+- `input_power_W`: Computed input power at 1 V/m
+- `power_balance_input_method`: Which method was used
+- `cross_section_m2`: The area value used
+- `cross_section_source`: Description of the source (e.g., "bbox_x_pos", "phantom_duke")
 
 ### Conversion Formulas
 
@@ -158,3 +231,4 @@ $$\text{SAR}(E) = \text{SAR}_{1\text{W/m}^2} \times S = \text{SAR}_{1\text{V/m}}
 
 - `data/phantom_skins/README.md` — Pre-computed phantom cross-section data
 - `docs/technical/skin_mesh_pipeline.md` — How phantom outer surfaces were extracted and processed
+
