@@ -66,11 +66,19 @@ class QueueLogHandler(logging.Handler):
             import time as time_module
 
             log_type = getattr(record, "log_type", "default")
-            message = self.format(record)
 
             # 'status' updates GUI AND prints to terminal
             # 'terminal_only' only prints to terminal
             msg_type = "status" if self.level_name == "progress" else "terminal_only"
+
+            # For GUI messages, send raw message without caller_info
+            # For terminal-only, include caller_info for debugging
+            if msg_type == "status":
+                # Raw message without formatting (GUI handles its own colors)
+                message = record.getMessage()
+            else:
+                # Full formatted message with caller_info for terminal
+                message = self.format(record)
 
             self.queue.put(
                 {
