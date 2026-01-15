@@ -80,6 +80,8 @@ This document provides a complete reference of every feature available in GOLIAT
 - Frequency-dependent material dispersion fitting via pole-zero model for multi-sine accuracy
 - Per-frequency SAR extraction with traceback logging for frequency-specific failures
 - ~4× speedup for widely-spaced frequencies (> 200 MHz apart)
+- Pre-computed phantom cross-sectional areas for each incident direction (stored in `data/phantom_skins/`)
+- Configurable power balance method: bounding box (sanity check) or phantom cross-section (absorption efficiency)
 
 ## Phantom management
 
@@ -154,6 +156,7 @@ This document provides a complete reference of every feature available in GOLIAT
 - Phantom bounding box reduction (far-field): Automatically truncate phantom height for high-frequency simulations to reduce cell count
 - Cubic frequency scaling: height_factor = (reference_freq / current_freq)³
 - Manual per-frequency height limits override automatic calculation
+- Symmetry reduction: Cut phantom bbox at x=0 to exploit human bilateral symmetry (~50% cell reduction)
 
 ## Solver configuration
 
@@ -403,6 +406,7 @@ This document provides a complete reference of every feature available in GOLIAT
 
 - `goliat study <config>` - Run a dosimetric assessment study
 - `goliat study <config> --no-cache` - Bypass caching and rerun all phases
+- `goliat study <config> --reupload-results` - Re-upload existing extract deliverables to web dashboard (works with GOLIAT_SKIP_IF_EXISTS)
 - `goliat study <config> --title <title>` - Set GUI window title
 - `goliat study <config> --pid <pid>` - Set process ID for logging
 
@@ -426,6 +430,11 @@ This document provides a complete reference of every feature available in GOLIAT
 - `goliat validate <config>` - Validate a GOLIAT config file
 - `goliat version` - Show GOLIAT version information
 - `goliat free-space` or `goliat freespace` - Run free-space validation runs
+
+### Configuration commands
+
+- `goliat config show` - Display current settings and detected Sim4Life version
+- `goliat config set-version` - Interactive version picker for switching between installed Sim4Life versions
 
 ### Utility scripts
 

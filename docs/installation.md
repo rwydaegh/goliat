@@ -6,14 +6,17 @@ GOLIAT supports two installation methods. Use PyPI if you just want to run simul
 
 Install from PyPI and run from any directory. No repository cloning needed.
 
-You need Sim4Life 8.2.0 with valid license, Sim4Life Python interpreter, and Windows.
+You need Sim4Life 8.2 or 9.2 with valid license, Sim4Life Python interpreter, and Windows.
 
 Create a virtual environment with Sim4Life Python:
 
 ```bash
-C:\Program Files\Sim4Life_8.2.0.16876\Python\python.exe -m venv venv --system-site-packages
+source .bashrc
+python -m venv venv --system-site-packages
 source venv/Scripts/activate
 ```
+
+Your `.bashrc` should have the Sim4Life Python path configured. Use `goliat config set-version` to change it if needed, once installed.
 
 The `--system-site-packages` flag allows the venv to access Sim4Life's packages (like `s4l_v1`).
 
@@ -44,7 +47,7 @@ Works from any directory. Upgrade with `python -m pip install --upgrade goliat`.
 
 Clone repository and install in editable mode. Required for development, testing, or contributing.
 
-You need Git, Sim4Life 8.2.0 with valid license, and Sim4Life Python interpreter.
+You need Git, Sim4Life 8.2 or 9.2 with valid license, and Sim4Life Python interpreter.
 
 Clone repository:
 

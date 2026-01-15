@@ -122,7 +122,7 @@ These settings control the core behavior of the FDTD solver.
 | `gaussian_pulse_k` | number | `3` | Gaussian pulse k parameter. When set to 5, uses Sim4Life's built-in Gaussian excitation. Values other than 5 use custom UserDefined waveforms. Lower k values create faster pulses. |
 | `bbox_padding_mm` | number | `50` | **(Far-Field)** Padding in millimeters to add around the phantom's bounding box to define the simulation domain. |
 | `freespace_antenna_bbox_expansion_mm` | array | `[20, 20, 20]` | **(Near-Field)** Padding in [x, y, z] millimeters to add around the antenna for free-space simulations. |
-| `keep_awake` | boolean | `false` | If `true`, launches a keep-awake script when the simulation starts to prevent system sleep during long-running simulations. |
+| `keep_awake` | boolean | `true` | If `true`, launches a keep-awake script when the simulation starts to prevent system sleep during long-running simulations. |
 | `detuning_enabled` | boolean | `false` | **(Near-Field)** If `true`, applies calibrated frequency detuning to account for body loading effects on antenna resonance. Requires detuning values in the `detuning_config` object. |
 | `detuning_config` | object | `{"700": -15}` | **(Near-Field)** Maps frequencies (MHz) to detuning offsets. E.g., `{"700": -15}` means the 700 MHz source is shifted down 15 MHz to compensate for body loading. |
 
@@ -147,6 +147,7 @@ These settings define the spatial discretization of the simulation domain.
 | `phantom_bbox_reduction.auto_reduce_bbox` | boolean | `false` | **(Far-Field)** If `true`, enables automatic phantom height reduction for frequencies above `reference_frequency_mhz`. |
 | `phantom_bbox_reduction.reference_frequency_mhz` | number | `5800` | **(Far-Field)** The reference frequency where full-body simulation fits in memory. For higher frequencies, height is reduced by `(reference/current)³`. |
 | `phantom_bbox_reduction.height_limit_per_frequency_mm` | object | `{}` | **(Far-Field)** Manual height limits per frequency in mm (e.g., `{"10000": 400}`). Overrides automatic calculation. |
+| `phantom_bbox_reduction.use_symmetry_reduction` | boolean | `false` | **(Far-Field)** If `true`, cuts the phantom bounding box at x=0 to exploit left-right symmetry. Reduces cell count by ~50%. **Not compatible with auto-induced exposure** (you'd miss half the body's skin surface). |
 
 <br>
 
