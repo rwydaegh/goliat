@@ -7,6 +7,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2025-01-15
+
+Major release with Sim4Life 9.2 support, air-based auto-induced exposure analysis, SAPD extraction, and far-field optimizations. ~41 commits since v1.3.0.
+
+### New features
+
+#### Sim4Life 9.2 support
+Full support for Sim4Life 9.2 alongside existing 8.2 compatibility.
+
+- Version detection module prioritizes 9.2 when both are installed
+- `goliat config show` displays current settings and detected version
+- `goliat config set-version` interactive picker for switching versions
+- Queue-based logging for child process output (fixes stdout issues in S4L 9.2)
+- Robust handling for null `FieldValue` returns in S4L 9.2 API
+- Note: Blackwell GPUs (RTX 5090, B100) only support CUDA kernel with S4L 9.2.1.19976 (not aXware)
+
+#### Auto-induced air-based focus search
+Physically correct MaMIMO beamforming simulation using focus points in air near the body surface.
+
+- Search for beam focus in air shell around body (configurable `shell_size_mm`)
+- Hotspot scoring by mean |E_combined|² over nearby skin voxels
+- Percentile-based candidate selection (`selection_percentile`)
+- Minimum distance constraint for body-wide coverage (`min_candidate_distance_mm`)
+- CSV export of proxy scores and proxy-SAPD correlation data
+- Legacy skin-based search mode still available (`search.mode: "skin"`)
+
+#### SAPD extraction
+Automated Surface Absorbed Power Density calculation on skin surfaces.
+
+- `SapdExtractor` for IEC/IEEE 63195-2:2022 compliant SAPD calculation
+- H5 slicing around peak SAR location for reduced memory overhead
+- Mesh slicing using `PlanarCut` operations for fast localized computation
+- Caching for merged skin surface entities
+
+#### Far-field optimizations
+- Symmetry reduction cuts phantom bbox at x=0 to exploit bilateral symmetry (~50% cell reduction)
+- Spherical tessellation generates arbitrary incident directions via `theta_divisions` and `phi_divisions`
+- Phantom bbox height reduction for high frequencies (automatic or manual limits)
+- Power balance input method: `bounding_box` (default) or `phantom_cross_section` for absorption efficiency
+
+#### Research tooling
+- Skin mesh pipeline for extracting phantom outer surfaces
+- Pre-computed phantom cross-sectional areas per incident direction (`data/phantom_skins/`)
+- Batch cross-section analysis scripts
+
+### Bug fixes
+
+- Fixed `--reupload-results` flag interaction with `GOLIAT_SKIP_IF_EXISTS`
+- Multiplicative ramping for multisine FDTD (improved signal quality)
+- Power balance logging improvements
+- Automatic Git LFS pull in `goliat init`
+
+### Documentation
+
+- Updated installation guide for S4L 9.2 paths and `.bashrc` workflow
+- Added `goliat config` commands to CLI reference
+- Documented `use_symmetry_reduction` parameter
+- Added power normalization explanation (754× scaling, `power_balance.input_method`)
+- Fixed `keep_awake` default (now `true`)
+- Documented `--reupload-results` flag
+
+---
+
 ## [1.3.0] - 2025-12-17
 
 Major release with multi-sine excitation, antenna detuning, dispersion fitting, and significant infrastructure improvements. ~102 commits, ~40k insertions, ~12k deletions since v1.2.3.
@@ -219,7 +282,8 @@ Note that the code was already finished last weekend.
 ### Refactoring
 - **Analysis:** Split strategies.py into multiple files ([#14](https://github.com/rwydaegh/goliat/pull/14), [#15](https://github.com/rwydaegh/goliat/pull/15))
 
-[Unreleased]: https://github.com/rwydaegh/goliat/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/rwydaegh/goliat/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/rwydaegh/goliat/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/rwydaegh/goliat/compare/v1.2.3...v1.3.0
 [1.2.3]: https://github.com/rwydaegh/goliat/compare/v1.1.0...v1.2.3
 [1.1.0]: https://github.com/rwydaegh/goliat/compare/v1.0.0...v1.1.0

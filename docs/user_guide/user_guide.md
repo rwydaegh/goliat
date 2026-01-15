@@ -137,6 +137,8 @@ While the core GOLIAT workflow remains consistent, the specifics of scene setup 
   3.  **Simulation Run**: Multiple simulations are typically run for each frequency, covering all specified directions and polarizations (e.g., 12 simulations per frequency: 6 directions × 2 polarizations).
   4.  **Results Analysis**: Focuses on whole-body average SAR and how SAR is distributed across the entire phantom, often aggregated over various exposure scenarios.
 
+-   **Power Normalization**: Simulations run at 1 V/m and results are scaled to 1 W/m² power density (×754 scaling factor). This normalization is standard in dosimetry literature and matches what EMF probes measure. The `power_balance.input_method` config controls how power balance is computed: `bounding_box` (default, gives ~100% balance as a numerical sanity check) or `phantom_cross_section` (uses pre-computed body silhouette areas from `data/phantom_skins/`, gives >100% balance but is physically meaningful for absorption efficiency analysis).
+
 -   **Auto-induced mode**: Simulates the worst-case scenario where a MaMIMO base station focuses its beams onto a human. After all environmental simulations complete for a (phantom, frequency) pair, GOLIAT combines the results with optimal phase weights to find the skin location with maximum constructive interference. Enable with `"auto_induced": {"enabled": true}`. The algorithm:
     1.  Extracts skin voxel locations from `_Input.h5` (~88k voxels vs 8M total - 100× reduction)
     2.  For each direction's `_Output.h5`, reads E-field at skin voxels only
