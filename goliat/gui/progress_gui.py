@@ -76,6 +76,7 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
         process: Process,
         init_window_title: str = "",
         use_web: bool = True,
+        auto_close: bool = False,
     ) -> None:
         """Sets up the GUI window and all components.
 
@@ -89,6 +90,7 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
             process: Worker process running the study.
             init_window_title: Initial window title.
             use_web: Whether to enable web bridge for remote monitoring.
+            auto_close: Whether to automatically close GUI on successful completion.
         """
         super().__init__()
         self.queue: Queue = queue
@@ -98,6 +100,7 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
         self.progress_logger: logging.Logger = logging.getLogger("progress")
         self.verbose_logger: logging.Logger = logging.getLogger("verbose")
         self.init_window_title: str = init_window_title
+        self.auto_close: bool = auto_close
         self.DEBUG: bool = False
         self.study_is_finished: bool = False
         self.study_had_errors: bool = False
@@ -365,6 +368,12 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
         if not error:
             self.progress_logger.info("All done! You may close this window now.", extra={"log_type": "success"})
             self.update_status("\n✓ All done! You may close this window now.", log_type="success")
+            # Auto-close if enabled (used by batch worker mode)
+            if self.auto_close:
+                self.progress_logger.info("Auto-closing GUI in 2 seconds...", extra={"log_type": "info"})
+                from PySide6.QtCore import QTimer as _QTimer
+
+                _QTimer.singleShot(2000, self.close)
         else:
             self.progress_logger.info("Finished with errors. You may close this window now.", extra={"log_type": "warning"})
             self.update_status("\n✓ Finished with errors. You may close this window now.", log_type="warning")
