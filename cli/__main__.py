@@ -40,6 +40,11 @@ def create_parser():
         action="store_true",
         help="If set, redo simulations even if the configuration matches a completed run.",
     )
+    study_parser.add_argument(
+        "--auto-close",
+        action="store_true",
+        help="Automatically close the GUI when study completes successfully.",
+    )
 
     # analyze command
     analyze_parser = subparsers.add_parser("analyze", help="Run analysis for near-field or far-field studies")
@@ -253,8 +258,15 @@ Examples:
         "--split-by",
         type=str,
         default="auto",
-        choices=["auto", "phantom", "direction", "polarization", "frequency"],
-        help="Dimension to split by: 'auto' (phantoms × frequencies), 'phantom', 'direction', 'polarization', or 'frequency'.",
+        choices=["auto", "phantom", "direction", "polarization", "frequency", "freq_x_pol", "custom"],
+        help="Dimension to split by: 'auto' (phantoms × frequencies), 'phantom', 'direction', 'polarization', 'frequency', 'freq_x_pol' (frequency × polarization = 18 assignments), or 'custom' (with --frequency-groups).",
+    )
+    super_study_parser.add_argument(
+        "--frequency-groups",
+        type=str,
+        default=None,
+        help="Custom frequency grouping for workers. Semicolon-separated groups, comma-separated frequencies within groups. "
+        "Example: '5800;5200;3500;2140,2450;450,700,835,1450' creates 4 assignments. Requires --split-by custom.",
     )
     super_study_parser.add_argument(
         "--server-url",
@@ -264,11 +276,24 @@ Examples:
     )
 
     # worker command
-    worker_parser = subparsers.add_parser("worker", help="Run as a worker on a super study assignment")
+    worker_parser = subparsers.add_parser(
+        "worker",
+        help="Run as a worker on a super study assignment",
+        description="Run one or more super study assignments. "
+        "Supports single index, comma-separated, ranges, or mixed: '0', '1,2,3', '0-4', '0,2,4-7'.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  goliat worker 0 my_study          # Single assignment
+  goliat worker 1,2,3 my_study      # Multiple comma-separated
+  goliat worker 0-4 my_study        # Range (0,1,2,3,4)
+  goliat worker 0,2,4-7 my_study    # Mixed (0,2,4,5,6,7)
+        """,
+    )
     worker_parser.add_argument(
-        "assignment_index",
-        type=int,
-        help="Assignment index to run (0-based).",
+        "assignment_indices",
+        type=str,
+        help="Assignment index(es) to run. Single: '5', Multiple: '1,2,3', Range: '1-5', Mixed: '0,2,4-7'.",
     )
     worker_parser.add_argument(
         "super_study_name",
@@ -296,6 +321,17 @@ Examples:
         type=str,
         default=None,
         help="URL of the monitoring server (default: https://monitor.goliat.waves-ugent.be).",
+    )
+    worker_parser.add_argument(
+        "--auto-close",
+        action="store_true",
+        help="Automatically close the GUI when assignment completes successfully.",
+    )
+    worker_parser.add_argument(
+        "--max-retries",
+        type=int,
+        default=3,
+        help="Maximum retries per assignment on memory error (default: 3).",
     )
 
     # stats command - unified for both directory scanning and single-file parsing
@@ -519,6 +555,8 @@ def main():
             sys.argv.extend(["--pid", args.pid])
         if args.no_cache:
             sys.argv.append("--no-cache")
+        if args.auto_close:
+            sys.argv.append("--auto-close")
         try:
             study_main()
         finally:
@@ -614,6 +652,8 @@ def main():
             sys.argv.extend(["--num-splits", str(args.num_splits)])
         if hasattr(args, "split_by") and args.split_by:
             sys.argv.extend(["--split-by", args.split_by])
+        if hasattr(args, "frequency_groups") and args.frequency_groups:
+            sys.argv.extend(["--frequency-groups", args.frequency_groups])
         if args.server_url:
             sys.argv.extend(["--server-url", args.server_url])
         try:
@@ -625,7 +665,7 @@ def main():
         from cli.run_worker import main as worker_main
 
         original_argv = sys.argv[:]
-        sys.argv = ["goliat-worker", str(args.assignment_index), args.super_study_name]
+        sys.argv = ["goliat-worker", args.assignment_indices, args.super_study_name]
         if args.title:
             sys.argv.extend(["--title", args.title])
         if args.no_cache:
@@ -634,6 +674,10 @@ def main():
             sys.argv.append("--reupload-results")
         if args.server_url:
             sys.argv.extend(["--server-url", args.server_url])
+        if args.auto_close:
+            sys.argv.append("--auto-close")
+        if hasattr(args, "max_retries") and args.max_retries != 3:  # Only pass if not default
+            sys.argv.extend(["--max-retries", str(args.max_retries)])
         try:
             worker_main()
         finally:

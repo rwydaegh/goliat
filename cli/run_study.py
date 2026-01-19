@@ -372,6 +372,11 @@ def main():
         action="store_true",
         help="If set, redo simulations even if the configuration matches a completed run.",
     )
+    parser.add_argument(
+        "--auto-close",
+        action="store_true",
+        help="Automatically close the GUI when study completes successfully (used by batch worker).",
+    )
     args = parser.parse_args()
     config_filename = args.config
     process_id = args.pid
@@ -423,7 +428,7 @@ def main():
 
             # The GUI runs in the main process
             app = QApplication(sys.argv)
-            gui = ProgressGUI(queue, stop_event, study_process, init_window_title=args.title, use_web=use_web)
+            gui = ProgressGUI(queue, stop_event, study_process, init_window_title=args.title, use_web=use_web, auto_close=args.auto_close)
             gui.show()
 
             app.exec()

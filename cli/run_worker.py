@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import socket
+import subprocess
 import sys
 
 import colorama
@@ -36,6 +37,57 @@ def setup_console_logging():
         logger.handlers.clear()
     logger.addHandler(handler)
     return logger
+
+
+def parse_assignment_indices(assignment_str: str) -> list[int]:
+    """Parse assignment string into list of indices.
+
+    Supports:
+    - Single number: "5" -> [5]
+    - Comma-separated: "1,2,3" -> [1, 2, 3]
+    - Ranges: "1-5" -> [1, 2, 3, 4, 5]
+    - Mixed: "0,1,3-5,8" -> [0, 1, 3, 4, 5, 8]
+
+    Args:
+        assignment_str: String representing assignment indices.
+
+    Returns:
+        Sorted list of unique assignment indices.
+
+    Raises:
+        ValueError: If the format is invalid.
+    """
+    indices = set()
+    parts = assignment_str.split(",")
+
+    for part in parts:
+        part = part.strip()
+        if not part:
+            continue
+
+        if "-" in part:
+            # Range syntax: "1-5"
+            range_parts = part.split("-")
+            if len(range_parts) != 2:
+                raise ValueError(f"Invalid range format: '{part}'. Use 'start-end' format.")
+            try:
+                start = int(range_parts[0].strip())
+                end = int(range_parts[1].strip())
+            except ValueError:
+                raise ValueError(f"Invalid range values in '{part}'. Must be integers.")
+
+            if start > end:
+                raise ValueError(f"Invalid range '{part}': start ({start}) > end ({end}).")
+
+            indices.update(range(start, end + 1))
+        else:
+            # Single number
+            try:
+                indices.add(int(part))
+            except ValueError:
+                raise ValueError(f"Invalid assignment index: '{part}'. Must be an integer.")
+
+    return sorted(indices)
 
 
 def get_machine_id():
@@ -165,8 +217,22 @@ def fetch_assignment(super_study_name, assignment_index, server_url, machine_id,
         sys.exit(1)
 
 
-def run_assignment(assignment, super_study_name, assignment_index, title, no_cache, reupload_results, logger):
-    """Run the study with the assignment config."""
+def run_assignment(assignment, super_study_name, assignment_index, title, no_cache, reupload_results, auto_close, logger):
+    """Run the study with the assignment config.
+
+    Args:
+        assignment: Assignment data from the server.
+        super_study_name: Name of the super study.
+        assignment_index: Assignment index.
+        title: GUI window title.
+        no_cache: Whether to disable caching.
+        reupload_results: Whether to reupload cached results.
+        auto_close: Whether to auto-close GUI on success.
+        logger: Logger instance.
+
+    Returns:
+        True if successful, False otherwise.
+    """
     # Create config file in configs directory (not temp)
     config_data = assignment.get("splitConfig", {})
 
@@ -222,6 +288,8 @@ def run_assignment(assignment, super_study_name, assignment_index, title, no_cac
         sys.argv.extend(["--title", title])
     if no_cache:
         sys.argv.append("--no-cache")
+    if auto_close:
+        sys.argv.append("--auto-close")
 
     try:
         study_main()
@@ -238,14 +306,221 @@ def run_assignment(assignment, super_study_name, assignment_index, title, no_cac
         sys.argv = original_argv
 
 
+def run_single_worker(
+    assignment_index: int,
+    super_study_name: str,
+    server_url: str,
+    machine_id: str,
+    title: str,
+    no_cache: bool,
+    reupload_results: bool,
+    auto_close: bool,
+    logger,
+) -> bool:
+    """Run a single worker assignment in-process.
+
+    Args:
+        assignment_index: Assignment index to run.
+        super_study_name: Name of the super study.
+        server_url: URL of the monitoring server.
+        machine_id: Machine identifier.
+        title: GUI window title.
+        no_cache: Whether to disable caching.
+        reupload_results: Whether to reupload cached results.
+        auto_close: Whether to auto-close GUI on success.
+        logger: Logger instance.
+
+    Returns:
+        True if successful, False otherwise.
+    """
+    logger.info(f"{colorama.Fore.CYAN}GOLIAT Worker")
+    logger.info(f"  Machine ID: {machine_id}")
+    logger.info(f"  Super Study: {super_study_name}")
+    logger.info(f"  Assignment: {assignment_index}")
+    logger.info(f"  Server: {server_url}\n")
+
+    # Fetch and claim assignment
+    assignment, super_study_id = fetch_assignment(super_study_name, assignment_index, server_url, machine_id, logger)
+
+    # Run the assignment
+    effective_title = title or f"[Worker {assignment_index}] {super_study_name}"
+    success = run_assignment(
+        assignment, super_study_name, assignment_index, effective_title, no_cache, reupload_results, auto_close, logger
+    )
+
+    return success
+
+
+def run_worker_subprocess(
+    assignment_index: int, super_study_name: str, server_url: str, title: str, no_cache: bool, reupload_results: bool, logger
+) -> int:
+    """Run a worker assignment as a subprocess.
+
+    This allows memory to be fully reclaimed between assignments, which is crucial
+    for handling memory errors (exit code 42) with retry logic.
+
+    Args:
+        assignment_index: Assignment index to run.
+        super_study_name: Name of the super study.
+        server_url: URL of the monitoring server.
+        title: GUI window title.
+        no_cache: Whether to disable caching.
+        reupload_results: Whether to reupload cached results.
+        logger: Logger instance.
+
+    Returns:
+        Exit code from the subprocess (0 = success, 42 = memory error, other = failure).
+    """
+    # Build command
+    cmd = [
+        sys.executable,
+        "-m",
+        "cli",
+        "worker",
+        str(assignment_index),
+        super_study_name,
+        "--server-url",
+        server_url,
+        "--auto-close",  # Always auto-close in batch mode
+    ]
+    if title:
+        cmd.extend(["--title", title])
+    if no_cache:
+        cmd.append("--no-cache")
+    if reupload_results:
+        cmd.append("--reupload-results")
+
+    logger.info(f"{colorama.Fore.CYAN}Starting subprocess for assignment {assignment_index}...")
+    logger.info(f"  Command: {' '.join(cmd)}")
+
+    # Run subprocess and wait for completion
+    result = subprocess.run(cmd, cwd=base_dir)
+
+    return result.returncode
+
+
+def run_batch_workers(
+    assignment_indices: list[int],
+    super_study_name: str,
+    server_url: str,
+    title_prefix: str,
+    no_cache: bool,
+    reupload_results: bool,
+    max_retries: int,
+    logger,
+) -> bool:
+    """Run multiple worker assignments sequentially with retry logic.
+
+    Each assignment runs as a subprocess to allow full memory reclamation.
+    Memory errors (exit code 42) trigger a retry of the same assignment.
+
+    Args:
+        assignment_indices: List of assignment indices to run.
+        super_study_name: Name of the super study.
+        server_url: URL of the monitoring server.
+        title_prefix: Prefix for GUI window titles.
+        no_cache: Whether to disable caching.
+        reupload_results: Whether to reupload cached results.
+        max_retries: Maximum retries per assignment on memory error.
+        logger: Logger instance.
+
+    Returns:
+        True if all assignments completed successfully, False otherwise.
+    """
+    total = len(assignment_indices)
+    logger.info(f"{colorama.Fore.CYAN}{'=' * 60}")
+    logger.info(f"{colorama.Fore.CYAN}GOLIAT Batch Worker Mode")
+    logger.info(f"{colorama.Fore.CYAN}{'=' * 60}")
+    logger.info(f"  Super Study: {super_study_name}")
+    logger.info(f"  Assignments: {assignment_indices}")
+    logger.info(f"  Total: {total}")
+    logger.info(f"  Max retries per assignment: {max_retries}")
+    logger.info(f"  Server: {server_url}")
+    logger.info(f"{colorama.Fore.CYAN}{'=' * 60}\n")
+
+    completed = []
+    failed = []
+
+    for i, assignment_index in enumerate(assignment_indices):
+        logger.info(f"\n{colorama.Fore.CYAN}{'=' * 60}")
+        logger.info(f"{colorama.Fore.CYAN}Assignment {assignment_index} ({i + 1}/{total})")
+        logger.info(f"{colorama.Fore.CYAN}{'=' * 60}")
+
+        title = (
+            f"{title_prefix}[{i + 1}/{total}] Assignment {assignment_index}" if title_prefix else f"[{i + 1}/{total}] {super_study_name}"
+        )
+
+        retry_count = 0
+        success = False
+
+        while retry_count <= max_retries:
+            if retry_count > 0:
+                logger.info(f"\n{colorama.Fore.YELLOW}Retry {retry_count}/{max_retries} for assignment {assignment_index}...")
+
+            exit_code = run_worker_subprocess(assignment_index, super_study_name, server_url, title, no_cache, reupload_results, logger)
+
+            if exit_code == 0:
+                logger.info(f"{colorama.Fore.GREEN}✓ Assignment {assignment_index} completed successfully!")
+                success = True
+                break
+            elif exit_code == 42:
+                # Memory error - retry
+                logger.warning(f"{colorama.Fore.YELLOW}Memory error (exit code 42) for assignment {assignment_index}.")
+                retry_count += 1
+                if retry_count <= max_retries:
+                    logger.info(f"{colorama.Fore.YELLOW}Will retry (caching will resume from last checkpoint)...")
+                else:
+                    logger.error(f"{colorama.Fore.RED}Max retries ({max_retries}) exceeded for assignment {assignment_index}.")
+            else:
+                # Other error - don't retry
+                logger.error(f"{colorama.Fore.RED}Assignment {assignment_index} failed with exit code {exit_code}.")
+                break
+
+        if success:
+            completed.append(assignment_index)
+        else:
+            failed.append(assignment_index)
+
+    # Summary
+    logger.info(f"\n{colorama.Fore.CYAN}{'=' * 60}")
+    logger.info(f"{colorama.Fore.CYAN}Batch Worker Summary")
+    logger.info(f"{colorama.Fore.CYAN}{'=' * 60}")
+    logger.info(f"  Completed: {len(completed)}/{total} - {completed}")
+    if failed:
+        logger.info(f"  {colorama.Fore.RED}Failed: {len(failed)}/{total} - {failed}")
+    logger.info(f"{colorama.Fore.CYAN}{'=' * 60}\n")
+
+    return len(failed) == 0
+
+
 def main():
-    """Main function to run as a worker."""
+    """Main function to run as a worker.
+
+    Supports both single assignment mode (backward compatible) and batch mode
+    for running multiple assignments sequentially with retry logic.
+
+    Examples:
+        goliat worker 0 my_study          # Single assignment
+        goliat worker 1,2,3 my_study      # Multiple comma-separated
+        goliat worker 0-4 my_study        # Range
+        goliat worker 0,2,4-7 my_study    # Mixed
+    """
     logger = setup_console_logging()
-    parser = argparse.ArgumentParser(description="Run as a worker on a super study assignment.")
+    parser = argparse.ArgumentParser(
+        description="Run as a worker on a super study assignment.",
+        epilog="""
+Examples:
+  goliat worker 0 my_study          # Single assignment
+  goliat worker 1,2,3 my_study      # Multiple comma-separated
+  goliat worker 0-4 my_study        # Range (0,1,2,3,4)
+  goliat worker 0,2,4-7 my_study    # Mixed (0,2,4,5,6,7)
+        """,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser.add_argument(
-        "assignment_index",
-        type=int,
-        help="Assignment index to run (0-based).",
+        "assignment_indices",
+        type=str,
+        help="Assignment index(es) to run. Single: '5', Multiple: '1,2,3', Range: '1-5', Mixed: '0,2,4-7'.",
     )
     parser.add_argument(
         "super_study_name",
@@ -274,29 +549,67 @@ def main():
         default=None,
         help="URL of the monitoring server (default: https://monitor.goliat.waves-ugent.be).",
     )
+    parser.add_argument(
+        "--auto-close",
+        action="store_true",
+        help="Automatically close the GUI when assignment completes successfully.",
+    )
+    parser.add_argument(
+        "--max-retries",
+        type=int,
+        default=3,
+        help="Maximum retries per assignment on memory error (default: 3).",
+    )
 
     args = parser.parse_args()
+
+    # Parse assignment indices
+    try:
+        assignment_indices = parse_assignment_indices(args.assignment_indices)
+    except ValueError as e:
+        logger.error(f"{colorama.Fore.RED}Error parsing assignment indices: {e}")
+        sys.exit(1)
+
+    if not assignment_indices:
+        logger.error(f"{colorama.Fore.RED}No valid assignment indices provided.")
+        sys.exit(1)
 
     # Get server URL: command arg > env var > hardcoded default
     server_url = args.server_url or os.getenv("GOLIAT_MONITORING_URL") or "https://monitor.goliat.waves-ugent.be"
     server_url = server_url.rstrip("/")
     machine_id = get_machine_id()
 
-    logger.info(f"{colorama.Fore.CYAN}GOLIAT Worker")
-    logger.info(f"  Machine ID: {machine_id}")
-    logger.info(f"  Super Study: {args.super_study_name}")
-    logger.info(f"  Assignment: {args.assignment_index}")
-    logger.info(f"  Server: {server_url}\n")
-
-    # Fetch and claim assignment
-    assignment, super_study_id = fetch_assignment(args.super_study_name, args.assignment_index, server_url, machine_id, logger)
-
-    # Run the assignment
-    title = args.title or f"[Worker {args.assignment_index}] {args.super_study_name}"
-    success = run_assignment(assignment, args.super_study_name, args.assignment_index, title, args.no_cache, args.reupload_results, logger)
-
-    if not success:
-        sys.exit(1)
+    # Decide mode: single (in-process) vs batch (subprocess)
+    if len(assignment_indices) == 1:
+        # Single assignment mode - run in-process for efficiency
+        assignment_index = assignment_indices[0]
+        success = run_single_worker(
+            assignment_index,
+            args.super_study_name,
+            server_url,
+            machine_id,
+            args.title,
+            args.no_cache,
+            args.reupload_results,
+            args.auto_close,
+            logger,
+        )
+        if not success:
+            sys.exit(1)
+    else:
+        # Batch mode - run each as subprocess with auto-close and retry logic
+        success = run_batch_workers(
+            assignment_indices,
+            args.super_study_name,
+            server_url,
+            args.title,
+            args.no_cache,
+            args.reupload_results,
+            args.max_retries,
+            logger,
+        )
+        if not success:
+            sys.exit(1)
 
 
 if __name__ == "__main__":

@@ -75,8 +75,9 @@ class ISolveManualStrategy(ExecutionStrategy, LoggingMixin):
                     level="progress",
                     log_type="error",
                 )
-                # Terminate the entire Python process
-                sys.exit(1)
+                # Terminate the entire Python process with exit code 42 (memory error convention)
+                # This allows batch runners to detect memory errors and retry
+                sys.exit(42)
 
     def _prepare_isolve_command(self) -> list[str]:
         """Prepare iSolve command and validate paths.
