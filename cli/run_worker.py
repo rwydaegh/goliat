@@ -447,7 +447,9 @@ def run_batch_workers(
         logger.info(f"{colorama.Fore.CYAN}{'=' * 60}")
 
         title = (
-            f"{title_prefix}[{i + 1}/{total}] Assignment {assignment_index}" if title_prefix else f"[{i + 1}/{total}] {super_study_name}"
+            f"{title_prefix}[Worker {assignment_index}] ({i + 1}/{total})"
+            if title_prefix
+            else f"[Worker {assignment_index}] {super_study_name} ({i + 1}/{total})"
         )
 
         retry_count = 0
