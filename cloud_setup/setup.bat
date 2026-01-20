@@ -72,29 +72,6 @@ if %errorlevel% neq 0 (
 )
 
 :: ============================================================================
-:: Check Computer Name
-:: ============================================================================
-if /i "%COMPUTERNAME%" neq "MYGCLOUDPC" if /i "%COMPUTERNAME%" neq "WIN10-NEW" (
-    echo ============================================================================
-    echo ERROR: Computer name mismatch!
-    echo ============================================================================
-    echo Current computer name: %COMPUTERNAME%
-    echo Required computer name: MYGCLOUDPC or WIN10-NEW
-    echo.
-    echo You must rename this computer to "MYGCLOUDPC" or "WIN10-NEW" and restart before running this script.
-    echo.
-    echo To rename the computer from Administrator Command Prompt, run:
-    echo     wmic computersystem where name="%COMPUTERNAME%" call rename name="MYGCLOUDPC"
-    echo     OR
-    echo     wmic computersystem where name="%COMPUTERNAME%" call rename name="WIN10-NEW"
-    echo.
-    echo After renaming, you MUST restart the computer for the change to take effect.
-    echo ============================================================================
-    pause
-    exit /b 1
-)
-
-:: ============================================================================
 :: Check for Administrator Privileges
 :: ============================================================================
 echo Checking for administrator privileges...

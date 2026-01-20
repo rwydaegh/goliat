@@ -24,7 +24,7 @@ from cli.utils import get_base_dir
 base_dir = get_base_dir()
 
 # Valid split-by options
-SPLIT_BY_OPTIONS = ["auto", "phantom", "direction", "polarization", "frequency"]
+SPLIT_BY_OPTIONS = ["auto", "phantom", "direction", "polarization", "frequency", "freq_x_pol", "custom"]
 
 
 def setup_console_logging():
@@ -203,9 +203,137 @@ def split_config_by_dimension(config_path, split_by, logger):
         logger.info(f"Split by polarization: {len(polarizations)} assignments (one per polarization)")
         logger.info(f"  Polarizations: {polarizations}")
 
+    elif split_by == "freq_x_pol":
+        # One assignment per frequency × polarization combination (far-field only)
+        if study_type != "far_field":
+            logger.error(f"{colorama.Fore.RED}Error: freq_x_pol splitting is only supported for far-field studies.")
+            sys.exit(1)
+
+        frequencies = base_config.get("frequencies_mhz", [])
+        if not frequencies:
+            logger.error(f"{colorama.Fore.RED}Error: No frequencies found in config for freq_x_pol splitting.")
+            sys.exit(1)
+
+        far_field_setup = base_config.get("far_field_setup", {})
+        far_field_type = far_field_setup.get("type", "environmental")
+        far_field_params = far_field_setup.get(far_field_type, {})
+        polarizations = far_field_params.get("polarizations", [])
+
+        if not polarizations:
+            logger.error(f"{colorama.Fore.RED}Error: No polarizations found in config for freq_x_pol splitting.")
+            sys.exit(1)
+
+        # Get gridding per frequency if available
+        gridding_per_freq = base_config.get("gridding_parameters", {}).get("global_gridding_per_frequency", {})
+
+        # Create cartesian product: frequency × polarization
+        for freq in frequencies:
+            for polarization in polarizations:
+                assignment_config = deepcopy(base_config)
+                assignment_config["frequencies_mhz"] = [freq]
+                assignment_config["far_field_setup"][far_field_type]["polarizations"] = [polarization]
+
+                # Filter gridding_per_frequency
+                if gridding_per_freq and str(freq) in gridding_per_freq:
+                    assignment_config["gridding_parameters"]["global_gridding_per_frequency"] = {str(freq): gridding_per_freq[str(freq)]}
+
+                assignment_configs.append(
+                    {
+                        "config": assignment_config,
+                        "phantoms": phantom_list,
+                        "items": [f"{freq}MHz_{polarization}"],
+                        "items_name": "freq_x_pol",
+                    }
+                )
+
+        logger.info(
+            f"Split by freq_x_pol: {len(frequencies)} frequencies × {len(polarizations)} polarizations = {len(assignment_configs)} assignments"
+        )
+        for i, cfg in enumerate(assignment_configs):
+            logger.info(f"  Assignment {i}: {cfg['items'][0]}")
+
     else:
         logger.error(f"{colorama.Fore.RED}Error: Unknown split_by value '{split_by}'")
         sys.exit(1)
+
+    return base_config, assignment_configs
+
+
+def split_config_custom_frequency_groups(config_path, frequency_groups_str, logger):
+    """
+    Splits the configuration file by custom frequency groups.
+
+    Args:
+        config_path: Path to the base config file
+        frequency_groups_str: Semicolon-separated groups, comma-separated frequencies within groups.
+                             Example: "5800;5200;3500;2140,2450;450,700,835,1450"
+                             This creates 5 assignments.
+
+    Returns: (base_config, assignment_configs) where assignment_configs is a list of dicts
+    """
+    if not os.path.exists(config_path):
+        logger.error(f"{colorama.Fore.RED}Error: Config file not found at '{config_path}'")
+        sys.exit(1)
+
+    with open(config_path, "r") as f:
+        base_config = json.load(f)
+
+    # Parse frequency groups
+    # Format: "5800;5200;3500;2140,2450;450,700,835,1450"
+    frequency_groups = []
+    for group_str in frequency_groups_str.split(";"):
+        group_str = group_str.strip()
+        if not group_str:
+            continue
+        freqs = [int(f.strip()) for f in group_str.split(",")]
+        frequency_groups.append(freqs)
+
+    if not frequency_groups:
+        logger.error(f"{colorama.Fore.RED}Error: No frequency groups parsed from '{frequency_groups_str}'")
+        sys.exit(1)
+
+    # Validate that all frequencies exist in the config
+    config_frequencies = set(base_config.get("frequencies_mhz", []))
+    all_specified_freqs = set()
+    for group in frequency_groups:
+        for freq in group:
+            if freq not in config_frequencies:
+                logger.error(f"{colorama.Fore.RED}Error: Frequency {freq} not found in config. Available: {sorted(config_frequencies)}")
+                sys.exit(1)
+            all_specified_freqs.add(freq)
+
+    # Warn about missing frequencies
+    missing = config_frequencies - all_specified_freqs
+    if missing:
+        logger.warning(f"{colorama.Fore.YELLOW}Warning: Frequencies {sorted(missing)} from config are not assigned to any worker.")
+
+    # Extract phantoms
+    base_phantoms = base_config.get("phantoms", [])
+    is_near_field_dict = isinstance(base_phantoms, dict)
+    if is_near_field_dict:
+        phantom_list = list(base_phantoms.keys())
+    else:
+        phantom_list = base_phantoms
+
+    # Get gridding per frequency if available
+    gridding_per_freq = base_config.get("gridding_parameters", {}).get("global_gridding_per_frequency", {})
+
+    assignment_configs = []
+    for i, freq_group in enumerate(frequency_groups):
+        assignment_config = deepcopy(base_config)
+        assignment_config["frequencies_mhz"] = freq_group
+
+        # Filter gridding_per_frequency to only include relevant frequencies
+        if gridding_per_freq:
+            filtered_gridding = {str(f): gridding_per_freq.get(str(f)) for f in freq_group if str(f) in gridding_per_freq}
+            if filtered_gridding:
+                assignment_config["gridding_parameters"]["global_gridding_per_frequency"] = filtered_gridding
+
+        assignment_configs.append({"config": assignment_config, "phantoms": phantom_list, "items": freq_group, "items_name": "frequencies"})
+
+    logger.info(f"Custom frequency split: {len(frequency_groups)} assignments")
+    for i, group in enumerate(frequency_groups):
+        logger.info(f"  Worker {i}: {group}")
 
     return base_config, assignment_configs
 
@@ -398,6 +526,14 @@ def main():
         default=None,
         help="URL of the monitoring server (default: https://monitor.goliat.waves-ugent.be).",
     )
+    parser.add_argument(
+        "--frequency-groups",
+        type=str,
+        default=None,
+        help="Custom frequency grouping for workers. Semicolon-separated groups, comma-separated frequencies within groups. "
+        "Example: '5800;5200;3500;2140,2450;450,700,835,1450' creates 5 assignments. "
+        "Requires --split-by custom.",
+    )
 
     args = parser.parse_args()
 
@@ -429,6 +565,11 @@ def main():
     # Split the config based on strategy
     if args.split_by == "auto":
         base_config, assignment_configs = split_config(args.config, args.num_splits, logger)
+    elif args.split_by == "custom":
+        if not args.frequency_groups:
+            logger.error(f"{colorama.Fore.RED}Error: --split-by custom requires --frequency-groups argument.")
+            sys.exit(1)
+        base_config, assignment_configs = split_config_custom_frequency_groups(args.config, args.frequency_groups, logger)
     else:
         base_config, assignment_configs = split_config_by_dimension(args.config, args.split_by, logger)
 
