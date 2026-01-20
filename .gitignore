@@ -53,8 +53,9 @@ commit_message.txt
 PythonAPIReference/
 PythonAPIReference_8_2/
 PythonAPIReference_9_2/
-PythonAPIReference_DIFF_8_2_to_9_2/*
-!PythonAPIReference_DIFF_8_2_to_9_2/API_CHANGES_SUMMARY.md
+# API migration docs (keep summary, ignore large diff files)
+docs/reference/s4l_api_migration_8_2_to_9_2/*
+!docs/reference/s4l_api_migration_8_2_to_9_2/API_CHANGES_SUMMARY.md
 hybridizer/
 Sim4Life.pdf
 Sim4Life_Manual.pdf
@@ -109,4 +110,3 @@ cloud_setup/my_*.py
 *.egg
 dist/
 build/
-.agent/
