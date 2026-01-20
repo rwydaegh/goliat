@@ -21,7 +21,10 @@
         "only_write_input_file": false,
         "do_run": true,
         "do_extract": true,
-        "batch_run": false
+        "batch_run": false,
+        "auto_cleanup_previous_results": [
+            "output"
+        ]
     },
     "phantoms": [
         "duke",

@@ -1,0 +1,80 @@
+grid_size_mcells,average_speed_mcells_s,series,backend
+20,400,1 x GTX 750 Ti,CUDA
+50,650,1 x GTX 750 Ti,CUDA
+100,800,1 x GTX 750 Ti,CUDA
+150,850,1 x GTX 750 Ti,CUDA
+20,1100,1 x GTX 1070,CUDA
+50,1500,1 x GTX 1070,CUDA
+100,1750,1 x GTX 1070,CUDA
+150,1850,1 x GTX 1070,CUDA
+20,1500,1 x K80 (2),CUDA
+50,2300,1 x K80 (2),CUDA
+100,2700,1 x K80 (2),CUDA
+150,2850,1 x K80 (2),CUDA
+200,2950,1 x K80 (2),CUDA
+300,3100,1 x K80 (2),CUDA
+400,3200,1 x K80 (2),CUDA
+20,1000,1 x Titan,CUDA
+50,1700,1 x Titan,CUDA
+100,2100,1 x Titan,CUDA
+150,2300,1 x Titan,CUDA
+200,2450,1 x Titan,CUDA
+20,1800,2 x Titan,CUDA
+50,3100,2 x Titan,CUDA
+100,3550,2 x Titan,CUDA
+150,3700,2 x Titan,CUDA
+200,3750,2 x Titan,CUDA
+300,3800,2 x Titan,CUDA
+20,2000,4 x Titan,CUDA
+50,5000,4 x Titan,CUDA
+100,7400,4 x Titan,CUDA
+150,8100,4 x Titan,CUDA
+200,8400,4 x Titan,CUDA
+300,8600,4 x Titan,CUDA
+500,8700,4 x Titan,CUDA
+1000,8700,4 x Titan,CUDA
+20,4000,8 x Titan,CUDA
+50,6200,8 x Titan,CUDA
+100,7700,8 x Titan,CUDA
+150,9500,8 x Titan,CUDA
+200,10500,8 x Titan,CUDA
+300,13500,8 x Titan,CUDA
+500,15400,8 x Titan,CUDA
+1000,16000,8 x Titan,CUDA
+2000,16500,8 x Titan,CUDA
+20,350,1 x GTX 750 Ti,aXware
+50,550,1 x GTX 750 Ti,aXware
+100,700,1 x GTX 750 Ti,aXware
+150,750,1 x GTX 750 Ti,aXware
+20,1200,1 x K80 (2),aXware
+50,1900,1 x K80 (2),aXware
+100,2350,1 x K80 (2),aXware
+150,2500,1 x K80 (2),aXware
+200,2600,1 x K80 (2),aXware
+20,850,1 x Titan,aXware
+50,1450,1 x Titan,aXware
+100,1800,1 x Titan,aXware
+150,2000,1 x Titan,aXware
+200,2100,1 x Titan,aXware
+20,1400,2 x Titan,aXware
+50,2400,2 x Titan,aXware
+100,2850,2 x Titan,aXware
+150,3000,2 x Titan,aXware
+200,3100,2 x Titan,aXware
+300,3150,2 x Titan,aXware
+20,1500,4 x Titan,aXware
+50,2500,4 x Titan,aXware
+100,2900,4 x Titan,aXware
+150,3100,4 x Titan,aXware
+200,3200,4 x Titan,aXware
+300,3300,4 x Titan,aXware
+400,3350,4 x Titan,aXware
+20,2000,8 x Titan,aXware
+50,4000,8 x Titan,aXware
+100,8000,8 x Titan,aXware
+150,10000,8 x Titan,aXware
+200,12000,8 x Titan,aXware
+300,13600,8 x Titan,aXware
+500,14800,8 x Titan,aXware
+1000,16000,8 x Titan,aXware
+2000,16500,8 x Titan,aXware
