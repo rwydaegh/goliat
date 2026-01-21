@@ -55,7 +55,7 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
     The GUI architecture:
     - Main window runs in main process, worker runs in separate process
     - Communication via multiprocessing.Queue for thread-safe message passing
-    - QueueHandler polls queue every 100ms and updates UI accordingly
+    - QueueHandler polls queue every 100ms and updates UI
     - Multiple timers handle different update frequencies (queue, clock, graphs)
 
     Features:

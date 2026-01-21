@@ -39,7 +39,7 @@ class GOLIATAssistant:
     Uses a simple but effective RAG approach:
     1. Embed all code/docs into a local vector store
     2. On query, find relevant chunks via semantic search
-    3. Send retrieved context + query to appropriate LLM based on complexity
+    3. Send retrieved context + query to LLM (model chosen by complexity)
 
     Model Selection:
     - Simple questions → gpt-5-mini (fast, $0.25/$2.00 per 1M tokens)
@@ -136,7 +136,7 @@ class GOLIATAssistant:
     def ask(self, question: str, context: str = "", force_complex: Optional[bool] = None) -> str:
         """Ask a one-shot question about GOLIAT.
 
-        Automatically selects the appropriate model:
+        Auto-selects model based on complexity:
         - Simple questions → gpt-5-mini (fast, cheap)
         - Complex questions → gpt-5 (smart, thorough)
 

@@ -20,7 +20,7 @@ class DataManager:
     """
 
     def __init__(self, data_dir: str, verbose_logger: Logger) -> None:
-        """Sets up data manager with session-specific CSV files.
+        """Create session-specific CSV files for progress tracking.
 
         Args:
             data_dir: Directory where data files will be stored.

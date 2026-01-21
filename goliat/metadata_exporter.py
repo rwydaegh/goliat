@@ -1,9 +1,9 @@
 """
 Simulation Metadata Exporter.
 
-Exports comprehensive simulation metadata to pickle and JSON files at the
-end of extraction. Captures timing data, performance metrics, file sizes,
-and grid information for post-hoc analysis.
+Exports simulation metadata to pickle and JSON files at the end of extraction.
+Captures timing data, performance metrics, file sizes, and grid information
+for post-hoc analysis.
 """
 
 import glob

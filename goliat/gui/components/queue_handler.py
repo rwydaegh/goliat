@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 class QueueHandler:
     """Handles processing of messages from the worker process queue.
 
-    Polls the multiprocessing queue and dispatches messages to appropriate
+    Polls the multiprocessing queue and dispatches messages to the matching
     GUI update methods. This decouples message handling from queue polling,
     making the code cleaner and easier to test.
 
@@ -32,7 +32,7 @@ class QueueHandler:
     """
 
     def __init__(self, gui_instance: "ProgressGUI") -> None:
-        """Sets up the queue handler.
+        """Wire up message handlers to GUI instance.
 
         Args:
             gui_instance: ProgressGUI instance to update with messages.
@@ -53,7 +53,7 @@ class QueueHandler:
         }
 
     def _handle_status(self, msg: Dict[str, Any]) -> None:
-        """Handles status message type."""
+        """Update GUI status box and print to terminal with colors."""
         message = msg["message"]
         log_type = msg.get("log_type", "default")
         # Update GUI
@@ -129,10 +129,10 @@ class QueueHandler:
         self.gui.study_finished(error=True)
 
     def process_queue(self) -> None:
-        """Processes messages from worker process queue and updates UI accordingly.
+        """Processes messages from worker process queue and updates UI.
 
         Polls queue non-blockingly and processes all available messages in one
-        call. Handles different message types by calling appropriate GUI methods.
+        call. Routes each message type to its handler method.
         Catches and logs exceptions to prevent one bad message from crashing GUI.
 
         This method is called every 100ms by Qt timer to keep UI responsive.
@@ -145,7 +145,7 @@ class QueueHandler:
                 msg: Dict[str, Any] = self.gui.queue.get_nowait()
                 msg_type: Optional[str] = msg.get("type")
 
-                # Dispatch message to appropriate handler
+                # Dispatch message to its handler
                 if msg_type:
                     handler = self._MESSAGE_HANDLERS.get(msg_type)
                     if handler:

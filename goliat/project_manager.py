@@ -396,7 +396,7 @@ class ProjectManager(LoggingMixin):
            This ensures we don't skip phases if files are missing or outdated.
 
         The method returns a dict indicating which phases are complete, allowing the
-        study to skip setup/run/extract as appropriate. Note that extract completion
+        study to skip setup/run/extract if already done. Note that extract completion
         always requires run completion - if extract is done but run isn't, both are
         marked incomplete to prevent inconsistent states.
 

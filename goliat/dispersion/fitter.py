@@ -88,6 +88,7 @@ def _fit_exact(
     tau2 = 1e-10  # ~1.5 GHz
 
     def equations(params):
+        """System of 4 equations: eps and sigma residuals at both frequencies."""
         eps_inf, de1, de2, sigma_dc = params
         e1, s1 = _eval_model(omega1, eps_inf, de1, tau1, de2, tau2, sigma_dc)
         e2, s2 = _eval_model(omega2, eps_inf, de1, tau1, de2, tau2, sigma_dc)
@@ -135,6 +136,7 @@ def _fit_optimize(
     sig_arr = np.array(sigma_targets)
 
     def objective(params):
+        """Sum of squared relative errors across all frequency points."""
         eps_inf, de1, tau1, de2, tau2, sigma_dc = params
         err = 0
         for i, omega in enumerate(omegas):

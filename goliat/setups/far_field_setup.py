@@ -35,6 +35,7 @@ class FarFieldSetup(BaseSetup):
         profiler: "Profiler",
         gui=None,
     ):
+        """Store far-field parameters (direction, polarization, frequency)."""
         super().__init__(config, verbose_logger, progress_logger, gui)
         self.phantom_name = phantom_name
         self.frequency_mhz = frequency_mhz
@@ -260,7 +261,7 @@ class FarFieldSetup(BaseSetup):
             field_sensor_settings.ExtractedFrequencies = frequencies_hz
             field_sensor_settings.OnTheFlyDFT = True
             field_sensor_settings.RecordEField = True
-            field_sensor_settings.RecordHField = False
+            field_sensor_settings.RecordHField = True
             field_sensor_settings.RecordingDomain = field_sensor_settings.RecordingDomain.enum.RecordInFrequencyDomain
             self._log(f"  - Configured field sensor for frequencies: {self.frequency_mhz} MHz", log_type="info")
         else:

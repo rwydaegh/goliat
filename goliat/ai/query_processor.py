@@ -77,7 +77,7 @@ Respond with only one word: "simple" or "complex"."""
             return "simple"
 
     def select_model(self, query: str, force_complex: Optional[bool] = None) -> str:
-        """Select the appropriate model based on query complexity.
+        """Select model based on query complexity.
 
         Args:
             query: The user's question
@@ -90,7 +90,7 @@ Respond with only one word: "simple" or "complex"."""
         return model
 
     def select_model_with_complexity(self, query: str, force_complex: Optional[bool] = None) -> tuple[str, ComplexityType]:
-        """Select the appropriate model and return both model and complexity.
+        """Select model and return both model name and complexity.
 
         This avoids duplicate classification calls when both values are needed.
 

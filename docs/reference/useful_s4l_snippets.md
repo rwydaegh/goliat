@@ -411,7 +411,128 @@ new_transform = Transform(Vec3(1, 1, 1), rotation, translation)
 
 Rotation is Euler angles [rx, ry, rz] in radians. Translation is [tx, ty, tz] in model units.
 
-Used in: `goliat/setups/placement_setup.py`
+Used in: `goliat/setups/placement_setup.py`, `goliat/setups/near_field_setup.py`
+
+### How can I invert a transform?
+
+```python
+from XCoreMath import Rotation, Vec3
+import numpy as np
+
+# Create a rotation
+rotation = Rotation(Vec3(0, 0, 1), np.deg2rad(30))
+
+# Get the inverse (to undo the rotation)
+inverse_rotation = rotation.Inverse()
+
+# Apply forward transformation
+entity.ApplyTransform(rotation)
+
+# Apply inverse to undo
+entity.ApplyTransform(inverse_rotation)
+```
+
+Useful for temporarily transforming entities to check distances or positions, then reverting.
+
+Used in: `goliat/setups/near_field_setup.py` (_find_touching_angle)
+
+### How can I clone an entity?
+
+```python
+# Clone creates a copy of the entity
+cloned_entity = entity.Clone()
+cloned_entity.Name = "Entity_Copy"
+
+# Clone multiple entities
+clones = [e.Clone() for e in entities]
+```
+
+Cloning is non-destructive: the original entity is unchanged. Useful when you need to modify geometry without affecting the source.
+
+Used in: `goliat/extraction/sapd_extractor.py` (_unite_skin_entities)
+
+### How can I unite (boolean union) multiple entities?
+
+```python
+import s4l_v1.model
+
+# Unite multiple entities into one
+entities_to_unite = [entity1, entity2, entity3]
+united_entity = s4l_v1.model.Unite(entities_to_unite)
+united_entity.Name = "Merged_Entity"
+```
+
+Boolean union combines overlapping or touching meshes into a single entity. Original entities are consumed.
+
+Used in: `goliat/extraction/sapd_extractor.py` (_unite_skin_entities)
+
+### How can I cut a mesh with a plane?
+
+```python
+import XCoreModeling
+from QTech import Vec3  # use QTech.Vec3 for S4L 9.2+, or s4l_v1.model.Vec3
+
+# Define cut plane by a point and normal vector
+point = Vec3(50.0, 0.0, 0.0)   # Point on the plane
+normal = Vec3(1, 0, 0)          # Normal direction (keeps positive side)
+
+# Cut the mesh
+cut_entity = XCoreModeling.PlanarCut(entity, point, normal)
+
+# Multiple cuts to create a bounding box
+center = [100, 200, 150]  # mm
+half_side = 50.0
+cuts = [
+    (Vec3(center[0] - half_side, center[1], center[2]), Vec3(1, 0, 0)),
+    (Vec3(center[0] + half_side, center[1], center[2]), Vec3(-1, 0, 0)),
+    (Vec3(center[0], center[1] - half_side, center[2]), Vec3(0, 1, 0)),
+    (Vec3(center[0], center[1] + half_side, center[2]), Vec3(0, -1, 0)),
+    (Vec3(center[0], center[1], center[2] - half_side), Vec3(0, 0, 1)),
+    (Vec3(center[0], center[1], center[2] + half_side), Vec3(0, 0, -1)),
+]
+for pt, n in cuts:
+    entity = XCoreModeling.PlanarCut(entity, pt, n)
+```
+
+PlanarCut keeps the part of the mesh on the positive side of the plane (where the normal points). Chain multiple cuts to create a bounding cube.
+
+In S4L 9.2+, the API signature explicitly uses `QTech.Vec3`. In 8.2, unqualified `Vec3` was accepted. For cross-version compatibility, `s4l_v1.model.Vec3` works in both versions.
+
+Used in: `goliat/extraction/sapd_extractor.py` (_slice_skin_mesh)
+
+
+### How can I repair and remesh a triangle mesh?
+
+```python
+import XCoreModeling
+
+# Remove back-to-back (duplicate/overlapping) triangles
+XCoreModeling.RemoveBackToBackTriangles(entity)
+
+# Repair mesh: fill holes and fix self-intersections
+XCoreModeling.RepairTriangleMesh(
+    [entity],
+    fill_holes=True,
+    repair_intersections=True,
+    min_components_size=10,
+)
+
+# Remesh with specific edge length
+mesh_opts = XCoreModeling.MeshingOptions()
+mesh_opts.EdgeLength = 2.0           # Target edge length (mm)
+mesh_opts.MinEdgeLength = 1.0        # Minimum edge length (mm)
+mesh_opts.FeatureAngle = 30.0        # Preserve features above this angle (degrees)
+mesh_opts.MaxSpanAngle = 20.0        # Max angle span per triangle
+mesh_opts.MergeCoincidentNodes = True
+mesh_opts.RepairIntersections = True
+XCoreModeling.RemeshTriangleMesh(entity, mesh_opts)
+```
+
+Use after planar cuts or boolean operations to clean up mesh quality. Operations may silently fail on invalid geometry.
+
+**Version note:** In S4L 9.2+, `RepairTriangleMesh` requires a `Sequence[TriangleMesh]` (stricter typing). In 8.2, `Any` was accepted. Both versions work with `[entity]` list syntax.
+
+Used in: `goliat/extraction/sapd_extractor.py` (_cleanup_mesh)
 
 ---
 
@@ -902,7 +1023,7 @@ import time
 client = XOsparcApiClient.OsparcApiClient(
     api_key="your_api_key",
     api_secret="your_api_secret",
-    api_server="https://osparc.io",
+    api_server="https://api.sim4life.science",
     api_version="v0",
 )
 
@@ -937,9 +1058,50 @@ document.Close()
 document.Open(project_path)
 ```
 
-Requires Sim4Life 8.2.0+ for XOsparcApiClient module. Job states: PENDING, RUNNING, SUCCESS, FAILED, ABORTED. Must poll status until completion. You can also use the [osparc PyPI package](https://pypi.org/project/osparc/) or see the [osparc-simcore-clients repository](https://github.com/ITISFoundation/osparc-simcore-clients) for more information and alternative client implementations.
+Requires Sim4Life 9.2+ for XOsparcApiClient module. Job states: PENDING, RUNNING, SUCCESS, FAILED, ABORTED. Must poll status until completion. The `api_server` depends on your platform: `api.sim4life.science` for ZMT/IT'IS cloud, `api.osparc.io` for NIH SPARC. For 8.2 or headless batch runs, use the [osparc PyPI package](https://pypi.org/project/osparc/) instead.
 
-Used in: `goliat/simulation_runner.py` (_run_osparc_direct)
+Used in: `goliat/runners/osparc_direct_strategy.py`
+
+### What's the difference between XOsparcApiClient and the osparc PyPI package?
+
+**XOsparcApiClient** (Sim4Life 9.2+ only):
+```python
+import XOsparcApiClient
+
+client = XOsparcApiClient.OsparcApiClient(
+    api_key="key", api_secret="secret",
+    api_server="https://api.sim4life.science", api_version="v0",
+)
+job_data = XOsparcApiClient.JobSubmissionData()
+job_data.InputFilePath = input_file_path
+job_data.SolverKey = "sim4life-isolve"
+response = client.CreateJob(job_data)
+client.StartJob(job_data, response.Content.get("id"))
+```
+
+**osparc PyPI package** (`pip install osparc`):
+```python
+import osparc
+
+config = osparc.Configuration(
+    host="https://api.sim4life.science",
+    username="key", password="secret",
+)
+with osparc.ApiClient(config) as api_client:
+    files_api = osparc.FilesApi(api_client)
+    solvers_api = osparc.SolversApi(api_client)
+    uploaded = files_api.upload_file(file=input_file_path)
+    solver = solvers_api.get_solver_release(solver_key, solver_version)
+    job = solvers_api.create_job(
+        solver.id, solver.version,
+        job_inputs=osparc.JobInputs({"input_1": uploaded}),
+    )
+    solvers_api.start_job(solver.id, solver.version, job.id)
+```
+
+XOsparcApiClient is a C++ extension built into Sim4Life 9.2. The osparc package works outside Sim4Life and on 8.2. Same API underneath.
+
+Used in: `goliat/runners/osparc_direct_strategy.py` (XOsparcApiClient), `goliat/osparc_batch/osparc_client.py` (osparc)
 
 ### How can I get the input file name from a simulation?
 
@@ -1327,6 +1489,149 @@ extractor.FrequencySettings.ExtractedFrequency = frequency_hz, units.Hz
 Important distinction: sensor extractors use `ExtractedFrequency` (singular), while far-field sensor settings use `ExtractedFrequencies` (plural). Must be set before calling `Update()`. "All" extracts all computed frequencies.
 
 Used in: `goliat/extraction/sar_extractor.py`
+
+### How can I load simulation results from a custom H5 file?
+
+```python
+import s4l_v1.analysis
+import s4l_v1.document
+
+# Create simulation extractor from file
+sliced_extractor = s4l_v1.analysis.extractors.SimulationExtractor(inputs=[])
+sliced_extractor.Name = "Custom_Results_Extractor"
+sliced_extractor.FileName = "/path/to/custom_output.h5"  # Full path to H5
+sliced_extractor.UpdateAttributes()
+
+# Add to document and use
+document.AllAlgorithms.Add(sliced_extractor)
+
+# Use as you would a normal simulation extractor
+em_sensor_extractor = sliced_extractor["Overall Field"]
+# ... proceed with analysis ...
+
+# Clean up
+document.AllAlgorithms.Remove(sliced_extractor)
+```
+
+Useful for loading sliced/reduced H5 files (e.g., for faster SAPD calculation on a subset of the domain). Must set FileName before UpdateAttributes().
+
+Used in: `goliat/extraction/sapd_extractor.py` (_setup_extractor)
+
+### How can I create a surface mesh on grid for analysis?
+
+```python
+import s4l_v1.analysis
+import s4l_v1.document
+
+# Create ModelToGridFilter
+model_to_grid_filter = s4l_v1.analysis.core.ModelToGridFilter(inputs=[])
+model_to_grid_filter.Name = "Skin_Surface_Source"
+model_to_grid_filter.Entity = skin_entity  # Entity whose surface to map to grid
+model_to_grid_filter.UpdateAttributes()
+
+s4l_v1.document.AllAlgorithms.Add(model_to_grid_filter)
+
+# Access the surface output for use in other evaluators
+surface_output = model_to_grid_filter.Outputs["Surface"]
+```
+
+ModelToGridFilter generates a surface representation on the simulation grid. Used as input for SAPD and other surface-based evaluators.
+
+Used in: `goliat/extraction/sapd_extractor.py` (_setup_sapd_evaluator)
+
+### How can I compute Surface Absorbed Power Density (SAPD)?
+
+```python
+import s4l_v1.analysis
+import s4l_v1.document
+import s4l_v1.units as units
+
+# First, setup field extractor and get Poynting vector
+em_sensor_extractor = simulation_extractor["Overall Field"]
+s4l_v1.document.AllAlgorithms.Add(em_sensor_extractor)
+em_sensor_extractor.Update()
+
+# Setup surface using ModelToGridFilter (see separate snippet)
+model_to_grid_filter = s4l_v1.analysis.core.ModelToGridFilter(inputs=[])
+model_to_grid_filter.Entity = skin_entity
+model_to_grid_filter.UpdateAttributes()
+s4l_v1.document.AllAlgorithms.Add(model_to_grid_filter)
+
+# Create SAPD evaluator with two inputs: Poynting vector + Surface
+inputs = [
+    em_sensor_extractor.Outputs["S(x,y,z,f0)"],  # Poynting vector
+    model_to_grid_filter.Outputs["Surface"],     # Surface mesh
+]
+sapd_evaluator = s4l_v1.analysis.em_evaluators.GenericSAPDEvaluator(inputs=inputs)
+sapd_evaluator.AveragingArea = 4.0, units.SquareCentiMeters  # 4 cm² per ICNIRP < 30 GHz
+sapd_evaluator.Threshold = 0.01, units.Meters  # 10 mm threshold
+sapd_evaluator.UpdateAttributes()
+
+s4l_v1.document.AllAlgorithms.Add(sapd_evaluator)
+sapd_evaluator.Update()
+
+# Extract results
+sapd_report = sapd_evaluator.Outputs["Spatial-Averaged Power Density Report"]
+sapd_report.Update()
+
+data_collection = sapd_report.Data.DataSimpleDataCollection
+peak_sapd = data_collection.FieldValue("Peak Power Density", 0)
+peak_location = data_collection.FieldValue("Peak Location", 0)
+
+# Clean up
+s4l_v1.document.AllAlgorithms.Remove(sapd_evaluator)
+s4l_v1.document.AllAlgorithms.Remove(model_to_grid_filter)
+s4l_v1.document.AllAlgorithms.Remove(em_sensor_extractor)
+```
+
+AveragingArea is 4 cm² per ICNIRP guidelines below 30 GHz. Threshold controls surface discretization (mesh resolution). Requires both Poynting vector and surface mesh inputs.
+
+Used in: `goliat/extraction/sapd_extractor.py` (extract_sapd)
+
+### How can I add an overall field sensor with frequency extraction settings?
+
+```python
+import s4l_v1.simulation.emfdtd as emfdtd
+
+# Add overall field sensor to simulation
+field_sensor_settings = simulation.AddOverallFieldSensorSettings()
+
+# Configure for multi-frequency extraction
+frequencies_hz = [900e6, 1800e6, 2600e6]  # Multiple frequencies
+field_sensor_settings.ExtractedFrequencies = frequencies_hz
+
+# Enable on-the-fly DFT for frequency-domain recording
+field_sensor_settings.OnTheFlyDFT = True
+
+# Configure what to record
+field_sensor_settings.RecordEField = True
+field_sensor_settings.RecordHField = True
+
+# Set recording domain to frequency
+domain_enum = field_sensor_settings.RecordingDomain.enum
+field_sensor_settings.RecordingDomain = domain_enum.RecordInFrequencyDomain
+```
+
+`AddOverallFieldSensorSettings()` creates a sensor that records fields over the entire domain. Use `ExtractedFrequencies` (plural) for multi-sine simulations. `OnTheFlyDFT` required for frequency-domain extraction during simulation.
+
+Used in: `goliat/setups/far_field_setup.py` (_create_simulation_entity)
+
+### How can I enable console logging in S4L 9.2?
+
+```python
+from goliat.utils.version import is_sim4life_92_or_later
+
+if is_sim4life_92_or_later():
+    try:
+        import XCore
+        XCore.RedirectToStdOut(True)
+    except (ImportError, AttributeError):
+        pass  # Not available
+```
+
+In 9.2, S4L internal messages need an explicit `RedirectToStdOut(True)` call after starting the app, in particular if called in a child-process. Was automatic in 8.2.
+
+Used in: `goliat/utils/core.py` (ensure_s4l_running)
 
 ---
 

@@ -1,7 +1,7 @@
 """H5 file slicer for extracting regions around a center point.
 
 Slices Sim4Life _Output.h5 files to a smaller cube around a given center,
-preserving the HDF5 structure and updating axes/bounding boxes accordingly.
+preserving the HDF5 structure and updating axes/bounding boxes to match.
 """
 
 import h5py
@@ -154,7 +154,7 @@ class H5Slicer:
         return self.dst.create_dataset(name, data=obj[:])
 
     def copy_dataset(self, name: str, obj: h5py.Dataset) -> None:
-        """Copies a dataset, applying appropriate slicing based on type."""
+        """Copies a dataset, slicing it based on its type (axis, 3D field, etc)."""
         # Try axis dataset first
         dst_dataset = self._handle_axis_dataset(name, obj)
 

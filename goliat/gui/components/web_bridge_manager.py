@@ -40,7 +40,7 @@ class WebBridgeManager:
         """Initializes web GUI bridge for remote monitoring.
 
         Sets up connection to web dashboard, collects system info, and starts
-        the bridge. Handles errors gracefully to allow GUI to continue without web monitoring.
+        the bridge. Errors are caught so GUI can continue without web monitoring.
         """
         if not self.use_web:
             # Web bridge disabled via config

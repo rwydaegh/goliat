@@ -117,7 +117,7 @@ class SimulationRunner(LoggingMixin):
                 )
                 return
 
-            # Select and execute appropriate strategy
+            # Select and execute strategy
             strategy = self._create_execution_strategy(server_name)
             self.current_strategy = strategy
             try:
@@ -145,7 +145,7 @@ class SimulationRunner(LoggingMixin):
         return self.simulation
 
     def _create_execution_strategy(self, server_name: Optional[str]) -> ExecutionStrategy:
-        """Create the appropriate execution strategy based on configuration.
+        """Create execution strategy based on configuration.
 
         Args:
             server_name: Server name from config (None for localhost).

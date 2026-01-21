@@ -20,6 +20,7 @@ class BoundarySetup(BaseSetup):
         verbose_logger: "Logger",
         progress_logger: "Logger",
     ):
+        """Store simulation reference for boundary configuration."""
         super().__init__(config, verbose_logger, progress_logger)
         self.simulation = simulation
 
