@@ -20,7 +20,7 @@ class Profiler:
         study_type: str,
         config_path: str,
     ):
-        """Sets up the profiler with phase tracking and ETA estimation.
+        """Initialize profiler with phase weights and timing config.
 
         Args:
             execution_control: Dict indicating which phases are enabled.

@@ -28,6 +28,7 @@ class SourceSetup(BaseSetup):
         phantom_name: Optional[str] = None,
         placement_name: Optional[str] = None,
     ):
+        """Store simulation, frequency, and antenna for source configuration."""
         super().__init__(config, verbose_logger, progress_logger)
         self.simulation = simulation
         self.frequency_mhz = frequency_mhz

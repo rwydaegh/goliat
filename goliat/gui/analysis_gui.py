@@ -28,10 +28,12 @@ class SignalingLogHandler(logging.Handler, QObject):
     log_signal = Signal(str, str, str)
 
     def __init__(self):
+        """Dual init for Handler and QObject."""
         logging.Handler.__init__(self)
         QObject.__init__(self)
 
     def emit(self, record):
+        """Format record and emit as Qt signal."""
         try:
             msg = self.format(record)
             # Extract log_type for coloring (defaults to 'default')
@@ -48,10 +50,12 @@ class AnalysisWorker(QThread):
     error_signal = Signal(str)
 
     def __init__(self, target: Callable):
+        """Store callable to execute in thread."""
         super().__init__()
         self.target = target
 
     def run(self):
+        """Execute target, emit error signal on exception."""
         try:
             self.target()
         except Exception as e:
@@ -97,6 +101,7 @@ class AnalysisGUI(QWidget):
     }
 
     def __init__(self, phantom_name: str, total_items: int):
+        """Build window, set up timer and log handler."""
         super().__init__()
         self.phantom_name = phantom_name
         # Use the provided total_items directly (caller provides accurate estimate)
@@ -241,6 +246,7 @@ class AnalysisGUI(QWidget):
 
     @Slot()
     def update_timer(self):
+        """Update elapsed/remaining time labels every second."""
         if self.start_time:
             elapsed = time.time() - self.start_time
             # Format elapsed as HH:MM:SS
@@ -263,6 +269,7 @@ class AnalysisGUI(QWidget):
 
     @Slot(str, str, str)
     def append_log(self, message: str, level: str, log_type: str):
+        """Append colored log message to text widget and update progress."""
         # Determine color based on log_type preference, falling back to simple level mapping
         color = self.COLOR_MAP.get(log_type)
 
@@ -331,6 +338,7 @@ class AnalysisGUI(QWidget):
             self.status_label.setText("Analysis Finished!")
 
     def _increment_progress(self, status_text: str):
+        """Bump progress bar, extend max if needed to avoid jump-back."""
         self.current_item += 1
         # Prevent jump-back by extending maximum if we go over, instead of rescaling
         if self.current_item > self.progress_bar.maximum():
@@ -341,6 +349,7 @@ class AnalysisGUI(QWidget):
             self.status_label.setText(status_text)
 
     def start_analysis(self, target: Callable):
+        """Start timer and worker thread for the analysis callable."""
         self.start_time = time.time()
         self.elapsed_timer.start(1000)  # Update every second
 
@@ -365,6 +374,7 @@ class AnalysisGUI(QWidget):
 
     @Slot(str)
     def on_error(self, error_msg: str):
+        """Display error in log and stop timer."""
         self.append_log(f"CRITICAL ERROR: {error_msg}", "ERROR", "error")
         self.status_label.setText("Error occurred.")
         self.close_button.setEnabled(True)

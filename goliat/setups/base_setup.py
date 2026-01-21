@@ -23,6 +23,7 @@ try:
 except NameError:
     # If not, define a dummy decorator that does nothing
     def profile(func):
+        """No-op decorator when not running under kernprof."""
         return func
 
 

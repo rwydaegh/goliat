@@ -13,8 +13,7 @@ class TimeRemainingPlot:
 
     Creates a matplotlib line plot showing ETA trends over time. Updates
     dynamically as new data points arrive, maintaining dark theme styling
-    consistent with GUI. Tracks maximum time seen to set appropriate Y-axis
-    limits.
+    consistent with GUI. Tracks maximum time seen to set Y-axis limits.
     """
 
     def __init__(self) -> None:
@@ -141,7 +140,7 @@ class TimeRemainingPlot:
                 # Fallback: if no projection, just use data range
                 self.ax.set_xlim(earliest_time, times[-1])  # type: ignore[arg-type]
 
-        # Set y-axis limits with appropriate minimum
+        # Set y-axis limits with a sensible minimum
         y_min_display = 0.1 * 60.0 if use_minutes else 0.1
         self.ax.set_ylim(0, max(y_max_display, y_min_display))
 

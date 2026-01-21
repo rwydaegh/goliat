@@ -73,7 +73,7 @@ class Reporter:
         group_sar_stats: dict,
         results_data: dict,
     ):
-        """Saves comprehensive data in pickle format for programmatic access."""
+        """Saves all extracted data in pickle format for programmatic access."""
         pickle_data = {
             "detailed_sar_stats": df,
             "tissue_group_composition": tissue_groups,

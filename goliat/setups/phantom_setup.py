@@ -19,6 +19,7 @@ class PhantomSetup(BaseSetup):
         verbose_logger: "Logger",
         progress_logger: "Logger",
     ):
+        """Store phantom name and import S4L modules."""
         super().__init__(config, verbose_logger, progress_logger)
         self.phantom_name = phantom_name
 
@@ -31,6 +32,7 @@ class PhantomSetup(BaseSetup):
         self.XCoreModeling = XCoreModeling
 
     def _log(self, message: str, level: str = "verbose", log_type: str = "default"):
+        """Forward to parent _log."""
         super()._log(message, level, log_type)
 
     def ensure_phantom_is_loaded(self) -> bool:

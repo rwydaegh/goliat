@@ -247,6 +247,7 @@ class EmbeddingIndexer:
         import math
 
         def cosine_similarity(a, b):
+            """Dot product divided by product of magnitudes."""
             dot = sum(x * y for x, y in zip(a, b))
             norm_a = math.sqrt(sum(x * x for x in a))
             norm_b = math.sqrt(sum(x * x for x in b))

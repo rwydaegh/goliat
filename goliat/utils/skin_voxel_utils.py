@@ -270,6 +270,7 @@ def _build_uuid_material_map(f: h5py.File) -> Dict[str, str]:
     uuid_to_name: Dict[str, str] = {}
 
     def visitor(name: str, obj):
+        """Extract material name from HDF5 object attrs if present."""
         if hasattr(obj, "attrs") and "material_name" in obj.attrs:
             mat_name = obj.attrs["material_name"]
             if isinstance(mat_name, bytes):

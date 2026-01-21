@@ -20,7 +20,7 @@ COLOR_MAP = {
 
 
 def init_colorama():
-    """Initialize colorama with appropriate settings for the current environment.
+    """Initialize colorama for current environment.
 
     Preserves ANSI codes when stdout is piped (e.g., in Jupyter notebooks)
     by checking for JUPYTER_NOTEBOOK or COLORAMA_STRIP environment variables.
