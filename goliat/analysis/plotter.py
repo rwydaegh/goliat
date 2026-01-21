@@ -94,6 +94,14 @@ class Plotter(BasePlotter):
         """Plots individual variation lines for SAR metrics."""
         return self.line.plot_sar_line_individual_variations(*args, **kwargs)
 
+    def plot_far_field_direction_polarization_lines(self, *args, **kwargs):
+        """Creates line plots showing frequency dependence for far-field direction/polarization."""
+        return self.line.plot_far_field_direction_polarization_lines(*args, **kwargs)
+
+    def plot_far_field_direction_polarization_comparison(self, *args, **kwargs):
+        """Generates frequency-dependent comparison plots for all direction/polarization combos."""
+        return self.line.plot_far_field_direction_polarization_comparison(*args, **kwargs)
+
     # Delegate boxplot methods
     def plot_sar_distribution_boxplots(self, *args, **kwargs):
         """Creates boxplots showing SAR value distributions across placements."""
@@ -111,6 +119,14 @@ class Plotter(BasePlotter):
     def plot_peak_sar_heatmap(self, *args, **kwargs):
         """Creates a heatmap for peak SAR values across tissues and frequencies."""
         return self.heatmap.plot_peak_sar_heatmap(*args, **kwargs)
+
+    def plot_far_field_direction_polarization_heatmap(self, *args, **kwargs):
+        """Creates a heatmap comparing SAR across incident directions and polarizations."""
+        return self.heatmap.plot_far_field_direction_polarization_heatmap(*args, **kwargs)
+
+    def plot_far_field_direction_polarization_summary(self, *args, **kwargs):
+        """Creates a multi-panel summary of SAR across directions/polarizations."""
+        return self.heatmap.plot_far_field_direction_polarization_summary(*args, **kwargs)
 
     # Delegate spatial plot methods
     def plot_peak_location_3d_interactive(self, *args, **kwargs):
@@ -154,7 +170,7 @@ class Plotter(BasePlotter):
         return self.power.plot_power_absorption_distribution(*args, **kwargs)
 
     def plot_power_balance_overview(self, *args, **kwargs):
-        """Creates comprehensive power balance overview heatmap."""
+        """Creates power balance overview heatmap with all components."""
         return self.power.plot_power_balance_overview(*args, **kwargs)
 
     def _prepare_power_data(self, *args, **kwargs):
@@ -188,3 +204,21 @@ class Plotter(BasePlotter):
     def identify_outliers(self, *args, **kwargs):
         """Identifies and visualizes outliers in SAR metrics."""
         return self.outliers.identify_outliers(*args, **kwargs)
+
+    # Delegate cross-phantom comparison (line plot)
+    def plot_cross_phantom_comparison(self, *args, **kwargs):
+        """Plots SAR vs frequency comparing different phantoms."""
+        return self.line.plot_cross_phantom_comparison(*args, **kwargs)
+
+    # Delegate polarization ratio plots
+    def plot_polarization_ratio_lines(self, *args, **kwargs):
+        """Plots theta/phi polarization ratio vs frequency for each direction."""
+        return self.line.plot_polarization_ratio_lines(*args, **kwargs)
+
+    def plot_polarization_ratio_heatmap(self, *args, **kwargs):
+        """Plots frequency-averaged polarization ratio heatmap."""
+        return self.heatmap.plot_polarization_ratio_heatmap(*args, **kwargs)
+
+    def plot_polarization_ratio_heatmaps_per_frequency(self, *args, **kwargs):
+        """Plots polarization ratio heatmaps for each frequency separately."""
+        return self.heatmap.plot_polarization_ratio_heatmaps_per_frequency(*args, **kwargs)

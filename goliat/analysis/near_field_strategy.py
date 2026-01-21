@@ -281,6 +281,7 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
 
         # Define a mapping function that safely handles potential missing keys
         def get_progress(idx):
+            """Return 'completed/total' string for a (scenario, freq) index."""
             # Index is a tuple (scenario, frequency)
             if isinstance(idx, tuple) and len(idx) == 2:
                 scenario_name, _ = idx
@@ -437,7 +438,7 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
                             metric_column=metric_col,
                         )
 
-        # Generate comprehensive heatmap with all tissues (Min/Avg/Max SAR)
+        # Generate heatmap with all tissues (Min/Avg/Max SAR)
         if not all_organ_results_df.empty and analyzer.tissue_group_composition:
             # Check if required columns exist
             required_cols = ["min_local_sar_mw_kg", "mass_avg_sar_mw_kg", "max_local_sar_mw_kg"]
@@ -488,7 +489,7 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
 
                     if self.should_generate_plot("plot_sar_heatmap"):
                         logging.getLogger("progress").info(
-                            "\n--- Generating comprehensive SAR heatmap (all tissues) ---",
+                            "\n--- Generating SAR heatmap (all tissues) ---",
                             extra={"log_type": "header"},
                         )
                         plotter.plot_sar_heatmap(
@@ -525,7 +526,7 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
                         if not organ_pssar_df.empty and not group_pssar_summary_df.empty:
                             if self.should_generate_plot("plot_peak_sar_heatmap"):
                                 logging.getLogger("progress").info(
-                                    "\n--- Generating comprehensive psSAR10g heatmap (all tissues) ---",
+                                    "\n--- Generating psSAR10g heatmap (all tissues) ---",
                                     extra={"log_type": "header"},
                                 )
                                 plotter.plot_peak_sar_heatmap(
@@ -546,11 +547,11 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
             plotter.plot_power_balance_overview(results_df)
 
         # ============================================================================
-        # Generate All New Comprehensive Plots
+        # Additional Analysis Plots
         # ============================================================================
 
         logging.getLogger("progress").info(
-            "\n--- Generating comprehensive analysis plots ---",
+            "\n--- Generating additional analysis plots ---",
             extra={"log_type": "header"},
         )
 
@@ -845,6 +846,6 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
                         )
 
         logging.getLogger("progress").info(
-            "\n--- Comprehensive analysis plots generation complete ---",
+            "\n--- Analysis plots generation complete ---",
             extra={"log_type": "success"},
         )
