@@ -248,11 +248,9 @@ class PowerExtractor(LoggingMixin):
         Returns:
             Tuple of (area in m², description string).
         """
-        import json
-
         phantom_name = str(self.config["phantom_name"] or self.parent.phantom_name)
         cross_section_path = os_module.path.join(
-            str(self.config.base_dir), "data", "phantom_skins", phantom_name, "cross_section_pattern.json"
+            str(self.config.base_dir), "data", "phantom_skins", phantom_name, "cross_section_pattern.npz"
         )
 
         if not os_module.path.exists(cross_section_path):
@@ -260,12 +258,11 @@ class PowerExtractor(LoggingMixin):
             return 0.5, "phantom_fallback"
 
         try:
-            with open(cross_section_path) as f:
-                cs_data = json.load(f)
+            cs_data = np.load(cross_section_path, allow_pickle=False)
 
-            theta_grid = np.array(cs_data["theta"])
-            phi_grid = np.array(cs_data["phi"])
-            areas = np.array(cs_data["areas"])
+            theta_grid = cs_data["theta"]
+            phi_grid = cs_data["phi"]
+            areas = cs_data["areas"]
 
             # Normalize phi to [0, 2π]
             phi_rad_norm = phi_rad % (2 * np.pi)
