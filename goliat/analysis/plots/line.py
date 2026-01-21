@@ -430,3 +430,720 @@ class LinePlotter(BasePlotter):
         """
         # Delegate to the generic function
         self.plot_pssar_line_individual_variations(results_df, scenario_name, metric_column)
+
+    def plot_far_field_direction_polarization_lines(
+        self,
+        results_df: pd.DataFrame,
+        metric: str = "SAR_whole_body",
+        group_by: str = "direction",  # "direction", "polarization", or "both"
+    ):
+        """Creates line plots showing frequency dependence for far-field direction/polarization.
+
+        This visualization shows how SAR varies with frequency for each direction/polarization
+        combination, enabling comparison of frequency-dependent effects.
+
+        Args:
+            results_df: DataFrame with 'placement' column containing direction/polarization info.
+            metric: SAR metric to plot (default: 'SAR_whole_body').
+            group_by: How to group lines - 'direction' (one line per direction, panels for polarization),
+                      'polarization' (one line per polarization, panels for direction),
+                      or 'both' (all combinations on one plot).
+        """
+        if metric not in results_df.columns or results_df[metric].dropna().empty:
+            logging.getLogger("progress").warning(
+                f"  - WARNING: No data for metric '{metric}' for direction/polarization line plot.",
+                extra={"log_type": "warning"},
+            )
+            return
+
+        # Parse placement column to extract direction and polarization
+        df = results_df.copy()
+
+        def parse_placement(placement: str) -> tuple[str, str]:
+            """Parse placement string like 'environmental_x_pos_theta' to ('From left', 'Theta')."""
+            # Direction labels describe where the wave is coming FROM (not propagation direction)
+            direction_labels = {
+                "x_pos": "From left",
+                "x_neg": "From right",
+                "y_pos": "From back",
+                "y_neg": "From front",
+                "z_pos": "From below",
+                "z_neg": "From above",
+            }
+            parts = placement.replace("environmental_", "").split("_")
+            if len(parts) >= 3:
+                dir_key = f"{parts[0]}_{parts[1]}"
+                direction = direction_labels.get(dir_key, f"{parts[0].upper()}{'+' if parts[1] == 'pos' else '-'}")
+                pol = "Theta" if parts[2] == "theta" else "Phi"
+                return direction, pol
+            return placement, "Unknown"
+
+        df[["direction", "polarization"]] = df["placement"].apply(lambda x: pd.Series(parse_placement(x)))
+
+        # Get metric label
+        metric_label = METRIC_LABELS.get(metric, metric)
+
+        if group_by == "both":
+            # All direction/polarization combinations on one plot
+            self._plot_far_field_all_combinations(df, metric, metric_label)
+        elif group_by == "direction":
+            # One panel per polarization, lines for each direction
+            self._plot_far_field_by_polarization(df, metric, metric_label)
+        else:  # group_by == "polarization"
+            # One panel per direction, lines for each polarization
+            self._plot_far_field_by_direction(df, metric, metric_label)
+
+    def _plot_far_field_all_combinations(
+        self,
+        df: pd.DataFrame,
+        metric: str,
+        metric_label: str,
+    ):
+        """Plots all direction/polarization combinations on one plot."""
+        # Create combined label
+        df["combo"] = df["direction"] + " " + df["polarization"]
+
+        # Pivot to get frequency vs combo
+        pivot = df.pivot_table(
+            index="frequency_mhz",
+            columns="combo",
+            values=metric,
+            aggfunc="mean",
+        )
+
+        if pivot.empty:
+            return
+
+        # Sort columns for consistent ordering
+        direction_order = ["From left", "From right", "From back", "From front", "From below", "From above"]
+        pol_order = ["Theta", "Phi"]
+        ordered_cols = []
+        for d in direction_order:
+            for p in pol_order:
+                col = f"{d} {p}"
+                if col in pivot.columns:
+                    ordered_cols.append(col)
+        pivot = pivot[ordered_cols]
+
+        # Calculate dynamic height
+        n_items = len(pivot.columns)
+        n_cols = 3  # Legend columns
+        legend_height = self._calculate_legend_height(n_items, n_cols=n_cols)
+        total_height = 3.0 + legend_height
+
+        fig, ax = plt.subplots(figsize=(7.16, total_height))  # Two-column width for many lines
+
+        colors = self._get_academic_colors(len(pivot.columns))
+        linestyles = self._get_academic_linestyles(len(pivot.columns))
+        markers = self._get_academic_markers(len(pivot.columns))
+
+        for idx, col in enumerate(pivot.columns):
+            ax.plot(
+                pivot.index,
+                pivot[col],
+                marker=markers[idx],
+                linestyle=linestyles[idx],
+                color=colors[idx],
+                label=col,
+                linewidth=1.0,
+                markersize=3,
+                alpha=0.8,
+            )
+
+        ax.set_xlabel(self._format_axis_label("Frequency", "MHz"))
+        ax.set_ylabel(self._format_axis_label(metric_label, r"mW kg$^{-1}$"))
+        ax.set_xticks(pivot.index)
+        plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
+        self._adjust_slanted_tick_labels(ax)
+        ax.grid(True, alpha=0.3)
+
+        # Set y-axis to start at 0
+        y_max = ax.get_ylim()[1]
+        ax.set_ylim(0, y_max * 1.05)
+
+        self._place_legend_below(fig, ax, n_items, n_cols=n_cols)
+        plt.tight_layout()
+
+        base_title = f"far-field {metric_label} vs frequency by direction and polarization"
+        title_full = self._get_title_with_phantom(base_title)
+        phantom_name_formatted = self.phantom_name.capitalize() if self.phantom_name else "the phantom"
+        caption = (
+            f"The line plot shows normalized {metric_label} values for {phantom_name_formatted} "
+            f"across frequencies for each far-field incident direction and polarization combination. "
+            f"Each line represents a specific direction (from left/right, front/back, above/below) and polarization (Theta, Phi) configuration."
+        )
+
+        filename_base = f"line_direction_polarization_{metric}_all"
+        filename = self._save_figure(fig, "line", filename_base, title=title_full, caption=caption, dpi=300)
+
+        # Save CSV
+        pivot.index.name = "frequency_mhz"
+        self._save_csv_data(pivot, "line", filename_base)
+
+        logging.getLogger("progress").info(
+            f"  - Generated direction/polarization line plot: {filename}",
+            extra={"log_type": "success"},
+        )
+
+    def _plot_far_field_by_polarization(
+        self,
+        df: pd.DataFrame,
+        metric: str,
+        metric_label: str,
+    ):
+        """Creates side-by-side panels: one for Theta, one for Phi, with direction lines."""
+        import matplotlib.gridspec as gridspec
+
+        # Get unique polarizations
+        polarizations = ["Theta", "Phi"]
+        direction_order = ["From left", "From right", "From back", "From front", "From below", "From above"]
+
+        fig = plt.figure(figsize=(7.16, 4.0))  # Slightly taller to accommodate legend
+        gs = gridspec.GridSpec(1, 2, wspace=0.3, bottom=0.22)
+
+        colors = self._get_academic_colors(len(direction_order))
+        linestyles = self._get_academic_linestyles(len(direction_order))
+        markers = self._get_academic_markers(len(direction_order))
+
+        legend_handles = []
+        legend_labels = []
+
+        for panel_idx, pol in enumerate(polarizations):
+            ax = fig.add_subplot(gs[0, panel_idx])
+
+            pol_df = df[df["polarization"] == pol]
+            pivot = pol_df.pivot_table(
+                index="frequency_mhz",
+                columns="direction",
+                values=metric,
+                aggfunc="mean",
+            )
+
+            # Reorder columns
+            ordered_cols = [d for d in direction_order if d in pivot.columns]
+            pivot = pivot[ordered_cols]
+
+            for idx, direction in enumerate(ordered_cols):
+                (line,) = ax.plot(
+                    pivot.index,
+                    pivot[direction],
+                    marker=markers[idx],
+                    linestyle=linestyles[idx],
+                    color=colors[idx],
+                    linewidth=1.2,
+                    markersize=4,
+                )
+                # Collect legend items from first panel
+                if panel_idx == 0:
+                    legend_handles.append(line)
+                    legend_labels.append(direction)
+
+            ax.set_xlabel(self._format_axis_label("Frequency", "MHz"))
+            if panel_idx == 0:
+                ax.set_ylabel(self._format_axis_label(metric_label, r"mW kg$^{-1}$"))
+            ax.set_title(f"{pol} Polarization", fontsize=10, fontweight="bold")
+            ax.set_xticks(pivot.index)
+            plt.setp(ax.get_xticklabels(), rotation=45, ha="right", fontsize=7)
+            ax.grid(True, alpha=0.3)
+
+            # Set y-axis to start at 0
+            y_max = ax.get_ylim()[1]
+            ax.set_ylim(0, y_max * 1.05)
+
+        # Add shared legend below both panels
+        fig.legend(
+            legend_handles,
+            legend_labels,
+            loc="lower center",
+            ncol=len(legend_labels),
+            fontsize=8,
+            frameon=True,
+            fancybox=False,
+            edgecolor="black",
+            bbox_to_anchor=(0.5, 0.02),
+        )
+
+        base_title = f"far-field {metric_label} vs frequency by direction grouped by polarization"
+        title_full = self._get_title_with_phantom(base_title)
+        phantom_name_formatted = self.phantom_name.capitalize() if self.phantom_name else "the phantom"
+        caption = (
+            f"The dual-panel line plot shows normalized {metric_label} values for {phantom_name_formatted} "
+            f"across frequencies. Left panel shows Theta polarization, right panel shows Phi polarization. "
+            f"Each line represents a different incident direction (from left/right, front/back, above/below)."
+        )
+
+        filename_base = f"line_direction_polarization_{metric}_by_polarization"
+        filename = self._save_figure(fig, "line", filename_base, title=title_full, caption=caption, dpi=300)
+
+        logging.getLogger("progress").info(
+            f"  - Generated direction lines by polarization: {filename}",
+            extra={"log_type": "success"},
+        )
+
+    def _plot_far_field_by_direction(
+        self,
+        df: pd.DataFrame,
+        metric: str,
+        metric_label: str,
+    ):
+        """Creates multi-panel figure: one panel per direction, lines for polarizations."""
+        import matplotlib.gridspec as gridspec
+
+        direction_order = ["From left", "From right", "From back", "From front", "From below", "From above"]
+        polarizations = ["Theta", "Phi"]
+
+        # 2x3 grid of panels with room for legend
+        fig = plt.figure(figsize=(7.16, 5.5))
+        gs = gridspec.GridSpec(2, 3, hspace=0.45, wspace=0.3, bottom=0.15)
+
+        colors = self._get_academic_colors(len(polarizations))
+        linestyles = self._get_academic_linestyles(len(polarizations))
+        markers = self._get_academic_markers(len(polarizations))
+
+        legend_handles = []
+        legend_labels = []
+
+        for panel_idx, direction in enumerate(direction_order):
+            row = panel_idx // 3
+            col = panel_idx % 3
+            ax = fig.add_subplot(gs[row, col])
+
+            dir_df = df[df["direction"] == direction]
+            pivot = dir_df.pivot_table(
+                index="frequency_mhz",
+                columns="polarization",
+                values=metric,
+                aggfunc="mean",
+            )
+
+            # Reorder columns
+            ordered_cols = [p for p in polarizations if p in pivot.columns]
+            if ordered_cols:
+                pivot = pivot[ordered_cols]
+
+            for idx, pol in enumerate(ordered_cols):
+                (line,) = ax.plot(
+                    pivot.index,
+                    pivot[pol],
+                    marker=markers[idx],
+                    linestyle=linestyles[idx],
+                    color=colors[idx],
+                    linewidth=1.2,
+                    markersize=4,
+                )
+                # Collect legend items from first panel
+                if panel_idx == 0:
+                    legend_handles.append(line)
+                    legend_labels.append(pol)
+
+            ax.set_title(f"Direction: {direction}", fontsize=9, fontweight="bold")
+            if row == 1:
+                ax.set_xlabel("Freq (MHz)", fontsize=8)
+            if col == 0:
+                ax.set_ylabel(f"{metric_label[:15]}..." if len(metric_label) > 15 else metric_label, fontsize=8)
+            ax.tick_params(labelsize=7)
+            ax.set_xticks(pivot.index)
+            plt.setp(ax.get_xticklabels(), rotation=45, ha="right", fontsize=6)
+            ax.grid(True, alpha=0.3)
+
+            # Set y-axis to start at 0
+            y_max = ax.get_ylim()[1]
+            ax.set_ylim(0, y_max * 1.05)
+
+        # Add shared legend below all panels
+        fig.legend(
+            legend_handles,
+            legend_labels,
+            loc="lower center",
+            ncol=len(legend_labels),
+            fontsize=8,
+            frameon=True,
+            fancybox=False,
+            edgecolor="black",
+            bbox_to_anchor=(0.5, 0.02),
+        )
+
+        base_title = f"far-field {metric_label} vs frequency comparing polarizations by direction"
+        title_full = self._get_title_with_phantom(base_title)
+        phantom_name_formatted = self.phantom_name.capitalize() if self.phantom_name else "the phantom"
+        caption = (
+            f"The multi-panel line plot shows normalized {metric_label} values for {phantom_name_formatted} "
+            f"across frequencies. Each panel represents a different incident direction (from left/right, front/back, above/below). "
+            f"The two lines in each panel compare Theta vs Phi polarization."
+        )
+
+        filename_base = f"line_direction_polarization_{metric}_by_direction"
+        filename = self._save_figure(fig, "line", filename_base, title=title_full, caption=caption, dpi=300)
+
+        logging.getLogger("progress").info(
+            f"  - Generated polarization lines by direction: {filename}",
+            extra={"log_type": "success"},
+        )
+
+    def plot_far_field_direction_polarization_comparison(
+        self,
+        results_df: pd.DataFrame,
+        metrics: list[str] | None = None,
+    ):
+        """Generates frequency-dependent comparison plots for all direction/polarization combos.
+
+        Creates multiple line plots showing how SAR varies with frequency for different
+        direction/polarization combinations.
+
+        Args:
+            results_df: DataFrame with 'placement' column containing direction/polarization info.
+            metrics: List of metrics to plot. If None, uses common metrics.
+        """
+        if metrics is None:
+            # Include both SAR tissue groups and psSAR10g metrics
+            # SAR tissue groups are added during analysis via _add_tissue_group_sar()
+            possible_metrics = [
+                # Whole-body and peak metrics
+                "SAR_whole_body",
+                "peak_sar",
+                # SAR tissue groups (average SAR per tissue group)
+                "SAR_brain",
+                "SAR_skin",
+                "SAR_eyes",
+                "SAR_genitals",
+                # psSAR10g metrics (peak spatial-average SAR)
+                "psSAR10g_brain",
+                "psSAR10g_skin",
+                "psSAR10g_eyes",
+                "psSAR10g_genitals",
+            ]
+            metrics = [m for m in possible_metrics if m in results_df.columns and results_df[m].notna().any()]
+
+        if not metrics:
+            logging.getLogger("progress").warning(
+                "  - WARNING: No valid metrics for direction/polarization comparison.",
+                extra={"log_type": "warning"},
+            )
+            return
+
+        logging.getLogger("progress").info(
+            "  - Generating direction/polarization frequency comparison plots...",
+            extra={"log_type": "info"},
+        )
+
+        for metric in metrics:
+            # Generate the "by polarization" view - most useful for comparing directions
+            self.plot_far_field_direction_polarization_lines(results_df, metric=metric, group_by="direction")
+
+    def plot_cross_phantom_comparison(
+        self,
+        all_phantom_data: dict[str, pd.DataFrame],
+        metrics: list[str] | None = None,
+    ):
+        """Plots SAR vs frequency comparing different phantoms.
+
+        Creates line plots showing how SAR varies with frequency for each phantom,
+        revealing age/body-size dependent absorption patterns.
+
+        Args:
+            all_phantom_data: Dictionary mapping phantom names to their results DataFrames.
+            metrics: List of metrics to plot. If None, uses common metrics.
+        """
+        if not all_phantom_data:
+            logging.getLogger("progress").warning(
+                "  - WARNING: No phantom data for cross-phantom comparison.",
+                extra={"log_type": "warning"},
+            )
+            return
+
+        if metrics is None:
+            # Default metrics - check what's available in first phantom
+            first_df = list(all_phantom_data.values())[0]
+            possible_metrics = [
+                "SAR_whole_body",
+                "SAR_brain",
+                "SAR_eyes",
+                "SAR_skin",
+                "SAR_genitals",
+            ]
+            metrics = [m for m in possible_metrics if m in first_df.columns and first_df[m].notna().any()]
+
+        if not metrics:
+            return
+
+        # Phantom display names: simplified (Adult/Child Male/Female)
+        phantom_info = {
+            "duke": ("Duke", "Adult male"),
+            "ella": ("Ella", "Adult female"),
+            "eartha": ("Eartha", "Child female"),
+            "thelonious": ("Thelonious", "Child male"),
+        }
+
+        # Use standard academic colors: black, red, dark blue, purple
+        academic_colors = self._get_academic_colors(4)
+        phantom_colors = {
+            "duke": academic_colors[0],  # black (adult male)
+            "ella": academic_colors[2],  # dark blue (adult female)
+            "eartha": academic_colors[3],  # purple (child female)
+            "thelonious": academic_colors[1],  # red (child male)
+        }
+
+        # Use standard academic markers and linestyles
+        academic_markers = self._get_academic_markers(4)
+        academic_linestyles = self._get_academic_linestyles(4)
+        phantom_markers = {
+            "duke": academic_markers[0],  # circle
+            "ella": academic_markers[1],  # square
+            "eartha": academic_markers[2],  # triangle
+            "thelonious": academic_markers[3],  # diamond
+        }
+        phantom_linestyles = {
+            "duke": academic_linestyles[0],  # solid
+            "ella": academic_linestyles[1],  # dashed
+            "eartha": academic_linestyles[2],  # dotted
+            "thelonious": academic_linestyles[3],  # dashdot
+        }
+
+        for metric in metrics:
+            # Create figure
+            fig, ax = plt.subplots(figsize=(5, 3.5))
+
+            # Combine data from all phantoms
+            for phantom_name, df in all_phantom_data.items():
+                if metric not in df.columns or df[metric].isna().all():
+                    continue
+
+                # Compute statistics per frequency: mean, 25th, 75th percentile
+                freq_stats = df.groupby("frequency_mhz")[metric].agg(["mean", lambda x: x.quantile(0.25), lambda x: x.quantile(0.75)])
+                freq_stats.columns = ["mean", "p25", "p75"]
+
+                display_name, description = phantom_info.get(phantom_name.lower(), (phantom_name.capitalize(), ""))
+                label = f"{display_name} ({description})" if description else display_name
+                color = phantom_colors.get(phantom_name.lower(), "gray")
+
+                # Plot line with markers and linestyle
+                ax.plot(
+                    freq_stats.index,
+                    freq_stats["mean"].values,
+                    marker=phantom_markers.get(phantom_name.lower(), "o"),
+                    linestyle=phantom_linestyles.get(phantom_name.lower(), "solid"),
+                    color=color,
+                    label=label,
+                    linewidth=1.5,
+                    markersize=5,
+                )
+
+                # Add 25-75th percentile whiskers (simple error bars)
+                ax.errorbar(
+                    freq_stats.index,
+                    freq_stats["mean"].values,
+                    yerr=[freq_stats["mean"] - freq_stats["p25"], freq_stats["p75"] - freq_stats["mean"]],
+                    fmt="none",  # No markers, just error bars
+                    color=color,
+                    capsize=3,
+                    capthick=0.7,
+                    elinewidth=0.7,
+                    alpha=0.8,
+                )
+
+            # Format axes
+            ax.set_xlabel("Frequency (MHz)", fontsize=9)
+            metric_label = METRIC_LABELS.get(metric, metric.replace("_", " ").title())
+            ax.set_ylabel(f"{metric_label} (mW/kg)", fontsize=9)
+            ax.tick_params(axis="both", labelsize=8)
+
+            # Y-axis starts from 0
+            ax.set_ylim(bottom=0)
+
+            # Set x-axis to log scale if frequencies span wide range
+            frequencies = list(all_phantom_data.values())[0]["frequency_mhz"].unique()
+            if max(frequencies) / min(frequencies) > 5:
+                ax.set_xscale("log")
+                ax.set_xticks(sorted(frequencies))
+                ax.set_xticklabels([str(int(f)) for f in sorted(frequencies)], rotation=45, ha="right")
+
+            ax.grid(True, alpha=0.3, linestyle="--")
+            ax.legend(fontsize=7, loc="upper right", frameon=True, fancybox=False, edgecolor="black")
+
+            plt.tight_layout()
+
+            # Save
+            filename = f"line_cross_phantom_{metric}"
+            title = self._get_title_with_phantom(f"Cross-Phantom Comparison: {metric_label}")
+            caption = (
+                f"Cross-phantom comparison of {metric_label.lower()} as a function of frequency. "
+                f"Lines show means across all incident directions and polarizations. "
+                f"Whiskers indicate 25th-75th percentile range. "
+                f"Children show approximately 1.5-2× higher absorption than adults."
+            )
+            self._save_figure(fig, "line", filename, title=title, caption=caption, dpi=300)
+
+        logging.getLogger("progress").info(
+            f"  - Generated {len(metrics)} cross-phantom comparison plots",
+            extra={"log_type": "info"},
+        )
+
+    def plot_polarization_ratio_lines(
+        self,
+        results_df: pd.DataFrame,
+        metrics: list[str] | None = None,
+    ):
+        """Plots theta/phi polarization ratio vs frequency for each direction.
+
+        Shows how the polarization sensitivity changes with frequency for different
+        incident directions. This is unique to far-field analysis.
+
+        Args:
+            results_df: DataFrame with placement column containing direction and polarization info.
+            metrics: List of metrics to analyze. If None, uses common metrics.
+        """
+        if results_df.empty:
+            return
+
+        # Parse placement to extract direction and polarization
+        def parse_placement(placement: str) -> tuple[str | None, str | None]:
+            parts = placement.split("_")
+            if len(parts) >= 4:
+                direction = f"{parts[1]}_{parts[2]}"  # e.g., "x_pos"
+                pol = parts[3]  # "theta" or "phi"
+                return direction, pol
+            return None, None
+
+        df = results_df.copy()
+        df[["direction", "polarization"]] = df["placement"].apply(lambda x: pd.Series(parse_placement(x)))
+        df = df.dropna(subset=["direction", "polarization"])
+
+        if df.empty:
+            return
+
+        if metrics is None:
+            possible_metrics = ["SAR_whole_body", "psSAR10g_brain", "psSAR10g_eyes", "psSAR10g_skin", "psSAR10g_genitals"]
+            metrics = [m for m in possible_metrics if m in df.columns and df[m].notna().any()]
+
+        if not metrics:
+            return
+
+        # Direction display names (human-readable: describes where wave comes FROM)
+        direction_names = {
+            "x_pos": "From left",
+            "x_neg": "From right",
+            "y_pos": "From back",
+            "y_neg": "From front",
+            "z_pos": "From below",
+            "z_neg": "From above",
+        }
+
+        direction_order = ["x_pos", "x_neg", "y_pos", "y_neg", "z_pos", "z_neg"]
+        available_directions = [d for d in direction_order if d in df["direction"].unique()]
+
+        # Use standard academic colors, markers, and linestyles for metrics
+        academic_colors = self._get_academic_colors(5)
+        academic_markers = self._get_academic_markers(5)
+        academic_linestyles = self._get_academic_linestyles(5)
+        metrics_list = ["SAR_whole_body", "psSAR10g_brain", "psSAR10g_eyes", "psSAR10g_skin", "psSAR10g_genitals"]
+        metric_colors = {m: academic_colors[i] for i, m in enumerate(metrics_list)}
+        metric_markers = {m: academic_markers[i] for i, m in enumerate(metrics_list)}
+        metric_linestyles = {m: academic_linestyles[i] for i, m in enumerate(metrics_list)}
+
+        # First pass: compute global max ratio across all panels
+        global_max_ratio = 0.0
+        all_ratios = {}
+        for direction in available_directions[:6]:
+            dir_df = df[df["direction"] == direction]
+            all_ratios[direction] = {}
+            for metric in metrics:
+                if metric not in dir_df.columns:
+                    continue
+                pivot = dir_df.pivot_table(values=metric, index="frequency_mhz", columns="polarization", aggfunc="mean")
+                if "theta" in pivot.columns and "phi" in pivot.columns:
+                    ratio = pivot["theta"] / pivot["phi"]
+                    ratio = ratio.dropna()
+                    if not ratio.empty:
+                        all_ratios[direction][metric] = ratio
+                        global_max_ratio = max(global_max_ratio, ratio.max())
+
+        # Add some headroom to max
+        y_max = max(global_max_ratio * 1.1, 1.5)
+
+        # Create 2x3 panel figure with more vertical space and room for legend
+        fig = plt.figure(figsize=(8, 6))
+        gs = fig.add_gridspec(2, 3, hspace=0.45, wspace=0.3, bottom=0.18)
+
+        legend_handles = []
+        legend_labels = []
+
+        for panel_idx, direction in enumerate(available_directions[:6]):
+            row = panel_idx // 3
+            col = panel_idx % 3
+            ax = fig.add_subplot(gs[row, col])
+
+            for metric in metrics:
+                if direction not in all_ratios or metric not in all_ratios[direction]:
+                    continue
+
+                ratio = all_ratios[direction][metric]
+                color = metric_colors.get(metric, "gray")
+                marker = metric_markers.get(metric, "o")
+                linestyle = metric_linestyles.get(metric, "solid")
+                label = metric.replace("SAR_", "").replace("psSAR10g_", "").replace("_", " ").title()
+
+                (line,) = ax.plot(
+                    ratio.index,
+                    ratio.values,
+                    marker=marker,
+                    linestyle=linestyle,
+                    color=color,
+                    linewidth=1.0,
+                    markersize=3,
+                )
+
+                # Collect legend items only once (from first panel)
+                if panel_idx == 0:
+                    legend_handles.append(line)
+                    legend_labels.append(label)
+
+            # Reference line at ratio=1.0
+            ax.axhline(y=1.0, color="gray", linestyle="--", linewidth=0.8, alpha=0.7)
+
+            # Formatting
+            ax.set_title(direction_names.get(direction, direction), fontsize=9)
+            ax.set_xlabel("Frequency (MHz)", fontsize=8)
+            if col == 0:
+                ax.set_ylabel("Theta/Phi Ratio", fontsize=8)
+            ax.tick_params(axis="both", labelsize=7)
+
+            # Y-axis: start from 0, use global max
+            ax.set_ylim(0, y_max)
+
+            # Log scale for x-axis
+            frequencies = sorted(df["frequency_mhz"].unique())
+            if len(frequencies) > 1 and max(frequencies) / min(frequencies) > 5:
+                ax.set_xscale("log")
+                ax.set_xticks(frequencies)
+                ax.set_xticklabels([str(int(f)) for f in frequencies], rotation=45, ha="right", fontsize=6)
+
+            ax.grid(True, alpha=0.3, linestyle="--")
+
+        # Add shared legend below all subplots
+        fig.legend(
+            legend_handles,
+            legend_labels,
+            loc="lower center",
+            ncol=len(legend_labels),
+            fontsize=8,
+            frameon=True,
+            fancybox=False,
+            edgecolor="black",
+            bbox_to_anchor=(0.5, 0.02),
+        )
+
+        # Save
+        filename = "line_polarization_ratio_by_direction"
+        title = self._get_title_with_phantom("Polarization Ratio vs Frequency by Direction")
+        caption = (
+            "Theta/phi polarization ratio as a function of frequency for each incident direction. "
+            "Ratio > 1.0 indicates theta polarization gives higher SAR; ratio < 1.0 indicates phi dominates. "
+            "The gray dashed line marks the equal polarization reference (ratio = 1.0). "
+            "Significant frequency-dependent variations indicate complex polarization sensitivity."
+        )
+        self._save_figure(fig, "line", filename, title=title, caption=caption, dpi=300)
+
+        logging.getLogger("progress").info(
+            "  - Generated polarization ratio line plot",
+            extra={"log_type": "info"},
+        )

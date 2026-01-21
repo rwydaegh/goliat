@@ -74,6 +74,65 @@ def load_analysis_config(config_path: str | None) -> dict:
         return {}
 
 
+def _generate_cross_phantom_plots(config, phantoms: list, plot_format: str, analysis_config: dict):
+    """Generate cross-phantom comparison plots for far-field studies.
+
+    This loads data from all phantoms and creates comparison plots showing
+    how SAR varies across different body types (adults vs children).
+    """
+    import pandas as pd
+    from goliat.analysis.plotter import Plotter
+
+    # Check if this plot type should be generated
+    if not analysis_config.get("plot_cross_phantom_comparison", True):
+        return
+
+    logging.getLogger("progress").info(
+        "--- Generating cross-phantom comparison plots ---",
+        extra={"log_type": "header"},
+    )
+
+    # Load data from all phantoms
+    all_phantom_data = {}
+    base_dir = get_base_dir()
+
+    for phantom_name in phantoms:
+        results_file = os.path.join(base_dir, f"results/far_field/{phantom_name}/normalized_results_detailed.csv")
+        if os.path.exists(results_file):
+            try:
+                df = pd.read_csv(results_file)
+                all_phantom_data[phantom_name] = df
+                logging.getLogger("progress").debug(
+                    f"  - Loaded {len(df)} rows from {phantom_name}",
+                    extra={"log_type": "verbose"},
+                )
+            except Exception as e:
+                logging.getLogger("progress").warning(
+                    f"  - WARNING: Failed to load {phantom_name} data: {e}",
+                    extra={"log_type": "warning"},
+                )
+
+    if len(all_phantom_data) < 2:
+        logging.getLogger("progress").warning(
+            "  - WARNING: Need at least 2 phantoms for cross-phantom comparison.",
+            extra={"log_type": "warning"},
+        )
+        return
+
+    # Create plotter and generate plots
+    # Use first phantom's output dir for the cross-phantom plots
+    first_phantom = phantoms[0]
+    output_dir = os.path.join(base_dir, f"plots/far_field/{first_phantom}")
+
+    plotter = Plotter(output_dir, first_phantom, plot_format=plot_format)
+    plotter.plot_cross_phantom_comparison(all_phantom_data)
+
+    logging.getLogger("progress").info(
+        "--- Cross-phantom comparison complete ---",
+        extra={"log_type": "success"},
+    )
+
+
 def main():
     """
     Main entry point for the analysis script.
@@ -184,6 +243,10 @@ def main():
                 analyzer = Analyzer(config, phantom_name, strategy, plot_format=args.format)
                 analyzer.run_analysis()
 
+            # Cross-phantom comparison for far-field (requires all phantom data)
+            if study_type == "far_field" and len(phantoms) > 1:
+                _generate_cross_phantom_plots(config, phantoms, args.format, analysis_config)
+
             if args.generate_paper:
                 from cli.generate_paper import main as generate_paper_main
 
@@ -252,6 +315,10 @@ def main():
 
             analyzer = Analyzer(config, phantom_name, strategy, plot_format=args.format)
             analyzer.run_analysis()
+
+        # Cross-phantom comparison for far-field (requires all phantom data)
+        if study_type == "far_field" and len(phantoms) > 1:
+            _generate_cross_phantom_plots(config, phantoms, args.format, analysis_config)
 
         # Generate paper if requested
         if args.generate_paper:

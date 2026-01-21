@@ -103,6 +103,7 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
         norm_factor: float,
         sar_results: dict | None = None,
     ) -> tuple[dict, list]:
+        """Extract and normalize SAR data from pickle file for far-field results."""
         summary_results = pickle_data.get("summary_results", {})
         grouped_stats = pickle_data.get("grouped_sar_stats", {})
         detailed_df = pickle_data.get("detailed_sar_stats")
@@ -146,17 +147,34 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
         if detailed_df is not None:
             peak_sar_col = "Peak Spatial-Average SAR[IEEE/IEC62704-1] (10g)"
             for _, row in detailed_df.iterrows():
-                organ_entries.append(
-                    {
-                        "frequency_mhz": frequency_mhz,
-                        "placement": placement_name,
-                        "tissue": _clean_tissue_name(row["Tissue"]),  # Clean tissue name early
-                        "mass_avg_sar_mw_kg": row["Mass-Averaged SAR"] * norm_factor * 1000,
-                        "peak_sar_10g_mw_kg": row.get(peak_sar_col, pd.NA) * norm_factor * 1000
-                        if pd.notna(row.get(peak_sar_col))
-                        else pd.NA,
-                    }
-                )
+                organ_entry = {
+                    "frequency_mhz": frequency_mhz,
+                    "placement": placement_name,
+                    "scenario": scenario_name,  # Added for symmetry with near-field
+                    "tissue": _clean_tissue_name(row["Tissue"]),  # Clean tissue name early
+                    "mass_avg_sar_mw_kg": row["Mass-Averaged SAR"] * norm_factor * 1000,
+                    "peak_sar_10g_mw_kg": row.get(peak_sar_col, pd.NA) * norm_factor * 1000 if pd.notna(row.get(peak_sar_col)) else pd.NA,
+                    "min_local_sar_mw_kg": row.get("Min. local SAR", pd.NA) * norm_factor * 1000
+                    if pd.notna(row.get("Min. local SAR", pd.NA))
+                    else pd.NA,
+                    "max_local_sar_mw_kg": row.get("Max. local SAR", pd.NA) * norm_factor * 1000
+                    if pd.notna(row.get("Max. local SAR", pd.NA))
+                    else pd.NA,
+                }
+                # Add Total Mass, Total Volume, Total Loss, Max Loss Power Density if available
+                # (symmetric with near-field strategy)
+                if "Total Mass" in row.index:
+                    organ_entry["Total Mass"] = row["Total Mass"]
+                if "Total Volume" in row.index:
+                    organ_entry["Total Volume"] = row["Total Volume"]
+                if "Total Loss" in row.index:
+                    organ_entry["Total Loss"] = row["Total Loss"]
+                if "Max Loss Power Density" in row.index:
+                    organ_entry["Max Loss Power Density"] = row["Max Loss Power Density"]
+                # Add psSAR10g column name for compatibility (symmetric with near-field)
+                if peak_sar_col in row.index and pd.notna(row[peak_sar_col]):
+                    organ_entry["psSAR10g"] = row[peak_sar_col] * norm_factor * 1000
+                organ_entries.append(organ_entry)
         return result_entry, organ_entries
 
     def apply_bug_fixes(self, result_entry: dict) -> dict:
@@ -229,7 +247,7 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
         results_df: pd.DataFrame,
         all_organ_results_df: pd.DataFrame,
     ):
-        """Generates comprehensive plots for far-field analysis.
+        """Generates all plots for far-field analysis.
 
         Includes bar charts, line plots, boxplots, heatmaps, ranking plots,
         CDF plots, correlation matrices, bubble plots, and tissue analysis.
@@ -264,6 +282,39 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
             plotter.plot_average_sar_bar("environmental", summary_stats, None, results_df)
         if self.should_generate_plot("plot_average_pssar_bar"):
             plotter.plot_average_pssar_bar("environmental", summary_stats, None, results_df)
+
+        # ============================================================================
+        # Far-field Direction vs Polarization Comparison (unique to far-field)
+        # ============================================================================
+        if self.should_generate_plot("plot_far_field_direction_polarization_summary"):
+            logging.getLogger("progress").info(
+                "  - Generating direction/polarization comparison heatmaps (frequency-averaged)...",
+                extra={"log_type": "info"},
+            )
+            plotter.plot_far_field_direction_polarization_summary(results_df)
+
+        # Frequency-dependent line plots for direction/polarization comparison
+        if self.should_generate_plot("plot_far_field_direction_polarization_comparison"):
+            logging.getLogger("progress").info(
+                "  - Generating direction/polarization frequency-dependence comparison plots...",
+                extra={"log_type": "info"},
+            )
+            plotter.plot_far_field_direction_polarization_comparison(results_df)
+
+        # ============================================================================
+        # Polarization Ratio Analysis (unique to far-field)
+        # ============================================================================
+        if self.should_generate_plot("plot_polarization_ratio"):
+            logging.getLogger("progress").info(
+                "  - Generating polarization ratio analysis plots...",
+                extra={"log_type": "info"},
+            )
+            # Line plot: ratio vs frequency per direction (shows frequency evolution)
+            plotter.plot_polarization_ratio_lines(results_df)
+            # Frequency-averaged heatmap (quick overview)
+            plotter.plot_polarization_ratio_heatmap(results_df)
+            # Per-frequency heatmaps (full detail)
+            plotter.plot_polarization_ratio_heatmaps_per_frequency(results_df)
 
         # ============================================================================
         # Individual Variation Line Plots (one line per direction/polarization)
