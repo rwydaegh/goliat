@@ -229,6 +229,7 @@ class SapdExtractor(LoggingMixin):
         peak_loc = None
 
         def safe_get_value(key: str) -> Optional[Any]:
+            """Get value from data collection, returns None on TypeError."""
             try:
                 return data_collection.FieldValue(key, 0)
             except TypeError:

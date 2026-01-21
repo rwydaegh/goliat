@@ -24,6 +24,7 @@ class BatchGUI(QWidget):
     cancel_jobs_requested = Signal()
 
     def __init__(self):
+        """Create window and wire up button signals."""
         super().__init__()
         self.init_ui()
 

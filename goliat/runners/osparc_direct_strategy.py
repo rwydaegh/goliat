@@ -2,8 +2,9 @@
 
 import os
 import time
-import traceback
 from typing import TYPE_CHECKING
+
+from ..utils.version import get_version_display_string, is_sim4life_92_or_later
 
 from ..logging_manager import LoggingMixin
 from .execution_strategy import ExecutionStrategy
@@ -41,7 +42,7 @@ class OSPARCDirectStrategy(ExecutionStrategy, LoggingMixin):
         4. Downloads results when job completes successfully
         5. Reloads project to load results into Sim4Life
 
-        This requires Sim4Life 8.2.0 for the XOsparcApiClient module. The method
+        This requires Sim4Life 9.2+ for the XOsparcApiClient module. The method
         handles authentication, job lifecycle, and error reporting.
 
         Raises:
@@ -51,22 +52,22 @@ class OSPARCDirectStrategy(ExecutionStrategy, LoggingMixin):
             FileNotFoundError: If solver input file not found.
             ValueError: If oSPARC credentials are missing from config.
         """
-        try:
-            import XOsparcApiClient  # type: ignore # Only available in Sim4Life v8.2.0 and later.
-        except ImportError as e:
+        # XOsparcApiClient is only available in Sim4Life 9.2+
+        if not is_sim4life_92_or_later():
+            detected = get_version_display_string()
             self._log(
-                "Failed to import XOsparcApiClient. This module is required for direct oSPARC integration.",
+                f"XOsparcApiClient requires Sim4Life 9.2+. Detected: {detected}",
                 level="progress",
                 log_type="error",
             )
             self._log(
-                "Please ensure you are using Sim4Life version 8.2 or 9.2.",
+                "Use the osparc PyPI package for batch runs on 8.2, or upgrade to 9.2.",
                 level="progress",
                 log_type="info",
             )
-            self._log(f"Original error: {e}", log_type="verbose")
-            self.verbose_logger.error(traceback.format_exc())
-            raise RuntimeError("Could not import XOsparcApiClient module, which is necessary for oSPARC runs.")
+            raise RuntimeError(f"oSPARC direct strategy requires Sim4Life 9.2+, but running on {detected}.")
+
+        import XOsparcApiClient  # type: ignore
 
         self._log(
             f"--- Running simulation on oSPARC server: {self.server_name} ---",

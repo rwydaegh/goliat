@@ -28,7 +28,7 @@ class Config:
     """Manages loading and access of hierarchical JSON configurations."""
 
     def __init__(self, base_dir: str, config_filename: str = "near_field_config.json", no_cache: bool = False):
-        """Initializes the Config object by loading all relevant configuration files.
+        """Load main config, material mapping, and profiling config.
 
         Args:
             base_dir: The base directory of the project.

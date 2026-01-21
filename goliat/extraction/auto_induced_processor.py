@@ -240,7 +240,7 @@ class AutoInducedProcessor(LoggingMixin):
             candidates: list[dict] = []
             all_indices = info.get("all_focus_indices", [focus_indices])
 
-            # Get the appropriate score array based on search mode
+            # Get score array based on search mode
             if search_mode == "air":
                 all_scores = info.get("all_hotspot_scores", [info.get("max_hotspot_score", 0.0)])
                 score_key = "hotspot_score"

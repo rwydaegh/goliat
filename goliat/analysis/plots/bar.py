@@ -273,13 +273,19 @@ class BarPlotter(BasePlotter):
                 fig, ax, len(formatted_legend_labels), n_cols=n_cols, handles=handles, labels=formatted_legend_labels
             )
 
-            # Add sample size annotation if available
-            if len(avg_results) > 1:
-                n_samples = len(avg_results)
+            # Add sample size annotation showing samples per bar (not number of bars)
+            # Calculate samples per frequency from scenario_results_df
+            if scenario_results_df is not None and not scenario_results_df.empty:
+                samples_per_freq = scenario_results_df.groupby("frequency_mhz").size()
+                # Use the most common sample size (mode), or mean if all different
+                if len(samples_per_freq.unique()) == 1:
+                    n_per_bar = samples_per_freq.iloc[0]
+                else:
+                    n_per_bar = int(samples_per_freq.median())
                 ax.text(
                     0.95,
                     0.95,
-                    f"n = {n_samples}",
+                    f"n = {n_per_bar}/bar",
                     transform=ax.transAxes,
                     fontsize=8,
                     verticalalignment="top",
@@ -447,13 +453,19 @@ class BarPlotter(BasePlotter):
                 fig, ax, len(formatted_legend_labels), n_cols=n_cols, handles=handles, labels=formatted_legend_labels
             )
 
-            # Add sample size annotation if available
-            if len(avg_results) > 1:
-                n_samples = len(avg_results)
+            # Add sample size annotation showing samples per bar (not number of bars)
+            # Calculate samples per frequency from scenario_results_df
+            if scenario_results_df is not None and not scenario_results_df.empty:
+                samples_per_freq = scenario_results_df.groupby("frequency_mhz").size()
+                # Use the most common sample size (mode), or mean if all different
+                if len(samples_per_freq.unique()) == 1:
+                    n_per_bar = samples_per_freq.iloc[0]
+                else:
+                    n_per_bar = int(samples_per_freq.median())
                 ax.text(
                     0.95,
                     0.95,
-                    f"n = {n_samples}",
+                    f"n = {n_per_bar}/bar",
                     transform=ax.transAxes,
                     fontsize=8,
                     verticalalignment="top",

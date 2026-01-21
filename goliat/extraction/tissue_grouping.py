@@ -15,7 +15,7 @@ class TissueGrouper:
     """Handles grouping of tissues into logical categories for SAR analysis."""
 
     def __init__(self, config: "Config", phantom_name: str, logger: "LoggingMixin"):
-        """Initializes the tissue grouper.
+        """Load material mapping for the given phantom.
 
         Args:
             config: Configuration object for accessing material mappings.

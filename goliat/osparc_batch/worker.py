@@ -24,6 +24,7 @@ class Worker(QObject):
         get_progress_report_func: Callable[..., str],
         main_process_logic_func: Callable[..., Any],
     ):
+        """Store config path and inject dependencies for batch logic."""
         super().__init__()
         # Inputs / injected dependencies
         self.config_path = config_path
@@ -208,7 +209,7 @@ class Worker(QObject):
         if self.timer.isActive():
             self.timer.stop()
         # The cancel_futures parameter is available in Python 3.9+
-        # For older versions, this will gracefully shut down.
+        # For older versions, this will still shut down cleanly.
         self.download_executor.shutdown(wait=False, cancel_futures=True)
         self.finished.emit()
         if self.thread():

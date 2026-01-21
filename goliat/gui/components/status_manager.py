@@ -51,7 +51,7 @@ class StatusManager:
 
         Strips any ANSI escape codes (from terminal formatters), preserves
         leading spaces by converting them to &nbsp; entities, then wraps
-        message in a <span> tag with appropriate color style.
+        message in a <span> tag with the matching color.
 
         Args:
             message: Message text to format.

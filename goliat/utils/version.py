@@ -180,6 +180,7 @@ def sort_versions_by_preference(python_paths: list[str]) -> list[str]:
     """
 
     def version_key(path: str) -> Tuple[int, int, int]:
+        """Return (major, minor, patch) tuple for sorting, (0,0,0) if unknown."""
         version = _parse_version_from_path(path)
         if version:
             # Higher versions get higher priority (will sort to end, then we reverse)

@@ -42,6 +42,7 @@ class BaseStudy(LoggingMixin):
         profiler=None,
         no_cache: bool = False,
     ):
+        """Load config, set up loggers and profiler, determine base directory."""
         self.study_type = study_type
         self.gui = gui
         self.verbose_logger = logging.getLogger("verbose")
@@ -220,7 +221,7 @@ class BaseStudy(LoggingMixin):
     def _validate_auto_cleanup_config(self, do_setup: bool, do_run: bool, do_extract: bool, auto_cleanup: list):
         """Validates the auto_cleanup_previous_results configuration.
 
-        Uses the more comprehensive validation from near_field_study as the base.
+        Uses the stricter validation from near_field_study as the base.
 
         Args:
             do_setup: Whether setup phase is enabled.
@@ -379,8 +380,8 @@ class BaseStudy(LoggingMixin):
     def _verify_and_update_metadata(self, stage: str):
         """Updates metadata after a stage completes if deliverables are found.
 
-        Checks for deliverable files on disk and updates the metadata file
-        accordingly. This helps the verify-and-resume feature work correctly.
+        Checks for deliverable files on disk and updates the metadata file.
+        This helps the verify-and-resume feature work correctly.
 
         Args:
             stage: Stage name ('run' or 'extract').

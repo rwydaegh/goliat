@@ -156,7 +156,7 @@ class HTTPClient(LoggingMixin):
             return False
 
     def _handle_exception(self, e: Exception, message_type: str, timeout: Optional[float] = None) -> None:
-        """Handle HTTP exceptions with appropriate logging.
+        """Handle HTTP exceptions and log them.
 
         Args:
             e: Exception that occurred.

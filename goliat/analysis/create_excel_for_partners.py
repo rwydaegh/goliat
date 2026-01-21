@@ -48,6 +48,7 @@ def _add_table_formatting(worksheet, df: pd.DataFrame, table_name: str):
 
     # Convert column number to letter (1 -> A, 2 -> B, etc.)
     def col_num_to_letter(n):
+        """Convert 1-based column index to Excel letter (1->A, 27->AA)."""
         result = ""
         while n > 0:
             n -= 1

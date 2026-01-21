@@ -137,6 +137,7 @@ class BubblePlotter(BasePlotter):
 
             # Normalize and apply power scaling
             def scale_volume(v):
+                """Map volume to marker size with power scaling for  better visual spread."""
                 normalized = (v - vol_min_legend) / (vol_max_legend - vol_min_legend) if vol_max_legend > vol_min_legend else 0.5
                 return np.power(normalized, 0.75) * 50 + 10
 

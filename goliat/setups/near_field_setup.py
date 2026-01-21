@@ -37,6 +37,7 @@ class NearFieldSetup(BaseSetup):
         gui=None,
         free_space: bool = False,
     ):
+        """Store near-field parameters (scenario, position, orientation, antenna)."""
         super().__init__(config, verbose_logger, progress_logger, gui)
         self.phantom_name = phantom_name
         self.frequency_mhz = frequency_mhz

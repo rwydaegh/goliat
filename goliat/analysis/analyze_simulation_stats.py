@@ -171,7 +171,7 @@ def compute_aggregate_stats(all_metrics: list[dict]) -> dict:
 
 
 def format_large_number(n: float, precision: int = 1) -> str:
-    """Format large numbers with appropriate suffixes."""
+    """Format large numbers with K/M/B suffixes."""
     if n >= 1e15:
         return f"{n / 1e15:.{precision}f} Quadrillion"
     elif n >= 1e12:
@@ -533,6 +533,7 @@ def create_visualizations(stats: dict, output_dir: str | Path):
 
 
 def main():
+    """CLI entry point. Parses logs and generates stats/plots."""
     import argparse
 
     parser = argparse.ArgumentParser()

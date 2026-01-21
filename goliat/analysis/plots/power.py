@@ -405,7 +405,7 @@ class PowerPlotter(BasePlotter):
         )
 
     def plot_power_balance_overview(self, results_df: pd.DataFrame):
-        """Creates comprehensive power balance overview heatmap.
+        """Creates power balance overview heatmap with all components.
 
         Args:
             results_df: DataFrame with power balance columns.

@@ -50,11 +50,11 @@ class QueueLogHandler(logging.Handler):
     """
 
     def __init__(self, queue, level: str = "verbose"):
-        """Initialize the handler.
+        """Configure handler with queue and level.
 
         Args:
             queue: Multiprocessing queue to send messages to.
-            level: Log level name ('progress' or 'verbose') for message type.
+            level: Log level name ('progress' or 'verbose') for  message type.
         """
         super().__init__()
         self.queue = queue
@@ -112,7 +112,7 @@ def setup_loggers(
     Returns:
         Tuple of (progress_logger, verbose_logger, session_timestamp).
     """
-    # Initialize colorama with appropriate settings for current environment
+    # Initialize colorama for current environment
     init_colorama()
     log_dir = "logs"
     if not os.path.exists(log_dir):
@@ -291,7 +291,7 @@ def remove_simulation_log_handlers(handlers: list[logging.Handler]):
     """
     for handler in handlers:
         if hasattr(handler, "_is_simulation_handler") and getattr(handler, "_is_simulation_handler", False):
-            # Find and remove from appropriate logger
+            # Find and remove from the right logger
             progress_logger = logging.getLogger("progress")
             verbose_logger = logging.getLogger("verbose")
 
@@ -306,7 +306,7 @@ def remove_simulation_log_handlers(handlers: list[logging.Handler]):
 class LoggingMixin:
     """A mixin class that provides a standardized logging interface.
 
-    Provides a `_log` method that directs messages to the appropriate logger
+    Provides a `_log` method that directs messages to the correct logger
     ('progress' or 'verbose') and, if available, to the GUI.
     """
 

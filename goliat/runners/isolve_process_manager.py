@@ -149,10 +149,10 @@ class ISolveProcessManager(LoggingMixin):
         return ""
 
     def terminate(self, timeout: float = 2.0) -> None:
-        """Terminate process gracefully, force kill if needed.
+        """Terminate process, force kill if it doesn't stop in time.
 
         Args:
-            timeout: Seconds to wait for graceful termination.
+            timeout: Seconds to wait before force killing.
         """
         if self.process is None:
             return

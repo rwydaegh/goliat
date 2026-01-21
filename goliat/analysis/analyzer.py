@@ -88,7 +88,7 @@ class Analyzer:
         """Processes one simulation result file.
 
         Locates JSON/PKL files, extracts data via strategy, applies bug fixes,
-        and adds to aggregator lists. Handles missing files and errors gracefully.
+        and adds to aggregator lists. Skips missing files without crashing.
 
         Args:
             frequency_mhz: Simulation frequency in MHz.

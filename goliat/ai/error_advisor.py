@@ -173,6 +173,7 @@ class ErrorAdvisor:
         self._stop_monitoring.clear()
 
         def monitor_loop():
+            """Poll log file for new content and check for errors."""
             while not self._stop_monitoring.is_set():
                 try:
                     if os.path.exists(log_file):
@@ -243,6 +244,7 @@ def setup_log_monitoring(log_file: str, on_recommendation: Optional[Callable[[Re
     if on_recommendation is None:
 
         def default_callback(rec: Recommendation):
+            """Print recommendation to stdout with separators."""
             separator = "=" * advisor.config.error_advisor.print_separator_length
             print(f"\n{separator}")
             print(f"🤖 AI Advisor ({rec.severity.upper()})")

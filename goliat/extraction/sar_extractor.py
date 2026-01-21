@@ -48,7 +48,7 @@ class SarExtractor(LoggingMixin):
         self.tissue_grouper = TissueGrouper(self.config, self.phantom_name, self)
 
     def extract_sar_statistics(self, simulation_extractor: "analysis.Extractor"):  # type: ignore
-        """Extracts comprehensive SAR statistics for all tissues.
+        """Extracts SAR statistics for all tissues.
 
         This is the main SAR extraction method that orchestrates the entire process.
         It uses Sim4Life's SarStatisticsEvaluator to compute standardized SAR metrics

@@ -13,7 +13,7 @@ class ClockManager:
     """Manages elapsed time, ETA, and window title updates."""
 
     def __init__(self, gui: "ProgressGUI") -> None:
-        """Initializes clock manager.
+        """Store GUI reference for timer updates.
 
         Args:
             gui: ProgressGUI instance.

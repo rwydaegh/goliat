@@ -53,7 +53,10 @@ def get_progress_report(input_files: list[Path], job_statuses: dict, file_to_job
             report_lines.append(f"{colorama.Fore.RED}Could not process path {file_path}: {e}{colorama.Style.RESET_ALL}")
 
     def build_tree_recursive(node, prefix=""):
+        """Walk nested dict and append tree lines to report_lines."""
+
         def sort_key(item):
+            """Sort numeric prefixes first, then alphabetically."""
             match = re.match(r"(\d+)", item)
             if match:
                 return (1, int(match.group(1)))
