@@ -13,7 +13,6 @@ Usage:
 """
 
 import argparse
-import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -309,17 +308,27 @@ def process_phantom(phantom: dict, resolution: int, force: bool = False) -> dict
     stl_path = phantom["stl_path"]
 
     # Output paths
-    json_path = phantom_dir / "cross_section_pattern.json"
+    npz_path = phantom_dir / "cross_section_pattern.npz"
     pattern_png = phantom_dir / "cross_section_pattern.png"
     heatmap_png = phantom_dir / "cross_section_heatmap.png"
 
     # Check if already processed
-    if json_path.exists() and not force:
+    if npz_path.exists() and not force:
         print("  Already processed (use --force to recompute)")
 
         # Load existing data
-        with open(json_path) as f:
-            return json.load(f)
+        data = np.load(npz_path, allow_pickle=False)
+        return {
+            "theta": data["theta"],
+            "phi": data["phi"],
+            "areas": data["areas"],
+            "stats": {
+                "min": float(data["stats_min"]),
+                "max": float(data["stats_max"]),
+                "mean": float(data["stats_mean"]),
+                "ratio": float(data["stats_ratio"]),
+            },
+        }
 
     # Load mesh
     print(f"  Loading mesh: {stl_path.name} ({phantom['size_mb']:.1f} MB)")
@@ -337,10 +346,28 @@ def process_phantom(phantom: dict, resolution: int, force: bool = False) -> dict
     stats = pattern_data["stats"]
     print(f"  Area stats: min={stats['min']:.4f}, max={stats['max']:.4f}, " + f"ratio={stats['ratio']:.2f}")
 
-    # Save JSON (version-agnostic, works across numpy versions)
-    with open(json_path, "w") as f:
-        json.dump(pattern_data, f, indent=2)
-    print(f"  Saved: {json_path.name}")
+    # Save NPZ (version-agnostic binary format, works across numpy versions)
+    # Flatten stats dict for NPZ compatibility (no nested dicts)
+    np.savez_compressed(
+        npz_path,
+        theta=np.array(pattern_data["theta"]),
+        phi=np.array(pattern_data["phi"]),
+        areas=np.array(pattern_data["areas"]),
+        units=np.array(pattern_data["units"]),
+        input_units=np.array(pattern_data["input_units"]),
+        n_theta=np.array(pattern_data["n_theta"]),
+        n_phi=np.array(pattern_data["n_phi"]),
+        bounding_box=np.array(pattern_data["bounding_box"]),
+        n_vertices=np.array(pattern_data["n_vertices"]),
+        n_faces=np.array(pattern_data["n_faces"]),
+        phantom_name=np.array(pattern_data["phantom_name"]),
+        stl_path=np.array(pattern_data["stl_path"]),
+        stats_min=np.array(stats["min"]),
+        stats_max=np.array(stats["max"]),
+        stats_mean=np.array(stats["mean"]),
+        stats_ratio=np.array(stats["ratio"]),
+    )
+    print(f"  Saved: {npz_path.name}")
 
     # Generate visualizations
     plot_antenna_pattern(pattern_data, phantom_name, pattern_png)
