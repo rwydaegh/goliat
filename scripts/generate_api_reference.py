@@ -87,6 +87,7 @@ CATEGORY_CONFIG = {
 EXCLUDE_MODULES = {
     "__init__",
     "__pycache__",
+    "keep_awake",
 }
 
 # Subdirectories to exclude entirely

@@ -1088,12 +1088,6 @@ Utility functions and helper modules.
       show_source: true
 
 
-::: goliat.utils.scripts.keep_awake
-    options:
-      show_root_heading: true
-      show_source: true
-
-
 ::: goliat.utils.scripts.prepare_antennas
     options:
       show_root_heading: true
