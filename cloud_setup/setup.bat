@@ -485,15 +485,20 @@ set "INIT_SCRIPT=%TEMP%\goliat_init_%RANDOM%.sh"
 set "INIT_SCRIPT_BASH=%INIT_SCRIPT:C:\=/c/%"
 set "INIT_SCRIPT_BASH=%INIT_SCRIPT_BASH:\=/%"
 
-:: Launch License Installer (non-blocking)
-echo Launching Sim4Life License Installer...
-set "LICENSE_PATH=C:\Users\Public\Documents\ZMT\Licensing Tools\8.2\LicenseInstall.exe"
-if exist "%LICENSE_PATH%" (
-    start "" "%LICENSE_PATH%"
-    echo License installer launched.
-) else (
-    echo WARNING: License installer not found at: %LICENSE_PATH%
-    echo Please navigate to the license installer manually.
+:: Automate License Installation using Python script
+echo Automating Sim4Life License Installation...
+echo   (This will take 30-60+ seconds for license validation)
+"C:\Program Files\Python311\python.exe" "C:\Users\%CURRENT_USER%\goliat\cloud_setup\license_automation.py"
+if %errorlevel% neq 0 (
+    echo.
+    echo ============================================================================
+    echo WARNING: License automation failed!
+    echo ============================================================================
+    echo This is often caused by VPN not being connected properly.
+    echo You can run the license installer manually later:
+    echo   C:\Users\Public\Documents\ZMT\Licensing Tools\8.2\LicenseInstall.exe
+    echo ============================================================================
+    echo.
 )
 echo.
 
@@ -522,7 +527,7 @@ echo.
 echo ============================================================================
 echo SETUP COMPLETE!
 echo ============================================================================
-echo - License installer launched
+echo - License installation automated (check output above for status)
 echo - File Explorer opened at goliat/
 echo - Git Bash launched and initialized
 echo ============================================================================
