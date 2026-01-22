@@ -127,7 +127,7 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
             if isinstance(stats, dict):
                 key = f"psSAR10g_{group_name.replace('_group', '')}"
                 peak_sar = stats.get("peak_sar", pd.NA)
-                result_entry[key] = peak_sar * norm_factor * 1000 if pd.notna(peak_sar) else pd.NA
+                result_entry[key] = peak_sar * norm_factor if pd.notna(peak_sar) else pd.NA
 
         # Extract power balance data if available
         power_balance = None
@@ -269,13 +269,18 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
             plotter.plot_whole_body_sar_bar(summary_stats)
         if self.should_generate_plot("plot_peak_sar_line"):
             plotter.plot_peak_sar_line(summary_stats)
-        if self.should_generate_plot("plot_far_field_distribution_boxplot"):
-            plotter.plot_far_field_distribution_boxplot(results_df, metric="SAR_whole_body")
-            plotter.plot_far_field_distribution_boxplot(results_df, metric="peak_sar")
+        if self.should_generate_plot("plot_sar_distribution_boxplot_single"):
+            plotter.plot_sar_distribution_boxplot_single(results_df, metric="SAR_whole_body")
+            plotter.plot_sar_distribution_boxplot_single(results_df, metric="peak_sar")
             # Also generate boxplots for tissue groups (symmetric with near-field)
             for metric in ["SAR_brain", "SAR_eyes", "SAR_skin", "SAR_genitals"]:
                 if metric in results_df.columns and results_df[metric].notna().any():
-                    plotter.plot_far_field_distribution_boxplot(results_df, metric=metric)
+                    plotter.plot_sar_distribution_boxplot_single(results_df, metric=metric)
+            # Generate boxplots for psSAR10g metrics (symmetric with near-field)
+            pssar_columns = [col for col in results_df.columns if col.startswith("psSAR10g")]
+            for metric in pssar_columns:
+                if results_df[metric].notna().any():
+                    plotter.plot_sar_distribution_boxplot_single(results_df, metric=metric)
 
         # Tissue group bar plots (symmetric with near-field: brain, eyes, skin, genitals)
         if self.should_generate_plot("plot_average_sar_bar"):
@@ -313,8 +318,8 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
             plotter.plot_polarization_ratio_lines(results_df)
             # Frequency-averaged heatmap (quick overview)
             plotter.plot_polarization_ratio_heatmap(results_df)
-            # Per-frequency heatmaps (full detail)
-            plotter.plot_polarization_ratio_heatmaps_per_frequency(results_df)
+            # Per-frequency heatmaps disabled due to memory concerns (9 figs per phantom)
+            # plotter.plot_polarization_ratio_heatmaps_per_frequency(results_df)
 
         # ============================================================================
         # Individual Variation Line Plots (one line per direction/polarization)
@@ -343,7 +348,33 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
         # ============================================================================
         # Heatmaps
         # ============================================================================
-        organ_sar_df = all_organ_results_df.groupby(["tissue", "frequency_mhz"]).agg(avg_sar=("mass_avg_sar_mw_kg", "mean")).reset_index()
+        # Check if required columns exist for full Min/Avg/Max heatmap (symmetric with NF)
+        required_cols = ["min_local_sar_mw_kg", "mass_avg_sar_mw_kg", "max_local_sar_mw_kg"]
+        missing_cols = [col for col in required_cols if col not in all_organ_results_df.columns]
+
+        if missing_cols:
+            logging.getLogger("progress").warning(
+                f"  - WARNING: Missing columns for full SAR heatmap: {missing_cols}. Using available columns.",
+                extra={"log_type": "warning"},
+            )
+            # Fallback: only use avg_sar if min/max not available
+            organ_sar_df = (
+                all_organ_results_df.groupby(["tissue", "frequency_mhz"]).agg(avg_sar=("mass_avg_sar_mw_kg", "mean")).reset_index()
+            )
+        else:
+            # Full aggregation with min/avg/max (symmetric with NF)
+            organ_sar_df = (
+                all_organ_results_df.groupby(["tissue", "frequency_mhz"])
+                .agg(
+                    min_sar=("min_local_sar_mw_kg", "mean"),
+                    avg_sar=("mass_avg_sar_mw_kg", "mean"),
+                    max_sar=("max_local_sar_mw_kg", "mean"),
+                )
+                .reset_index()
+            )
+            # Drop rows where all SAR values are NA
+            organ_sar_df = organ_sar_df.dropna(subset=["min_sar", "avg_sar", "max_sar"], how="all")
+
         organ_pssar_df = all_organ_results_df.groupby(["tissue", "frequency_mhz"])["peak_sar_10g_mw_kg"].mean().reset_index()
 
         group_summary_data = []
@@ -415,8 +446,14 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
             plotter.plot_power_balance_overview(results_df)
         if self.should_generate_plot("plot_power_efficiency_trends"):
             plotter.plot_power_efficiency_trends(results_df, scenario_name=None)
-        if self.should_generate_plot("plot_power_absorption_distribution"):
-            plotter.plot_power_absorption_distribution(results_df, scenario_name=None)
+        if not all_organ_results_df.empty and self.should_generate_plot("plot_power_absorption_distribution"):
+            if "Total Loss" in all_organ_results_df.columns:
+                plotter.plot_power_absorption_distribution(all_organ_results_df, scenario_name=None)
+            else:
+                logging.getLogger("progress").warning(
+                    "  - WARNING: No 'Total Loss' data available for power absorption plot.",
+                    extra={"log_type": "warning"},
+                )
 
         # ============================================================================
         # Ranking Plots (Top 20 Tissues)
@@ -426,9 +463,17 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
                 "  - Generating ranking plots (top 20 tissues)...",
                 extra={"log_type": "info"},
             )
+            # Top 20 by Max Local SAR (symmetric with near-field - same order as NF)
+            if "max_local_sar_mw_kg" in all_organ_results_df.columns:
+                plotter.plot_top20_tissues_ranking(all_organ_results_df, metric="max_local_sar_mw_kg", scenario_name=None)
+            # Top 20 by Mass-Averaged SAR
             plotter.plot_top20_tissues_ranking(all_organ_results_df, metric="mass_avg_sar_mw_kg", scenario_name=None)
+            # Top 20 by Peak SAR 10g (far-field specific - peak_sar is the same as psSAR10g whole body)
             if "peak_sar_10g_mw_kg" in all_organ_results_df.columns:
                 plotter.plot_top20_tissues_ranking(all_organ_results_df, metric="peak_sar_10g_mw_kg", scenario_name=None)
+            # Top 20 by Total Loss (symmetric with near-field)
+            if "Total Loss" in all_organ_results_df.columns:
+                plotter.plot_top20_tissues_ranking(all_organ_results_df, metric="Total Loss", scenario_name=None)
 
         # ============================================================================
         # CDF Plots
@@ -444,8 +489,41 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
             cdf_metrics = sar_metrics + pssar_metrics + (["peak_sar"] if "peak_sar" in results_df.columns else [])
             for metric in cdf_metrics:
                 if metric in results_df.columns and results_df[metric].notna().any():
-                    # CDF grouped by frequency
+                    # CDF grouped by frequency (symmetric with near-field per-scenario CDFs)
                     plotter.plot_cdf(results_df, metric, group_by="frequency_mhz", scenario_name=None)
+
+            # Parse direction and polarization from placement for CDF grouping
+            # Add direction/polarization columns if not present
+            if "direction" not in results_df.columns or "polarization" not in results_df.columns:
+
+                def parse_placement(placement: str) -> tuple:
+                    direction_labels = {
+                        "x_pos": "From left",
+                        "x_neg": "From right",
+                        "y_pos": "From back",
+                        "y_neg": "From front",
+                        "z_pos": "From below",
+                        "z_neg": "From above",
+                    }
+                    parts = placement.replace("environmental_", "").split("_")
+                    if len(parts) >= 3:
+                        dir_key = f"{parts[0]}_{parts[1]}"
+                        direction = direction_labels.get(dir_key, f"{parts[0]}{parts[1]}")
+                        pol = "Theta" if parts[2] == "theta" else "Phi"
+                        return direction, pol
+                    return placement, "Unknown"
+
+                results_df[["direction", "polarization"]] = results_df["placement"].apply(lambda x: pd.Series(parse_placement(x)))
+
+            # CDF grouped by direction (analogous to near-field per-scenario CDFs)
+            for metric in cdf_metrics:
+                if metric in results_df.columns and results_df[metric].notna().any():
+                    plotter.plot_cdf(results_df, metric, group_by="direction", scenario_name=None)
+
+            # CDF grouped by polarization
+            for metric in cdf_metrics:
+                if metric in results_df.columns and results_df[metric].notna().any():
+                    plotter.plot_cdf(results_df, metric, group_by="polarization", scenario_name=None)
 
         # ============================================================================
         # Correlation Plots
@@ -466,9 +544,33 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
                     "  - Generating bubble plots (mass vs SAR)...",
                     extra={"log_type": "info"},
                 )
-                plotter.plot_bubble_mass_vs_sar(all_organ_results_df, sar_column="mass_avg_sar_mw_kg", scenario_name=None)
+                # Get unique frequencies for frequency-specific plots (symmetric with near-field)
+                frequencies = (
+                    sorted(all_organ_results_df["frequency_mhz"].dropna().unique())
+                    if "frequency_mhz" in all_organ_results_df.columns
+                    else []
+                )
+
+                # SAR columns to plot
+                sar_columns = ["mass_avg_sar_mw_kg"]
                 if "peak_sar_10g_mw_kg" in all_organ_results_df.columns:
-                    plotter.plot_bubble_mass_vs_sar(all_organ_results_df, sar_column="peak_sar_10g_mw_kg", scenario_name=None)
+                    sar_columns.append("peak_sar_10g_mw_kg")
+                if "max_local_sar_mw_kg" in all_organ_results_df.columns:
+                    sar_columns.append("max_local_sar_mw_kg")
+
+                for sar_col in sar_columns:
+                    # All frequencies combined
+                    plotter.plot_bubble_mass_vs_sar(all_organ_results_df, sar_column=sar_col, scenario_name=None)
+
+                    # Per-frequency variants (symmetric with near-field)
+                    for freq in frequencies:
+                        plotter.plot_bubble_mass_vs_sar(
+                            all_organ_results_df,
+                            sar_column=sar_col,
+                            scenario_name=None,
+                            frequency_mhz=freq,
+                        )
+
         # Interactive bubble plots (symmetric with NF)
         if not all_organ_results_df.empty and self.should_generate_plot("plot_bubble_mass_vs_sar_interactive"):
             if "Total Mass" in all_organ_results_df.columns:
@@ -478,14 +580,24 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
         # Penetration Depth Ratio (symmetric with NF)
         # ============================================================================
         if self.should_generate_plot("plot_penetration_depth_ratio"):
-            plotter.plot_penetration_depth_ratio(results_df, scenario_name=None, metric_type="psSAR10g")
-            plotter.plot_penetration_depth_ratio(results_df, scenario_name=None, metric_type="SAR")
+            # Pre-check columns for psSAR10g penetration ratio (symmetric with near-field)
+            if "psSAR10g_brain" in results_df.columns and "psSAR10g_skin" in results_df.columns:
+                plotter.plot_penetration_depth_ratio(results_df, scenario_name=None, metric_type="psSAR10g")
+            # Pre-check columns for SAR penetration ratio (symmetric with near-field)
+            if "SAR_brain" in results_df.columns and "SAR_skin" in results_df.columns:
+                plotter.plot_penetration_depth_ratio(results_df, scenario_name=None, metric_type="SAR")
 
         # ============================================================================
         # Max Local vs psSAR Scatter (symmetric with NF)
         # ============================================================================
-        if self.should_generate_plot("plot_max_local_vs_pssar10g_scatter"):
-            plotter.plot_max_local_vs_pssar10g_scatter(results_df, scenario_name=None)
+        if not all_organ_results_df.empty and self.should_generate_plot("plot_max_local_vs_pssar10g_scatter"):
+            if "max_local_sar_mw_kg" in all_organ_results_df.columns:
+                plotter.plot_max_local_vs_pssar10g_scatter(all_organ_results_df, scenario_name=None)
+            else:
+                logging.getLogger("progress").warning(
+                    "  - WARNING: Missing 'max_local_sar_mw_kg' column for Max Local vs psSAR10g scatter plot.",
+                    extra={"log_type": "warning"},
+                )
 
         # ============================================================================
         # Tissue Analysis Plots
@@ -506,6 +618,47 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
                 plotter.plot_tissue_mass_volume_distribution(all_organ_results_df, scenario_name=None)
 
         # ============================================================================
+        # Spatial Plots (3D and 2D Peak Locations) - Symmetric with near-field
+        # ============================================================================
+        # Collect peak location data from all results (same as near-field)
+        peak_location_data = []
+        for result in analyzer.all_results:
+            if "peak_sar_details" in result:
+                peak_details = result["peak_sar_details"]
+                if peak_details and isinstance(peak_details, dict):
+                    peak_location_data.append(
+                        {
+                            "PeakLocation": peak_details.get("PeakLocation", None),
+                            "PeakCubeSideLength": peak_details.get("PeakCubeSideLength", None),
+                            "PeakValue": peak_details.get("PeakValue", None),
+                            "PeakCell": peak_details.get("PeakCell", None),
+                            "placement": result.get("placement", ""),
+                            "frequency_mhz": result.get("frequency_mhz", None),
+                            "scenario": result.get("scenario", "environmental"),
+                        }
+                    )
+
+        peak_location_df = pd.DataFrame(peak_location_data) if peak_location_data else pd.DataFrame()
+
+        if not peak_location_df.empty:
+            if self.should_generate_plot("plot_peak_location_3d_interactive") or self.should_generate_plot(
+                "plot_peak_location_2d_projections"
+            ):
+                logging.getLogger("progress").info(
+                    "  - Generating spatial plots (3D and 2D peak locations)...",
+                    extra={"log_type": "info"},
+                )
+
+                # Calculate consistent axis limits from all data
+                axis_limits = plotter.spatial._calculate_axis_limits(peak_location_df)
+
+                if self.should_generate_plot("plot_peak_location_3d_interactive"):
+                    plotter.plot_peak_location_3d_interactive(peak_location_df, scenario_name=None, axis_limits=axis_limits)
+
+                if self.should_generate_plot("plot_peak_location_2d_projections"):
+                    plotter.plot_peak_location_2d_projections(peak_location_df, scenario_name=None)
+
+        # ============================================================================
         # Outlier Identification
         # ============================================================================
         if self.should_generate_plot("identify_outliers"):
@@ -513,10 +666,32 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
                 "  - Identifying outliers...",
                 extra={"log_type": "info"},
             )
-            # Include both SAR and psSAR10g metrics for symmetry with near-field
-            sar_outlier_metrics = ["SAR_whole_body", "peak_sar", "SAR_brain", "SAR_skin", "SAR_eyes", "SAR_genitals"]
-            pssar_outlier_metrics = ["psSAR10g_brain", "psSAR10g_eyes", "psSAR10g_skin", "psSAR10g_genitals"]
-            outlier_metrics = sar_outlier_metrics + pssar_outlier_metrics
+            # Include both psSAR10g and SAR metrics for symmetry with near-field (psSAR10g first like NF)
+            pssar_outlier_metrics = [
+                "psSAR10g_brain",
+                "psSAR10g_eyes",
+                "psSAR10g_skin",
+                "psSAR10g_genitals",
+                "psSAR10g_whole_body",  # Added for symmetry with near-field
+            ]
+            sar_outlier_metrics = [
+                "SAR_whole_body",
+                "peak_sar",  # Far-field specific
+                "SAR_brain",
+                "SAR_skin",
+                "SAR_eyes",
+                "SAR_genitals",
+            ]
+            outlier_metrics = pssar_outlier_metrics + sar_outlier_metrics  # psSAR10g first like near-field
             for metric in outlier_metrics:
                 if metric in results_df.columns and results_df[metric].notna().any():
-                    plotter.identify_outliers(results_df, metric, scenario_name=None)
+                    outliers = plotter.identify_outliers(results_df, metric, scenario_name=None)
+                    # Save CSV and log count (symmetric with near-field)
+                    if outliers is not None and not outliers.empty:
+                        subdir = plotter._get_subdir("outliers")
+                        filename = f"outliers_{metric}.csv"
+                        outliers.to_csv(os.path.join(subdir, filename), index=False)
+                        logging.getLogger("progress").info(
+                            f"    - Found {len(outliers)} outliers for {metric}",
+                            extra={"log_type": "info"},
+                        )
