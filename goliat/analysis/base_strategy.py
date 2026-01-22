@@ -42,6 +42,17 @@ class BaseAnalysisStrategy(ABC):
             return True  # Generate all plots if no config provided
         return self.analysis_config.get(plot_name, True)  # Default to True if not specified
 
+    def get_expected_item_count(self) -> int:
+        """Returns expected number of progress items for this phantom.
+
+        This is used by the GUI to set an accurate progress bar maximum.
+        Each item corresponds to one progress log message (Processing, Generating plot, etc.).
+
+        Returns:
+            Expected number of items that will trigger progress updates.
+        """
+        raise NotImplementedError("Subclasses must implement get_expected_item_count()")
+
     def get_results_base_dir(self) -> str:
         """Returns base directory path for results. Must be implemented by subclasses."""
         raise NotImplementedError

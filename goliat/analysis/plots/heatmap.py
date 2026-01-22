@@ -754,7 +754,9 @@ class HeatmapPlotter(BasePlotter):
         n_cols = min(3, n_metrics)
         n_rows = (n_metrics + n_cols - 1) // n_cols
 
-        fig = plt.figure(figsize=(3.5 * n_cols, 3.5 * n_rows))
+        # Use IEEE double-column width for multi-panel grid
+        panel_height = 7.16 / n_cols  # Height per row to maintain aspect ratio
+        fig = plt.figure(figsize=(7.16, panel_height * n_rows))
         gs = gridspec.GridSpec(n_rows, n_cols, hspace=0.4, wspace=0.3)
 
         from .base import METRIC_LABELS
@@ -909,8 +911,8 @@ class HeatmapPlotter(BasePlotter):
         row_order = ["From left", "From right", "From back", "From front", "From below", "From above"]
         ratio_df = ratio_df.reindex([r for r in row_order if r in ratio_df.index])
 
-        # Create figure
-        fig, ax = plt.subplots(figsize=(6, 4))
+        # Create figure - IEEE single-column width
+        fig, ax = plt.subplots(figsize=(3.5, 3.0))
 
         # Colormap starting from 0, centered at 1.0
         from matplotlib.colors import TwoSlopeNorm
@@ -1054,8 +1056,8 @@ class HeatmapPlotter(BasePlotter):
             row_order = ["From left", "From right", "From back", "From front", "From below", "From above"]
             ratio_df = ratio_df.reindex([r for r in row_order if r in ratio_df.index])
 
-            # Create figure
-            fig, ax = plt.subplots(figsize=(5, 3.5))
+            # Create figure - use IEEE single-column width for proper font scaling
+            fig, ax = plt.subplots(figsize=(3.5, 3.0))
 
             # Colormap starting from 0, centered at 1.0
             vmin = 0.0

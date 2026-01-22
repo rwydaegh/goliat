@@ -60,6 +60,34 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
         """Returns directory for near-field plots."""
         return os.path.join(self.base_dir, "plots", "near_field", self.phantom_name)
 
+    def get_expected_item_count(self) -> int:
+        """Returns expected number of progress items for this phantom.
+
+        Returns the EXACT count of processing items (result files to be processed).
+        If load_data is False (cache mode), returns 0 since no processing occurs.
+        Plot items are not counted - the GUI handles this via dynamic maximum adjustment.
+
+        Returns:
+            Exact number of result files that will trigger 'Processing:' log messages.
+        """
+        # If loading from cache, no "Processing:" messages are generated
+        if not self.analysis_config.get("load_data", True):
+            return 0
+
+        antenna_config = self.config["antenna_config"] or {}
+        placement_scenarios = self.config["placement_scenarios"] or {}
+
+        num_frequencies = len(antenna_config)
+        num_placements = 0
+        for scenario_def in placement_scenarios.values():
+            if scenario_def:
+                positions = scenario_def.get("positions", {})
+                orientations = scenario_def.get("orientations", {})
+                num_placements += len(positions) * max(len(orientations), 1)
+
+        # Exact count: one progress item per result file processed
+        return num_frequencies * num_placements
+
     def load_and_process_results(self, analyzer: "Analyzer"):
         """Iterates through near-field results and processes each one."""
         antenna_config = self.config["antenna_config"] or {}

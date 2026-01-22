@@ -60,6 +60,31 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
         """Returns directory for far-field plots."""
         return os.path.join(self.base_dir, "plots", "far_field", self.phantom_name)
 
+    def get_expected_item_count(self) -> int:
+        """Returns expected number of progress items for this phantom.
+
+        Returns the EXACT count of processing items (result files to be processed).
+        If load_data is False (cache mode), returns 0 since no processing occurs.
+        Plot items are not counted - the GUI handles this via dynamic maximum adjustment.
+
+        Returns:
+            Exact number of result files that will trigger 'Processing:' log messages.
+        """
+        # If loading from cache, no "Processing:" messages are generated
+        if not self.analysis_config.get("load_data", True):
+            return 0
+
+        frequencies = self.config["frequencies_mhz"] or []
+        far_field_params = self.config["far_field_setup.environmental"] or {}
+        incident_directions = far_field_params.get("incident_directions", [])
+        polarizations = far_field_params.get("polarizations", [])
+
+        num_frequencies = len(frequencies)
+        num_placements = len(incident_directions) * len(polarizations)
+
+        # Exact count: one progress item per result file processed
+        return num_frequencies * num_placements
+
     def load_and_process_results(self, analyzer: "Analyzer"):
         """Iterates through far-field results and processes each one."""
         frequencies = self.config["frequencies_mhz"]
@@ -269,7 +294,7 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
             plotter.plot_whole_body_sar_bar(summary_stats)
         if self.should_generate_plot("plot_peak_sar_line"):
             plotter.plot_peak_sar_line(summary_stats)
-        if self.should_generate_plot("plot_sar_distribution_boxplot_single"):
+        if self.should_generate_plot("plot_far_field_distribution_boxplot"):
             plotter.plot_sar_distribution_boxplot_single(results_df, metric="SAR_whole_body")
             plotter.plot_sar_distribution_boxplot_single(results_df, metric="peak_sar")
             # Also generate boxplots for tissue groups (symmetric with near-field)

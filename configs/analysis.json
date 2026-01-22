@@ -30,6 +30,8 @@
   "plot_far_field_distribution_boxplot": true,
   "plot_polarization_ratio": true,
   "plot_cross_phantom_comparison": true,
+  "plot_far_field_direction_polarization_summary": true,
+  "plot_far_field_direction_polarization_comparison": true,
   "run_stats": true,
   "generate_excel": true,
   "compare": {
