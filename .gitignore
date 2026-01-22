@@ -20,6 +20,8 @@ paper/
 !paper/IEEEtran.cls
 !paper/near_field/pure_results/results.pdf
 !paper/near_field/pure_results/results.tex
+!paper/far_field/pure_results/results.pdf
+!paper/far_field/pure_results/results.tex
 site/
 analysis/cpw/data/
 analysis/cpw/plots/
