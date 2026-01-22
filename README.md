@@ -403,9 +403,15 @@ This project is licensed under the **Apache 2.0 License** – see [LICENSE](LICE
 
 ## Results
 
-Check out the auto-generated first draft paper (only results):
+Check out the auto-generated first draft papers (results only):
+
+### Near-Field Results
 - [Results PDF](https://github.com/rwydaegh/goliat/raw/master/paper/near_field/pure_results/results.pdf) - Download the compiled PDF
 - [Results LaTeX Source](https://github.com/rwydaegh/goliat/raw/master/paper/near_field/pure_results/results.tex) - Download the LaTeX source
+
+### Far-Field Results
+- [Results PDF](https://github.com/rwydaegh/goliat/raw/master/paper/far_field/pure_results/results.pdf) - Download the compiled PDF
+- [Results LaTeX Source](https://github.com/rwydaegh/goliat/raw/master/paper/far_field/pure_results/results.tex) - Download the LaTeX source
 
 ## 🔗 Links
 

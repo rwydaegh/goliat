@@ -267,6 +267,10 @@ class Analyzer:
             results_df = cached_data.get("summary_results")
             organ_results_df = cached_data.get("organ_results")
 
+            # Restore tissue_group_composition from cache
+            if "tissue_group_composition" in cached_data:
+                self.tissue_group_composition = cached_data["tissue_group_composition"]
+
             if results_df is not None:
                 logging.getLogger("progress").info(
                     f"--- Loaded {len(results_df)} cached results from: {output_pickle_path} ---",
@@ -289,7 +293,11 @@ class Analyzer:
         output_pickle_path = os.path.join(self.results_base_dir, "aggregated_results.pkl")
         os.makedirs(os.path.dirname(output_pickle_path), exist_ok=True)
 
-        cached_data = {"summary_results": results_df, "organ_results": organ_results_df}
+        cached_data = {
+            "summary_results": results_df,
+            "organ_results": organ_results_df,
+            "tissue_group_composition": self.tissue_group_composition,
+        }
         with open(output_pickle_path, "wb") as f:
             pickle.dump(cached_data, f)
 
