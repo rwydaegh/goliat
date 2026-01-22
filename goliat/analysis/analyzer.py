@@ -315,24 +315,28 @@ class Analyzer:
 
         results_for_export = results_df.drop(columns=cols_to_drop) if cols_to_drop else results_df
 
-        logging.getLogger("progress").info(
-            "\n--- Full Normalized Results per Simulation (in mW/kg) ---",
-            extra={"log_type": "header"},
-        )
-        with pd.option_context("display.max_rows", None, "display.max_columns", None, "display.width", 1000):
-            sort_cols = [c for c in ["frequency_mhz", "placement"] if c in results_for_export.columns]
-            if sort_cols:
-                logging.getLogger("progress").info(results_for_export.sort_values(by=sort_cols))
-            else:
-                logging.getLogger("progress").info(results_for_export)
+        # DataFrame dumps commented out to reduce terminal clutter
+        # Data is still saved to CSV files below
+        # logging.getLogger("progress").info(
+        #     "\n--- Full Normalized Results per Simulation (in mW/kg) ---",
+        #     extra={"log_type": "header"},
+        # )
+        # with pd.option_context("display.max_rows", None, "display.max_columns", None, "display.width", 1000):
+        #     sort_cols = [c for c in ["frequency_mhz", "placement"] if c in results_for_export.columns]
+        #     if sort_cols:
+        #         logging.getLogger("progress").info(results_for_export.sort_values(by=sort_cols))
+        #     else:
+        #         logging.getLogger("progress").info(results_for_export)
+
+        # summary_stats = self.strategy.calculate_summary_stats(results_df)
+        # logging.getLogger("progress").info(
+        #     "\n--- Summary Statistics (Mean) of Normalized SAR per Scenario and Frequency (in mW/kg) ---",
+        #     extra={"log_type": "header"},
+        # )
+        # with pd.option_context("display.max_rows", None, "display.max_columns", None, "display.width", 1000):
+        #     logging.getLogger("progress").info(summary_stats)
 
         summary_stats = self.strategy.calculate_summary_stats(results_df)
-        logging.getLogger("progress").info(
-            "\n--- Summary Statistics (Mean) of Normalized SAR per Scenario and Frequency (in mW/kg) ---",
-            extra={"log_type": "header"},
-        )
-        with pd.option_context("display.max_rows", None, "display.max_columns", None, "display.width", 1000):
-            logging.getLogger("progress").info(summary_stats)
 
         detailed_csv_path = os.path.join(self.results_base_dir, "normalized_results_detailed.csv")
         summary_csv_path = os.path.join(self.results_base_dir, "normalized_results_summary.csv")

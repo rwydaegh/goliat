@@ -598,7 +598,7 @@ class LinePlotter(BasePlotter):
         polarizations = ["Theta", "Phi"]
         direction_order = ["From left", "From right", "From back", "From front", "From below", "From above"]
 
-        fig = plt.figure(figsize=(7.16, 4.0))  # Slightly taller to accommodate legend
+        fig = plt.figure(figsize=(7.16, 4.0))  # Double-column for side-by-side panels
         gs = gridspec.GridSpec(1, 2, wspace=0.3, bottom=0.22)
 
         colors = self._get_academic_colors(len(direction_order))
@@ -693,7 +693,7 @@ class LinePlotter(BasePlotter):
         polarizations = ["Theta", "Phi"]
 
         # 2x3 grid of panels with room for legend
-        fig = plt.figure(figsize=(7.16, 5.5))
+        fig = plt.figure(figsize=(7.16, 5.5))  # Double-column for 2x3 grid
         gs = gridspec.GridSpec(2, 3, hspace=0.45, wspace=0.3, bottom=0.15)
 
         colors = self._get_academic_colors(len(polarizations))
@@ -900,8 +900,8 @@ class LinePlotter(BasePlotter):
         }
 
         for metric in metrics:
-            # Create figure
-            fig, ax = plt.subplots(figsize=(5, 3.5))
+            # Create figure - IEEE single-column width
+            fig, ax = plt.subplots(figsize=(3.5, 2.5))
 
             # Combine data from all phantoms
             for phantom_name, df in all_phantom_data.items():
@@ -1060,8 +1060,8 @@ class LinePlotter(BasePlotter):
         # Add some headroom to max
         y_max = max(global_max_ratio * 1.1, 1.5)
 
-        # Create 2x3 panel figure with more vertical space and room for legend
-        fig = plt.figure(figsize=(8, 6))
+        # Create 2x3 panel figure - IEEE single-column width
+        fig = plt.figure(figsize=(3.5, 4.5))
         gs = fig.add_gridspec(2, 3, hspace=0.45, wspace=0.3, bottom=0.18)
 
         legend_handles = []

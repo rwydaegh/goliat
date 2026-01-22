@@ -3,10 +3,14 @@
 import logging
 import os
 import re
+import warnings
 from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 import pandas as pd
+
+# Suppress matplotlib thread warning (we use Agg backend so it's harmless)
+warnings.filterwarnings("ignore", message=".*Starting a Matplotlib GUI outside of the main thread.*")
 
 # Apply scienceplots style for academic-looking plots with IEEE standards
 # Use 'no-latex' to avoid slow rendering, but LaTeX notation in strings still works for units

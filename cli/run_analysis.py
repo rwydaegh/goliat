@@ -204,29 +204,12 @@ def main():
                 strategy = FarFieldAnalysisStrategy(config, phantom_name, analysis_config=analysis_config)
             strategies.append((phantom_name, strategy))
 
-        # Calculate estimated total items based on config structure
-        # Items = (num_frequencies × num_placements) per phantom + estimated plots
-        antenna_config = config["antenna_config"] or {}
-        placement_scenarios = config["placement_scenarios"] or {}
-
-        num_frequencies = len(antenna_config)
-        num_placements = 0
-        for scenario_def in placement_scenarios.values():
-            if scenario_def:
-                positions = scenario_def.get("positions", {})
-                orientations = scenario_def.get("orientations", {})
-                num_placements += len(positions) * max(len(orientations), 1)
-
-        # Items per phantom: processing + plotting (roughly 2x for plots)
-        items_per_phantom = num_frequencies * num_placements * 2  # *2 for plots
-        # Add buffer for additional plots (heatmaps, summaries, etc.)
-        items_per_phantom += 50
-
-        total_items = len(phantoms) * items_per_phantom
+        # Calculate total items by querying each strategy for its exact expected count
+        # This ensures accurate progress tracking without heuristics
+        total_items = sum(strategy.get_expected_item_count() for _, strategy in strategies)
 
         logging.getLogger("progress").debug(
-            f"Progress bar estimate: {num_frequencies} freqs × {num_placements} placements × 2 + 50 = "
-            f"{items_per_phantom}/phantom × {len(phantoms)} phantoms = {total_items} total items",
+            f"Progress bar: {len(phantoms)} phantoms × strategy counts = {total_items} total items",
             extra={"log_type": "verbose"},
         )
 
@@ -251,7 +234,13 @@ def main():
                 from cli.generate_paper import main as generate_paper_main
 
                 logging.getLogger("progress").info("Generating LaTeX paper...", extra={"log_type": "info"})
-                generate_paper_main()
+                # Set sys.argv correctly for generate_paper parser (it has its own argparse)
+                original_argv = sys.argv[:]
+                sys.argv = ["goliat-generate-paper", "--study-type", study_type]
+                try:
+                    generate_paper_main()
+                finally:
+                    sys.argv = original_argv
 
             # Generate Excel file if enabled (default: True for near_field)
             if analysis_config.get("generate_excel", True) and study_type == "near_field":
@@ -325,7 +314,13 @@ def main():
             from cli.generate_paper import main as generate_paper_main
 
             logging.getLogger("progress").info("Generating LaTeX paper...", extra={"log_type": "info"})
-            generate_paper_main()
+            # Set sys.argv correctly for generate_paper parser (it has its own argparse)
+            original_argv = sys.argv[:]
+            sys.argv = ["goliat-generate-paper", "--study-type", study_type]
+            try:
+                generate_paper_main()
+            finally:
+                sys.argv = original_argv
 
         # Generate Excel file if enabled (default: True for near_field)
         if analysis_config.get("generate_excel", True) and study_type == "near_field":

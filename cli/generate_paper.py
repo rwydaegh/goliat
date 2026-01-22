@@ -415,7 +415,7 @@ def organize_plots(plots_dir):
     return plots_by_section
 
 
-def generate_latex(plots_by_section, study_type="near_field"):
+def generate_latex(plots_by_section, study_type="near_field", plots_dir=None):
     """Generate LaTeX document."""
 
     # Sort sections in a logical order
@@ -519,16 +519,35 @@ def generate_latex(plots_by_section, study_type="near_field"):
                 section_figure_counter += 1
                 label = f"fig:{section_idx}_{section_figure_counter}"
 
+                # Check if this is a double-column figure based on filename patterns
+                # These are multi-panel plots that need the full page width
+                double_column_patterns = [
+                    "_by_polarization",  # Side-by-side polarization panels
+                    "_by_direction",  # 2x3 grid of direction panels
+                    "direction_polarization_summary",  # Multi-panel summary heatmap
+                ]
+                is_double_column = any(pattern in plot["filename"] for pattern in double_column_patterns)
+
                 # Write text with reference before figure
                 if title_formatted:
                     latex_content += f"{title_formatted} can be found in Figure~\\ref{{{label}}}. \\\\\\\\\n\n"
 
-                latex_content += "\\begin{figure}[H]\n"
-                latex_content += "\\centering\n"
-                latex_content += f"\\includegraphics[width=\\columnwidth]{{{pdf_rel_path}}}\n"
-                latex_content += f"\\caption{{{caption}}}\n"
-                latex_content += f"\\label{{{label}}}\n"
-                latex_content += "\\end{figure}\n\n"
+                if is_double_column:
+                    # Double-column figure spanning both columns
+                    latex_content += "\\begin{figure*}[htbp]\n"
+                    latex_content += "\\centering\n"
+                    latex_content += f"\\includegraphics[width=\\textwidth]{{{pdf_rel_path}}}\n"
+                    latex_content += f"\\caption{{{caption}}}\n"
+                    latex_content += f"\\label{{{label}}}\n"
+                    latex_content += "\\end{figure*}\n\n"
+                else:
+                    # Single-column figure
+                    latex_content += "\\begin{figure}[H]\n"
+                    latex_content += "\\centering\n"
+                    latex_content += f"\\includegraphics[width=\\columnwidth]{{{pdf_rel_path}}}\n"
+                    latex_content += f"\\caption{{{caption}}}\n"
+                    latex_content += f"\\label{{{label}}}\n"
+                    latex_content += "\\end{figure}\n\n"
 
                 figure_counter += 1
 
@@ -587,7 +606,7 @@ def main():
 
     # Generate LaTeX
     print("Generating LaTeX file...")
-    latex_content = generate_latex(plots_by_section, study_type)
+    latex_content = generate_latex(plots_by_section, study_type, plots_dir=plots_source)
 
     # Write to file
     with open(output_tex, "w", encoding="utf-8") as f:
