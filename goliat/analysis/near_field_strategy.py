@@ -394,6 +394,22 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
         scenarios_with_results = results_df["scenario"].unique()
         summary_stats = self.calculate_summary_stats(results_df)
 
+        # ============================================================================
+        # Aggregated Plots (symmetric with far-field)
+        # ============================================================================
+        # These plots aggregate data across ALL scenarios for overall trends
+        if self.should_generate_plot("plot_whole_body_sar_bar"):
+            # Aggregate summary stats across scenarios by frequency
+            freq_summary = summary_stats.groupby("frequency_mhz").mean(numeric_only=True)
+            if "SAR_whole_body" in freq_summary.columns:
+                plotter.plot_whole_body_sar_bar(freq_summary)
+
+        if self.should_generate_plot("plot_peak_sar_line"):
+            # Aggregate summary stats across scenarios by frequency
+            freq_summary = summary_stats.groupby("frequency_mhz").mean(numeric_only=True)
+            if "peak_sar" in freq_summary.columns:
+                plotter.plot_peak_sar_line(freq_summary)
+
         for scenario_name in scenarios_with_results:
             logging.getLogger("progress").info(
                 f"\n--- Generating plots for scenario: {scenario_name} ---",
@@ -718,13 +734,15 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
                     plotter.plot_power_efficiency_trends(results_df, scenario_name=scenario)
 
             # Power absorption distribution (per scenario only - averaging across scenarios doesn't make sense)
-            if (
-                self.should_generate_plot("plot_power_absorption_distribution")
-                and not all_organ_results_df.empty
-                and "Total Loss" in all_organ_results_df.columns
-            ):
-                for scenario in scenarios_with_results:
-                    plotter.plot_power_absorption_distribution(all_organ_results_df, scenario_name=scenario)
+            if self.should_generate_plot("plot_power_absorption_distribution") and not all_organ_results_df.empty:
+                if "Total Loss" in all_organ_results_df.columns:
+                    for scenario in scenarios_with_results:
+                        plotter.plot_power_absorption_distribution(all_organ_results_df, scenario_name=scenario)
+                else:
+                    logging.getLogger("progress").warning(
+                        "  - WARNING: No 'Total Loss' data available for power absorption plot.",
+                        extra={"log_type": "warning"},
+                    )
 
         # ============================================================================
         # Penetration Depth Plot
@@ -833,7 +851,7 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
                 "SAR_genitals",
             ]
             for metric in outlier_metrics:
-                if metric in results_df.columns:
+                if metric in results_df.columns and results_df[metric].notna().any():
                     outliers = plotter.identify_outliers(results_df, metric)
                     if outliers is not None and not outliers.empty:
                         # Save outliers to CSV

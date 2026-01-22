@@ -120,8 +120,8 @@ def _generate_cross_phantom_plots(config, phantoms: list, plot_format: str, anal
         return
 
     # Create plotter and generate plots
-    # Use first phantom's output dir for the cross-phantom plots
-    first_phantom = phantoms[0]
+    # Use first successfully-loaded phantom's output dir for the cross-phantom plots
+    first_phantom = list(all_phantom_data.keys())[0]
     output_dir = os.path.join(base_dir, f"plots/far_field/{first_phantom}")
 
     plotter = Plotter(output_dir, first_phantom, plot_format=plot_format)

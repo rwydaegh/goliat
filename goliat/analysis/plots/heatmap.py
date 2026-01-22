@@ -827,7 +827,7 @@ class HeatmapPlotter(BasePlotter):
             return
 
         # Parse placement to extract direction and polarization
-        def parse_placement(placement: str) -> tuple[str, str]:
+        def parse_placement(placement: str) -> tuple[str | None, str | None]:
             parts = placement.split("_")
             if len(parts) >= 4:
                 direction = f"{parts[1]}_{parts[2]}"  # e.g., "x_pos"
@@ -950,7 +950,7 @@ class HeatmapPlotter(BasePlotter):
             f"Note: These are frequency-averaged values; significant frequency-dependent variations exist."
         )
 
-        filename = self._save_figure(fig, "heatmap", "heatmap_polarization_ratio", title=title, caption=caption, dpi=300)
+        filename = self._save_figure(fig, "heatmap", "heatmap_polarization_ratio", title=title, caption=caption, dpi=200)
 
         logging.getLogger("progress").info(
             f"  - Generated polarization ratio heatmap: {filename}",
@@ -975,7 +975,7 @@ class HeatmapPlotter(BasePlotter):
             return
 
         # Parse placement to extract direction and polarization
-        def parse_placement(placement: str) -> tuple[str, str]:
+        def parse_placement(placement: str) -> tuple[str | None, str | None]:
             parts = placement.split("_")
             if len(parts) >= 4:
                 direction = f"{parts[1]}_{parts[2]}"

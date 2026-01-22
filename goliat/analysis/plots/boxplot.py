@@ -32,10 +32,11 @@ class BoxplotPlotter(BasePlotter):
         }
 
     def plot_sar_distribution_boxplots(self, scenario_name: str, scenario_results_df: pd.DataFrame):
-        """Creates boxplots showing SAR value distributions across placements.
+        """Creates boxplots showing SAR value distributions across frequencies.
 
-        Generates separate boxplots for Head SAR, Trunk SAR, tissue group SAR (brain, skin, eyes),
-        and each psSAR10g metric. Shows spread and outliers for each frequency.
+        Generates separate boxplots for each SAR and psSAR10g metric.
+        Shows spread and outliers for each frequency. Used by near-field analysis
+        which generates multiple plots per scenario.
 
         Args:
             scenario_name: Placement scenario name.
@@ -100,8 +101,20 @@ class BoxplotPlotter(BasePlotter):
                 csv_data = scenario_results_df[["frequency_mhz", metric]].copy()
                 self._save_csv_data(csv_data, "boxplot", f"boxplot_{metric}_{scenario_name}")
 
-    def plot_far_field_distribution_boxplot(self, results_df: pd.DataFrame, metric: str = "SAR_whole_body"):
-        """Creates a boxplot showing distribution of a metric across directions/polarizations."""
+    def plot_sar_distribution_boxplot_single(
+        self, results_df: pd.DataFrame, metric: str = "SAR_whole_body", scenario_name: str | None = None
+    ):
+        """Creates a single boxplot showing distribution of one metric across frequencies.
+
+        Generates one boxplot for a specified metric. Shows spread and outliers
+        for each frequency. Used by far-field analysis which calls this per-metric.
+        Symmetric counterpart to plot_sar_distribution_boxplots.
+
+        Args:
+            results_df: DataFrame with detailed results.
+            metric: Column name of the SAR metric to plot.
+            scenario_name: Optional scenario name for filename (default: None uses 'all').
+        """
         if metric not in results_df.columns or results_df[metric].dropna().empty:
             logging.getLogger("progress").warning(
                 f"  - WARNING: No data for metric '{metric}' to generate boxplot.",
@@ -112,14 +125,44 @@ class BoxplotPlotter(BasePlotter):
         fig, ax = plt.subplots(figsize=(3.5, 2.5))  # IEEE single-column width
         sns.boxplot(data=results_df, x="frequency_mhz", y=metric, ax=ax, **self._get_boxplot_kwargs())
         metric_label = METRIC_LABELS.get(metric, metric)
-        title_full = self._get_title_with_phantom(f"distribution of normalized {metric_label}")
+        base_title = f"distribution of normalized {metric_label}"
+        title_full = self._get_title_with_phantom(base_title, scenario_name)
         # Don't set title on plot - will be in caption file
         ax.set_xlabel(self._format_axis_label("Frequency", "MHz"))
         ax.set_ylabel(self._format_axis_label("Normalized SAR", r"mW kg$^{-1}$"))
+
+        # Add sample size annotation - use max samples per boxplot (symmetric with near-field)
+        unique_freqs = sorted(results_df["frequency_mhz"].unique())
+        max_n = 0
+        for freq in unique_freqs:
+            freq_data = results_df[results_df["frequency_mhz"] == freq][metric].dropna()
+            n_freq = len(freq_data)
+            if n_freq > max_n:
+                max_n = n_freq
+
+        if max_n > 0:
+            ax.text(
+                0.95,
+                0.95,
+                f"n = {max_n}",
+                transform=ax.transAxes,
+                fontsize=8,
+                verticalalignment="top",
+                horizontalalignment="right",
+                bbox=dict(boxstyle="square,pad=0.4", facecolor="white", edgecolor="black", linewidth=0.5, alpha=1.0),
+            )
+
         # Set y-axis to start at 0 and go to max + 5%
         y_max = ax.get_ylim()[1]
         ax.set_ylim(0, y_max * 1.05)
         plt.tight_layout()
+
         phantom_name_formatted = self.phantom_name.capitalize() if self.phantom_name else "the phantom"
-        caption = f"The boxplot shows the distribution of normalized {metric_label} values across different frequencies for {phantom_name_formatted}. Each box spans from the first quartile (Q1) to the third quartile (Q3), with the median line shown inside the box. The whiskers extend to show the range of the data, and points beyond the whiskers are outliers."
-        self._save_figure(fig, "boxplot", f"boxplot_{metric}_distribution", title=title_full, caption=caption, dpi=300)
+        scenario_str = f" for the {self._format_scenario_name(scenario_name)} scenario" if scenario_name else ""
+        caption = f"The boxplot shows the distribution of normalized {metric_label} values across different frequencies{scenario_str} for {phantom_name_formatted}. Each box spans from the first quartile (Q1) to the third quartile (Q3), with the median line shown inside the box. The whiskers extend to show the range of the data, and points beyond the whiskers are outliers."
+        filename_base = f"boxplot_{metric}_{scenario_name or 'all'}"
+        self._save_figure(fig, "boxplot", filename_base, title=title_full, caption=caption, dpi=300)
+
+        # Save CSV data (symmetric with near-field)
+        csv_data = results_df[["frequency_mhz", metric]].copy()
+        self._save_csv_data(csv_data, "boxplot", filename_base)

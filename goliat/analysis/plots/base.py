@@ -446,6 +446,12 @@ class BasePlotter:
             self._save_caption_file(subdir, filename_base, title, caption)
 
         plt.close(fig)
+
+        # Force garbage collection to prevent memory accumulation during batch generation
+        import gc
+
+        gc.collect()
+
         return filename
 
     def _adjust_slanted_tick_labels(self, ax, rotation: float = 45.0) -> None:

@@ -107,9 +107,9 @@ class Plotter(BasePlotter):
         """Creates boxplots showing SAR value distributions across placements."""
         return self.boxplot.plot_sar_distribution_boxplots(*args, **kwargs)
 
-    def plot_far_field_distribution_boxplot(self, *args, **kwargs):
-        """Creates a boxplot showing distribution of a metric across directions/polarizations."""
-        return self.boxplot.plot_far_field_distribution_boxplot(*args, **kwargs)
+    def plot_sar_distribution_boxplot_single(self, *args, **kwargs):
+        """Creates a single boxplot showing distribution of one metric across frequencies."""
+        return self.boxplot.plot_sar_distribution_boxplot_single(*args, **kwargs)
 
     # Delegate heatmap methods
     def plot_sar_heatmap(self, *args, **kwargs):
