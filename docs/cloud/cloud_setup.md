@@ -80,7 +80,7 @@ If this is a new machine, the script runs the **full setup flow**:
 6. Downloads VPN configuration files
 7. Connects to VPN (if required for Sim4Life license access)
 8. Installs Git and clones the GOLIAT repository
-9. Launches Sim4Life license installer, File Explorer, and Git Bash in parallel
+9. Automatically configures Sim4Life license (enters license server, validates, and completes installation)
 10. Git Bash automatically runs initialization commands (pip install, git config, goliat init)
 
 #### Reconnection (goliat/ found)
@@ -114,7 +114,7 @@ This means you only need **one script** - just run `setup.bat` every time you co
    Right-click setup.bat → Run as administrator
    ```
 
-4. **First run**: Wait ~10 minutes while the script installs everything. The license installer, File Explorer, and Git Bash all launch automatically when complete.
+4. **First run**: Wait ~10 minutes while the script installs everything. License configuration is automated (takes 30-60 seconds for validation). If VPN is not connected, the license step will fail with a clear error message - you can configure it manually later.
 
 5. **Subsequent runs**: The script detects the existing installation and runs the quick reconnection flow (~15 seconds).
 
