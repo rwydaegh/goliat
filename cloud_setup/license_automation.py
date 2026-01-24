@@ -13,19 +13,20 @@ Requirements:
     pip install pywinauto
 
 Usage:
-    python license_automation.py
+    python license_automation.py --license-server @myserver.domain.com
 
-For personal use, copy this file to my_license_automation.py and
-fill in your LICENSE_SERVER value.
+    Or, for personal use, copy this file to my_license_automation.py and
+    fill in your LICENSE_SERVER value.
 """
 
+import argparse
 import subprocess
 import time
 import sys
 import os
 
 # ============================================================================
-# CONFIGURATION - Replace with your license server
+# CONFIGURATION - Can be overridden via --license-server argument
 # ============================================================================
 LICENSE_SERVER = "YOUR_LICENSE_SERVER"  # e.g., "@myserver.domain.com"
 
@@ -239,6 +240,17 @@ def click_finish(window):
 
 
 def main():
+    global LICENSE_SERVER
+
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="Automate Sim4Life License Installer")
+    parser.add_argument("--license-server", type=str, help="License server address (e.g., @myserver.domain.com)")
+    args = parser.parse_args()
+
+    # Override LICENSE_SERVER if provided via command line
+    if args.license_server:
+        LICENSE_SERVER = args.license_server
+
     print("=" * 60)
     print("Sim4Life License Installer Automation")
     print("=" * 60)
@@ -246,7 +258,7 @@ def main():
     # Check configuration
     if LICENSE_SERVER == "YOUR_LICENSE_SERVER":
         print("\nERROR: LICENSE_SERVER not configured!")
-        print("Please edit this file or use my_license_automation.py")
+        print("Please use --license-server argument or edit this file")
         sys.exit(1)
 
     print(f"License server: {LICENSE_SERVER}")
