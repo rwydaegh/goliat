@@ -43,14 +43,39 @@ WINDOW_TITLE = "License Installer"
 
 
 def ensure_pywinauto():
-    """Ensure pywinauto is installed."""
+    """Ensure pywinauto and its dependencies are installed."""
     import importlib.util
 
-    if importlib.util.find_spec("pywinauto") is not None:
-        return True
+    # Check if pywinauto is available
+    pywinauto_available = importlib.util.find_spec("pywinauto") is not None
 
-    print("pywinauto not found. Installing...")
+    # Also check if win32api is available (pywin32 dependency)
+    win32api_available = importlib.util.find_spec("win32api") is not None
+
+    if pywinauto_available and win32api_available:
+        # Verify we can actually import win32api
+        try:
+            import win32api  # noqa: F401
+
+            return True
+        except ImportError:
+            pass  # Fall through to install
+
+    print("pywinauto or pywin32 not found/working. Installing...")
     try:
+        # Install pywin32 first (required by pywinauto)
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "pywin32", "--quiet"])
+        # Run pywin32 post-install script
+        try:
+            subprocess.check_call(
+                [sys.executable, "-m", "pywin32_postinstall", "-install", "-silent"],
+                stderr=subprocess.DEVNULL,
+            )
+        except subprocess.CalledProcessError:
+            # Post-install may fail on some systems, continue anyway
+            pass
+
+        # Now install pywinauto
         subprocess.check_call([sys.executable, "-m", "pip", "install", "pywinauto", "--quiet"])
         print("pywinauto installed successfully.")
         return True

@@ -104,6 +104,7 @@ goliat/utils/scripts/keep_awake.py
 
 # Cloud setup - credentials and personal scripts
 cloud_setup/tensordock_documentation.md
+cloud_setup/availability_cache.json
 cloud_setup/my_*.bat
 cloud_setup/my_*.py
 cloud_setup/my_setup_b64.txt
