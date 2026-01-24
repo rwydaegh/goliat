@@ -196,7 +196,12 @@ def detect_license_status(window):
 
 
 def step1_enter_license_and_next(window, backend):
-    """Step 1: Enter license server and click Next."""
+    """Step 1: Enter license server and click Next.
+    
+    Note: This function avoids set_focus() and click_input() methods
+    which require an active desktop/mouse cursor. Instead, it uses
+    message-based methods that work even in headless/RDP environments.
+    """
     print(f"\n[Step 1] Entering license server: {LICENSE_SERVER}")
 
     try:
@@ -219,18 +224,60 @@ def step1_enter_license_and_next(window, backend):
             print("ERROR: Could not find the text box control.")
             return False
 
-        # Enter the license server
-        edit_control.set_focus()
-        time.sleep(0.3)
-        edit_control.set_edit_text(LICENSE_SERVER)
+        # Enter the license server using set_edit_text (works without focus)
+        # NOTE: We skip set_focus() as it requires an active desktop/cursor
+        try:
+            edit_control.set_edit_text(LICENSE_SERVER)
+        except Exception:
+            # Fallback: try setting text via window_text property
+            edit_control.set_text(LICENSE_SERVER)
         print(f"  Entered: {LICENSE_SERVER}")
 
-        # Click Next button
+        # Click Next button using message-based click (no mouse simulation)
         time.sleep(0.5)
-        next_button = window.child_window(title="Next")
-        next_button.click()
+        next_button = None
+        
+        # Try to find Next button
+        try:
+            next_button = window.child_window(title="Next")
+        except Exception:
+            pass
+        
+        if next_button is None:
+            try:
+                next_button = window.child_window(title_re=".*Next.*")
+            except Exception:
+                pass
+        
+        if next_button is None:
+            print("ERROR: Could not find the 'Next' button.")
+            return False
+        
+        # Use click() which sends WM_CLICK message (no cursor required)
+        # For uia backend, try invoke() first as it's more reliable
+        clicked = False
+        if backend == "uia":
+            try:
+                next_button.invoke()
+                clicked = True
+            except Exception:
+                pass
+        
+        if not clicked:
+            try:
+                # win32 click() sends BM_CLICK message - doesn't need cursor
+                next_button.click()
+                clicked = True
+            except Exception as click_err:
+                # Last resort: try to send Enter key to the button
+                try:
+                    next_button.type_keys("{ENTER}", set_foreground=False)
+                    clicked = True
+                except Exception:
+                    print(f"ERROR: Could not click Next button: {click_err}")
+                    return False
+        
         print("  Clicked 'Next' button")
-
         return True
 
     except Exception as e:
@@ -264,15 +311,38 @@ def wait_for_validation(window):
     return False, f"Timeout after {VALIDATION_TIMEOUT_SECONDS} seconds"
 
 
-def click_finish(window):
-    """Click the Finish button to complete the process."""
+def click_finish(window, backend):
+    """Click the Finish button to complete the process.
+    
+    Uses message-based click methods that work without an active desktop.
+    """
     print("\n[Step 3] Clicking 'Finish' button...")
 
     try:
         finish_button = window.child_window(title="Finish")
-        finish_button.click()
-        print("  Clicked 'Finish' button")
-        return True
+        
+        # Use invoke() for uia backend, click() for win32
+        clicked = False
+        if backend == "uia":
+            try:
+                finish_button.invoke()
+                clicked = True
+            except Exception:
+                pass
+        
+        if not clicked:
+            try:
+                finish_button.click()
+                clicked = True
+            except Exception:
+                pass
+        
+        if clicked:
+            print("  Clicked 'Finish' button")
+            return True
+        else:
+            print("  Could not click Finish button")
+            return False
     except Exception as e:
         print(f"  Could not find/click Finish button: {e}")
         return False
@@ -319,12 +389,9 @@ def main():
         print("\nERROR: Failed to find the License Installer window.")
         sys.exit(1)
 
-    # Bring window to front
-    try:
-        window.set_focus()
-        time.sleep(0.5)
-    except Exception:
-        pass
+    # Note: We skip set_focus() here as it requires an active desktop/cursor
+    # The automation methods we use (set_edit_text, invoke, click) work without focus
+    time.sleep(0.5)  # Brief pause to ensure window is ready
 
     # Step 1: Enter license and click Next
     if not step1_enter_license_and_next(window, backend):
@@ -336,7 +403,7 @@ def main():
     print(f"\n{'SUCCESS' if success else 'FAILURE'}: {message}")
 
     # Step 3: Click Finish
-    click_finish(window)
+    click_finish(window, backend)
 
     # Final result
     print("\n" + "=" * 60)
