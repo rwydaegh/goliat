@@ -488,7 +488,7 @@ set "INIT_SCRIPT_BASH=%INIT_SCRIPT_BASH:\=/%"
 :: Automate License Installation using Python script
 echo Automating Sim4Life License Installation...
 echo   (This will take 30-60+ seconds for license validation)
-"C:\Program Files\Python311\python.exe" "C:\Users\%CURRENT_USER%\goliat\cloud_setup\license_automation.py"
+"C:\Program Files\Python311\python.exe" "C:\Users\%CURRENT_USER%\goliat\cloud_setup\license_automation.py" --license-server "YOUR_LICENSE_SERVER"
 if %errorlevel% neq 0 (
     echo.
     echo ============================================================================

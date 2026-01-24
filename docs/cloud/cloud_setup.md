@@ -99,7 +99,7 @@ This means you only need **one script** - just run `setup.bat` every time you co
 
 ### Running the script
 
-1. **Copy the setup script** to your VM (you can use RDP file transfer or download it)
+1. **Copy the setup script** to your VM (you can use RDP file transfer or download it). Only the `my_setup.bat` file needs to be copied - all other scripts are pulled from the git repository.
 
 2. **Edit the script** if needed (first time only):
    - Replace `YOUR_PRIVATE_GDRIVE_FOLDER_ID` with your Google Drive folder ID containing `.ovpn` and `.crt` files
@@ -107,6 +107,7 @@ This means you only need **one script** - just run `setup.bat` every time you co
    - Replace `YOUR_VPN_USERNAME` and `YOUR_VPN_PASSWORD` with your VPN credentials
    - Replace `YOUR_USERNAME` with your GitHub username
    - Replace `YOUR_EMAIL@example.com` and `YOUR_NAME` with your git credentials
+   - Replace `YOUR_LICENSE_SERVER` with your Sim4Life license server address (e.g., `@myserver.domain.com`)
 
 3. **Run as Administrator**:
 
@@ -123,11 +124,12 @@ This means you only need **one script** - just run `setup.bat` every time you co
 The `cloud_setup/` directory contains:
 
 - **`setup.bat`**: Unified setup script that handles both fresh installation and reconnection (template with placeholders)
-- **`my_setup.bat`**: Personal copy with actual credentials (gitignored)
+- **`my_setup.bat`**: Personal copy with actual credentials (gitignored) - this is the only file you need to copy to the VM
+- **`license_automation.py`**: Automates Sim4Life license configuration, accepts `--license-server` argument
 - **`deploy_windows_vm.py`**: Python script for API-based VM deployment (template)
 - **`my_deploy_windows_vm.py`**: Personal deployment script with credentials (gitignored)
 
-The `my_*` versions contain actual credentials and are gitignored. The template versions use placeholders like `YOUR_VPN_USERNAME` for open source distribution.
+The `my_*` versions contain actual credentials and are gitignored. The template versions use placeholders like `YOUR_VPN_USERNAME` and `YOUR_LICENSE_SERVER` for open source distribution.
 
 ## Cost estimation
 
