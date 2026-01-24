@@ -43,42 +43,56 @@ WINDOW_TITLE = "License Installer"
 
 
 def ensure_pywinauto():
-    """Ensure pywinauto and its dependencies are installed."""
-    import importlib.util
+    """Ensure pywinauto and its dependencies are installed.
 
-    # Check if pywinauto is available
-    pywinauto_available = importlib.util.find_spec("pywinauto") is not None
+    Returns True if ready to use, False if script will be restarted.
+    """
+    # First, try to import win32api to check if pywin32 is properly installed
+    try:
+        import win32api  # noqa: F401
+        from pywinauto import Application  # noqa: F401
 
-    # Also check if win32api is available (pywin32 dependency)
-    win32api_available = importlib.util.find_spec("win32api") is not None
+        return True  # Everything works
+    except ImportError:
+        pass  # Need to install
 
-    if pywinauto_available and win32api_available:
-        # Verify we can actually import win32api
-        try:
-            import win32api  # noqa: F401
-
-            return True
-        except ImportError:
-            pass  # Fall through to install
+    # Check if we're in a restart loop (env var set by previous run)
+    if os.environ.get("PYWIN32_INSTALLED") == "1":
+        print("ERROR: pywin32 was installed but still can't import win32api.")
+        print("Please restart your terminal/command prompt and run the script again.")
+        return False
 
     print("pywinauto or pywin32 not found/working. Installing...")
     try:
         # Install pywin32 first (required by pywinauto)
         subprocess.check_call([sys.executable, "-m", "pip", "install", "pywin32", "--quiet"])
-        # Run pywin32 post-install script
-        try:
-            subprocess.check_call(
-                [sys.executable, "-m", "pywin32_postinstall", "-install", "-silent"],
-                stderr=subprocess.DEVNULL,
-            )
-        except subprocess.CalledProcessError:
-            # Post-install may fail on some systems, continue anyway
-            pass
+
+        # Run pywin32 post-install script directly
+        scripts_dir = os.path.join(os.path.dirname(sys.executable), "Scripts")
+        postinstall_exe = os.path.join(scripts_dir, "pywin32_postinstall.exe")
+
+        if os.path.exists(postinstall_exe):
+            try:
+                subprocess.check_call(
+                    [postinstall_exe, "-install", "-silent"],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+                print("  pywin32 post-install completed.")
+            except subprocess.CalledProcessError:
+                pass  # May fail, continue anyway
 
         # Now install pywinauto
         subprocess.check_call([sys.executable, "-m", "pip", "install", "pywinauto", "--quiet"])
         print("pywinauto installed successfully.")
-        return True
+
+        # Restart this script with same arguments (new Python process sees the DLLs)
+        print("Restarting script to load newly installed modules...")
+        env = os.environ.copy()
+        env["PYWIN32_INSTALLED"] = "1"
+        result = subprocess.call([sys.executable] + sys.argv, env=env)
+        sys.exit(result)
+
     except Exception as e:
         print(f"ERROR: Failed to install pywinauto: {e}")
         return False
