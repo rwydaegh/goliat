@@ -138,6 +138,32 @@ class ResultsExtractor(LoggingMixin):
         )
         return cls(context)
 
+
+    def _get_extraction_flag(self, flag_name: str, default: bool = True) -> bool:
+        """Gets an extraction flag value with backward compatibility.
+
+        Checks both new 'extraction.{flag}' and legacy 'extract_{flag}' config keys.
+        
+        Args:
+            flag_name: Name of the extraction flag (e.g., 'sar', 'power_balance', 'sapd').
+            default: Default value if flag is not set in config.
+            
+        Returns:
+            Boolean value of the extraction flag.
+        """
+        # Try new structure first: extraction.{flag_name}
+        new_value = self.config[f"extraction.{flag_name}"]
+        if new_value is not None:
+            return bool(new_value)
+        
+        # Try legacy structure: extract_{flag_name}
+        legacy_value = self.config[f"extract_{flag_name}"]
+        if legacy_value is not None:
+            return bool(legacy_value)
+        
+        # Return default
+        return default
+
     @staticmethod
     def get_required_deliverable_filenames() -> dict:
         """Returns the required deliverable filenames that must exist for extract to be considered done.
@@ -214,19 +240,39 @@ class ResultsExtractor(LoggingMixin):
                     )
 
         if not self.free_space:
-            sar_extractor = SarExtractor(self, results_data)
-            sar_extractor.extract_sar_statistics(simulation_extractor)
-            power_extractor.extract_power_balance(simulation_extractor)
+            # Check if SAR extraction is enabled (defaults to True for backward compatibility)
+            extract_sar = self._get_extraction_flag("sar", default=True)
+            if extract_sar:
+                sar_extractor = SarExtractor(self, results_data)
+                sar_extractor.extract_sar_statistics(simulation_extractor)
+            else:
+                self._log("    - SAR extraction disabled by config", level="progress", log_type="info")
 
-            if self.config["extract_sapd"]:
+            # Check if power balance extraction is enabled (defaults to True for backward compatibility)
+            extract_power_balance = self._get_extraction_flag("power_balance", default=True)
+            if extract_power_balance:
+                power_extractor.extract_power_balance(simulation_extractor)
+            else:
+                self._log("    - Power balance extraction disabled by config", level="progress", log_type="info")
+
+            # Check if SAPD extraction is enabled (defaults to False)
+            extract_sapd = self._get_extraction_flag("sapd", default=False)
+            if extract_sapd:
                 sapd_extractor = SapdExtractor(self, results_data)
                 sapd_extractor.extract_sapd(simulation_extractor)
 
-        if (self.config["simulation_parameters.number_of_point_sensors"] or 0) > 0:  # type: ignore
+        # Check if point sensors are configured AND extraction is enabled
+        num_sensors = self.config["simulation_parameters.number_of_point_sensors"] or 0
+        extract_point_sensors = self._get_extraction_flag("point_sensors", default=True)
+        if num_sensors > 0 and extract_point_sensors:  # type: ignore
             sensor_extractor = SensorExtractor(self, results_data)
             sensor_extractor.extract_point_sensor_data(simulation_extractor)
+        elif num_sensors > 0 and not extract_point_sensors:
+            self._log("    - Point sensor extraction disabled by config", level="progress", log_type="info")
 
-        if not self.free_space and "_temp_sar_df" in results_data:
+        # Only generate reports if SAR data was extracted
+        extract_sar = self._get_extraction_flag("sar", default=True)
+        if not self.free_space and "_temp_sar_df" in results_data and extract_sar:
             reporter = Reporter(self)
             reporter.save_reports(
                 results_data.pop("_temp_sar_df"),
@@ -259,7 +305,8 @@ class ResultsExtractor(LoggingMixin):
                     phantom_name=self.phantom_name,
                     frequency_mhz=self.frequency_mhz,
                     config_path=self.config.config_path,
-                    extract_sapd=bool(self.config["extract_sapd"]) if self.config["extract_sapd"] is not None else False,
+                    extract_sar=self._get_extraction_flag("sar", default=True),
+                    extract_sapd=self._get_extraction_flag("sapd", default=False),
                 )
 
         # Cleanup if configured
@@ -268,7 +315,11 @@ class ResultsExtractor(LoggingMixin):
             cleaner.cleanup_simulation_files()
 
     def _save_json_results(self, results_data: dict):
-        """Saves final results to JSON, excluding temporary helper data and point_sensor_data."""
+        """Saves final results to JSON, excluding temporary helper data and point_sensor_data.
+        
+        When SAR extraction is disabled, creates minimal placeholder files so the
+        caching system still recognizes the extraction as complete.
+        """
         reporter = Reporter(self)
         results_dir = reporter._get_results_dir()
         os.makedirs(results_dir, exist_ok=True)
@@ -287,7 +338,26 @@ class ResultsExtractor(LoggingMixin):
             k: v for k, v in results_data.items() if not k.startswith("_temp") and k != "point_sensor_data" and k != "sapd_results"
         }
 
+        # Check if SAR extraction was disabled
+        extract_sar = self._get_extraction_flag("sar", default=True)
+        if not extract_sar:
+            # Add a flag indicating SAR was disabled
+            final_results_data["sar_extraction_disabled"] = True
+            
+            # Create placeholder files for caching to work
+            import pickle
+            pkl_filepath = os.path.join(results_dir, deliverables["pkl"])
+            with open(pkl_filepath, "wb") as f:
+                pickle.dump({"sar_extraction_disabled": True, "note": "SAR extraction was disabled by config"}, f)
+            self._log(f"  - Created placeholder PKL file: {pkl_filepath}", log_type="info")
+            
+            html_filepath = os.path.join(results_dir, deliverables["html"])
+            with open(html_filepath, "w") as f:
+                f.write("<html><body><h1>SAR extraction disabled</h1><p>SAR extraction was disabled in the configuration (extract_sar: false).</p></body></html>")
+            self._log(f"  - Created placeholder HTML file: {html_filepath}", log_type="info")
+
         with open(results_filepath, "w") as f:
             json.dump(final_results_data, f, indent=4, cls=NumpyArrayEncoder)
 
         self._log(f"  - SAR results saved to: {results_filepath}", log_type="info")
+

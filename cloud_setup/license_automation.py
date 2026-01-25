@@ -197,7 +197,7 @@ def detect_license_status(window):
 
 def step1_enter_license_and_next(window, backend):
     """Step 1: Enter license server and click Next.
-    
+
     Note: This function avoids set_focus() and click_input() methods
     which require an active desktop/mouse cursor. Instead, it uses
     message-based methods that work even in headless/RDP environments.
@@ -236,23 +236,23 @@ def step1_enter_license_and_next(window, backend):
         # Click Next button using message-based click (no mouse simulation)
         time.sleep(0.5)
         next_button = None
-        
+
         # Try to find Next button
         try:
             next_button = window.child_window(title="Next")
         except Exception:
             pass
-        
+
         if next_button is None:
             try:
                 next_button = window.child_window(title_re=".*Next.*")
             except Exception:
                 pass
-        
+
         if next_button is None:
             print("ERROR: Could not find the 'Next' button.")
             return False
-        
+
         # Use click() which sends WM_CLICK message (no cursor required)
         # For uia backend, try invoke() first as it's more reliable
         clicked = False
@@ -262,7 +262,7 @@ def step1_enter_license_and_next(window, backend):
                 clicked = True
             except Exception:
                 pass
-        
+
         if not clicked:
             try:
                 # win32 click() sends BM_CLICK message - doesn't need cursor
@@ -276,7 +276,7 @@ def step1_enter_license_and_next(window, backend):
                 except Exception:
                     print(f"ERROR: Could not click Next button: {click_err}")
                     return False
-        
+
         print("  Clicked 'Next' button")
         return True
 
@@ -313,14 +313,14 @@ def wait_for_validation(window):
 
 def click_finish(window, backend):
     """Click the Finish button to complete the process.
-    
+
     Uses message-based click methods that work without an active desktop.
     """
     print("\n[Step 3] Clicking 'Finish' button...")
 
     try:
         finish_button = window.child_window(title="Finish")
-        
+
         # Use invoke() for uia backend, click() for win32
         clicked = False
         if backend == "uia":
@@ -329,14 +329,14 @@ def click_finish(window, backend):
                 clicked = True
             except Exception:
                 pass
-        
+
         if not clicked:
             try:
                 finish_button.click()
                 clicked = True
             except Exception:
                 pass
-        
+
         if clicked:
             print("  Clicked 'Finish' button")
             return True

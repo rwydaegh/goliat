@@ -72,7 +72,11 @@ class SapdExtractor(LoggingMixin):
         Args:
             simulation_extractor: The simulation results extractor.
         """
-        if not self.config["extract_sapd"]:
+        # Check extraction flag (redundant safety check - results_extractor already gates this)
+        extract_sapd = self.config["extraction.sapd"]
+        if extract_sapd is None:
+            extract_sapd = self.config["extract_sapd"]  # Legacy fallback
+        if not extract_sapd:
             return
 
         self._log("    - Extract SAPD statistics...", level="progress", log_type="progress")
