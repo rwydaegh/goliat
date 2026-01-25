@@ -338,6 +338,31 @@ class FarFieldSetup(BaseSetup):
 
         return height_limit
 
+    def _get_grid_resolution_mm(self, freq_mhz: int) -> float:
+        """Gets the grid resolution (cell size) in mm for a given frequency.
+
+        Checks per-frequency gridding settings first, then falls back to global default.
+
+        Args:
+            freq_mhz: Frequency in MHz.
+
+        Returns:
+            Grid resolution in mm.
+        """
+        gridding_params = self.config["gridding_parameters"]
+        per_freq_gridding = gridding_params.get("global_gridding_per_frequency", {})
+        
+        if isinstance(per_freq_gridding, dict):
+            freq_key = str(int(freq_mhz))
+            if freq_key in per_freq_gridding:
+                return per_freq_gridding[freq_key]
+        
+        # Fallback to global default
+        global_gridding = gridding_params.get("global_gridding", {})
+        if isinstance(global_gridding, dict):
+            return global_gridding.get("manual_fallback_max_step_mm", 3.0)
+        return 3.0
+
     def _calculate_auto_height_limit(
         self,
         phantom_bbox_min: np.ndarray,
@@ -345,13 +370,21 @@ class FarFieldSetup(BaseSetup):
         freq_mhz: int,
         reference_freq_mhz: int,
     ) -> float | None:
-        """Calculates automatic height limit based on cubic frequency scaling.
+        """Calculates automatic height limit based on grid resolution scaling.
 
-        Cell count scales cubically with frequency (since cell size ~ 1/freq for constant
-        cells per wavelength). To maintain the same cell count as at reference_freq_mhz,
-        we reduce the height by the cubic ratio of frequencies.
+        The naive approach scales by frequency³, assuming grid resolution scales
+        proportionally with frequency. However, different frequencies may have
+        different gridding parameters, so we account for actual grid resolutions.
 
-        Formula: height_factor = (reference_freq / current_freq)^3
+        Cell count = volume / cell_size³
+        To maintain constant cell count:
+        - volume_curr / grid_size_curr³ = volume_ref / grid_size_ref³
+        - volume_curr = volume_ref × (grid_size_curr / grid_size_ref)³
+
+        Since we only reduce height (keeping width/depth constant):
+        - height_curr = height_ref × (grid_size_curr / grid_size_ref)³
+
+        Formula: height_factor = (grid_size_current / grid_size_reference)³
 
         Args:
             phantom_bbox_min: Original phantom bounding box minimum [x, y, z] in mm.
@@ -365,10 +398,14 @@ class FarFieldSetup(BaseSetup):
         # Calculate full phantom height
         full_height_mm = phantom_bbox_max[2] - phantom_bbox_min[2]
 
-        # Calculate height reduction factor using cubic frequency scaling
-        # Cell count at freq_mhz vs reference_freq_mhz scales as (freq/ref)^3
-        # To keep same cell count, reduce height by (ref/freq)^3
-        height_factor = (reference_freq_mhz / freq_mhz) ** 3
+        # Get actual grid resolutions for both frequencies
+        grid_size_current_mm = self._get_grid_resolution_mm(freq_mhz)
+        grid_size_reference_mm = self._get_grid_resolution_mm(reference_freq_mhz)
+
+        # Calculate height reduction factor based on actual grid resolution scaling
+        # Cell count scales as 1 / grid_size³, so to maintain constant cell count:
+        # height_factor = (grid_size_current / grid_size_reference)³
+        height_factor = (grid_size_current_mm / grid_size_reference_mm) ** 3
 
         reduced_height_mm = full_height_mm * height_factor
 
@@ -377,7 +414,10 @@ class FarFieldSetup(BaseSetup):
         reduced_height_mm = max(reduced_height_mm, min_height_mm)
 
         self._log(
-            f"  - Height scaling: ({reference_freq_mhz}/{freq_mhz})^3 = {height_factor:.4f}",
+            f"  - Grid-based height scaling: "
+            f"grid({freq_mhz}MHz)={grid_size_current_mm}mm, "
+            f"grid({reference_freq_mhz}MHz)={grid_size_reference_mm}mm, "
+            f"factor=({grid_size_current_mm}/{grid_size_reference_mm})³ = {height_factor:.4f}",
             log_type="verbose",
         )
 
