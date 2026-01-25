@@ -35,6 +35,7 @@
         "cube_size_mm": 50,
         "search_metric": "E_magnitude",
         "save_intermediate_files": false,
+        "use_xy_diagonal_for_sim_time": true,
         "search": {
             "mode": "air",
             "n_samples": 10000,
@@ -108,7 +109,7 @@
         },
         "phantom_bbox_reduction": {
             "auto_reduce_bbox": true,
-            "reference_frequency_mhz": 9000,
+            "reference_frequency_mhz": 7000,
             "use_symmetry_reduction": true,
             "height_limit_per_frequency_mm": {}
         }

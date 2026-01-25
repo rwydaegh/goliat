@@ -77,7 +77,7 @@
         },
         "phantom_bbox_reduction": {
             "auto_reduce_bbox": true,
-            "reference_frequency_mhz": 9000,
+            "reference_frequency_mhz": 7000,
             "use_symmetry_reduction": true,
             "height_limit_per_frequency_mm": {}
         }

@@ -61,6 +61,7 @@
         "top_n": 30,
         "cube_size_mm": 50,
         "save_intermediate_files": true,
+        "use_xy_diagonal_for_sim_time": true,
         "search": {
             "mode": "air",
             "n_samples": 0.01,

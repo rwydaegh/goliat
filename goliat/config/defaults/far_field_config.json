@@ -7,6 +7,7 @@
         "cube_size_mm": 50,
         "search_metric": "E_magnitude",
         "save_intermediate_files": false,
+        "use_xy_diagonal_for_sim_time": true,
         "search": {
             "mode": "air",
             "n_samples": 10000,

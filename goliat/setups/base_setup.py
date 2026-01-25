@@ -86,7 +86,15 @@ class BaseSetup(LoggingMixin):
             return
         bbox_min, bbox_max = bbox
 
-        diagonal_length_m = np.linalg.norm(np.array(bbox_max) - np.array(bbox_min)) / 1000.0
+        # Check if we should use XY-only diagonal (relevant for auto-induced with reduced phantom height)
+        use_xy_diagonal = self.config["auto_induced.use_xy_diagonal_for_sim_time"] or False
+        bbox_diff = np.array(bbox_max) - np.array(bbox_min)
+        if use_xy_diagonal:
+            # Only use X and Y components, ignore Z
+            diagonal_length_m = np.linalg.norm(bbox_diff[:2]) / 1000.0
+            self._log("  - Using XY-plane diagonal for simulation time (Z ignored)", log_type="info")
+        else:
+            diagonal_length_m = np.linalg.norm(bbox_diff) / 1000.0
 
         # Check excitation type for Gaussian-specific timing
         excitation_type = sim_params.get("excitation_type", "Harmonic")
