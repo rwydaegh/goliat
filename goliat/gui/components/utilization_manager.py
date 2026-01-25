@@ -24,6 +24,8 @@ class UtilizationManager:
         self._last_ram_percent: float = 0.0
         self._last_gpu_percent: Optional[float] = None
         self._last_gpu_vram_percent: Optional[float] = None
+        self._last_disk_read_mbps: Optional[float] = None
+        self._last_disk_write_mbps: Optional[float] = None
 
     def update(self) -> None:
         """Updates CPU, RAM, and GPU utilization displays.
@@ -82,6 +84,14 @@ class UtilizationManager:
         else:
             self._last_gpu_vram_percent = None
 
+        # Get disk I/O throughput for plot (not shown in main tab)
+        disk_io = SystemMonitor.get_disk_io_throughput()
+        if disk_io is not None:
+            self._last_disk_read_mbps, self._last_disk_write_mbps = disk_io
+        else:
+            self._last_disk_read_mbps = None
+            self._last_disk_write_mbps = None
+
     def update_plot(self) -> None:
         """Updates the system utilization plot with current values.
 
@@ -90,10 +100,15 @@ class UtilizationManager:
         """
         current_time = get_ntp_utc_time()  # Use NTP time (bypasses system clock issues)
 
-        # Write to CSV (includes RAM and GPU VRAM)
+        # Write to CSV (includes RAM, GPU VRAM, and disk I/O)
         try:
             self.gui.data_manager.write_system_utilization(
-                self._last_cpu_percent, self._last_ram_percent, self._last_gpu_percent, self._last_gpu_vram_percent
+                self._last_cpu_percent,
+                self._last_ram_percent,
+                self._last_gpu_percent,
+                self._last_gpu_vram_percent,
+                self._last_disk_read_mbps,
+                self._last_disk_write_mbps,
             )
         except Exception as e:
             self.gui.verbose_logger.error(f"[UtilizationPlot] CSV write failed: {e}")
@@ -125,6 +140,8 @@ class UtilizationManager:
                     total_ram_gb=total_ram_gb,
                     gpu_name=gpu_name,
                     total_gpu_vram_gb=total_gpu_vram_gb,
+                    disk_read_mbps=self._last_disk_read_mbps,
+                    disk_write_mbps=self._last_disk_write_mbps,
                 )
             except Exception as e:
                 self.gui.verbose_logger.error(f"[UtilizationPlot] Failed to add plot data point: {e}")
