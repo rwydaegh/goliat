@@ -193,6 +193,57 @@ class SystemMonitor:
         except Exception:
             return 0.0
 
+    # Class-level state for disk I/O delta calculation
+    _last_disk_io: Optional[Tuple[int, int, float]] = None  # (read_bytes, write_bytes, timestamp)
+
+    @staticmethod
+    def get_disk_io_throughput() -> Optional[Tuple[float, float]]:
+        """Gets current disk I/O throughput in MB/s.
+
+        Calculates read and write speeds by comparing current I/O counters
+        with values from the previous call. First call returns None as there's
+        no baseline for comparison.
+
+        Returns:
+            Tuple of (read_MB_per_sec, write_MB_per_sec), or None if unavailable.
+        """
+        if not PSUTIL_AVAILABLE:
+            return None
+        try:
+            import time
+
+            current_time = time.time()
+            # psutil is guaranteed to be available here due to PSUTIL_AVAILABLE check
+            io_counters = psutil.disk_io_counters()  # type: ignore[possibly-unbound]
+            if io_counters is None:
+                return None
+
+            current_read = io_counters.read_bytes
+            current_write = io_counters.write_bytes
+
+            if SystemMonitor._last_disk_io is None:
+                # First call - store baseline and return None
+                SystemMonitor._last_disk_io = (current_read, current_write, current_time)
+                return None
+
+            last_read, last_write, last_time = SystemMonitor._last_disk_io
+            time_delta = current_time - last_time
+
+            if time_delta <= 0:
+                return None
+
+            # Calculate throughput in MB/s
+            read_speed = (current_read - last_read) / (1024 * 1024) / time_delta
+            write_speed = (current_write - last_write) / (1024 * 1024) / time_delta
+
+            # Update stored values for next call
+            SystemMonitor._last_disk_io = (current_read, current_write, current_time)
+
+            # Clamp to non-negative (counters can wrap on some systems)
+            return (max(0.0, read_speed), max(0.0, write_speed))
+        except Exception:
+            return None
+
     @staticmethod
     def is_gpu_available() -> bool:
         """Checks if GPU is available via nvidia-smi.

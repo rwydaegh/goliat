@@ -53,7 +53,9 @@ class DataManager:
 
         with open(self.system_utilization_file, "w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(["timestamp", "cpu_percent", "ram_percent", "gpu_percent", "gpu_vram_percent"])
+            writer.writerow(
+                ["timestamp", "cpu_percent", "ram_percent", "gpu_percent", "gpu_vram_percent", "disk_read_mbps", "disk_write_mbps"]
+            )
 
     def _write_csv_row(self, file_path: str, value: float, value_name: str) -> None:
         """Appends a timestamped data point to a CSV file.
@@ -99,17 +101,21 @@ class DataManager:
         ram_percent: float,
         gpu_percent: Optional[float] = None,
         gpu_vram_percent: Optional[float] = None,
+        disk_read_mbps: Optional[float] = None,
+        disk_write_mbps: Optional[float] = None,
     ) -> None:
         """Appends a system utilization data point to CSV.
 
-        Writes timestamp and CPU, RAM, GPU utilization, and GPU VRAM
-        percentages to session-specific CSV file. Used for plotting utilization trends over time.
+        Writes timestamp and CPU, RAM, GPU utilization, GPU VRAM, and disk I/O
+        throughput to session-specific CSV file. Used for plotting utilization trends over time.
 
         Args:
             cpu_percent: CPU utilization percentage (0-100).
             ram_percent: RAM utilization percentage (0-100).
             gpu_percent: GPU utilization percentage (0-100), or None if unavailable.
             gpu_vram_percent: GPU VRAM utilization percentage (0-100), or None if unavailable.
+            disk_read_mbps: Disk read throughput in MB/s, or None if unavailable.
+            disk_write_mbps: Disk write throughput in MB/s, or None if unavailable.
         """
         try:
             current_time = get_ntp_utc_time()  # Use NTP time (bypasses system clock issues)
@@ -122,6 +128,8 @@ class DataManager:
                         ram_percent,
                         gpu_percent if gpu_percent is not None else "",
                         gpu_vram_percent if gpu_vram_percent is not None else "",
+                        f"{disk_read_mbps:.2f}" if disk_read_mbps is not None else "",
+                        f"{disk_write_mbps:.2f}" if disk_write_mbps is not None else "",
                     ]
                 )
         except Exception as e:
