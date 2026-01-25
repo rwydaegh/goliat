@@ -270,6 +270,11 @@ class FarFieldSetup(BaseSetup):
             plane_wave_source.ApplyFilter = True  # Default, but explicit is safer
             # CenterFrequency already set immediately after creation
 
+            # Configure overall field sensor from config (for single-frequency)
+            # Note: Config-driven E/H selection applies here. Multi-sine above always
+            # records both E and H because SAPD extraction requires both.
+            self._configure_overall_field_sensor(simulation, self.reference_frequency_mhz)
+
         simulation.Add(plane_wave_source, [bbox_entity])
         self.document.AllSimulations.Add(simulation)
 
