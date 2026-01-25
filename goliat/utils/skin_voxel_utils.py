@@ -248,13 +248,20 @@ def find_valid_air_focus_points(
     t0 = time.perf_counter()
     struct = np.ones(struct_size, dtype=bool)
     
-    # Try GPU acceleration with CuPy, fallback to scipy CPU
+    # GPU-only: CuPy is mandatory for performance
     try:
         import cupy as cp
         from cupyx.scipy import ndimage as cp_ndimage
-        use_gpu = True
-    except ImportError:
-        use_gpu = False
+    except ImportError as e:
+        raise RuntimeError(
+            "CuPy is required for GPU-accelerated dilation but is not installed.\n"
+            "Fix:\n"
+            "  1. Check your CUDA version: nvidia-smi\n"
+            "  2. Install matching CuPy:\n"
+            "     - CUDA 11.x: pip install cupy-cuda11x\n"
+            "     - CUDA 12.x: pip install cupy-cuda12x\n"
+            f"Original error: {e}"
+        ) from e
     
     # Import tqdm for progress tracking
     try:
@@ -263,48 +270,54 @@ def find_valid_air_focus_points(
     except ImportError:
         use_tqdm = False
     
-    logger.info(f"  Starting binary dilation ({n_iterations} iterations)...")
+    logger.info(f"  Starting GPU-accelerated binary dilation ({n_iterations} iterations)...")
     
-    if use_gpu:
-        try:
-            # GPU path: transfer to GPU, dilate, transfer back
-            logger.info(f"  Attempting GPU acceleration (CuPy)...")
-            t_transfer = time.perf_counter()
-            dilated_skin_gpu = cp.asarray(skin_mask)
-            struct_gpu = cp.asarray(struct)
-            logger.info(f"  [timing] GPU transfer (to): {time.perf_counter() - t_transfer:.2f}s")
-            
-            iterator = tqdm(range(n_iterations), desc="  Dilation (GPU)", unit="iter") if use_tqdm else range(n_iterations)
-            for i in iterator:
-                t_iter = time.perf_counter()
-                dilated_skin_gpu = cp_ndimage.binary_dilation(dilated_skin_gpu, structure=struct_gpu)
-                cp.cuda.Stream.null.synchronize()  # Ensure GPU op completes for timing
-                if not use_tqdm:
-                    logger.info(f"    Dilation iteration {i+1}/{n_iterations}: {time.perf_counter() - t_iter:.2f}s")
-            
-            t_transfer = time.perf_counter()
-            dilated_skin = cp.asnumpy(dilated_skin_gpu)
-            logger.info(f"  [timing] GPU transfer (from): {time.perf_counter() - t_transfer:.2f}s")
-            
-            # Free GPU memory
-            del dilated_skin_gpu, struct_gpu
-            cp.get_default_memory_pool().free_all_blocks()
-            
-        except Exception as e:
-            # GPU failed (e.g., missing CUDA runtime), fall back to CPU
-            logger.warning(f"  GPU acceleration failed ({type(e).__name__}: {str(e)[:100]}), falling back to CPU")
-            use_gpu = False
-    
-    if not use_gpu:
-        # CPU path: scipy
-        logger.info(f"  Using CPU (scipy)")
-        dilated_skin = skin_mask.copy()
-        iterator = tqdm(range(n_iterations), desc="  Dilation (CPU)", unit="iter") if use_tqdm else range(n_iterations)
+    # GPU path: transfer to GPU, dilate, transfer back
+    try:
+        t_transfer = time.perf_counter()
+        dilated_skin_gpu = cp.asarray(skin_mask)
+        struct_gpu = cp.asarray(struct)
+        logger.info(f"  [timing] GPU transfer (to): {time.perf_counter() - t_transfer:.2f}s")
+        
+        iterator = tqdm(range(n_iterations), desc="  Dilation (GPU)", unit="iter") if use_tqdm else range(n_iterations)
         for i in iterator:
             t_iter = time.perf_counter()
-            dilated_skin = ndimage.binary_dilation(dilated_skin, structure=struct)
+            dilated_skin_gpu = cp_ndimage.binary_dilation(dilated_skin_gpu, structure=struct_gpu)
+            cp.cuda.Stream.null.synchronize()  # Ensure GPU op completes for timing
             if not use_tqdm:
                 logger.info(f"    Dilation iteration {i+1}/{n_iterations}: {time.perf_counter() - t_iter:.2f}s")
+        
+        t_transfer = time.perf_counter()
+        dilated_skin = cp.asnumpy(dilated_skin_gpu)
+        logger.info(f"  [timing] GPU transfer (from): {time.perf_counter() - t_transfer:.2f}s")
+        
+        # Free GPU memory
+        del dilated_skin_gpu, struct_gpu
+        cp.get_default_memory_pool().free_all_blocks()
+        
+    except Exception as e:
+        error_msg = str(e)
+        
+        # Specific error message for missing CUDA DLLs
+        if "nvrtc" in error_msg.lower() or ".dll" in error_msg.lower():
+            raise RuntimeError(
+                f"GPU acceleration failed: CuPy cannot find CUDA runtime libraries.\n"
+                f"Error: {type(e).__name__}: {error_msg[:200]}\n\n"
+                f"Fix:\n"
+                f"  1. Check your CUDA version: nvidia-smi\n"
+                f"  2. Uninstall current CuPy: pip uninstall cupy-cuda11x cupy-cuda12x\n"
+                f"  3. Install matching version:\n"
+                f"     - CUDA 11.x: pip install cupy-cuda11x\n"
+                f"     - CUDA 12.x: pip install cupy-cuda12x\n"
+                f"  4. If no CUDA toolkit installed, download from:\n"
+                f"     https://developer.nvidia.com/cuda-downloads"
+            ) from e
+        else:
+            # Generic GPU error
+            raise RuntimeError(
+                f"GPU acceleration failed with {type(e).__name__}: {error_msg[:200]}\n"
+                f"Please check your CUDA installation and GPU availability."
+            ) from e
         
     logger.info(f"  [timing] binary_dilation ({n_iterations}x): {time.perf_counter() - t0:.2f}s")
 
