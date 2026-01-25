@@ -4,35 +4,50 @@
     "extraction": {
         "sar": false,
         "power_balance": false,
-        "sapd": true,
+        "sapd": false,
         "point_sensors": false
     },
     "execution_control": {
         "do_setup": true,
         "only_write_input_file": false,
         "do_run": true,
-        "do_extract": true,
+        "do_extract": false,
         "batch_run": false,
-        "auto_cleanup_previous_results": [
-            "output"
-        ]
+        "auto_cleanup_previous_results": []
     },
     "phantoms": [
         "thelonious"
     ],
     "frequencies_mhz": [
-        7000,
-        9000,
-        11000,
-        13000,
-        15000
+        2000
     ],
+    "auto_induced": {
+        "enabled": true,
+        "top_n": 10,
+        "cube_size_mm": 50,
+        "search_metric": "E_magnitude",
+        "save_intermediate_files": false,
+        "search": {
+            "mode": "air",
+            "n_samples": 10000,
+            "random_seed": 42,
+            "shell_size_mm": 10.0,
+            "selection_percentile": 95.0,
+            "min_candidate_distance_mm": 50.0
+        }
+    },
     "far_field_setup": {
         "type": "environmental",
         "environmental": {
-            "incident_directions": [
-                "x_neg"
-            ],
+            "spherical_tessellation": {
+                "theta_values": [
+                    90
+                ],
+                "phi_values": [
+                    150,
+                    210
+                ]
+            },
             "polarizations": [
                 "theta"
             ]
@@ -42,13 +57,10 @@
         }
     },
     "simulation_parameters": {
-        "bbox_padding_mm": 10,
+        "bbox_padding_mm": 0,
         "simulation_bbox_points": 8,
         "number_of_point_sensors": 0,
         "simulation_time_multiplier": 1.0
-    },
-    "solver_settings": {
-        "kernel": "cuda"
     },
     "gridding_parameters": {
         "global_gridding": {
@@ -56,6 +68,7 @@
             "manual_fallback_max_step_mm": 3.0
         },
         "global_gridding_per_frequency": {
+            "2000": 2.5,
             "7000": 0.6,
             "9000": 0.5,
             "11000": 0.5,
