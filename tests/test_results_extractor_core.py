@@ -204,3 +204,107 @@ class TestResultsExtractor:
                 saved_data = json.load(f)
                 assert "_temp_sar_df" not in saved_data
                 assert "power" in saved_data
+
+    def test_get_extraction_flag_new_structure(self, mock_simulation):
+        """Test _get_extraction_flag with new extraction.* config structure."""
+        from goliat.results_extractor import ResultsExtractor
+
+        mock_config = MagicMock()
+        # New structure: extraction.sar = False
+        mock_config.__getitem__.side_effect = lambda key: {
+            "extraction.sar": False,
+            "extraction.power_balance": True,
+            "extraction.sapd": True,
+            "extraction.point_sensors": False,
+            "extract_sar": None,  # Legacy should be ignored
+            "simulation_parameters.number_of_point_sensors": 0,
+        }.get(key)
+        mock_config.base_dir = "/tmp"
+
+        extractor = ResultsExtractor.from_params(
+            config=mock_config,
+            simulation=mock_simulation,
+            phantom_name="thelonious",
+            frequency_mhz=700,
+            scenario_name="by_cheek",
+            position_name="center",
+            orientation_name="vertical",
+            study_type="near_field",
+            verbose_logger=MagicMock(),
+            progress_logger=MagicMock(),
+            free_space=False,
+            gui=None,
+            study=None,
+        )
+
+        # New structure should take precedence
+        assert extractor._get_extraction_flag("sar") is False
+        assert extractor._get_extraction_flag("power_balance") is True
+        assert extractor._get_extraction_flag("sapd") is True
+        assert extractor._get_extraction_flag("point_sensors") is False
+
+    def test_get_extraction_flag_legacy_structure(self, mock_simulation):
+        """Test _get_extraction_flag fallback to legacy extract_* structure."""
+        from goliat.results_extractor import ResultsExtractor
+
+        mock_config = MagicMock()
+        # Legacy structure only (no extraction.*)
+        mock_config.__getitem__.side_effect = lambda key: {
+            "extraction.sar": None,
+            "extraction.sapd": None,
+            "extract_sar": False,  # Legacy key
+            "extract_sapd": True,  # Legacy key
+            "simulation_parameters.number_of_point_sensors": 0,
+        }.get(key)
+        mock_config.base_dir = "/tmp"
+
+        extractor = ResultsExtractor.from_params(
+            config=mock_config,
+            simulation=mock_simulation,
+            phantom_name="thelonious",
+            frequency_mhz=700,
+            scenario_name="by_cheek",
+            position_name="center",
+            orientation_name="vertical",
+            study_type="near_field",
+            verbose_logger=MagicMock(),
+            progress_logger=MagicMock(),
+            free_space=False,
+            gui=None,
+            study=None,
+        )
+
+        # Legacy structure should work as fallback
+        assert extractor._get_extraction_flag("sar") is False
+        assert extractor._get_extraction_flag("sapd") is True
+
+    def test_get_extraction_flag_default_values(self, mock_simulation):
+        """Test _get_extraction_flag returns defaults when nothing is set."""
+        from goliat.results_extractor import ResultsExtractor
+
+        mock_config = MagicMock()
+        # Neither structure set
+        mock_config.__getitem__.return_value = None
+        mock_config.base_dir = "/tmp"
+
+        extractor = ResultsExtractor.from_params(
+            config=mock_config,
+            simulation=mock_simulation,
+            phantom_name="thelonious",
+            frequency_mhz=700,
+            scenario_name="by_cheek",
+            position_name="center",
+            orientation_name="vertical",
+            study_type="near_field",
+            verbose_logger=MagicMock(),
+            progress_logger=MagicMock(),
+            free_space=False,
+            gui=None,
+            study=None,
+        )
+
+        # Should return specified defaults
+        assert extractor._get_extraction_flag("sar", default=True) is True
+        assert extractor._get_extraction_flag("sapd", default=False) is False
+        assert extractor._get_extraction_flag("power_balance", default=True) is True
+        assert extractor._get_extraction_flag("point_sensors", default=True) is True
