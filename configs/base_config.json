@@ -1,7 +1,12 @@
 {
     "use_gui": true,
     "use_web": true,
-    "extract_sapd": false,
+    "extraction": {
+        "sar": true,
+        "power_balance": true,
+        "sapd": false,
+        "point_sensors": true
+    },
     "power_balance": {
         "input_method": "bounding_box"
     },
@@ -32,7 +37,14 @@
             "lower_right_up",
             "top_left_bottom"
         ],
-        "multisine_ramp_periods": 2.0
+        "multisine_ramp_periods": 2.0,
+        "overall_field_sensor": {
+            "enabled": true,
+            "record_e_field": true,
+            "record_h_field": false,
+            "recording_domain": "frequency",
+            "on_the_fly_dft": true
+        }
     },
     "gridding_parameters": {
         "global_gridding": {

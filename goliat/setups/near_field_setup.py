@@ -132,6 +132,9 @@ class NearFieldSetup(BaseSetup):
             self._create_simulation_bbox()
             simulation = self._setup_simulation_entity()
 
+            # Configure overall field sensor based on config
+            self._configure_overall_field_sensor(simulation, self.frequency_mhz)
+
             sim_bbox_name = f"{self.placement_name.lower()}_simulation_bbox"
             self._add_point_sensors(simulation, sim_bbox_name)
 
