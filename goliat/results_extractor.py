@@ -138,16 +138,15 @@ class ResultsExtractor(LoggingMixin):
         )
         return cls(context)
 
-
     def _get_extraction_flag(self, flag_name: str, default: bool = True) -> bool:
         """Gets an extraction flag value with backward compatibility.
 
         Checks both new 'extraction.{flag}' and legacy 'extract_{flag}' config keys.
-        
+
         Args:
             flag_name: Name of the extraction flag (e.g., 'sar', 'power_balance', 'sapd').
             default: Default value if flag is not set in config.
-            
+
         Returns:
             Boolean value of the extraction flag.
         """
@@ -155,12 +154,12 @@ class ResultsExtractor(LoggingMixin):
         new_value = self.config[f"extraction.{flag_name}"]
         if new_value is not None:
             return bool(new_value)
-        
+
         # Try legacy structure: extract_{flag_name}
         legacy_value = self.config[f"extract_{flag_name}"]
         if legacy_value is not None:
             return bool(legacy_value)
-        
+
         # Return default
         return default
 
@@ -262,9 +261,10 @@ class ResultsExtractor(LoggingMixin):
                 sapd_extractor.extract_sapd(simulation_extractor)
 
         # Check if point sensors are configured AND extraction is enabled
-        num_sensors = self.config["simulation_parameters.number_of_point_sensors"] or 0
+        num_sensors_value = self.config["simulation_parameters.number_of_point_sensors"]
+        num_sensors = int(num_sensors_value) if isinstance(num_sensors_value, (int, float)) else 0
         extract_point_sensors = self._get_extraction_flag("point_sensors", default=True)
-        if num_sensors > 0 and extract_point_sensors:  # type: ignore
+        if num_sensors > 0 and extract_point_sensors:
             sensor_extractor = SensorExtractor(self, results_data)
             sensor_extractor.extract_point_sensor_data(simulation_extractor)
         elif num_sensors > 0 and not extract_point_sensors:
@@ -316,7 +316,7 @@ class ResultsExtractor(LoggingMixin):
 
     def _save_json_results(self, results_data: dict):
         """Saves final results to JSON, excluding temporary helper data and point_sensor_data.
-        
+
         When SAR extraction is disabled, creates minimal placeholder files so the
         caching system still recognizes the extraction as complete.
         """
@@ -343,21 +343,23 @@ class ResultsExtractor(LoggingMixin):
         if not extract_sar:
             # Add a flag indicating SAR was disabled
             final_results_data["sar_extraction_disabled"] = True
-            
+
             # Create placeholder files for caching to work
             import pickle
+
             pkl_filepath = os.path.join(results_dir, deliverables["pkl"])
             with open(pkl_filepath, "wb") as f:
                 pickle.dump({"sar_extraction_disabled": True, "note": "SAR extraction was disabled by config"}, f)
             self._log(f"  - Created placeholder PKL file: {pkl_filepath}", log_type="info")
-            
+
             html_filepath = os.path.join(results_dir, deliverables["html"])
             with open(html_filepath, "w") as f:
-                f.write("<html><body><h1>SAR extraction disabled</h1><p>SAR extraction was disabled in the configuration (extract_sar: false).</p></body></html>")
+                f.write(
+                    "<html><body><h1>SAR extraction disabled</h1><p>SAR extraction was disabled in the configuration (extract_sar: false).</p></body></html>"
+                )
             self._log(f"  - Created placeholder HTML file: {html_filepath}", log_type="info")
 
         with open(results_filepath, "w") as f:
             json.dump(final_results_data, f, indent=4, cls=NumpyArrayEncoder)
 
         self._log(f"  - SAR results saved to: {results_filepath}", log_type="info")
-
