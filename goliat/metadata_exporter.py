@@ -115,6 +115,7 @@ class SimulationMetadata:
     file_sizes: FileSizeInfo
 
     # Extraction flags
+    extract_sar: bool = True
     extract_sapd: bool = False
 
     # Additional context
@@ -134,6 +135,7 @@ class MetadataExporter:
         phantom_name: str,
         frequency_mhz: int | list[int],
         config_path: Optional[str] = None,
+        extract_sar: bool = True,
         extract_sapd: bool = False,
     ):
         """Initialize the exporter.
@@ -146,6 +148,7 @@ class MetadataExporter:
             phantom_name: Name of the phantom used.
             frequency_mhz: Simulation frequency in MHz.
             config_path: Path to the config file.
+            extract_sar: Whether SAR extraction was enabled.
             extract_sapd: Whether SAPD extraction was enabled.
         """
         self.profiler = profiler
@@ -156,6 +159,7 @@ class MetadataExporter:
         self.phantom_name = phantom_name
         self.frequency_mhz = frequency_mhz
         self.config_path = config_path
+        self.extract_sar = extract_sar
         self.extract_sapd = extract_sapd
         self.logger = logging.getLogger("progress")
         self.verbose_logger = logging.getLogger("verbose")
@@ -216,6 +220,7 @@ class MetadataExporter:
             performance=performance,
             grid=grid,
             file_sizes=file_sizes,
+            extract_sar=self.extract_sar,
             extract_sapd=self.extract_sapd,
             config_path=self.config_path,
             project_path=self.project_path,
@@ -419,6 +424,7 @@ def export_simulation_metadata(
     phantom_name: str,
     frequency_mhz: int | list[int],
     config_path: Optional[str] = None,
+    extract_sar: bool = True,
     extract_sapd: bool = False,
 ) -> tuple[Optional[str], Optional[str]]:
     """Convenience function to export simulation metadata.
@@ -431,6 +437,7 @@ def export_simulation_metadata(
         phantom_name: Name of the phantom used.
         frequency_mhz: Simulation frequency in MHz.
         config_path: Path to the config file.
+        extract_sar: Whether SAR extraction was enabled.
         extract_sapd: Whether SAPD extraction was enabled.
 
     Returns:
@@ -444,6 +451,7 @@ def export_simulation_metadata(
         phantom_name=phantom_name,
         frequency_mhz=frequency_mhz,
         config_path=config_path,
+        extract_sar=extract_sar,
         extract_sapd=extract_sapd,
     )
     return exporter.export()
