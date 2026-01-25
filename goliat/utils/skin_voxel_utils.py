@@ -132,7 +132,7 @@ def extract_air_voxels(
     logger = logging.getLogger("progress")
 
     if background_keywords is None:
-        background_keywords = ["background", "air", "vacuum", "free space"]
+        background_keywords = ["background"]
 
     with h5py.File(input_h5_path, "r") as f:
         # Step 1: Build UUID -> material_name mapping from AllMaterialMaps
