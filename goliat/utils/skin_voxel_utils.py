@@ -247,8 +247,26 @@ def find_valid_air_focus_points(
     t0 = time.perf_counter()
     struct = np.ones(struct_size, dtype=bool)
     dilated_skin = skin_mask.copy()
-    for i in range(n_iterations):
+    
+    # Import tqdm for progress tracking
+    try:
+        from tqdm import tqdm
+        use_tqdm = True
+    except ImportError:
+        use_tqdm = False
+    
+    logger.info(f"  Starting binary dilation ({n_iterations} iterations)...")
+    iterator = tqdm(range(n_iterations), desc="  Dilation", unit="iter") if use_tqdm else range(n_iterations)
+    
+    for i in iterator:
+        t_iter = time.perf_counter()
         dilated_skin = ndimage.binary_dilation(dilated_skin, structure=struct)
+        iter_time = time.perf_counter() - t_iter
+        
+        if not use_tqdm:
+            # Fallback logging if tqdm not available
+            logger.info(f"    Dilation iteration {i+1}/{n_iterations}: {iter_time:.2f}s")
+        
     logger.info(f"  [timing] binary_dilation ({n_iterations}x): {time.perf_counter() - t0:.2f}s")
 
     # Valid air focus points: air AND within shell around skin
