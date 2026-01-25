@@ -1,7 +1,9 @@
 {
     "extends": "base_config.json",
     "study_type": "far_field",
-    "extract_sapd": true,
+    "extraction": {
+        "sapd": true
+    },
     "execution_control": {
         "do_setup": true,
         "only_write_input_file": false,

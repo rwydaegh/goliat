@@ -2,7 +2,9 @@
     "extends": "base_config.json",
     "comment": "Fast config to generate skin cache for auto-induced SAPD extraction",
     "study_type": "far_field",
-    "extract_sapd": true,
+    "extraction": {
+        "sapd": true
+    },
     "execution_control": {
         "do_setup": true,
         "do_run": true,
