@@ -220,6 +220,81 @@ class BaseSetup(LoggingMixin):
             solver.Kernel = solver.Kernel.enum.Software
             self._log("    - Solver kernel set to: Software", log_type="info")
 
+    def _configure_overall_field_sensor(
+        self,
+        simulation: "emfdtd.Simulation",
+        frequency_mhz: int | list[int] | None = None,
+    ):
+        """Configures the overall field sensor based on config settings.
+
+        Reads `simulation_parameters.overall_field_sensor` from config to determine:
+        - Whether to enable the sensor (enabled)
+        - Whether to record E-field (record_e_field)
+        - Whether to record H-field (record_h_field)
+        - Recording domain: 'time', 'frequency', or 'both' (recording_domain)
+
+        If no config is provided, defaults to recording E-field only in frequency domain.
+
+        Args:
+            simulation: Simulation object to configure.
+            frequency_mhz: Optional frequency for ExtractedFrequencies. Can be int or list.
+        """
+        sensor_config = self.config["simulation_parameters.overall_field_sensor"]
+
+        # If not configured or explicitly disabled, skip
+        if sensor_config is None:
+            self._log("  - Overall field sensor: using Sim4Life defaults (no explicit config)", log_type="verbose")
+            return
+
+        if isinstance(sensor_config, dict) and not sensor_config.get("enabled", True):
+            self._log("  - Overall field sensor: disabled by config", log_type="info")
+            return
+
+        self._log("  - Configuring overall field sensor from config...", log_type="progress")
+
+        # Add the overall field sensor settings
+        field_sensor = simulation.AddOverallFieldSensorSettings()
+
+        # Get config values with defaults
+        if isinstance(sensor_config, dict):
+            record_e_field = sensor_config.get("record_e_field", True)
+            record_h_field = sensor_config.get("record_h_field", False)
+            recording_domain = sensor_config.get("recording_domain", "frequency")
+            on_the_fly_dft = sensor_config.get("on_the_fly_dft", True)
+        else:
+            # Fallback defaults if config is malformed
+            record_e_field = True
+            record_h_field = False
+            recording_domain = "frequency"
+            on_the_fly_dft = True
+
+        # Apply settings
+        field_sensor.RecordEField = record_e_field
+        field_sensor.RecordHField = record_h_field
+        field_sensor.OnTheFlyDFT = on_the_fly_dft
+
+        # Set recording domain
+        domain_enum = field_sensor.RecordingDomain.enum
+        if recording_domain == "time":
+            field_sensor.RecordingDomain = domain_enum.RecordInTimeDomain
+        elif recording_domain == "both":
+            field_sensor.RecordingDomain = domain_enum.RecordInFrequencyAndTimeDomain
+        else:  # Default to frequency
+            field_sensor.RecordingDomain = domain_enum.RecordInFrequencyDomain
+
+        # Set extracted frequencies if provided
+        if frequency_mhz is not None:
+            if isinstance(frequency_mhz, list):
+                frequencies_hz = [f * 1e6 for f in frequency_mhz]
+            else:
+                frequencies_hz = [frequency_mhz * 1e6]
+            field_sensor.ExtractedFrequencies = frequencies_hz
+
+        self._log(
+            f"    - RecordEField={record_e_field}, RecordHField={record_h_field}, Domain={recording_domain}, OnTheFlyDFT={on_the_fly_dft}",
+            log_type="info",
+        )
+
     def run_full_setup(self, project_manager: "ProjectManager"):
         """Prepares the simulation scene. Must be implemented by subclasses.
 

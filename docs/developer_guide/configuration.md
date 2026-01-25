@@ -45,11 +45,37 @@ These are the foundational settings shared across all study types.
 | `use_gui` | boolean | `true` | If `true`, the graphical user interface (GUI) will be launched to monitor progress. If `false`, the study runs in headless mode, printing logs to the console. |
 | `phantoms` | array | `["thelonious", "eartha"]` | A list of the virtual human phantom models to be used in the study. For near-field studies, you can also include `"freespace"` to run a simulation of the antenna in isolation. |
 | `verbose` | boolean | `false` | If `true`, enables detailed verbose logging to the console, in addition to the standard progress logs. |
-| `extract_sapd` | boolean | `false` | If `true`, extracts Surface Absorbed Power Density (SAPD) from simulation results. Recommended for frequencies > 6 GHz. Overridden to `true` in far-field configs. |
 
 <br>
 
-## **2. Execution Control** (`execution_control`)
+## **2. Extraction Settings** (`extraction`)
+
+This object controls which data is extracted from simulation results. All flags default to `true` except SAPD which defaults to `false`.
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `extraction.sar` | boolean | `true` | If `true`, extracts Specific Absorption Rate (SAR) statistics from simulation results including tissue-specific SAR, peak 10g SAR, and tissue group averages. When disabled, placeholder files are created for caching compatibility. |
+| `extraction.power_balance` | boolean | `true` | If `true`, extracts power balance metrics (Pin, DielLoss, RadPower) to verify energy conservation. Balance should be close to 100% for accurate simulations. |
+| `extraction.sapd` | boolean | `false` | If `true`, extracts Surface Absorbed Power Density (SAPD) from simulation results. Recommended for frequencies > 6 GHz where SAPD is the relevant exposure metric. Overridden to `true` in far-field configs. |
+| `extraction.point_sensors` | boolean | `true` | If `true`, extracts time-domain E-field data from point sensors configured via `simulation_parameters.number_of_point_sensors`. Generates plots and raw data for field dynamics analysis. |
+
+**Example:**
+```json
+{
+    "extraction": {
+        "sar": true,
+        "power_balance": true,
+        "sapd": false,
+        "point_sensors": true
+    }
+}
+```
+
+**Backward Compatibility:** Legacy top-level keys (`extract_sar`, `extract_power_balance`, `extract_sapd`) are still supported but deprecated. The new `extraction.*` structure takes precedence.
+
+<br>
+
+## **3. Execution Control** (`execution_control`)
 
 This object controls which phases of the workflow are executed. This is useful for re-running specific parts of a study, such as only extracting results from an already completed simulation.
 
@@ -105,7 +131,7 @@ The `do_setup` flag directly controls the project file (`.smash`) handling. Its 
 
 <br>
 
-## **3. Simulation Parameters** (`simulation_parameters`)
+## **4. Simulation Parameters** (`simulation_parameters`)
 
 These settings control the core behavior of the FDTD solver.
 
@@ -129,9 +155,48 @@ These settings control the core behavior of the FDTD solver.
 | `sapd_mesh_slicing_side_length_mm` | number | `100.0` | Side length in mm for the mesh slicing box around the peak SAR location for faster SAPD calculation. |
 | `sapd_slicing_side_length_mm` | number | `100.0` | Side length in mm for the H5 data slicing box around the peak SAR location to optimize extraction speed. |
 
+### Overall Field Sensor Configuration (`overall_field_sensor`)
+
+This object controls the overall field sensor that records E-field and H-field data during the simulation. By default, Sim4Life uses its built-in defaults. Configuring this explicitly allows you to control exactly which fields are recorded.
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `overall_field_sensor.enabled` | boolean | `true` | If `false`, skips explicit sensor configuration (uses Sim4Life defaults). |
+| `overall_field_sensor.record_e_field` | boolean | `true` | If `true`, records the Electric field (E). Required for SAR extraction. |
+| `overall_field_sensor.record_h_field` | boolean | `false` | If `true`, records the Magnetic field (H). May significantly increase output file size. |
+| `overall_field_sensor.recording_domain` | string | `"frequency"` | Recording domain. Options: `"frequency"` (recommended for most cases), `"time"`, or `"both"`. |
+| `overall_field_sensor.on_the_fly_dft` | boolean | `true` | If `true`, performs DFT during simulation (memory-efficient). Recommended for frequency domain. |
+
+**Example: Record only E-field in frequency domain (default, smallest output)**
+```json
+"simulation_parameters": {
+    "overall_field_sensor": {
+        "enabled": true,
+        "record_e_field": true,
+        "record_h_field": false,
+        "recording_domain": "frequency"
+    }
+}
+```
+
+**Example: Record both E and H fields (needed for Poynting vector / SAPD)**
+```json
+"simulation_parameters": {
+    "overall_field_sensor": {
+        "enabled": true,
+        "record_e_field": true,
+        "record_h_field": true,
+        "recording_domain": "frequency"
+    }
+}
+```
+
+!!! note "Multi-sine simulations"
+    For multi-sine far-field simulations (e.g., `"700+2450"`), both E and H fields are **always** recorded regardless of this config. This is required for SAPD extraction with combined fields.
+
 <br>
 
-## **4. Gridding Parameters** (`gridding_parameters`)
+## **5. Gridding Parameters** (`gridding_parameters`)
 
 These settings define the spatial discretization of the simulation domain.
 
@@ -151,7 +216,7 @@ These settings define the spatial discretization of the simulation domain.
 
 <br>
 
-## **5. Solver and Miscellaneous Settings**
+## **6. Solver and Miscellaneous Settings**
 
 | Parameter | Type | Example Value | Description |
 | :--- | :--- | :--- | :--- |
@@ -175,7 +240,7 @@ These settings define the spatial discretization of the simulation domain.
 
 ---
 
-## **6. Far-Field Specifics** (`far_field_config.json`)
+## **7. Far-Field Specifics** (`far_field_config.json`)
 
 These settings are unique to far-field (environmental exposure) studies.
 
@@ -250,7 +315,7 @@ Auto-induced exposure simulates the worst-case scenario where a MaMIMO base stat
 
 <br>
 
-## **7. Near-Field Specifics** (`near_field_config.json`)
+## **8. Near-Field Specifics** (`near_field_config.json`)
 
 These settings are unique to near-field (device exposure) studies.
 
@@ -348,7 +413,7 @@ These offsets are determined through anatomical landmark identification techniqu
 
 ---
 
-## **8. Credentials and Data**
+## **9. Credentials and Data**
 
 For security and portability, certain information is handled outside the main configuration files.
 
@@ -371,7 +436,7 @@ DOWNLOAD_EMAIL=your_email@example.com
 
 ---
 
-## **9. Accessing Configuration in Code**
+## **10. Accessing Configuration in Code**
 
 The `Config` class supports dictionary-style access with dot-notation for nested paths:
 
