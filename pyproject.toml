@@ -41,8 +41,6 @@ dependencies = [
   "tqdm",
   "dask[array]",
   "pywin32; sys_platform == 'win32'",
-  "cupy-cuda11x; sys_platform == 'win32'",
-  "cupy-cuda11x; sys_platform == 'linux'",
 ]
 description = "A Python framework for dosimetric assessments using Sim4Life."
 keywords = [
