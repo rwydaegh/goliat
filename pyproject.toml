@@ -77,6 +77,12 @@ docs = [
   "mknotebooks>=0.8.0",
   "ansi2html>=1.8.0",
 ]
+gpu = [
+  # CuPy for GPU-accelerated binary dilation (5-50x speedup)
+  # Use cupy-cuda11x for CUDA 11.x or cupy-cuda12x for CUDA 12.x
+  "cupy-cuda11x; sys_platform == 'win32'",
+  "cupy-cuda11x; sys_platform == 'linux'",
+]
 
 [project.scripts]
 goliat = "cli.__main__:main"

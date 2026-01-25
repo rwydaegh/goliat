@@ -232,7 +232,8 @@ def find_valid_air_focus_points(
     logger.info(f"  Voxel spacing: dx={dx * 1000:.2f}mm, dy={dy * 1000:.2f}mm, dz={dz * 1000:.2f}mm")
 
     # Use iterative dilation for large shells (much faster than single large kernel)
-    step_size_mm = 10.0
+    # Smaller step = more iterations = better progress visibility + faster due to cache locality
+    step_size_mm = 2.0  # 2mm per iteration for better progress tracking
     n_iterations = max(1, int(np.ceil(shell_size_mm / step_size_mm)))
     effective_step_mm = shell_size_mm / n_iterations
 
@@ -246,7 +247,16 @@ def find_valid_air_focus_points(
 
     t0 = time.perf_counter()
     struct = np.ones(struct_size, dtype=bool)
-    dilated_skin = skin_mask.copy()
+    
+    # Try GPU acceleration with CuPy, fallback to scipy CPU
+    try:
+        import cupy as cp
+        from cupyx.scipy import ndimage as cp_ndimage
+        use_gpu = True
+        logger.info(f"  Using GPU acceleration (CuPy)")
+    except ImportError:
+        use_gpu = False
+        logger.info(f"  Using CPU (scipy) - install CuPy for GPU acceleration")
     
     # Import tqdm for progress tracking
     try:
@@ -256,16 +266,38 @@ def find_valid_air_focus_points(
         use_tqdm = False
     
     logger.info(f"  Starting binary dilation ({n_iterations} iterations)...")
-    iterator = tqdm(range(n_iterations), desc="  Dilation", unit="iter") if use_tqdm else range(n_iterations)
     
-    for i in iterator:
-        t_iter = time.perf_counter()
-        dilated_skin = ndimage.binary_dilation(dilated_skin, structure=struct)
-        iter_time = time.perf_counter() - t_iter
+    if use_gpu:
+        # GPU path: transfer to GPU, dilate, transfer back
+        t_transfer = time.perf_counter()
+        dilated_skin_gpu = cp.asarray(skin_mask)
+        struct_gpu = cp.asarray(struct)
+        logger.info(f"  [timing] GPU transfer (to): {time.perf_counter() - t_transfer:.2f}s")
         
-        if not use_tqdm:
-            # Fallback logging if tqdm not available
-            logger.info(f"    Dilation iteration {i+1}/{n_iterations}: {iter_time:.2f}s")
+        iterator = tqdm(range(n_iterations), desc="  Dilation (GPU)", unit="iter") if use_tqdm else range(n_iterations)
+        for i in iterator:
+            t_iter = time.perf_counter()
+            dilated_skin_gpu = cp_ndimage.binary_dilation(dilated_skin_gpu, structure=struct_gpu)
+            cp.cuda.Stream.null.synchronize()  # Ensure GPU op completes for timing
+            if not use_tqdm:
+                logger.info(f"    Dilation iteration {i+1}/{n_iterations}: {time.perf_counter() - t_iter:.2f}s")
+        
+        t_transfer = time.perf_counter()
+        dilated_skin = cp.asnumpy(dilated_skin_gpu)
+        logger.info(f"  [timing] GPU transfer (from): {time.perf_counter() - t_transfer:.2f}s")
+        
+        # Free GPU memory
+        del dilated_skin_gpu, struct_gpu
+        cp.get_default_memory_pool().free_all_blocks()
+    else:
+        # CPU path: scipy
+        dilated_skin = skin_mask.copy()
+        iterator = tqdm(range(n_iterations), desc="  Dilation (CPU)", unit="iter") if use_tqdm else range(n_iterations)
+        for i in iterator:
+            t_iter = time.perf_counter()
+            dilated_skin = ndimage.binary_dilation(dilated_skin, structure=struct)
+            if not use_tqdm:
+                logger.info(f"    Dilation iteration {i+1}/{n_iterations}: {time.perf_counter() - t_iter:.2f}s")
         
     logger.info(f"  [timing] binary_dilation ({n_iterations}x): {time.perf_counter() - t0:.2f}s")
 
