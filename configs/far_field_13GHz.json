@@ -1,5 +1,6 @@
 {
     "extends": "base_config.json",
+    "use_web": false,
     "study_type": "far_field",
     "extraction": {
         "sar": false,
@@ -16,10 +17,13 @@
         "auto_cleanup_previous_results": []
     },
     "phantoms": [
-        "duke"
+        "duke",
+        "ella",
+        "eartha",
+        "thelonious"
     ],
     "frequencies_mhz": [
-        7000
+        13000
     ],
     "auto_induced": {
         "enabled": true,
@@ -62,7 +66,7 @@
         "bbox_padding_mm": 0,
         "simulation_bbox_points": 8,
         "number_of_point_sensors": 0,
-        "simulation_time_multiplier": 1.0
+        "simulation_time_multiplier": 3.0
     },
     "gridding_parameters": {
         "global_gridding": {
