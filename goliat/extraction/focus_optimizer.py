@@ -1099,13 +1099,18 @@ def compute_all_hotspot_scores_streaming(
     logger.info("  [streaming] Step 2: Reading E_z at all focus points...")
     E_z_at_focus_all = np.zeros((n_dirs, n_air), dtype=np.complex64)
     
+    # Force flush to see output immediately
+    import sys
+    sys.stdout.flush()
+    sys.stderr.flush()
+    
     for dir_idx, h5_path in enumerate(tqdm(h5_paths, desc="Reading focus E_z", leave=False)):
         t_file_start = time.perf_counter()
-        logger.debug(f"    [debug] Opening {Path(h5_path).name}...")
+        print(f"    [DEBUG] Opening file {dir_idx+1}/{n_dirs}: {Path(h5_path).name}...", flush=True)
         
         with h5py.File(h5_path, "r") as f:
             t_open = time.perf_counter() - t_file_start
-            logger.debug(f"    [debug] File opened in {t_open:.2f}s, finding field group...")
+            print(f"    [DEBUG] File opened in {t_open:.2f}s, finding field group...", flush=True)
             
             fg_path = find_overall_field_group(f)
             field_path = get_field_path(fg_path, "E")
@@ -1113,7 +1118,7 @@ def compute_all_hotspot_scores_streaming(
             # Read E_z (component 2) at focus points using z-slice iteration
             dataset = f[f"{field_path}/comp2"]
             shape = dataset.shape[:3]
-            logger.debug(f"    [debug] Dataset shape: {shape}, reading points...")
+            print(f"    [DEBUG] Dataset shape: {shape}, preparing indices...", flush=True)
             
             # Clamp indices
             ix = np.minimum(sampled_air_indices[:, 0], shape[0] - 1)
@@ -1123,7 +1128,7 @@ def compute_all_hotspot_scores_streaming(
             # Group by z for efficient reading
             unique_z = np.unique(iz)
             n_unique_z = len(unique_z)
-            logger.debug(f"    [debug] {n_unique_z} unique z-slices to read")
+            print(f"    [DEBUG] {n_unique_z} unique z-slices to read", flush=True)
             
             t_read_start = time.perf_counter()
             for z_idx, z_val in enumerate(unique_z):
@@ -1132,10 +1137,10 @@ def compute_all_hotspot_scores_streaming(
                 data = z_slice[ix[mask], iy[mask], :]
                 E_z_at_focus_all[dir_idx, mask] = data[:, 0] + 1j * data[:, 1]
                 
-                # Log progress every 100 slices
-                if z_idx == 0 or (z_idx + 1) % 100 == 0:
+                # Log progress every 100 slices or first slice
+                if z_idx == 0 or (z_idx + 1) % 100 == 0 or z_idx == n_unique_z - 1:
                     t_elapsed = time.perf_counter() - t_read_start
-                    logger.debug(f"    [debug] Read {z_idx + 1}/{n_unique_z} z-slices in {t_elapsed:.1f}s")
+                    print(f"    [DEBUG] Read {z_idx + 1}/{n_unique_z} z-slices in {t_elapsed:.1f}s", flush=True)
             
             t_total = time.perf_counter() - t_file_start
             if dir_idx == 0:
