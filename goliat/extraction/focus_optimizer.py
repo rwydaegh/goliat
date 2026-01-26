@@ -848,7 +848,11 @@ def compute_all_hotspot_scores_chunked(
     
     hotspot_scores = np.zeros(n_air, dtype=np.float64)
     
+    # Track timing for first chunk to estimate total
+    first_chunk_time = None
+    
     for chunk_idx in tqdm(range(n_chunks), desc="Processing chunks"):
+        chunk_start_time = time.perf_counter()
         chunk_start = chunk_idx * chunk_size
         chunk_end = min(chunk_start + chunk_size, n_air)
         chunk_air_indices = sampled_air_indices[chunk_start:chunk_end]
@@ -897,6 +901,10 @@ def compute_all_hotspot_scores_chunked(
         
         n_unique = len(unique_skin_indices)
         
+        # Log first chunk stats for debugging
+        if chunk_idx == 0:
+            logger.info(f"  [chunk 0] {n_unique:,} unique skin voxels from {len(all_skin_concat):,} total")
+        
         # Read E-field at unique skin voxels from all directions
         E_skin_unique = np.zeros((n_dirs, n_unique, 3), dtype=np.complex64)
         
@@ -907,6 +915,12 @@ def compute_all_hotspot_scores_chunked(
             else:
                 E_skin = read_field_at_indices(h5_str, unique_skin_indices, field_type="E")
             E_skin_unique[dir_idx, :, :] = E_skin
+        
+        # Log timing for first chunk
+        if chunk_idx == 0:
+            first_chunk_time = time.perf_counter() - chunk_start_time
+            estimated_total = first_chunk_time * n_chunks
+            logger.info(f"  [chunk 0] Took {first_chunk_time:.1f}s, estimated total: {estimated_total / 60:.1f} min")
         
         # Compute scores for each air point in chunk
         list_idx = 0
