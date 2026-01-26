@@ -1438,7 +1438,7 @@ def _find_focus_air_based(
         
         hotspot_scores = []
         for air_idx in tqdm(sampled_air_indices, desc="Scoring air focus points",
-                           dynamic_ncols=True, mininterval=1.0):
+                           dynamic_ncols=True, mininterval=30.0):
             score = compute_hotspot_score_at_air_point(
                 h5_paths=h5_paths,
                 air_focus_idx=air_idx,
