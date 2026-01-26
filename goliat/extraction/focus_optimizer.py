@@ -391,13 +391,76 @@ class FieldCache:
         return result
 
     def _read_at_indices_streaming_optimized(self, h5_path: str, indices: np.ndarray) -> np.ndarray:
-        """Read using slab-based LRU cache (optimized streaming).
+        """Read using direct point reads for scattered points, slab cache for local clusters.
         
-        Instead of reading individual points, reads z-slabs and caches them.
-        This exploits:
-        1. Spatial locality: nearby air focus points share skin voxels
-        2. HDF5 chunking: reading a slab is almost as fast as reading one point
-        3. LRU eviction: keeps hot slabs in memory
+        Strategy:
+        - For small N (<= 1000): Use direct point reads (no slab overhead)
+        - For large N with spatial locality: Use slab caching
+        - The slab cache is most effective when points are clustered (like skin voxels in a cube)
+        """
+        result = np.zeros((len(indices), 3), dtype=np.complex64)
+        n_points = len(indices)
+        
+        if n_points == 0:
+            return result
+        
+        f = self._open_files[h5_path]
+        field_path = self._field_paths[h5_path]
+        
+        # For scattered points (like random focus points), direct reads are faster
+        # because slab reads load huge amounts of unused data
+        # Threshold: if we'd need to read more than 50% of slabs, use direct reads
+        slab_thickness = self._slab_cache.slab_thickness
+        
+        # Check spatial locality: how many unique z-slabs would we need?
+        sample_iz = np.minimum(indices[:, 2], self.shapes[h5_path][2] - 1)
+        unique_slabs_needed = len(np.unique(sample_iz // slab_thickness))
+        total_slabs = (self.shapes[h5_path][2] + slab_thickness - 1) // slab_thickness
+        
+        # Use direct reads if:
+        # 1. Small number of points (< 1000)
+        # 2. Points are scattered (need > 50% of slabs)
+        use_direct_reads = n_points < 1000 or unique_slabs_needed > total_slabs * 0.5
+        
+        if use_direct_reads:
+            return self._read_at_indices_direct(h5_path, indices)
+        else:
+            return self._read_at_indices_slab_cached(h5_path, indices)
+    
+    def _read_at_indices_direct(self, h5_path: str, indices: np.ndarray) -> np.ndarray:
+        """Read points directly from HDF5 without slab caching.
+        
+        Best for scattered points where slab caching would load too much unused data.
+        """
+        result = np.zeros((len(indices), 3), dtype=np.complex64)
+        n_points = len(indices)
+        
+        if n_points == 0:
+            return result
+        
+        f = self._open_files[h5_path]
+        field_path = self._field_paths[h5_path]
+        
+        for comp in range(3):
+            dataset = f[f"{field_path}/comp{comp}"]
+            shape = dataset.shape[:3]
+            
+            # Clamp indices to valid range
+            ix = np.minimum(indices[:, 0], shape[0] - 1)
+            iy = np.minimum(indices[:, 1], shape[1] - 1)
+            iz = np.minimum(indices[:, 2], shape[2] - 1)
+            
+            # Read points one by one (h5py handles this efficiently for small N)
+            for j in range(n_points):
+                data = dataset[int(ix[j]), int(iy[j]), int(iz[j]), :]
+                result[j, comp] = data[0] + 1j * data[1]
+        
+        return result
+    
+    def _read_at_indices_slab_cached(self, h5_path: str, indices: np.ndarray) -> np.ndarray:
+        """Read using slab-based LRU cache (for spatially clustered points).
+        
+        Best when points are clustered (like skin voxels in a cube around focus).
         """
         result = np.zeros((len(indices), 3), dtype=np.complex64)
         n_points = len(indices)
