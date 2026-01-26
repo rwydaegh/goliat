@@ -11,7 +11,7 @@ import logging
 import time
 import warnings
 from pathlib import Path
-from typing import Sequence, Tuple, Union, Optional, Dict
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import h5py
 import numpy as np
@@ -98,35 +98,71 @@ def _estimate_cache_size_gb(h5_paths: Sequence[Union[str, Path]]) -> float:
 class FieldCache:
     """Cache for pre-loaded E-field data from multiple H5 files.
 
-    This avoids the memory thrashing from loading full fields repeatedly.
-    Fields are loaded once and kept in memory for fast indexed access.
+    Supports two modes:
+    - Memory mode (default): Load all fields into RAM for fast access.
+      Best when you have enough RAM to hold all field data.
+    - Streaming mode: Read directly from H5 files without pre-loading.
+      Slower per-query, but works on low-RAM machines without paging.
+
+    Streaming mode is automatically enabled when available RAM is insufficient,
+    or can be forced via the low_memory parameter.
     """
 
     # Minimum recommended headroom (GB) after loading cache
     MIN_HEADROOM_GB = 8.0
 
-    def __init__(self, h5_paths: Sequence[Union[str, Path]], field_type: str = "E"):
-        """Load all fields into memory.
+    def __init__(
+        self,
+        h5_paths: Sequence[Union[str, Path]],
+        field_type: str = "E",
+        low_memory: Optional[bool] = None,
+    ):
+        """Initialize the field cache.
 
         Args:
             h5_paths: Paths to _Output.h5 files.
             field_type: 'E' or 'H'.
+            low_memory: If True, use streaming mode (no pre-loading).
+                If False, always use memory mode (may cause paging on low-RAM).
+                If None (default), auto-detect based on available RAM.
         """
         self.h5_paths = [str(p) for p in h5_paths]
         self.field_type = field_type
-        self.fields: Dict[str, np.ndarray] = {}
+        self.fields: Dict[str, List[np.ndarray]] = {}
         self.shapes: Dict[str, Tuple[int, int, int]] = {}
 
         logger = logging.getLogger("progress")
 
-        # Check available memory before loading
+        # Check available memory
         available_gb = _get_available_memory_gb()
         estimated_gb = _estimate_cache_size_gb(h5_paths)
+        has_enough_ram = (
+            available_gb < 0  # Unknown RAM = assume enough
+            or estimated_gb <= available_gb - self.MIN_HEADROOM_GB
+        )
+
+        # Determine whether to use streaming mode
+        if low_memory is None:
+            # Auto-detect: use streaming if RAM is insufficient
+            self.streaming_mode = not has_enough_ram
+        else:
+            self.streaming_mode = low_memory
 
         if available_gb > 0:
             logger.info(f"  Memory check: {estimated_gb:.1f} GB needed, {available_gb:.1f} GB available")
 
-            if estimated_gb > available_gb - self.MIN_HEADROOM_GB:
+        if self.streaming_mode:
+            # Streaming mode: don't load anything, read from disk on demand
+            logger.info(
+                f"  Using LOW-MEMORY STREAMING mode (reading from disk on demand)\n"
+                f"  This is slower but avoids RAM issues. "
+                f"For faster processing, use a machine with >{estimated_gb + self.MIN_HEADROOM_GB:.0f} GB RAM."
+            )
+            # Still need to get shapes for index clamping
+            self._load_shapes_only()
+        else:
+            # Memory mode: pre-load all fields
+            if not has_enough_ram:
                 warning_msg = (
                     f"\n{'=' * 70}\n"
                     f"  WARNING: Insufficient RAM for field cache!\n"
@@ -139,24 +175,36 @@ class FieldCache:
                     f"    1. Closing other applications to free RAM\n"
                     f"    2. Running on a machine with more RAM\n"
                     f"    3. Reducing n_samples in config\n"
+                    f"    4. Setting low_memory_mode=true in config\n"
                     f"{'=' * 70}\n"
                 )
                 logger.warning(warning_msg)
                 warnings.warn(
-                    f"Field cache ({estimated_gb:.1f} GB) exceeds available RAM ({available_gb:.1f} GB). "
-                    "Expect severe slowdowns.",
+                    f"Field cache ({estimated_gb:.1f} GB) exceeds available RAM ({available_gb:.1f} GB). Expect severe slowdowns.",
                     ResourceWarning,
                     stacklevel=2,
                 )
 
-        logger.info(f"  Pre-loading {field_type}-fields from {len(h5_paths)} files...")
-        t0 = time.perf_counter()
+            logger.info(f"  Pre-loading {field_type}-fields from {len(h5_paths)} files...")
+            t0 = time.perf_counter()
 
-        for h5_path in tqdm(self.h5_paths, desc=f"Loading {field_type}-fields"):
-            self._load_field(h5_path)
+            for h5_path in tqdm(self.h5_paths, desc=f"Loading {field_type}-fields"):
+                self._load_field(h5_path)
 
-        total_mb = sum(sum(c.nbytes for c in comps) for comps in self.fields.values()) / 1e6
-        logger.info(f"  [timing] Field cache loaded: {time.perf_counter() - t0:.2f}s, {total_mb:.0f} MB")
+            total_mb = sum(sum(c.nbytes for c in comps) for comps in self.fields.values()) / 1e6
+            logger.info(f"  [timing] Field cache loaded: {time.perf_counter() - t0:.2f}s, {total_mb:.0f} MB")
+
+    def _load_shapes_only(self):
+        """Load only field shapes (for streaming mode index clamping)."""
+        for h5_path in self.h5_paths:
+            with h5py.File(h5_path, "r") as f:
+                fg_path = find_overall_field_group(f)
+                if fg_path is None:
+                    raise ValueError(f"No 'Overall Field' found in {h5_path}")
+                field_path = get_field_path(fg_path, self.field_type)
+                # Get shape from first component
+                dataset = f[f"{field_path}/comp0"]
+                self.shapes[h5_path] = dataset.shape[:3]
 
     def _load_field(self, h5_path: str):
         """Load a single field file into the cache."""
@@ -182,7 +230,10 @@ class FieldCache:
             self.fields[h5_path] = components
 
     def read_at_indices(self, h5_path: str, indices: np.ndarray) -> np.ndarray:
-        """Read field values at specific indices from cached data.
+        """Read field values at specific indices.
+
+        In memory mode, reads from pre-loaded cached data.
+        In streaming mode, reads directly from H5 file.
 
         Args:
             h5_path: Which file to read from.
@@ -191,6 +242,13 @@ class FieldCache:
         Returns:
             (N, 3) complex array of field values.
         """
+        if self.streaming_mode:
+            return self._read_at_indices_streaming(h5_path, indices)
+        else:
+            return self._read_at_indices_memory(h5_path, indices)
+
+    def _read_at_indices_memory(self, h5_path: str, indices: np.ndarray) -> np.ndarray:
+        """Read from pre-loaded in-memory cache (fast)."""
         components = self.fields[h5_path]
         result = np.zeros((len(indices), 3), dtype=np.complex64)
 
@@ -204,6 +262,35 @@ class FieldCache:
             iz = np.minimum(indices[:, 2], shape[2] - 1)
 
             result[:, comp] = data[ix, iy, iz]
+
+        return result
+
+    def _read_at_indices_streaming(self, h5_path: str, indices: np.ndarray) -> np.ndarray:
+        """Read directly from H5 file without pre-loading (low-memory)."""
+        result = np.zeros((len(indices), 3), dtype=np.complex64)
+        n_points = len(indices)
+
+        with h5py.File(h5_path, "r") as f:
+            fg_path = find_overall_field_group(f)
+            if fg_path is None:
+                raise ValueError(f"No 'Overall Field' found in {h5_path}")
+
+            field_path = get_field_path(fg_path, self.field_type)
+
+            for comp in range(3):
+                dataset = f[f"{field_path}/comp{comp}"]
+                shape = dataset.shape[:3]
+
+                # Clamp indices to valid range for this component
+                ix = np.minimum(indices[:, 0], shape[0] - 1)
+                iy = np.minimum(indices[:, 1], shape[1] - 1)
+                iz = np.minimum(indices[:, 2], shape[2] - 1)
+
+                # Read points directly from disk (single-point h5py reads)
+                # This avoids loading the entire multi-GB array into memory
+                for j in range(n_points):
+                    data = dataset[int(ix[j]), int(iy[j]), int(iz[j]), :]
+                    result[j, comp] = data[0] + 1j * data[1]
 
         return result
 
@@ -459,6 +546,7 @@ def find_focus_and_compute_weights(
     shell_size_mm: float = 10.0,
     selection_percentile: float = 95.0,
     min_candidate_distance_mm: float = 50.0,
+    low_memory: Optional[bool] = None,
 ) -> Tuple[np.ndarray, np.ndarray, dict]:
     """Complete workflow: find worst-case focus point(s) and compute weights.
 
@@ -475,6 +563,9 @@ def find_focus_and_compute_weights(
         random_seed: Random seed for sampling (only for mode="air").
         selection_percentile: Percentile threshold for candidate selection (e.g., 95 = top 5%).
         min_candidate_distance_mm: Minimum distance between selected candidates.
+        low_memory: If True, use streaming mode (read from disk, slower but works on low-RAM).
+            If False, use in-memory cache (fast but needs lots of RAM).
+            If None (default), auto-detect based on available RAM.
 
     Returns:
         Tuple of:
@@ -494,6 +585,7 @@ def find_focus_and_compute_weights(
             shell_size_mm=shell_size_mm,
             selection_percentile=selection_percentile,
             min_candidate_distance_mm=min_candidate_distance_mm,
+            low_memory=low_memory,
         )
     else:
         # Legacy skin-based search
@@ -563,6 +655,7 @@ def _find_focus_air_based(
     shell_size_mm: float = 10.0,
     selection_percentile: float = 95.0,
     min_candidate_distance_mm: float = 50.0,
+    low_memory: Optional[bool] = None,
 ) -> Tuple[np.ndarray, np.ndarray, dict]:
     """Air-based focus search - physically correct MaMIMO beamforming model."""
     valid_air_indices, ax_x, ax_y, ax_z, skin_mask = find_valid_air_focus_points(
@@ -591,7 +684,8 @@ def _find_focus_air_based(
     logging.getLogger("progress").info(f"Sampling {n_to_sample:,} air points for hotspot scoring")
 
     # Pre-load all E-fields into cache to avoid memory thrashing
-    field_cache = FieldCache(h5_paths, field_type="E")
+    # In low-memory mode, this streams from disk instead of pre-loading
+    field_cache = FieldCache(h5_paths, field_type="E", low_memory=low_memory)
 
     # Score each sampled point using cached fields
     hotspot_scores = []
