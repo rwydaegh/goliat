@@ -428,9 +428,12 @@ class FieldCache:
             return self._read_at_indices_slab_cached(h5_path, indices)
     
     def _read_at_indices_direct(self, h5_path: str, indices: np.ndarray) -> np.ndarray:
-        """Read points directly from HDF5 without slab caching.
+        """Read points by iterating through z-slices (memory efficient, reasonably fast).
         
-        Best for scattered points where slab caching would load too much unused data.
+        Strategy: Read one z-slice at a time (contiguous read), extract needed points.
+        This is much faster than individual point reads and uses minimal memory.
+        
+        Memory usage: ~2 MB per z-slice (500x500x2x4 bytes)
         """
         result = np.zeros((len(indices), 3), dtype=np.complex64)
         n_points = len(indices)
@@ -450,10 +453,23 @@ class FieldCache:
             iy = np.minimum(indices[:, 1], shape[1] - 1)
             iz = np.minimum(indices[:, 2], shape[2] - 1)
             
-            # Read points one by one (h5py handles this efficiently for small N)
-            for j in range(n_points):
-                data = dataset[int(ix[j]), int(iy[j]), int(iz[j]), :]
-                result[j, comp] = data[0] + 1j * data[1]
+            # Group points by z-index
+            unique_z = np.unique(iz)
+            
+            # Read one z-slice at a time and extract points
+            for z_val in unique_z:
+                # Find points at this z
+                mask = iz == z_val
+                point_indices = np.where(mask)[0]
+                
+                # Read single z-slice (contiguous, fast)
+                z_slice = dataset[:, :, int(z_val), :]  # Shape: (Nx, Ny, 2)
+                
+                # Extract points from this slice
+                ix_at_z = ix[mask]
+                iy_at_z = iy[mask]
+                data = z_slice[ix_at_z, iy_at_z, :]  # Shape: (n_points_at_z, 2)
+                result[point_indices, comp] = data[:, 0] + 1j * data[:, 1]
         
         return result
     
