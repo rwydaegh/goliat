@@ -527,6 +527,18 @@ class AutoInducedProcessor(LoggingMixin):
             # Create SAPD evaluator with correct inputs (matching SapdExtractor)
             # Inputs: Poynting Vector S(x,y,z,f0) and Surface
             inputs = [em_sensor_extractor.Outputs["S(x,y,z,f0)"], model_to_grid_filter.Outputs["Surface"]]
+
+            # DEBUG: Save state right before SAPD evaluator creation (where "Can't connect ports" error occurs)
+            debug_pre_sapd_path = str(combined_h5).replace("_Output.h5", f"_debug_pre_sapd.smash")
+            try:
+                self.verbose_logger.info(f"  DEBUG: Saving pre-SAPD state to {debug_pre_sapd_path}")
+                document.SaveAs(debug_pre_sapd_path)
+                self.verbose_logger.info(f"  DEBUG: Inputs for SAPD evaluator: {inputs}")
+                self.verbose_logger.info(f"  DEBUG: Input[0] type: {type(inputs[0])}, value: {inputs[0]}")
+                self.verbose_logger.info(f"  DEBUG: Input[1] type: {type(inputs[1])}, value: {inputs[1]}")
+            except Exception as debug_e:
+                self.verbose_logger.warning(f"  DEBUG: Could not save pre-SAPD state: {debug_e}")
+
             sapd_evaluator = analysis.em_evaluators.GenericSAPDEvaluator(inputs=inputs)
             sapd_evaluator.AveragingArea = 4.0, units.SquareCentiMeters
             sapd_evaluator.Threshold = 0.01, units.Meters  # 10 mm
