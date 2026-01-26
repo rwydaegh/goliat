@@ -91,7 +91,7 @@ def read_field_at_indices(
     """Read field values at specific voxel indices.
 
     Optimized for reading fields only at skin voxel locations.
-    Uses vectorized numpy indexing for speed.
+    Uses single-point h5py reads for small N, vectorized reads for large N.
 
     Args:
         h5_path: Path to _Output.h5 file.
@@ -107,6 +107,7 @@ def read_field_at_indices(
         We clamp indices to valid range.
     """
     result = np.zeros((len(indices), 3), dtype=np.complex64)
+    n_points = len(indices)
 
     with h5py.File(h5_path, "r") as f:
         fg_path = find_overall_field_group(f)
@@ -127,12 +128,17 @@ def read_field_at_indices(
             iy = np.minimum(indices[:, 1], shape[1] - 1)
             iz = np.minimum(indices[:, 2], shape[2] - 1)
 
-            # Read full component into memory (faster than many small reads)
-            full_data = dataset[:]  # Shape: (Nx, Ny, Nz, 2)
-
-            # Vectorized extraction using fancy indexing
-            data = full_data[ix, iy, iz, :]  # Shape: (N, 2)
-            result[:, comp] = data[:, 0] + 1j * data[:, 1]
+            if n_points <= 100:
+                # For small N: read points directly from disk (avoids loading GB arrays)
+                # h5py supports single-point indexing without loading full dataset
+                for j in range(n_points):
+                    data = dataset[int(ix[j]), int(iy[j]), int(iz[j]), :]
+                    result[j, comp] = data[0] + 1j * data[1]
+            else:
+                # For large N: read full array (vectorized indexing is faster)
+                full_data = dataset[:]  # Shape: (Nx, Ny, Nz, 2)
+                data = full_data[ix, iy, iz, :]  # Shape: (N, 2)
+                result[:, comp] = data[:, 0] + 1j * data[:, 1]
 
     return result
 

@@ -534,10 +534,26 @@ def _find_focus_air_based(
     )
     actual_top_n = len(top_air_indices)
 
-    # Compute weights for top-1
+    # Compute phases for ALL selected candidates using the still-alive cache
+    # This avoids expensive re-reads later when we need phases for each candidate
+    all_candidate_phases = []
+    all_candidate_weights = []
+    for candidate_idx in top_air_indices:
+        focus_idx_array = candidate_idx.reshape(1, 3)
+        E_z_at_focus = []
+        for h5_path in h5_paths:
+            h5_str = str(h5_path)
+            E_focus = field_cache.read_at_indices(h5_str, focus_idx_array)
+            E_z_at_focus.append(E_focus[0, 2])
+        candidate_phases = -np.angle(np.array(E_z_at_focus))
+        candidate_weights = compute_weights(candidate_phases)
+        all_candidate_phases.append(candidate_phases)
+        all_candidate_weights.append(candidate_weights)
+
+    # Use top-1 for backward compatibility
     top_focus_idx = top_air_indices[0]
-    phases = compute_optimal_phases(h5_paths, top_focus_idx)
-    weights = compute_weights(phases)
+    phases = all_candidate_phases[0]
+    weights = all_candidate_weights[0]
 
     # Get physical coordinates of focus point
     ix, iy, iz = top_focus_idx
@@ -580,6 +596,8 @@ def _find_focus_air_based(
         "top_n": actual_top_n,
         "all_focus_indices": top_air_indices,
         "all_hotspot_scores": top_scores,
+        "all_candidate_phases": all_candidate_phases,  # Pre-computed phases for all candidates
+        "all_candidate_weights": all_candidate_weights,  # Pre-computed weights for all candidates
         "cube_size_mm": cube_size_mm,
         "random_seed": random_seed,
         "all_scores_data": all_scores_data,  # For CSV export
