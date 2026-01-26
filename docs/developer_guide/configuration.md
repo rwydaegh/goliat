@@ -263,7 +263,7 @@ Auto-induced exposure simulates the worst-case scenario where a MaMIMO base stat
 
 | Parameter | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `auto_induced.enabled` | boolean | `false` | If `true`, runs auto-induced analysis after environmental simulations complete for each (phantom, freq) pair. Requires `do_run: true` since it needs all `_Output.h5` files. |
+| `auto_induced.enabled` | boolean | `false` | If `true`, runs auto-induced analysis after environmental simulations complete for each (phantom, freq) pair. Requires all `_Output.h5` files to exist (can use files from previous runs even if `do_run: false`). |
 | `auto_induced.top_n` | number | `10` | Number of candidate focus points to evaluate. The algorithm finds the top N candidates, combines fields for each, and reports the worst-case SAPD. |
 | `auto_induced.cube_size_mm` | number | `50` | Side length in mm of the extraction cube around each focus point. Only fields within this cube are combined, dramatically reducing computation time and output file size. |
 | `auto_induced.search_metric` | string | `"E_magnitude"` | **[Legacy mode only]** Metric used for worst-case focus search in skin-based mode. Options: `"E_magnitude"`, `"E_z_magnitude"`, `"poynting_z"`. |

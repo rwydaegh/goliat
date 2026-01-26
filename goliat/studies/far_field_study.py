@@ -140,7 +140,9 @@ class FarFieldStudy(BaseStudy):
                 # After all directions/polarizations complete for this (phantom, freq),
                 # run auto-induced analysis if enabled.
                 # Auto-induced requires all _Output.h5 files to exist (from run phase).
-                if auto_induced_enabled and do_run:
+                # Note: We check for file existence inside _run_auto_induced_for_phantom_freq,
+                # so we don't require do_run=True - existing output files are sufficient.
+                if auto_induced_enabled:
                     try:
                         self._run_auto_induced_for_phantom_freq(
                             phantom_name=phantom_name,
