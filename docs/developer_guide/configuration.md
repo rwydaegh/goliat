@@ -275,6 +275,7 @@ Auto-induced exposure simulates the worst-case scenario where a MaMIMO base stat
 | `auto_induced.search.selection_percentile` | number | `95.0` | **[Air mode only]** Percentile threshold for candidate selection. Only points scoring above this percentile are considered. Default `95.0` = top 5%. |
 | `auto_induced.search.min_candidate_distance_mm` | number | `50.0` | **[Air mode only]** Minimum distance in mm between selected candidates. Ensures spatial diversity across the body surface. |
 | `auto_induced.search.random_seed` | number/null | `42` | **[Air mode only]** Random seed for sampling reproducibility. Set to `null` for non-reproducible random sampling. |
+| `auto_induced.search.low_memory_mode` | boolean/null | `null` | **[Air mode only]** Memory mode for field cache. `true` = streaming mode (reads from disk, slower but works on low-RAM machines). `false` = in-memory mode (fast but needs lots of RAM). `null` (default) = auto-detect based on available RAM. |
 
 **Example: Enable auto-induced exposure with air-based search**
 ```json
@@ -289,7 +290,8 @@ Auto-induced exposure simulates the worst-case scenario where a MaMIMO base stat
             "shell_size_mm": 10.0,
             "selection_percentile": 95.0,
             "min_candidate_distance_mm": 50.0,
-            "random_seed": 42
+            "random_seed": 42,
+            "low_memory_mode": null
         }
     }
 }
