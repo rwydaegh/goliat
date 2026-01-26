@@ -9,6 +9,7 @@ argmax_r Σ|E_i(r)| - no optimization needed during search.
 
 import logging
 import time
+import warnings
 from pathlib import Path
 from typing import Sequence, Tuple, Union, Optional, Dict
 
@@ -24,12 +25,85 @@ from ..utils.skin_voxel_utils import (
 )
 
 
+def _get_available_memory_gb() -> float:
+    """Get available system memory in GB.
+
+    Returns:
+        Available memory in GB, or -1 if detection fails.
+    """
+    try:
+        import psutil
+
+        return psutil.virtual_memory().available / (1024**3)
+    except ImportError:
+        # psutil not available, try platform-specific fallback
+        pass
+
+    try:
+        # Windows fallback
+        import ctypes
+
+        kernel32 = ctypes.windll.kernel32
+        c_ulonglong = ctypes.c_ulonglong
+
+        class MEMORYSTATUSEX(ctypes.Structure):
+            _fields_ = [
+                ("dwLength", ctypes.c_ulong),
+                ("dwMemoryLoad", ctypes.c_ulong),
+                ("ullTotalPhys", c_ulonglong),
+                ("ullAvailPhys", c_ulonglong),
+                ("ullTotalPageFile", c_ulonglong),
+                ("ullAvailPageFile", c_ulonglong),
+                ("ullTotalVirtual", c_ulonglong),
+                ("ullAvailVirtual", c_ulonglong),
+                ("ullAvailExtendedVirtual", c_ulonglong),
+            ]
+
+        stat = MEMORYSTATUSEX()
+        stat.dwLength = ctypes.sizeof(stat)
+        kernel32.GlobalMemoryStatusEx(ctypes.byref(stat))
+        return stat.ullAvailPhys / (1024**3)
+    except Exception:
+        pass
+
+    return -1.0  # Unknown
+
+
+def _estimate_cache_size_gb(h5_paths: Sequence[Union[str, Path]]) -> float:
+    """Estimate the memory needed to cache all E-fields.
+
+    Args:
+        h5_paths: Paths to _Output.h5 files.
+
+    Returns:
+        Estimated cache size in GB.
+    """
+    total_bytes = 0
+    for h5_path in h5_paths:
+        try:
+            with h5py.File(h5_path, "r") as f:
+                fg_path = find_overall_field_group(f)
+                if fg_path is None:
+                    continue
+                field_path = get_field_path(fg_path, "E")
+                for comp in range(3):
+                    ds = f[f"{field_path}/comp{comp}"]
+                    # complex64 = 8 bytes per element
+                    total_bytes += ds.shape[0] * ds.shape[1] * ds.shape[2] * 8
+        except Exception:
+            pass
+    return total_bytes / (1024**3)
+
+
 class FieldCache:
     """Cache for pre-loaded E-field data from multiple H5 files.
 
     This avoids the memory thrashing from loading full fields repeatedly.
     Fields are loaded once and kept in memory for fast indexed access.
     """
+
+    # Minimum recommended headroom (GB) after loading cache
+    MIN_HEADROOM_GB = 8.0
 
     def __init__(self, h5_paths: Sequence[Union[str, Path]], field_type: str = "E"):
         """Load all fields into memory.
@@ -44,6 +118,37 @@ class FieldCache:
         self.shapes: Dict[str, Tuple[int, int, int]] = {}
 
         logger = logging.getLogger("progress")
+
+        # Check available memory before loading
+        available_gb = _get_available_memory_gb()
+        estimated_gb = _estimate_cache_size_gb(h5_paths)
+
+        if available_gb > 0:
+            logger.info(f"  Memory check: {estimated_gb:.1f} GB needed, {available_gb:.1f} GB available")
+
+            if estimated_gb > available_gb - self.MIN_HEADROOM_GB:
+                warning_msg = (
+                    f"\n{'=' * 70}\n"
+                    f"  WARNING: Insufficient RAM for field cache!\n"
+                    f"  - Cache size: {estimated_gb:.1f} GB\n"
+                    f"  - Available RAM: {available_gb:.1f} GB\n"
+                    f"  - Recommended: {estimated_gb + self.MIN_HEADROOM_GB:.1f} GB\n"
+                    f"\n"
+                    f"  This may cause severe slowdowns due to disk paging.\n"
+                    f"  Consider:\n"
+                    f"    1. Closing other applications to free RAM\n"
+                    f"    2. Running on a machine with more RAM\n"
+                    f"    3. Reducing n_samples in config\n"
+                    f"{'=' * 70}\n"
+                )
+                logger.warning(warning_msg)
+                warnings.warn(
+                    f"Field cache ({estimated_gb:.1f} GB) exceeds available RAM ({available_gb:.1f} GB). "
+                    "Expect severe slowdowns.",
+                    ResourceWarning,
+                    stacklevel=2,
+                )
+
         logger.info(f"  Pre-loading {field_type}-fields from {len(h5_paths)} files...")
         t0 = time.perf_counter()
 
