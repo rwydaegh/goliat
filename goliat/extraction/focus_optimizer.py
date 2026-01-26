@@ -1100,13 +1100,20 @@ def compute_all_hotspot_scores_streaming(
     E_z_at_focus_all = np.zeros((n_dirs, n_air), dtype=np.complex64)
     
     for dir_idx, h5_path in enumerate(tqdm(h5_paths, desc="Reading focus E_z", leave=False)):
+        t_file_start = time.perf_counter()
+        logger.debug(f"    [debug] Opening {Path(h5_path).name}...")
+        
         with h5py.File(h5_path, "r") as f:
+            t_open = time.perf_counter() - t_file_start
+            logger.debug(f"    [debug] File opened in {t_open:.2f}s, finding field group...")
+            
             fg_path = find_overall_field_group(f)
             field_path = get_field_path(fg_path, "E")
             
             # Read E_z (component 2) at focus points using z-slice iteration
             dataset = f[f"{field_path}/comp2"]
             shape = dataset.shape[:3]
+            logger.debug(f"    [debug] Dataset shape: {shape}, reading points...")
             
             # Clamp indices
             ix = np.minimum(sampled_air_indices[:, 0], shape[0] - 1)
@@ -1115,11 +1122,24 @@ def compute_all_hotspot_scores_streaming(
             
             # Group by z for efficient reading
             unique_z = np.unique(iz)
-            for z_val in unique_z:
+            n_unique_z = len(unique_z)
+            logger.debug(f"    [debug] {n_unique_z} unique z-slices to read")
+            
+            t_read_start = time.perf_counter()
+            for z_idx, z_val in enumerate(unique_z):
                 mask = iz == z_val
                 z_slice = dataset[:, :, int(z_val), :]
                 data = z_slice[ix[mask], iy[mask], :]
                 E_z_at_focus_all[dir_idx, mask] = data[:, 0] + 1j * data[:, 1]
+                
+                # Log progress every 100 slices
+                if z_idx == 0 or (z_idx + 1) % 100 == 0:
+                    t_elapsed = time.perf_counter() - t_read_start
+                    logger.debug(f"    [debug] Read {z_idx + 1}/{n_unique_z} z-slices in {t_elapsed:.1f}s")
+            
+            t_total = time.perf_counter() - t_file_start
+            if dir_idx == 0:
+                logger.info(f"    [dir 0] First file took {t_total:.1f}s ({n_unique_z} z-slices)")
     
     # Step 3: Compute all MRT weights
     logger.info("  [streaming] Step 3: Computing MRT weights...")
