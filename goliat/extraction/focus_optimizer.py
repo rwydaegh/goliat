@@ -1159,21 +1159,18 @@ def compute_all_hotspot_scores_streaming(
         t_dir_start = time.perf_counter()
         
         # Load ENTIRE E-field for this direction
+        # NOTE: Components may have different shapes due to Yee grid staggering,
+        # so we load them separately and index each one individually
         with h5py.File(h5_path, "r") as f:
             fg_path = find_overall_field_group(f)
             field_path = get_field_path(fg_path, "E")
             
-            # Load all 3 components and combine into complex array
-            # Shape: (Nx, Ny, Nz, 3) complex64
-            E_field_components = []
+            # Load all 3 components as separate arrays (they may have different shapes!)
+            E_components = []
             for comp in range(3):
                 dataset = f[f"{field_path}/comp{comp}"]
                 data = dataset[:]  # Load entire component
-                E_field_components.append(data[..., 0] + 1j * data[..., 1])
-            
-            # Stack into (Nx, Ny, Nz, 3)
-            E_field = np.stack(E_field_components, axis=-1).astype(np.complex64)
-            del E_field_components  # Free intermediate memory
+                E_components.append((data[..., 0] + 1j * data[..., 1]).astype(np.complex64))
         
         t_load = time.perf_counter() - t_dir_start
         
@@ -1187,13 +1184,16 @@ def compute_all_hotspot_scores_streaming(
             
             w = dir_weights[air_idx]
             
-            # Clamp indices to valid range
-            ix = np.minimum(skin_indices[:, 0], E_field.shape[0] - 1)
-            iy = np.minimum(skin_indices[:, 1], E_field.shape[1] - 1)
-            iz = np.minimum(skin_indices[:, 2], E_field.shape[2] - 1)
+            # Read from each component separately (they may have different shapes)
+            E_at_skin = np.zeros((len(skin_indices), 3), dtype=np.complex64)
+            for comp in range(3):
+                E_comp = E_components[comp]
+                # Clamp indices to valid range for this component
+                ix = np.minimum(skin_indices[:, 0], E_comp.shape[0] - 1)
+                iy = np.minimum(skin_indices[:, 1], E_comp.shape[1] - 1)
+                iz = np.minimum(skin_indices[:, 2], E_comp.shape[2] - 1)
+                E_at_skin[:, comp] = E_comp[ix, iy, iz]
             
-            # Vectorized read and accumulate
-            E_at_skin = E_field[ix, iy, iz, :]  # (n_skin, 3)
             E_combined_accum[air_idx] += w * E_at_skin
         
         t_process = time.perf_counter() - t_dir_start - t_load
@@ -1207,7 +1207,7 @@ def compute_all_hotspot_scores_streaming(
             )
         
         # Explicitly free E_field memory
-        del E_field
+        del E_components
     
     t_stream_total = time.perf_counter() - t_stream_start
     logger.info(f"  [streaming] Streaming completed in {t_stream_total / 60:.1f} min")
