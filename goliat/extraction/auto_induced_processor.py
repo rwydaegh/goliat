@@ -92,15 +92,38 @@ class AutoInducedProcessor(LoggingMixin):
         # Step 2: Combine fields for each candidate
         with self.study.subtask("auto_induced_combine_fields"):
             combined_h5_paths = []
-            for i, candidate in enumerate(candidates):
-                combined_path = self._combine_fields_for_candidate(
-                    h5_paths=h5_paths,
-                    candidate=candidate,
-                    output_dir=output_dir,
-                    candidate_idx=i + 1,
-                    cube_size_mm=cube_size_mm,
-                )
-                combined_h5_paths.append(combined_path)
+            from tqdm import tqdm
+
+            # Create outer progress bar for candidates
+            candidates_pbar = tqdm(
+                enumerate(candidates, start=1),
+                total=len(candidates),
+                desc="Combining fields",
+                unit="candidate",
+                leave=False,
+            )
+
+            for i, candidate in candidates_pbar:
+                candidates_pbar.set_description(f"Combining fields (candidate {i}/{len(candidates)})")
+
+                # Create inner progress bar for field components (6 total: E_x, E_y, E_z, H_x, H_y, H_z)
+                with tqdm(
+                    total=6,
+                    desc=f"  Candidate #{i}",
+                    unit="component",
+                    leave=False,
+                ) as components_pbar:
+                    combined_path = self._combine_fields_for_candidate(
+                        h5_paths=h5_paths,
+                        candidate=candidate,
+                        output_dir=output_dir,
+                        candidate_idx=i,
+                        cube_size_mm=cube_size_mm,
+                        progress_bar=components_pbar,
+                    )
+                    combined_h5_paths.append(combined_path)
+
+            candidates_pbar.close()
 
         # Step 3: Extract SAPD for each candidate
         with self.study.subtask("auto_induced_extract_sapd"):
@@ -254,13 +277,20 @@ class AutoInducedProcessor(LoggingMixin):
             if not isinstance(all_scores, np.ndarray):
                 all_scores = np.array([all_scores]) if top_n == 1 else np.array(all_scores)
 
+            # Get pre-computed phases/weights if available (air mode computes them while cache is alive)
+            precomputed_weights = info.get("all_candidate_weights", None)
+
             for i in range(min(top_n, len(all_indices))):
                 voxel_idx = all_indices[i] if top_n > 1 else all_indices
                 score = float(all_scores[i]) if top_n > 1 else float(all_scores[0])
 
-                # Recompute weights for this specific candidate
-                phases = compute_optimal_phases([str(p) for p in h5_paths], voxel_idx)
-                candidate_weights = compute_weights(phases)
+                # Use pre-computed weights if available, otherwise compute (skin mode fallback)
+                if precomputed_weights is not None and i < len(precomputed_weights):
+                    candidate_weights = precomputed_weights[i]
+                else:
+                    # Fallback: compute phases (only needed for skin mode)
+                    phases = compute_optimal_phases([str(p) for p in h5_paths], voxel_idx)
+                    candidate_weights = compute_weights(phases)
 
                 candidates.append(
                     {
@@ -306,6 +336,7 @@ class AutoInducedProcessor(LoggingMixin):
         output_dir: Path,
         candidate_idx: int,
         cube_size_mm: float,
+        progress_bar=None,
     ) -> Path | None:
         """Combine E/H fields for a focus candidate.
 
@@ -315,6 +346,7 @@ class AutoInducedProcessor(LoggingMixin):
             output_dir: Directory to write combined H5.
             candidate_idx: 1-based index for naming.
             cube_size_mm: Size of extraction cube in mm.
+            progress_bar: Optional tqdm progress bar to update.
 
         Returns:
             Path to combined H5 file, or None if failed.
@@ -334,6 +366,7 @@ class AutoInducedProcessor(LoggingMixin):
                 output_h5_path=str(output_path),
                 center_idx=candidate["voxel_idx"],
                 side_length_mm=cube_size_mm,
+                progress_bar=progress_bar,
             )
 
             elapsed = time.monotonic() - start_time

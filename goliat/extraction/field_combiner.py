@@ -261,6 +261,7 @@ def combine_fields_sliced(
     center_idx: Sequence[int],
     side_length_mm: float = 100.0,
     field_types: Sequence[str] = ("E", "H"),
+    progress_bar: Optional[tqdm] = None,
 ) -> dict:
     """Combine weighted fields in a small cube around the focus point.
 
@@ -278,6 +279,7 @@ def combine_fields_sliced(
         center_idx: [ix, iy, iz] voxel indices of the focus point.
         side_length_mm: Side length of the cube to extract (default 100mm for SAPD).
         field_types: Which fields to combine ('E', 'H', or both).
+        progress_bar: Optional tqdm progress bar to update (will be updated per component).
 
     Returns:
         Dict with info about the combination.
@@ -321,7 +323,7 @@ def combine_fields_sliced(
             raise ValueError("No 'Overall Field' in output")
 
         for field_type in field_types:
-            _combine_sliced_field(h5_paths, weights, out_f, fg_path, field_type, bounds, get_slice_indices)
+            _combine_sliced_field(h5_paths, weights, out_f, fg_path, field_type, bounds, get_slice_indices, progress_bar)
 
     # Get final shape
     with h5py.File(output_h5_path, "r") as f:
@@ -349,14 +351,17 @@ def _combine_sliced_field(
     field_type: str,
     bounds: Tuple[Tuple[float, float], ...],
     get_slice_indices,
+    progress_bar: Optional[tqdm] = None,
 ) -> None:
     """Combines a sliced field across all components."""
     field_path = get_field_path(fg_path, field_type)
     if field_path not in out_f:
         return
 
+    comp_names = ["x", "y", "z"]
     for comp_idx in range(3):
         comp_key = f"comp{comp_idx}"
+        comp_name = comp_names[comp_idx]
         out_ds = out_f[f"{field_path}/{comp_key}"]
         out_shape = out_ds.shape[:3]
 
@@ -366,6 +371,10 @@ def _combine_sliced_field(
             combined = combined[: out_shape[0], : out_shape[1], : out_shape[2]]
             out_ds[..., 0] = np.real(combined)
             out_ds[..., 1] = np.imag(combined)
+
+        if progress_bar is not None:
+            progress_bar.set_postfix_str(f"{field_type}_{comp_name}")
+            progress_bar.update(1)
 
 
 def _accumulate_sliced_component(
