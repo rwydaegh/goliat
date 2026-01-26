@@ -11,14 +11,12 @@ class SystemUtilizationPlot:
     """Manages system utilization plot with real-time updates.
 
     Creates a matplotlib line plot showing CPU, RAM, GPU utilization,
-    GPU VRAM utilization percentages, and disk I/O throughput over time.
+    and GPU VRAM utilization percentages over time.
     Updates dynamically as new data points arrive.
 
-    Left Y-axis: Utilization (0-105%) for CPU, RAM, GPU, VRAM
-    Right Y-axis: Disk I/O throughput (MB/s) for SSD Read/Write
+    Y-axis: Utilization (0-105%) for CPU, RAM, GPU, VRAM
 
     GPU lines only shown if GPU is available.
-    Disk I/O lines only shown if disk data is available.
     """
 
     def __init__(self) -> None:
@@ -32,16 +30,12 @@ class SystemUtilizationPlot:
         self.figure: _Figure = _Figure(figsize=(10, 6), facecolor="#2b2b2b")
         self.canvas: _FigureCanvas = _FigureCanvas(self.figure)
         self.ax: _Axes = self.figure.add_subplot(111)
-        self.ax2: Optional[_Axes] = None  # Secondary Y-axis for disk I/O
 
         self.cpu_data: List[Tuple[datetime, float]] = []
         self.ram_data: List[Tuple[datetime, float]] = []
         self.gpu_data: List[Tuple[datetime, Optional[float]]] = []
         self.gpu_vram_data: List[Tuple[datetime, Optional[float]]] = []
-        self.disk_read_data: List[Tuple[datetime, Optional[float]]] = []
-        self.disk_write_data: List[Tuple[datetime, Optional[float]]] = []
         self.gpu_available: bool = False
-        self.disk_available: bool = False
 
         # System info for legend (will be populated when first data point is added)
         self.cpu_cores: int = 0
@@ -91,8 +85,6 @@ class SystemUtilizationPlot:
         total_ram_gb: float = 0.0,
         gpu_name: Optional[str] = None,
         total_gpu_vram_gb: float = 0.0,
-        disk_read_mbps: Optional[float] = None,
-        disk_write_mbps: Optional[float] = None,
     ) -> None:
         """Adds data point and refreshes plot.
 
@@ -106,8 +98,6 @@ class SystemUtilizationPlot:
             total_ram_gb: Total RAM in GB (for legend).
             gpu_name: GPU model name (for legend).
             total_gpu_vram_gb: Total GPU VRAM in GB (for legend).
-            disk_read_mbps: Disk read throughput in MB/s, or None if unavailable.
-            disk_write_mbps: Disk write throughput in MB/s, or None if unavailable.
         """
         # Store system info on first data point
         if len(self.cpu_data) == 0:
@@ -136,11 +126,6 @@ class SystemUtilizationPlot:
         if gpu_vram_percent is not None:
             self.gpu_available = True
 
-        self.disk_read_data.append((utc_plus_one_timestamp, disk_read_mbps))
-        self.disk_write_data.append((utc_plus_one_timestamp, disk_write_mbps))
-        if disk_read_mbps is not None or disk_write_mbps is not None:
-            self.disk_available = True
-
         self._refresh()
 
     def _refresh(self) -> None:
@@ -149,10 +134,6 @@ class SystemUtilizationPlot:
             return
 
         self.ax.clear()
-        # Clear secondary axis if it exists
-        if self.ax2 is not None:
-            self.ax2.remove()
-            self.ax2 = None
 
         # Clean all data: sort, deduplicate, and filter anomalies
         sorted_cpu_data = clean_plot_data(self.cpu_data)
@@ -166,12 +147,6 @@ class SystemUtilizationPlot:
         gpu_vram_times_and_values: List[Tuple[datetime, float]] = [(t, v) for (t, v) in self.gpu_vram_data if v is not None]
         gpu_vram_times_and_values = clean_plot_data(gpu_vram_times_and_values)
 
-        # Filter disk I/O data, then clean
-        disk_read_times_and_values: List[Tuple[datetime, float]] = [(t, v) for (t, v) in self.disk_read_data if v is not None]
-        disk_read_times_and_values = clean_plot_data(disk_read_times_and_values)
-        disk_write_times_and_values: List[Tuple[datetime, float]] = [(t, v) for (t, v) in self.disk_write_data if v is not None]
-        disk_write_times_and_values = clean_plot_data(disk_write_times_and_values)
-
         # Extract times and values
         times = [t for t, _ in sorted_cpu_data]
         cpu_values = [v for _, v in sorted_cpu_data]
@@ -180,10 +155,6 @@ class SystemUtilizationPlot:
         gpu_values = [v for _, v in gpu_times_and_values]
         gpu_vram_times = [t for t, _ in gpu_vram_times_and_values]
         gpu_vram_values = [v for _, v in gpu_vram_times_and_values]
-        disk_read_times = [t for t, _ in disk_read_times_and_values]
-        disk_read_values = [v for _, v in disk_read_times_and_values]
-        disk_write_times = [t for t, _ in disk_write_times_and_values]
-        disk_write_values = [v for _, v in disk_write_times_and_values]
 
         # Build legend labels with system info
         cpu_label = f"CPU ({self.cpu_cores} cores)" if self.cpu_cores > 0 else "CPU"
@@ -191,7 +162,7 @@ class SystemUtilizationPlot:
         gpu_label = f"GPU ({self.gpu_name})" if self.gpu_name else "GPU"
         gpu_vram_label = f"GPU VRAM ({self.total_gpu_vram_gb:.1f} GB)" if self.total_gpu_vram_gb > 0 else "GPU VRAM"
 
-        # Plot CPU and RAM (always available) on primary axis
+        # Plot CPU and RAM (always available)
         (line_cpu,) = self.ax.plot(times, cpu_values, "-", color="#ff4444", linewidth=1.0, label=cpu_label)  # type: ignore[arg-type]
         (line_ram,) = self.ax.plot(times, ram_values, "-", color="#00d4ff", linewidth=1.0, label=ram_label)  # type: ignore[arg-type]
 
@@ -210,7 +181,7 @@ class SystemUtilizationPlot:
             lines.append(line_vram)
             labels.append(gpu_vram_label)
 
-        # Configure primary axis
+        # Configure axis
         self.ax.set_facecolor("#2b2b2b")
         self.ax.set_xlabel("Time (UTC+1)", fontsize=12, color="#f0f0f0")
         self.ax.set_ylabel("Utilization (%)", fontsize=12, color="#f0f0f0")
@@ -218,33 +189,6 @@ class SystemUtilizationPlot:
 
         self.ax.set_ylim(0, 105)
         self.ax.set_yticks([0, 20, 40, 60, 80, 100])
-
-        # Plot disk I/O on secondary Y-axis if we have data
-        if self.disk_available and (disk_read_times or disk_write_times):
-            self.ax2 = self.ax.twinx()
-
-            if disk_read_times:
-                (line_read,) = self.ax2.plot(disk_read_times, disk_read_values, "--", color="#00ff88", linewidth=1.0, label="Disk Read")  # type: ignore[arg-type]
-                lines.append(line_read)
-                labels.append("Disk Read")
-
-            if disk_write_times:
-                (line_write,) = self.ax2.plot(disk_write_times, disk_write_values, "--", color="#ff8800", linewidth=1.0, label="Disk Write")  # type: ignore[arg-type]
-                lines.append(line_write)
-                labels.append("Disk Write")
-
-            # Configure secondary axis
-            self.ax2.set_ylabel("Disk I/O (MB/s)", fontsize=12, color="#f0f0f0")  # type: ignore[union-attr]
-            self.ax2.tick_params(colors="#f0f0f0", which="both")  # type: ignore[union-attr]
-            self.ax2.spines["right"].set_color("#f0f0f0")  # type: ignore[union-attr]
-
-            # Set reasonable y-limit for disk I/O (auto-scale with some headroom)
-            all_disk_values = disk_read_values + disk_write_values
-            if all_disk_values:
-                max_disk = max(all_disk_values)
-                # Set min of 100 MB/s or 20% above max, whichever is larger
-                disk_ylim = max(100, max_disk * 1.2)
-                self.ax2.set_ylim(0, disk_ylim)  # type: ignore[union-attr]
 
         # Set x-axis limits based on data range to ensure proper datetime formatting
         if times:
@@ -270,13 +214,9 @@ class SystemUtilizationPlot:
         self.ax.spines["bottom"].set_color("#f0f0f0")
         self.ax.spines["left"].set_color("#f0f0f0")
         self.ax.spines["top"].set_color("#2b2b2b")
-        # Right spine colored based on whether we have disk data
-        if self.ax2 is not None:
-            self.ax.spines["right"].set_color("#2b2b2b")  # Hide primary right spine
-        else:
-            self.ax.spines["right"].set_color("#2b2b2b")
+        self.ax.spines["right"].set_color("#2b2b2b")
 
-        # Combined legend for both axes
+        # Legend
         self.ax.legend(lines, labels, loc="upper left", facecolor="#3c3c3c", edgecolor="#f0f0f0", labelcolor="#f0f0f0", fontsize=10)
 
         self.figure.tight_layout()

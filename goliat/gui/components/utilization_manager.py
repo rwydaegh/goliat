@@ -113,7 +113,7 @@ class UtilizationManager:
         except Exception as e:
             self.gui.verbose_logger.error(f"[UtilizationPlot] CSV write failed: {e}")
 
-        # Add to plot (includes RAM and GPU VRAM)
+        # Add to system utilization plot (CPU, RAM, GPU, VRAM)
         if hasattr(self.gui, "system_utilization_plot"):
             # Get system info for legend
             from goliat.gui.components.system_monitor import SystemMonitor
@@ -140,10 +140,19 @@ class UtilizationManager:
                     total_ram_gb=total_ram_gb,
                     gpu_name=gpu_name,
                     total_gpu_vram_gb=total_gpu_vram_gb,
-                    disk_read_mbps=self._last_disk_read_mbps,
-                    disk_write_mbps=self._last_disk_write_mbps,
                 )
             except Exception as e:
                 self.gui.verbose_logger.error(f"[UtilizationPlot] Failed to add plot data point: {e}")
         else:
             self.gui.verbose_logger.warning("[UtilizationPlot] system_utilization_plot attribute not found on GUI")
+
+        # Add to disk I/O plot
+        if hasattr(self.gui, "disk_io_plot"):
+            try:
+                self.gui.disk_io_plot.add_data_point(
+                    timestamp=current_time,
+                    disk_read_mbps=self._last_disk_read_mbps,
+                    disk_write_mbps=self._last_disk_write_mbps,
+                )
+            except Exception as e:
+                self.gui.verbose_logger.error(f"[DiskIOPlot] Failed to add plot data point: {e}")
