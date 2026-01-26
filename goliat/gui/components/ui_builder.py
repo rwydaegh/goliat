@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
     QTextEdit,
 )
 
-from goliat.gui.components.plots import PieChartsManager, SystemUtilizationPlot, TimeRemainingPlot, OverallProgressPlot
+from goliat.gui.components.plots import DiskIOPlot, PieChartsManager, SystemUtilizationPlot, TimeRemainingPlot, OverallProgressPlot
 from goliat.gui.components.timings_table import TimingsTable
 
 if TYPE_CHECKING:
@@ -208,6 +208,7 @@ class UIBuilder:
         UIBuilder._build_time_remaining_tab(gui_instance)
         UIBuilder._build_overall_progress_tab(gui_instance)
         UIBuilder._build_system_utilization_tab(gui_instance)
+        UIBuilder._build_disk_io_tab(gui_instance)
 
         # Build buttons
         UIBuilder._build_buttons(gui_instance, main_layout)
@@ -416,6 +417,15 @@ class UIBuilder:
         gui_instance.tabs.addTab(utilization_widget, "System Utilization")
         gui_instance.system_utilization_plot = SystemUtilizationPlot()
         utilization_layout.addWidget(gui_instance.system_utilization_plot.canvas)
+
+    @staticmethod
+    def _build_disk_io_tab(gui_instance: "ProgressGUI") -> None:
+        """Builds the Disk I/O tab."""
+        disk_io_widget = QWidget()
+        disk_io_layout = QVBoxLayout(disk_io_widget)
+        gui_instance.tabs.addTab(disk_io_widget, "Disk I/O")
+        gui_instance.disk_io_plot = DiskIOPlot()
+        disk_io_layout.addWidget(gui_instance.disk_io_plot.canvas)
 
     @staticmethod
     def _build_buttons(gui_instance: "ProgressGUI", main_layout: QVBoxLayout) -> None:
