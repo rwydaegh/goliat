@@ -26,6 +26,7 @@ class UtilizationManager:
         self._last_gpu_vram_percent: Optional[float] = None
         self._last_disk_read_mbps: Optional[float] = None
         self._last_disk_write_mbps: Optional[float] = None
+        self._last_page_faults_per_sec: Optional[float] = None
 
     def update(self) -> None:
         """Updates CPU, RAM, and GPU utilization displays.
@@ -92,6 +93,9 @@ class UtilizationManager:
             self._last_disk_read_mbps = None
             self._last_disk_write_mbps = None
 
+        # Get page faults per second for plot (indicates memory pressure)
+        self._last_page_faults_per_sec = SystemMonitor.get_page_faults_per_second()
+
     def update_plot(self) -> None:
         """Updates the system utilization plot with current values.
 
@@ -146,13 +150,14 @@ class UtilizationManager:
         else:
             self.gui.verbose_logger.warning("[UtilizationPlot] system_utilization_plot attribute not found on GUI")
 
-        # Add to disk I/O plot
+        # Add to disk I/O plot (includes page faults on secondary axis)
         if hasattr(self.gui, "disk_io_plot"):
             try:
                 self.gui.disk_io_plot.add_data_point(
                     timestamp=current_time,
                     disk_read_mbps=self._last_disk_read_mbps,
                     disk_write_mbps=self._last_disk_write_mbps,
+                    page_faults_per_sec=self._last_page_faults_per_sec,
                 )
             except Exception as e:
                 self.gui.verbose_logger.error(f"[DiskIOPlot] Failed to add plot data point: {e}")

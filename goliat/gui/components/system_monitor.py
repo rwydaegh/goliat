@@ -196,6 +196,9 @@ class SystemMonitor:
     # Class-level state for disk I/O delta calculation
     _last_disk_io: Optional[Tuple[int, int, float]] = None  # (read_bytes, write_bytes, timestamp)
 
+    # Class-level state for page faults delta calculation
+    _last_page_faults: Optional[Tuple[int, float]] = None  # (page_faults, timestamp)
+
     @staticmethod
     def get_disk_io_throughput() -> Optional[Tuple[float, float]]:
         """Gets current disk I/O throughput in MB/s.
@@ -252,3 +255,57 @@ class SystemMonitor:
             True if nvidia-smi is available and returns successfully, False otherwise.
         """
         return SystemMonitor.get_gpu_utilization() is not None
+
+    @staticmethod
+    def get_page_faults_per_second() -> Optional[float]:
+        """Gets current hard page faults per second.
+
+        Hard page faults (major faults) occur when the system needs to read data
+        from disk because it's not in RAM. High rates indicate memory pressure
+        and can significantly impact performance.
+
+        Calculates the rate by comparing current page fault count with the
+        previous call. First call returns None as there's no baseline.
+
+        Returns:
+            Page faults per second, or None if unavailable.
+        """
+        if not PSUTIL_AVAILABLE:
+            return None
+        try:
+            import time
+
+            current_time = time.time()
+            # psutil is guaranteed to be available here due to PSUTIL_AVAILABLE check
+            swap_info = psutil.swap_memory()  # type: ignore[possibly-unbound]
+
+            # On Windows, swap_memory().sin and .sout track page-ins and page-outs
+            # We use sin (swap in) as it represents data being read from disk to RAM
+            # which is the hard fault scenario
+            # Note: On Linux, we could also use /proc/vmstat for more detailed stats
+            current_faults = swap_info.sin  # Bytes swapped in from disk
+
+            if SystemMonitor._last_page_faults is None:
+                # First call - store baseline and return None
+                SystemMonitor._last_page_faults = (current_faults, current_time)
+                return None
+
+            last_faults, last_time = SystemMonitor._last_page_faults
+            time_delta = current_time - last_time
+
+            if time_delta <= 0:
+                return None
+
+            # Calculate faults per second (convert bytes to pages, assuming 4KB pages)
+            page_size = 4096  # Standard page size in bytes
+            faults_delta = current_faults - last_faults
+            pages_swapped = faults_delta / page_size
+            faults_per_second = pages_swapped / time_delta
+
+            # Update stored values for next call
+            SystemMonitor._last_page_faults = (current_faults, current_time)
+
+            # Clamp to non-negative (counters can wrap on some systems)
+            return max(0.0, faults_per_second)
+        except Exception:
+            return None
