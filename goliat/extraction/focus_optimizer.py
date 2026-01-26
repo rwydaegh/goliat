@@ -702,7 +702,7 @@ def compute_hotspot_score_at_air_point(
     return float(np.mean(E_combined_sq))
 
 
-def compute_all_hotspot_scores_batched(
+def compute_all_hotspot_scores_chunked(
     h5_paths: Sequence[Union[str, Path]],
     sampled_air_indices: np.ndarray,
     skin_mask: np.ndarray,
@@ -711,14 +711,19 @@ def compute_all_hotspot_scores_batched(
     axis_z: np.ndarray,
     cube_size_mm: float = 50.0,
     field_cache: Optional[FieldCache] = None,
+    chunk_size: int = 100,
 ) -> np.ndarray:
-    """Compute hotspot scores for ALL air focus points in a batched manner.
+    """Compute hotspot scores using chunked processing with deduplication.
     
-    This is much more efficient than calling compute_hotspot_score_at_air_point
-    in a loop because it:
-    1. Processes one H5 file at a time (better I/O pattern)
-    2. Collects all unique indices needed across all air points
-    3. Reads each file only once with all needed indices
+    Key insight: Nearby air points share many skin voxels. By processing in chunks
+    and deduplicating skin indices, we dramatically reduce I/O.
+    
+    Algorithm:
+    1. Read E_z at ALL focus points (small, ~10K points)
+    2. For each chunk of air points:
+       a. Find all unique skin voxels across the chunk
+       b. Read E-field at unique voxels from all directions
+       c. Compute scores using the cached data
     
     Args:
         h5_paths: List of _Output.h5 files (one per direction/polarization).
@@ -727,6 +732,7 @@ def compute_all_hotspot_scores_batched(
         axis_x, axis_y, axis_z: Grid axes.
         cube_size_mm: Size of cube around focus to evaluate (mm).
         field_cache: Optional pre-loaded field cache.
+        chunk_size: Number of air points to process per chunk.
         
     Returns:
         Array of shape (N_air,) with hotspot scores.
@@ -744,54 +750,9 @@ def compute_all_hotspot_scores_batched(
     half_ny = int(np.ceil(cube_size_m / (2 * dy)))
     half_nz = int(np.ceil(cube_size_m / (2 * dz)))
     
-    # Step 1: For each air point, find its skin voxels and store metadata
-    # We need: focus point index, skin voxel indices for that point
-    logger.info("  [batched] Step 1: Finding skin voxels for each air point...")
-    
-    air_point_data = []  # List of (focus_idx, skin_indices_global) tuples
-    all_focus_indices = []  # All focus points (for batch read)
-    all_skin_indices_list = []  # All skin indices across all air points
-    skin_index_ranges = []  # (start, end) for each air point's skin indices
-    
-    current_skin_idx = 0
-    for i, air_idx in enumerate(sampled_air_indices):
-        ix, iy, iz = air_idx
-        
-        # Cube bounds
-        ix_min = max(0, ix - half_nx)
-        ix_max = min(skin_mask.shape[0], ix + half_nx + 1)
-        iy_min = max(0, iy - half_ny)
-        iy_max = min(skin_mask.shape[1], iy + half_ny + 1)
-        iz_min = max(0, iz - half_nz)
-        iz_max = min(skin_mask.shape[2], iz + half_nz + 1)
-        
-        # Find skin voxels in cube
-        skin_cube = skin_mask[ix_min:ix_max, iy_min:iy_max, iz_min:iz_max]
-        skin_indices_local = np.argwhere(skin_cube)
-        
-        if len(skin_indices_local) == 0:
-            skin_index_ranges.append((current_skin_idx, current_skin_idx))  # Empty range
-        else:
-            skin_indices_global = skin_indices_local + np.array([ix_min, iy_min, iz_min])
-            all_skin_indices_list.append(skin_indices_global)
-            skin_index_ranges.append((current_skin_idx, current_skin_idx + len(skin_indices_global)))
-            current_skin_idx += len(skin_indices_global)
-        
-        all_focus_indices.append(air_idx)
-    
-    # Concatenate all skin indices
-    if all_skin_indices_list:
-        all_skin_indices = np.vstack(all_skin_indices_list)
-    else:
-        all_skin_indices = np.zeros((0, 3), dtype=np.int64)
-    
-    all_focus_indices = np.array(all_focus_indices)
-    total_skin_voxels = len(all_skin_indices)
-    
-    logger.info(f"  [batched] Total unique reads needed: {n_air} focus + {total_skin_voxels} skin = {n_air + total_skin_voxels} points")
-    
-    # Step 2: Read E_z at all focus points from all directions (for MRT weights)
-    logger.info("  [batched] Step 2: Reading E_z at focus points...")
+    # Step 1: Read E_z at ALL focus points (this is small - just n_air points)
+    logger.info("  [chunked] Step 1: Reading E_z at all focus points...")
+    all_focus_indices = np.array(sampled_air_indices)
     E_z_at_focus_all = np.zeros((n_dirs, n_air), dtype=np.complex64)
     
     for dir_idx, h5_path in enumerate(tqdm(h5_paths, desc="Reading focus E_z", leave=False)):
@@ -800,54 +761,110 @@ def compute_all_hotspot_scores_batched(
             E_focus = field_cache.read_at_indices(h5_str, all_focus_indices)
         else:
             E_focus = read_field_at_indices(h5_str, all_focus_indices, field_type="E")
-        E_z_at_focus_all[dir_idx, :] = E_focus[:, 2]  # E_z component
+        E_z_at_focus_all[dir_idx, :] = E_focus[:, 2]
     
-    # Step 3: Read E-field at all skin voxels from all directions
-    logger.info("  [batched] Step 3: Reading E-field at skin voxels...")
-    if total_skin_voxels > 0:
-        E_skin_all = np.zeros((n_dirs, total_skin_voxels, 3), dtype=np.complex64)
-        
-        for dir_idx, h5_path in enumerate(tqdm(h5_paths, desc="Reading skin E-fields", leave=False)):
-            h5_str = str(h5_path)
-            if field_cache is not None:
-                E_skin = field_cache.read_at_indices(h5_str, all_skin_indices)
-            else:
-                E_skin = read_field_at_indices(h5_str, all_skin_indices, field_type="E")
-            E_skin_all[dir_idx, :, :] = E_skin
-    else:
-        E_skin_all = np.zeros((n_dirs, 0, 3), dtype=np.complex64)
+    # Step 2: Process in chunks
+    n_chunks = (n_air + chunk_size - 1) // chunk_size
+    logger.info(f"  [chunked] Step 2: Processing {n_air} air points in {n_chunks} chunks of {chunk_size}...")
     
-    # Step 4: Compute hotspot scores for each air point
-    logger.info("  [batched] Step 4: Computing hotspot scores...")
     hotspot_scores = np.zeros(n_air, dtype=np.float64)
     
-    for i in range(n_air):
-        # Get E_z at this focus point from all directions
-        E_z_focus = E_z_at_focus_all[:, i]  # (n_dirs,)
+    for chunk_idx in tqdm(range(n_chunks), desc="Processing chunks"):
+        chunk_start = chunk_idx * chunk_size
+        chunk_end = min(chunk_start + chunk_size, n_air)
+        chunk_air_indices = sampled_air_indices[chunk_start:chunk_end]
+        n_in_chunk = len(chunk_air_indices)
         
-        # Compute MRT phases and weights
-        phases = -np.angle(E_z_focus)
-        weights = (1.0 / np.sqrt(n_dirs)) * np.exp(1j * phases)  # (n_dirs,)
+        # Find all skin voxels for this chunk and deduplicate
+        all_skin_indices_list = []
+        skin_ranges = []  # (start, end) in the deduplicated array for each air point
         
-        # Get skin voxel range for this air point
-        start_idx, end_idx = skin_index_ranges[i]
+        for air_idx in chunk_air_indices:
+            ix, iy, iz = air_idx
+            
+            # Cube bounds
+            ix_min = max(0, ix - half_nx)
+            ix_max = min(skin_mask.shape[0], ix + half_nx + 1)
+            iy_min = max(0, iy - half_ny)
+            iy_max = min(skin_mask.shape[1], iy + half_ny + 1)
+            iz_min = max(0, iz - half_nz)
+            iz_max = min(skin_mask.shape[2], iz + half_nz + 1)
+            
+            # Find skin voxels in cube
+            skin_cube = skin_mask[ix_min:ix_max, iy_min:iy_max, iz_min:iz_max]
+            skin_indices_local = np.argwhere(skin_cube)
+            
+            if len(skin_indices_local) == 0:
+                skin_ranges.append((None, None))
+            else:
+                skin_indices_global = skin_indices_local + np.array([ix_min, iy_min, iz_min])
+                all_skin_indices_list.append(skin_indices_global)
+                skin_ranges.append(len(all_skin_indices_list) - 1)  # Index into list
         
-        if start_idx == end_idx:
-            # No skin voxels in cube
-            hotspot_scores[i] = 0.0
+        if not all_skin_indices_list:
+            # No skin voxels in this chunk
             continue
         
-        # Get E-field at skin voxels for this air point
-        E_skin = E_skin_all[:, start_idx:end_idx, :]  # (n_dirs, n_skin, 3)
+        # Concatenate and deduplicate skin indices
+        all_skin_concat = np.vstack(all_skin_indices_list)
         
-        # Combine with weights: E_combined = sum_d(w_d * E_d)
-        E_combined = np.sum(weights[:, np.newaxis, np.newaxis] * E_skin, axis=0)  # (n_skin, 3)
+        # Convert to tuples for deduplication
+        skin_tuples = [tuple(idx) for idx in all_skin_concat]
+        unique_tuples = list(set(skin_tuples))
+        unique_skin_indices = np.array(unique_tuples)
         
-        # Compute |E_combined|² and mean
-        E_combined_sq = np.sum(np.abs(E_combined) ** 2, axis=1)  # (n_skin,)
-        hotspot_scores[i] = float(np.mean(E_combined_sq))
+        # Create mapping from original indices to unique indices
+        tuple_to_unique_idx = {t: i for i, t in enumerate(unique_tuples)}
+        
+        n_unique = len(unique_skin_indices)
+        
+        # Read E-field at unique skin voxels from all directions
+        E_skin_unique = np.zeros((n_dirs, n_unique, 3), dtype=np.complex64)
+        
+        for dir_idx, h5_path in enumerate(h5_paths):
+            h5_str = str(h5_path)
+            if field_cache is not None:
+                E_skin = field_cache.read_at_indices(h5_str, unique_skin_indices)
+            else:
+                E_skin = read_field_at_indices(h5_str, unique_skin_indices, field_type="E")
+            E_skin_unique[dir_idx, :, :] = E_skin
+        
+        # Compute scores for each air point in chunk
+        list_idx = 0
+        for local_i, air_idx in enumerate(chunk_air_indices):
+            global_i = chunk_start + local_i
+            range_info = skin_ranges[local_i]
+            
+            if range_info == (None, None):
+                hotspot_scores[global_i] = 0.0
+                continue
+            
+            # Get skin indices for this air point
+            skin_indices_for_point = all_skin_indices_list[range_info]
+            
+            # Map to unique indices
+            unique_idx_for_point = np.array([
+                tuple_to_unique_idx[tuple(idx)] for idx in skin_indices_for_point
+            ])
+            
+            # Get E_z at focus and compute weights
+            E_z_focus = E_z_at_focus_all[:, global_i]
+            phases = -np.angle(E_z_focus)
+            weights = (1.0 / np.sqrt(n_dirs)) * np.exp(1j * phases)
+            
+            # Get E-field at skin voxels and combine with weights
+            E_skin_point = E_skin_unique[:, unique_idx_for_point, :]  # (n_dirs, n_skin, 3)
+            E_combined = np.sum(weights[:, np.newaxis, np.newaxis] * E_skin_point, axis=0)
+            
+            # Compute |E_combined|² and mean
+            E_combined_sq = np.sum(np.abs(E_combined) ** 2, axis=1)
+            hotspot_scores[global_i] = float(np.mean(E_combined_sq))
     
     return hotspot_scores
+
+
+# Keep old function name for backward compatibility
+compute_all_hotspot_scores_batched = compute_all_hotspot_scores_chunked
 
 
 def find_focus_and_compute_weights(
