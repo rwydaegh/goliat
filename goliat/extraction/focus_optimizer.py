@@ -1096,55 +1096,45 @@ def compute_all_hotspot_scores_streaming(
     )
     
     # Step 2: Read E_z at all focus points from all directions
+    # OPTIMIZATION: Read entire E_z component at once (~1.5 GB) instead of slice-by-slice
+    # Slice-by-slice was taking ~1s per slice × 2800 slices = 47 min per file!
     logger.info("  [streaming] Step 2: Reading E_z at all focus points...")
+    logger.info("    Loading entire E_z component per file (~1.5 GB) - much faster than slice-by-slice")
     E_z_at_focus_all = np.zeros((n_dirs, n_air), dtype=np.complex64)
-    
-    # Force flush to see output immediately
-    import sys
-    sys.stdout.flush()
-    sys.stderr.flush()
     
     for dir_idx, h5_path in enumerate(tqdm(h5_paths, desc="Reading focus E_z", leave=False)):
         t_file_start = time.perf_counter()
-        print(f"    [DEBUG] Opening file {dir_idx+1}/{n_dirs}: {Path(h5_path).name}...", flush=True)
         
         with h5py.File(h5_path, "r") as f:
-            t_open = time.perf_counter() - t_file_start
-            print(f"    [DEBUG] File opened in {t_open:.2f}s, finding field group...", flush=True)
-            
             fg_path = find_overall_field_group(f)
             field_path = get_field_path(fg_path, "E")
             
-            # Read E_z (component 2) at focus points using z-slice iteration
+            # Read ENTIRE E_z component at once (much faster than slice-by-slice)
             dataset = f[f"{field_path}/comp2"]
             shape = dataset.shape[:3]
-            print(f"    [DEBUG] Dataset shape: {shape}, preparing indices...", flush=True)
             
-            # Clamp indices
+            # Load entire E_z field (~1.5 GB for 452×472×3007×2 float32)
+            t_load_start = time.perf_counter()
+            E_z_full = dataset[:]  # Shape: (Nx, Ny, Nz, 2)
+            t_load = time.perf_counter() - t_load_start
+            
+            # Convert to complex
+            E_z_complex = (E_z_full[..., 0] + 1j * E_z_full[..., 1]).astype(np.complex64)
+            del E_z_full  # Free memory
+            
+            # Clamp indices and extract values
             ix = np.minimum(sampled_air_indices[:, 0], shape[0] - 1)
             iy = np.minimum(sampled_air_indices[:, 1], shape[1] - 1)
             iz = np.minimum(sampled_air_indices[:, 2], shape[2] - 1)
             
-            # Group by z for efficient reading
-            unique_z = np.unique(iz)
-            n_unique_z = len(unique_z)
-            print(f"    [DEBUG] {n_unique_z} unique z-slices to read", flush=True)
+            # Vectorized extraction (very fast)
+            E_z_at_focus_all[dir_idx, :] = E_z_complex[ix, iy, iz]
             
-            t_read_start = time.perf_counter()
-            for z_idx, z_val in enumerate(unique_z):
-                mask = iz == z_val
-                z_slice = dataset[:, :, int(z_val), :]
-                data = z_slice[ix[mask], iy[mask], :]
-                E_z_at_focus_all[dir_idx, mask] = data[:, 0] + 1j * data[:, 1]
-                
-                # Log progress every 100 slices or first slice
-                if z_idx == 0 or (z_idx + 1) % 100 == 0 or z_idx == n_unique_z - 1:
-                    t_elapsed = time.perf_counter() - t_read_start
-                    print(f"    [DEBUG] Read {z_idx + 1}/{n_unique_z} z-slices in {t_elapsed:.1f}s", flush=True)
+            del E_z_complex  # Free memory
             
             t_total = time.perf_counter() - t_file_start
             if dir_idx == 0:
-                logger.info(f"    [dir 0] First file took {t_total:.1f}s ({n_unique_z} z-slices)")
+                logger.info(f"    [dir 0] First file: load={t_load:.1f}s, total={t_total:.1f}s")
     
     # Step 3: Compute all MRT weights
     logger.info("  [streaming] Step 3: Computing MRT weights...")
