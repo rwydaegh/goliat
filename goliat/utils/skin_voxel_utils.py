@@ -271,7 +271,7 @@ def find_valid_air_focus_points(
         skin_dask = da.from_array(skin_mask, chunks=(chunk_size, chunk_size, -1))
         
         dilated_skin = skin_dask
-        iterator = tqdm(range(n_iterations), desc="  Dilation (CPU-Dask)", unit="iter") if use_tqdm else range(n_iterations)
+        iterator = tqdm(range(n_iterations), desc="  Dilation (CPU-Dask)", unit="iter") if False else range(n_iterations)
         
         for i in iterator:
             t_iter = time.perf_counter()
@@ -287,15 +287,15 @@ def find_valid_air_focus_points(
         
         # Compute result with progress bar
         logger.info(f"  Computing result across {n_cores} cores...")
-        with ProgressBar():
-            dilated_skin = dilated_skin.compute()
+        # Disabled: with ProgressBar():
+        dilated_skin = dilated_skin.compute()
             
     except ImportError:
         # Fallback to single-core scipy if Dask not available
         logger.warning(f"  Dask not available, falling back to single-core CPU (slow!)")
         logger.warning(f"  Install for speedup: python -m pip install dask[array]")
         dilated_skin = skin_mask.copy()
-        iterator = tqdm(range(n_iterations), desc="  Dilation (CPU-single)", unit="iter") if use_tqdm else range(n_iterations)
+        iterator = tqdm(range(n_iterations), desc="  Dilation (CPU-single)", unit="iter") if False else range(n_iterations)
         for i in iterator:
             dilated_skin = ndimage.binary_dilation(dilated_skin, structure=struct)
         
