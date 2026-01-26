@@ -1119,26 +1119,47 @@ def _find_focus_air_based(
     # In low-memory mode, this uses optimized slab-based streaming instead of pre-loading
     t_cache_start = time.perf_counter()
     field_cache = FieldCache(h5_paths, field_type="E", low_memory=low_memory, slab_cache_gb=slab_cache_gb)
-
-    # Score ALL sampled points using batched approach (much more efficient I/O pattern)
+    
+    logger = logging.getLogger("progress")
     t_scoring_start = time.perf_counter()
-    hotspot_scores = compute_all_hotspot_scores_batched(
-        h5_paths=h5_paths,
-        sampled_air_indices=sampled_air_indices,
-        skin_mask=skin_mask,
-        axis_x=ax_x,
-        axis_y=ax_y,
-        axis_z=ax_z,
-        cube_size_mm=cube_size_mm,
-        field_cache=field_cache,
-    )
+    
+    # Choose scoring method based on mode:
+    # - Memory mode (high RAM): Use simple loop (original, fast ~3 min)
+    # - Streaming mode (low RAM): Use chunked approach with z-slice reads
+    if field_cache.streaming_mode:
+        # Low-memory streaming mode: use chunked approach
+        hotspot_scores = compute_all_hotspot_scores_chunked(
+            h5_paths=h5_paths,
+            sampled_air_indices=sampled_air_indices,
+            skin_mask=skin_mask,
+            axis_x=ax_x,
+            axis_y=ax_y,
+            axis_z=ax_z,
+            cube_size_mm=cube_size_mm,
+            field_cache=field_cache,
+        )
+    else:
+        # High-RAM mode: use simple loop (original approach, proven fast)
+        hotspot_scores = []
+        for air_idx in tqdm(sampled_air_indices, desc="Scoring air focus points"):
+            score = compute_hotspot_score_at_air_point(
+                h5_paths=h5_paths,
+                air_focus_idx=air_idx,
+                skin_mask=skin_mask,
+                axis_x=ax_x,
+                axis_y=ax_y,
+                axis_z=ax_z,
+                cube_size_mm=cube_size_mm,
+                field_cache=field_cache,
+            )
+            hotspot_scores.append(score)
+        hotspot_scores = np.array(hotspot_scores)
     
     t_scoring_end = time.perf_counter()
 
     # Log scoring statistics
     n_with_skin = np.sum(hotspot_scores > 0)
     n_no_skin = np.sum(hotspot_scores == 0)
-    logger = logging.getLogger("progress")
     logger.info(f"  Scoring stats: {n_with_skin}/{len(hotspot_scores)} points had skin in cube, {n_no_skin} had no skin (score=0)")
     logger.info(f"  [timing] Scoring completed in {t_scoring_end - t_scoring_start:.1f}s ({(t_scoring_end - t_scoring_start) / n_to_sample * 1000:.1f}ms/sample)")
     
