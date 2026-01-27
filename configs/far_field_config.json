@@ -28,21 +28,13 @@
         ]
     },
     "phantoms": [
-        "duke",
-        "ella",
+        "thelonious",
         "eartha",
-        "thelonious"
+        "duke",
+        "ella"
     ],
     "frequencies_mhz": [
-        450,
-        700,
-        835,
-        1450,
-        2140,
-        2450,
-        3500,
-        5200,
-        5800
+        26000
     ],
     "far_field_setup": {
         "type": "environmental",
@@ -62,17 +54,14 @@
         }
     },
     "simulation_parameters": {
-        "bbox_padding_mm": 20,
+        "bbox_padding_mm": 0,
         "simulation_bbox_points": 8,
-        "number_of_point_sensors": 2
-    },
-    "solver_settings": {
-        "kernel": "cuda"
+        "number_of_point_sensors": 0
     },
     "gridding_parameters": {
         "global_gridding": {
             "grid_mode": "manual",
-            "manual_fallback_max_step_mm": 3.0
+            "manual_fallback_max_step_mm": 2.0
         },
         "global_gridding_per_frequency": {
             "450": 2.5,
@@ -83,7 +72,8 @@
             "2450": 1.482,
             "3500": 1.0,
             "5200": 1.0,
-            "5800": 1.0
+            "5800": 1.0,
+            "26000": 0.2
         },
         "padding": {
             "padding_mode": "manual",
