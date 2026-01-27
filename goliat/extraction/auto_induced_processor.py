@@ -167,16 +167,18 @@ class AutoInducedProcessor(LoggingMixin):
             proxy_score = candidate.get("hotspot_score", candidate.get("metric_sum", 0.0))
             sapd_value = sapd_result.get("peak_sapd_w_m2")
             if sapd_value is not None:
-                correlation_data.append(
-                    {
-                        "candidate_idx": i + 1,
-                        "voxel_x": candidate["voxel_idx"][0],
-                        "voxel_y": candidate["voxel_idx"][1],
-                        "voxel_z": candidate["voxel_idx"][2],
-                        "proxy_score": proxy_score,
-                        "sapd_w_m2": sapd_value,
-                    }
-                )
+                entry = {
+                    "candidate_idx": i + 1,
+                    "voxel_x": candidate["voxel_idx"][0],
+                    "voxel_y": candidate["voxel_idx"][1],
+                    "voxel_z": candidate["voxel_idx"][2],
+                    "proxy_score": proxy_score,
+                    "sapd_w_m2": sapd_value,
+                }
+                # Add distance to skin if available
+                if "distance_to_skin_mm" in candidate:
+                    entry["distance_to_skin_mm"] = candidate["distance_to_skin_mm"]
+                correlation_data.append(entry)
         if correlation_data:
             import csv
 
@@ -283,6 +285,8 @@ class AutoInducedProcessor(LoggingMixin):
 
             # Get pre-computed phases/weights if available (air mode computes them while cache is alive)
             precomputed_weights = info.get("all_candidate_weights", None)
+            # Get pre-computed distances for selected candidates (air mode only)
+            candidate_distances = info.get("candidate_distances_mm", None)
 
             for i in range(min(top_n, len(all_indices))):
                 voxel_idx = all_indices[i] if top_n > 1 else all_indices
@@ -296,21 +300,26 @@ class AutoInducedProcessor(LoggingMixin):
                     phases = compute_optimal_phases([str(p) for p in h5_paths], voxel_idx)
                     candidate_weights = compute_weights(phases)
 
-                candidates.append(
-                    {
-                        "voxel_idx": list(voxel_idx) if hasattr(voxel_idx, "__iter__") else voxel_idx,
-                        score_key: score,
-                        # Keep metric_sum for backward compatibility
-                        "metric_sum": score,
-                        "phase_weights": candidate_weights,
-                        "search_mode": search_mode,
-                    }
-                )
+                candidate_dict = {
+                    "voxel_idx": list(voxel_idx) if hasattr(voxel_idx, "__iter__") else voxel_idx,
+                    score_key: score,
+                    # Keep metric_sum for backward compatibility
+                    "metric_sum": score,
+                    "phase_weights": candidate_weights,
+                    "search_mode": search_mode,
+                }
+                
+                # Add distance to skin if available (air mode only)
+                if candidate_distances is not None and i < len(candidate_distances):
+                    candidate_dict["distance_to_skin_mm"] = float(candidate_distances[i])
+
+                candidates.append(candidate_dict)
 
             elapsed = time.monotonic() - start_time
             self.verbose_logger.info(f"Found {len(candidates)} focus candidate(s) in {elapsed:.2f}s")
             for i, c in enumerate(candidates):
-                self.verbose_logger.info(f"  Candidate #{i + 1}: voxel {c['voxel_idx']}, {score_key}={c[score_key]:.4e}")
+                dist_str = f", dist={c['distance_to_skin_mm']:.1f}mm" if "distance_to_skin_mm" in c else ""
+                self.verbose_logger.info(f"  Candidate #{i + 1}: voxel {c['voxel_idx']}, {score_key}={c[score_key]:.4e}{dist_str}")
 
             # Export all scores to CSV for distribution analysis
             all_scores_data = info.get("all_scores_data", [])
@@ -527,17 +536,6 @@ class AutoInducedProcessor(LoggingMixin):
             # Create SAPD evaluator with correct inputs (matching SapdExtractor)
             # Inputs: Poynting Vector S(x,y,z,f0) and Surface
             inputs = [em_sensor_extractor.Outputs["S(x,y,z,f0)"], model_to_grid_filter.Outputs["Surface"]]
-
-            # DEBUG: Save state right before SAPD evaluator creation (where "Can't connect ports" error occurs)
-            debug_pre_sapd_path = str(combined_h5).replace("_Output.h5", f"_debug_pre_sapd.smash")
-            try:
-                self.verbose_logger.info(f"  DEBUG: Saving pre-SAPD state to {debug_pre_sapd_path}")
-                document.SaveAs(debug_pre_sapd_path)
-                self.verbose_logger.info(f"  DEBUG: Inputs for SAPD evaluator: {inputs}")
-                self.verbose_logger.info(f"  DEBUG: Input[0] type: {type(inputs[0])}, value: {inputs[0]}")
-                self.verbose_logger.info(f"  DEBUG: Input[1] type: {type(inputs[1])}, value: {inputs[1]}")
-            except Exception as debug_e:
-                self.verbose_logger.warning(f"  DEBUG: Could not save pre-SAPD state: {debug_e}")
 
             sapd_evaluator = analysis.em_evaluators.GenericSAPDEvaluator(inputs=inputs)
             sapd_evaluator.AveragingArea = 4.0, units.SquareCentiMeters

@@ -1604,6 +1604,11 @@ def _find_focus_air_based(
             entry["distance_to_skin_mm"] = float(sampled_distances_mm[i])
         
         all_scores_data.append(entry)
+    
+    # Compute distances for selected candidates (for summary output)
+    candidate_distances_mm = None
+    if distance_map is not None:
+        candidate_distances_mm = get_distances_at_indices(distance_map, top_air_indices)
 
     info = {
         "search_mode": "air",
@@ -1619,6 +1624,7 @@ def _find_focus_air_based(
         "all_hotspot_scores": top_scores,
         "all_candidate_phases": all_candidate_phases,  # Pre-computed phases for all candidates
         "all_candidate_weights": all_candidate_weights,  # Pre-computed weights for all candidates
+        "candidate_distances_mm": candidate_distances_mm,  # Distance to skin for each selected candidate
         "cube_size_mm": cube_size_mm,
         "random_seed": random_seed,
         "all_scores_data": all_scores_data,  # For CSV export
