@@ -31,7 +31,7 @@
         "use_xy_diagonal_for_sim_time": true,
         "search": {
             "mode": "air",
-            "n_samples": 50000,
+            "n_samples": 10000,
             "random_seed": 42,
             "shell_size_mm": 20.0,
             "selection_percentile": 95.0,
@@ -67,7 +67,14 @@
         "bbox_padding_mm": 0,
         "simulation_bbox_points": 8,
         "number_of_point_sensors": 0,
-        "simulation_time_multiplier": 3.0
+        "simulation_time_multiplier": 3.0,
+        "overall_field_sensor": {
+            "enabled": true,
+            "record_e_field": true,
+            "record_h_field": true,
+            "recording_domain": "frequency",
+            "on_the_fly_dft": true
+        }
     },
     "gridding_parameters": {
         "global_gridding": {
