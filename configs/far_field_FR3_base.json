@@ -24,18 +24,18 @@
     ],
     "auto_induced": {
         "enabled": true,
-        "top_n": 10,
+        "top_n": 20,
         "cube_size_mm": 50,
         "search_metric": "E_magnitude",
         "save_intermediate_files": false,
         "use_xy_diagonal_for_sim_time": true,
         "search": {
             "mode": "air",
-            "n_samples": 10000,
+            "n_samples": 50000,
             "random_seed": 42,
             "shell_size_mm": 20.0,
             "selection_percentile": 95.0,
-            "min_candidate_distance_mm": 50.0,
+            "min_candidate_distance_mm": 20.0,
             "low_memory_mode": null,
             "slab_cache_gb": 2.0,
             "compute_distance": true
