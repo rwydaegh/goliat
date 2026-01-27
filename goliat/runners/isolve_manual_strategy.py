@@ -29,6 +29,16 @@ from .keep_awake_handler import KeepAwakeHandler
 from .post_simulation_handler import PostSimulationHandler
 from .retry_handler import RetryHandler
 
+
+class MemoryErrorRetryException(Exception):
+    """Raised when a memory error is detected and internal retry should be attempted.
+
+    This exception is caught in the main run() loop to trigger an internal retry
+    with garbage collection before escalating to exit code 42.
+    """
+
+    pass
+
 if TYPE_CHECKING:
     from .isolve_process_manager import ISolveProcessManager
 
@@ -47,18 +57,39 @@ def _close_flexnet_window():
 class ISolveManualStrategy(ExecutionStrategy, LoggingMixin):
     """Execution strategy for running iSolve.exe directly via subprocess."""
 
+    # Class-level counter for memory errors within a session
+    # This allows one internal retry with GC before escalating to exit code 42
+    _memory_error_count: int = 0
+    _max_internal_memory_retries: int = 1  # Allow 1 retry before escalating
+
     def __init__(self, *args, **kwargs):
         """Initialize iSolve manual strategy."""
         super().__init__(*args, **kwargs)
         self.current_isolve_process = None
         self.current_process_manager = None
 
+    @classmethod
+    def reset_memory_error_count(cls) -> None:
+        """Reset the memory error counter. Called at start of new session."""
+        cls._memory_error_count = 0
+
     def _check_for_memory_error_and_exit(self, detected_errors: list, stderr_output: str = "") -> None:
-        """Check for memory/alloc errors and terminate process if found.
+        """Check for memory/alloc errors and handle with internal retry or exit.
+
+        On first memory error: runs garbage collection and raises MemoryErrorRetryException
+        to signal that the caller should retry the operation within the same session.
+
+        On subsequent memory errors (after max internal retries): terminates the
+        process with exit code 42 so the batch worker can restart the entire
+        session to free GPU memory.
 
         Args:
             detected_errors: List of error messages detected in stdout.
             stderr_output: Error output from stderr stream.
+
+        Raises:
+            MemoryErrorRetryException: If internal retry should be attempted.
+            SystemExit: If max retries exceeded (exit code 42).
         """
         # Combine all error messages for checking
         all_errors = list(detected_errors)
@@ -69,15 +100,50 @@ class ISolveManualStrategy(ExecutionStrategy, LoggingMixin):
         for error_msg in all_errors:
             error_lower = error_msg.lower()
             if "alloc" in error_lower or "memory" in error_lower:
-                # Log error at progress level
-                self._log(
-                    f"iSolve: Memory/allocation error detected: {error_msg}",
-                    level="progress",
-                    log_type="error",
-                )
-                # Terminate the entire Python process with exit code 42 (memory error convention)
-                # This allows batch runners to detect memory errors and retry
-                sys.exit(42)
+                ISolveManualStrategy._memory_error_count += 1
+
+                if ISolveManualStrategy._memory_error_count <= ISolveManualStrategy._max_internal_memory_retries:
+                    # First memory error - try internal retry with garbage collection
+                    self._log(
+                        f"iSolve: Memory/allocation error detected (attempt {ISolveManualStrategy._memory_error_count}): {error_msg}",
+                        level="progress",
+                        log_type="warning",
+                    )
+                    self._log(
+                        "Attempting internal retry with garbage collection...",
+                        level="progress",
+                        log_type="info",
+                    )
+
+                    # Run aggressive garbage collection to try to free memory
+                    gc.collect()
+
+                    # Also try to free GPU memory if possible
+                    try:
+                        import torch
+                        if torch.cuda.is_available():
+                            torch.cuda.empty_cache()
+                            self._log("Cleared CUDA cache", level="progress", log_type="info")
+                    except ImportError:
+                        pass  # torch not available, skip GPU cache clearing
+
+                    # Raise exception to signal internal retry
+                    raise MemoryErrorRetryException(f"Memory error detected: {error_msg}")
+                else:
+                    # Max internal retries exceeded - escalate to exit code 42
+                    self._log(
+                        f"iSolve: Memory/allocation error detected after {ISolveManualStrategy._memory_error_count} attempts: {error_msg}",
+                        level="progress",
+                        log_type="error",
+                    )
+                    self._log(
+                        "Max internal retries exceeded. Exiting with code 42 to trigger session restart.",
+                        level="progress",
+                        log_type="error",
+                    )
+                    # Terminate the entire Python process with exit code 42 (memory error convention)
+                    # This allows batch runners to detect memory errors and restart the session
+                    sys.exit(42)
 
     def _prepare_isolve_command(self) -> list[str]:
         """Prepare iSolve command and validate paths.
@@ -470,6 +536,20 @@ class ISolveManualStrategy(ExecutionStrategy, LoggingMixin):
                         if process_manager is not None:
                             process_manager.cleanup()
                         raise
+                    except MemoryErrorRetryException as e:
+                        # Memory error with internal retry - cleanup and retry within same session
+                        self._log(
+                            f"Internal memory retry triggered: {e}",
+                            level="progress",
+                            log_type="info",
+                        )
+                        if process_manager is not None:
+                            process_manager.cleanup()
+                        # Reset handlers for retry
+                        output_parser.reset_milestones()
+                        keep_awake_handler.reset()
+                        # Continue to next iteration of while loop (retry)
+                        continue
                     except Exception as e:
                         # Handle execution exception and check if should retry
                         should_retry = self._handle_execution_exception(
