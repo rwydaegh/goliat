@@ -50,6 +50,7 @@ class QueueHandler:
             "sim_details": self._handle_sim_details,
             "finished": self._handle_finished,
             "fatal_error": self._handle_fatal_error,
+            "memory_error": self._handle_memory_error,
         }
 
     def _handle_status(self, msg: Dict[str, Any]) -> None:
@@ -120,13 +121,41 @@ class QueueHandler:
         self.gui.update_simulation_details(msg["count"], msg["total"], msg["details"])
 
     def _handle_finished(self, msg: Dict[str, Any]) -> None:
-        """Handles finished message type."""
-        self.gui.study_finished()
+        """Handles finished message type.
+
+        The message may include an exit_code field to indicate how the process exited.
+        Exit code 0 = success, 42 = memory error, other = general error.
+        """
+        exit_code = msg.get("exit_code", 0)
+        # Store exit code on GUI for main process to retrieve
+        self.gui.child_exit_code = exit_code
+        if exit_code == 0:
+            self.gui.study_finished()
+        elif exit_code == 42:
+            # Memory error - already handled by memory_error message, just mark as error
+            self.gui.study_finished(error=True, memory_error=True)
+        else:
+            # Other non-zero exit code
+            self.gui.study_finished(error=True)
 
     def _handle_fatal_error(self, msg: Dict[str, Any]) -> None:
         """Handles fatal error message type."""
         self.gui.update_status(f"FATAL ERROR: {msg['message']}", log_type="fatal")
+        self.gui.child_exit_code = 1
         self.gui.study_finished(error=True)
+
+    def _handle_memory_error(self, msg: Dict[str, Any]) -> None:
+        """Handles memory error message type (exit code 42).
+
+        Memory errors are special because they indicate the process ran out of
+        GPU/system memory. The batch worker can retry these by restarting the
+        entire process (which releases memory).
+        """
+        exit_code = msg.get("exit_code", 42)
+        self.gui.child_exit_code = exit_code
+        self.gui.update_status(f"MEMORY ERROR: {msg['message']}", log_type="fatal")
+        # Don't call study_finished here - wait for the "finished" message
+        # which will come right after this one
 
     def process_queue(self) -> None:
         """Processes messages from worker process queue and updates UI.

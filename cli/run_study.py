@@ -3,6 +3,7 @@ import logging
 import multiprocessing
 import os
 import platform
+import subprocess
 import sys
 import traceback
 from typing import Optional
@@ -294,6 +295,9 @@ def study_process_wrapper(queue, stop_event, config_filename, process_id, no_cac
     sys.stdout = QueueStdout(queue, "stdout")
     sys.stderr = QueueStdout(queue, "stderr")
 
+    # Track exit code for special handling (e.g., memory errors use exit code 42)
+    exit_code = 0
+
     try:
         from goliat.config import Config
         from goliat.profiler import Profiler
@@ -331,6 +335,18 @@ def study_process_wrapper(queue, stop_event, config_filename, process_id, no_cac
     except StudyCancelledError:
         progress_logger.info("--- Study manually stopped by user ---")
         queue.put({"type": "status", "message": "Study stopped by user."})
+    except SystemExit as e:
+        # Catch sys.exit() calls - especially exit code 42 for memory errors
+        # SystemExit is a BaseException, not Exception, so it needs separate handling
+        exit_code = e.code if e.code is not None else 1
+        if exit_code == 42:
+            # Memory error - send special message so GUI knows to close and propagate exit code
+            progress_logger.error("--- Memory/allocation error detected (exit code 42) ---")
+            queue.put({"type": "memory_error", "message": "Memory/allocation error detected", "exit_code": 42})
+        else:
+            # Other sys.exit() call
+            progress_logger.error(f"--- Process exited with code {exit_code} ---")
+            queue.put({"type": "fatal_error", "message": f"Process exited with code {exit_code}"})
     except Exception as e:
         # Log the fatal error and send it to the GUI
         error_msg = f"FATAL ERROR in study process: {e}"
@@ -341,16 +357,115 @@ def study_process_wrapper(queue, stop_event, config_filename, process_id, no_cac
         verbose_logger.error(f"Traceback:\n{tb_str}")
 
         queue.put({"type": "fatal_error", "message": str(e)})
+        exit_code = 1
     finally:
         # Signal that the process is finished
-        queue.put({"type": "finished"})
+        queue.put({"type": "finished", "exit_code": exit_code})
         shutdown_loggers()
+        # Re-raise SystemExit if we caught one, so the process exits with the correct code
+        if exit_code != 0:
+            sys.exit(exit_code)
+
+
+def run_study_subprocess(config_filename: str, title: str, no_cache: bool) -> int:
+    """Run a study as a subprocess.
+
+    This allows memory to be fully reclaimed between retries, which is crucial
+    for handling memory errors (exit code 42) with retry logic.
+
+    Args:
+        config_filename: Path to the configuration file.
+        title: GUI window title.
+        no_cache: Whether to disable caching.
+
+    Returns:
+        Exit code from the subprocess (0 = success, 42 = memory error, other = failure).
+    """
+    # Build command - run goliat study without --persistent to avoid infinite recursion
+    cmd = [
+        sys.executable,
+        "-m",
+        "cli",
+        "study",
+        config_filename,
+        "--auto-close",  # Always auto-close in persistent mode
+        "--_persistent-child",  # Internal flag to indicate this is a child of persistent mode
+    ]
+    if title:
+        cmd.extend(["--title", title])
+    if no_cache:
+        cmd.append("--no-cache")
+
+    print(f"Starting study subprocess...")
+    print(f"  Command: {' '.join(cmd)}")
+
+    # Run subprocess and wait for completion
+    result = subprocess.run(cmd, cwd=base_dir)
+
+    return result.returncode
+
+
+def run_persistent_study(config_filename: str, title: str, no_cache: bool, max_retries: int) -> bool:
+    """Run a study with automatic retry on memory errors.
+
+    Each attempt runs as a subprocess to allow full memory reclamation.
+    Memory errors (exit code 42) trigger a retry of the same study.
+
+    Args:
+        config_filename: Path to the configuration file.
+        title: GUI window title.
+        no_cache: Whether to disable caching.
+        max_retries: Maximum retries on memory error.
+
+    Returns:
+        True if study completed successfully, False otherwise.
+    """
+    from goliat.colors import init_colorama
+
+    init_colorama()
+
+    import colorama
+
+    print(f"{colorama.Fore.CYAN}{'=' * 60}")
+    print(f"{colorama.Fore.CYAN}GOLIAT Persistent Study Mode")
+    print(f"{colorama.Fore.CYAN}{'=' * 60}")
+    print(f"  Config: {config_filename}")
+    print(f"  Max retries on memory error: {max_retries}")
+    print(f"{colorama.Fore.CYAN}{'=' * 60}\n")
+
+    retry_count = 0
+
+    while retry_count <= max_retries:
+        if retry_count > 0:
+            print(f"\n{colorama.Fore.YELLOW}Retry {retry_count}/{max_retries}...")
+            print(f"{colorama.Fore.YELLOW}Caching will resume from last checkpoint.{colorama.Style.RESET_ALL}\n")
+
+        exit_code = run_study_subprocess(config_filename, title, no_cache)
+
+        if exit_code == 0:
+            print(f"\n{colorama.Fore.GREEN}✓ Study completed successfully!{colorama.Style.RESET_ALL}")
+            return True
+        elif exit_code == 42:
+            # Memory error - retry
+            print(f"\n{colorama.Fore.YELLOW}Memory error (exit code 42) detected.{colorama.Style.RESET_ALL}")
+            retry_count += 1
+            if retry_count > max_retries:
+                print(f"{colorama.Fore.RED}Max retries ({max_retries}) exceeded.{colorama.Style.RESET_ALL}")
+        else:
+            # Other error - don't retry
+            print(f"\n{colorama.Fore.RED}Study failed with exit code {exit_code}.{colorama.Style.RESET_ALL}")
+            return False
+
+    return False
 
 
 def main():
     """
     Main entry point for running a study.
     It launches the GUI in the main process and the study in a separate process.
+
+    Supports persistent mode (--persistent) which runs the study as a subprocess
+    and automatically retries on memory errors (exit code 42).
     """
     parser = argparse.ArgumentParser(description="Run a dosimetric assessment study.")
     parser.add_argument(
@@ -377,9 +492,34 @@ def main():
         action="store_true",
         help="Automatically close the GUI when study completes successfully (used by batch worker).",
     )
+    parser.add_argument(
+        "--persistent",
+        action="store_true",
+        help="Enable persistent mode: automatically restart and retry on memory errors (exit code 42).",
+    )
+    parser.add_argument(
+        "--max-retries",
+        type=int,
+        default=3,
+        help="Maximum retries on memory error in persistent mode (default: 3).",
+    )
+    parser.add_argument(
+        "--_persistent-child",
+        action="store_true",
+        dest="persistent_child",
+        help=argparse.SUPPRESS,  # Hidden flag - indicates this is a child of persistent mode
+    )
     args = parser.parse_args()
     config_filename = args.config
     process_id = args.pid
+
+    # Handle persistent mode - run as subprocess with retry logic
+    # This must be checked before any heavy initialization (S4L, GUI, etc.)
+    # to ensure the subprocess starts fresh
+    if args.persistent and not args.persistent_child:
+        # We're the parent process in persistent mode - run as subprocess with retry
+        success = run_persistent_study(config_filename, args.title, args.no_cache, args.max_retries)
+        sys.exit(0 if success else 1)
 
     # Clean up any stale lock files before starting
     lock_files = [f for f in os.listdir(base_dir) if f.endswith(".lock")]
@@ -436,7 +576,19 @@ def main():
             # Ensure the study process is cleaned up
             if study_process.is_alive():
                 study_process.terminate()
-                study_process.join()
+            study_process.join(timeout=5)
+
+            # Propagate child process exit code to main process
+            # This is critical for batch worker to detect memory errors (exit code 42)
+            # and retry the assignment
+            child_exit_code = study_process.exitcode
+            if child_exit_code is None:
+                # Process didn't terminate cleanly, check GUI's recorded exit code
+                child_exit_code = getattr(gui, "child_exit_code", 0)
+
+            if child_exit_code != 0:
+                progress_logger.info(f"Child process exited with code {child_exit_code}")
+                sys.exit(child_exit_code)
     else:
         try:
             from goliat.profiler import Profiler

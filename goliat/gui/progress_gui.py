@@ -104,6 +104,7 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
         self.DEBUG: bool = False
         self.study_is_finished: bool = False
         self.study_had_errors: bool = False
+        self.child_exit_code: int = 0  # Exit code from child process (42 = memory error)
 
         self.total_simulations: int = 0
         self.current_simulation_count: int = 0
@@ -329,15 +330,20 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
         self.tray_button.setEnabled(False)
         self.stop_event.set()
 
-    def study_finished(self, error: bool = False) -> None:
+    def study_finished(self, error: bool = False, memory_error: bool = False) -> None:
         """Handles study completion, stopping timers and updating UI.
 
         Called when worker process signals completion. Stops all timers,
         updates final progress to 100%, sets stage label, and schedules
         window auto-close after 3 seconds (if no errors).
 
+        For memory errors (exit code 42), the GUI auto-closes even with errors
+        so the batch worker can retry the assignment.
+
         Args:
             error: Whether study finished with errors (affects UI styling).
+            memory_error: Whether this was a memory error (exit code 42).
+                         Memory errors auto-close to allow batch retry.
         """
         self.study_is_finished = True
         self.study_had_errors = error
@@ -352,6 +358,9 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
             self.update_status("--- Study Finished ---", log_type="success")
             self.overall_progress_bar.setValue(self.overall_progress_bar.maximum())
             self.stage_label.setText("Finished")
+        elif memory_error:
+            self.update_status("--- Study Stopped: Memory Error (will retry) ---", log_type="fatal")
+            self.stage_label.setText("Memory Error")
         else:
             self.update_status("--- Study Finished with Errors ---", log_type="fatal")
             self.stage_label.setText("Error")
@@ -371,6 +380,14 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
             # Auto-close if enabled (used by batch worker mode)
             if self.auto_close:
                 self.progress_logger.info("Auto-closing GUI in 2 seconds...", extra={"log_type": "info"})
+                from PySide6.QtCore import QTimer as _QTimer
+
+                _QTimer.singleShot(2000, self.close)
+        elif memory_error:
+            # Memory errors should auto-close so batch worker can retry
+            self.progress_logger.info("Memory error detected. Auto-closing for retry...", extra={"log_type": "warning"})
+            self.update_status("\n⚠ Memory error detected. Auto-closing for retry...", log_type="warning")
+            if self.auto_close:
                 from PySide6.QtCore import QTimer as _QTimer
 
                 _QTimer.singleShot(2000, self.close)
