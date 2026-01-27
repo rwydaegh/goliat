@@ -45,6 +45,17 @@ def create_parser():
         action="store_true",
         help="Automatically close the GUI when study completes successfully.",
     )
+    study_parser.add_argument(
+        "--persistent",
+        action="store_true",
+        help="Enable persistent mode: automatically restart and retry on memory errors (exit code 42).",
+    )
+    study_parser.add_argument(
+        "--max-retries",
+        type=int,
+        default=3,
+        help="Maximum retries on memory error in persistent mode (default: 3).",
+    )
 
     # analyze command
     analyze_parser = subparsers.add_parser("analyze", help="Run analysis for near-field or far-field studies")
@@ -557,6 +568,10 @@ def main():
             sys.argv.append("--no-cache")
         if args.auto_close:
             sys.argv.append("--auto-close")
+        if hasattr(args, "persistent") and args.persistent:
+            sys.argv.append("--persistent")
+        if hasattr(args, "max_retries") and args.max_retries != 3:  # Only pass if not default
+            sys.argv.extend(["--max-retries", str(args.max_retries)])
         try:
             study_main()
         finally:
