@@ -56,6 +56,12 @@ def create_parser():
         default=3,
         help="Maximum retries on memory error in persistent mode (default: 3).",
     )
+    study_parser.add_argument(
+        "--_persistent-child",
+        action="store_true",
+        dest="persistent_child",
+        help=argparse.SUPPRESS,  # Hidden flag - indicates this is a child of persistent mode
+    )
 
     # analyze command
     analyze_parser = subparsers.add_parser("analyze", help="Run analysis for near-field or far-field studies")
@@ -572,6 +578,8 @@ def main():
             sys.argv.append("--persistent")
         if hasattr(args, "max_retries") and args.max_retries != 3:  # Only pass if not default
             sys.argv.extend(["--max-retries", str(args.max_retries)])
+        if hasattr(args, "persistent_child") and args.persistent_child:
+            sys.argv.append("--_persistent-child")
         try:
             study_main()
         finally:
