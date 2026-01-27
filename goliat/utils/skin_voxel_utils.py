@@ -4,9 +4,12 @@ This module enables efficient worst-case SAPD search by identifying skin voxels
 (~88k) instead of processing the full phantom volume (~8M voxels).
 """
 
+import logging
+import time
+from typing import Dict, Optional, Sequence, Tuple
+
 import h5py
 import numpy as np
-from typing import Tuple, Dict, Sequence, Optional
 
 
 def extract_skin_voxels(
@@ -313,6 +316,71 @@ def find_valid_air_focus_points(
         raise ValueError(f"No valid air focus points found. Try increasing shell_size_mm (current: {shell_size_mm}mm).")
 
     return valid_air_indices, ax_x, ax_y, ax_z, skin_mask
+
+
+def compute_distance_to_skin(
+    skin_mask: np.ndarray,
+    axis_x: np.ndarray,
+    axis_y: np.ndarray,
+    axis_z: np.ndarray,
+) -> np.ndarray:
+    """Compute Euclidean distance from every voxel to the nearest skin voxel.
+
+    Uses scipy's distance_transform_edt for efficient computation. The result
+    is a 3D array where each voxel contains its distance (in mm) to the nearest
+    skin voxel.
+
+    Performance: O(N) where N is total voxels. For a 500³ grid, takes ~5-10 seconds.
+
+    Args:
+        skin_mask: Boolean array (Nx, Ny, Nz) where True = skin voxel.
+        axis_x, axis_y, axis_z: Grid axes in meters.
+
+    Returns:
+        distance_map: Array (Nx, Ny, Nz) with distance to nearest skin in mm.
+            Skin voxels have distance 0.
+    """
+    from scipy.ndimage import distance_transform_edt
+
+    logger = logging.getLogger("progress")
+    t0 = time.perf_counter()
+
+    # Compute voxel spacing in mm
+    dx_mm = np.mean(np.diff(axis_x)) * 1000
+    dy_mm = np.mean(np.diff(axis_y)) * 1000
+    dz_mm = np.mean(np.diff(axis_z)) * 1000
+
+    # EDT on inverted mask: distance FROM non-skin TO skin
+    # skin_mask=True means skin, we want distance from air to nearest skin
+    distance_map = distance_transform_edt(~skin_mask, sampling=(dx_mm, dy_mm, dz_mm))
+
+    logger.info(
+        f"  [timing] distance_transform_edt: {time.perf_counter() - t0:.2f}s, "
+        f"shape={distance_map.shape}, range=[{distance_map.min():.1f}, {distance_map.max():.1f}] mm"
+    )
+
+    return distance_map.astype(np.float32)  # float32 saves memory, sufficient precision
+
+
+def get_distances_at_indices(
+    distance_map: np.ndarray,
+    indices: np.ndarray,
+) -> np.ndarray:
+    """Look up distances to skin for given voxel indices.
+
+    Args:
+        distance_map: 3D distance map from compute_distance_to_skin().
+        indices: Array (N, 3) of [ix, iy, iz] voxel indices.
+
+    Returns:
+        Array (N,) of distances in mm.
+    """
+    # Clamp indices to valid range
+    ix = np.minimum(indices[:, 0], distance_map.shape[0] - 1)
+    iy = np.minimum(indices[:, 1], distance_map.shape[1] - 1)
+    iz = np.minimum(indices[:, 2], distance_map.shape[2] - 1)
+
+    return distance_map[ix, iy, iz]
 
 
 def _build_uuid_material_map(f: h5py.File) -> Dict[str, str]:

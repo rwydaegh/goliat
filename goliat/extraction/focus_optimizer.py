@@ -23,6 +23,8 @@ from ..utils.skin_voxel_utils import (
     extract_skin_voxels,
     get_skin_voxel_coordinates,
     find_valid_air_focus_points,
+    compute_distance_to_skin,
+    get_distances_at_indices,
 )
 
 
@@ -1369,6 +1371,7 @@ def _find_focus_air_based(
     low_memory: Optional[bool] = None,
     slab_cache_gb: float = 2.0,
     skin_subsample: int = 4,
+    compute_distance: bool = True,
 ) -> Tuple[np.ndarray, np.ndarray, dict]:
     """Air-based focus search - physically correct MaMIMO beamforming model.
     
@@ -1376,6 +1379,10 @@ def _find_focus_air_based(
     - Loads one E-field at a time (3 GB) instead of all 72 (216 GB)
     - Uses subsampled skin voxels for scoring (unbiased estimate)
     - Completes in ~30-40 minutes instead of 42+ hours
+    
+    Args:
+        compute_distance: If True, compute and export distance-to-skin for each air point.
+            Uses scipy's EDT (~5-10s for 500³ grid). Enabled by default.
     """
     logger = logging.getLogger("progress")
     
@@ -1388,6 +1395,12 @@ def _find_focus_air_based(
 
     n_valid = len(valid_air_indices)
     logger.info(f"Found {n_valid:,} valid air focus points near skin")
+    
+    # Compute distance-to-skin map if requested (for analysis/export)
+    distance_map = None
+    if compute_distance:
+        logger.info("  Computing distance-to-skin map (EDT)...")
+        distance_map = compute_distance_to_skin(skin_mask, ax_x, ax_y, ax_z)
 
     if random_seed is not None:
         np.random.seed(random_seed)
@@ -1564,23 +1577,33 @@ def _find_focus_air_based(
     )
 
     # Prepare all scores data for export
+    # Look up distances for sampled air points if distance map was computed
+    sampled_distances_mm = None
+    if distance_map is not None:
+        sampled_distances_mm = get_distances_at_indices(distance_map, sampled_air_indices)
+    
     all_scores_data = []
     for i, (idx, score) in enumerate(zip(sampled_air_indices, hotspot_scores)):
         x_mm = float(ax_x[min(idx[0], len(ax_x) - 1)]) * 1000
         y_mm = float(ax_y[min(idx[1], len(ax_y) - 1)]) * 1000
         z_mm = float(ax_z[min(idx[2], len(ax_z) - 1)]) * 1000
-        all_scores_data.append(
-            {
-                "idx": i,
-                "voxel_x": int(idx[0]),
-                "voxel_y": int(idx[1]),
-                "voxel_z": int(idx[2]),
-                "x_mm": x_mm,
-                "y_mm": y_mm,
-                "z_mm": z_mm,
-                "proxy_score": float(score),
-            }
-        )
+        
+        entry = {
+            "idx": i,
+            "voxel_x": int(idx[0]),
+            "voxel_y": int(idx[1]),
+            "voxel_z": int(idx[2]),
+            "x_mm": x_mm,
+            "y_mm": y_mm,
+            "z_mm": z_mm,
+            "proxy_score": float(score),
+        }
+        
+        # Add distance to skin if computed
+        if sampled_distances_mm is not None:
+            entry["distance_to_skin_mm"] = float(sampled_distances_mm[i])
+        
+        all_scores_data.append(entry)
 
     info = {
         "search_mode": "air",
