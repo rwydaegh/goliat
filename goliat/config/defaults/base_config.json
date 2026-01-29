@@ -41,7 +41,7 @@
         "overall_field_sensor": {
             "enabled": true,
             "record_e_field": true,
-            "record_h_field": false,
+            "record_h_field": true,
             "recording_domain": "frequency",
             "on_the_fly_dft": true
         }

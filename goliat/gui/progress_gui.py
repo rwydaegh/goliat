@@ -384,13 +384,14 @@ class ProgressGUI(QWidget):  # type: ignore[misc]
 
                 _QTimer.singleShot(2000, self.close)
         elif memory_error:
-            # Memory errors should auto-close so batch worker can retry
+            # Memory errors should ALWAYS auto-close so the process can be restarted to free GPU memory.
+            # This is required for both batch worker retry logic and persistent mode retry logic.
+            # Unlike normal errors, memory errors cannot be resolved without a full process restart.
             self.progress_logger.info("Memory error detected. Auto-closing for retry...", extra={"log_type": "warning"})
             self.update_status("\n⚠ Memory error detected. Auto-closing for retry...", log_type="warning")
-            if self.auto_close:
-                from PySide6.QtCore import QTimer as _QTimer
+            from PySide6.QtCore import QTimer as _QTimer
 
-                _QTimer.singleShot(2000, self.close)
+            _QTimer.singleShot(2000, self.close)
         else:
             self.progress_logger.info("Finished with errors. You may close this window now.", extra={"log_type": "warning"})
             self.update_status("\n✓ Finished with errors. You may close this window now.", log_type="warning")
