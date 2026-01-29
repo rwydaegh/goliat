@@ -14,10 +14,7 @@
             "random_seed": 42,
             "shell_size_mm": 10.0,
             "selection_percentile": 95.0,
-            "min_candidate_distance_mm": 50.0,
-            "low_memory_mode": null,
-            "slab_cache_gb": 2.0,
-            "compute_distance": true
+            "min_candidate_distance_mm": 50.0
         }
     },
     "execution_control": {
@@ -31,10 +28,10 @@
         ]
     },
     "phantoms": [
-        "duke",
-        "ella",
+        "thelonious",
         "eartha",
-        "thelonious"
+        "duke",
+        "ella"
     ],
     "frequencies_mhz": [
         450,
@@ -65,17 +62,14 @@
         }
     },
     "simulation_parameters": {
-        "bbox_padding_mm": 20,
+        "bbox_padding_mm": 0,
         "simulation_bbox_points": 8,
-        "number_of_point_sensors": 2
-    },
-    "solver_settings": {
-        "kernel": "cuda"
+        "number_of_point_sensors": 0
     },
     "gridding_parameters": {
         "global_gridding": {
             "grid_mode": "manual",
-            "manual_fallback_max_step_mm": 3.0
+            "manual_fallback_max_step_mm": 2.0
         },
         "global_gridding_per_frequency": {
             "450": 2.5,

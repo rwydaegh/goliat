@@ -227,31 +227,46 @@ class MetadataExporter:
         )
 
     def _extract_timing_data(self) -> dict[str, TimingBreakdown]:
-        """Extract timing breakdown from profiler.
+        """Extract timing breakdown from profiler for THIS simulation only.
 
-        This mirrors the data structure used by PieChartsManager for the GUI.
+        The profiler accumulates timing data across all simulations in a batch.
+        To get per-simulation timing, we extract only the LAST entry from each
+        timing list, which corresponds to the current simulation.
+
+        Note: subtask times in profiling_config are running averages across all
+        simulations, so we also extract the last raw subtask time where available.
         """
         timing = {}
 
         for phase in ["setup", "run", "extract"]:
-            avg_time = self.profiler.profiling_config.get(f"avg_{phase}_time", 0.0)
+            # Get the list of all phase times (one per simulation in the batch)
             times = self.profiler.subtask_times.get(phase, [])
-            total_time = sum(times)
-            num_executions = len(times)
 
-            # Extract subtasks for this phase
+            # Extract only THIS simulation's time (the last entry)
+            if times:
+                this_sim_time = times[-1]  # Last entry is current simulation
+                num_executions = 1  # This is for ONE simulation
+            else:
+                this_sim_time = 0.0
+                num_executions = 0
+
+            # Extract subtasks for this phase - get the LAST raw time, not the average
             subtasks = {}
-            for key, value in self.profiler.profiling_config.items():
-                if key.startswith(f"avg_{phase}_") and key != f"avg_{phase}_time":
-                    subtask_name = key.replace(f"avg_{phase}_", "")
-                    # Skip fake aggregated entries (same logic as PieChartsManager)
+            for key in self.profiler.subtask_times.keys():
+                # Match subtasks that belong to this phase (e.g., "run_isolve_execution")
+                if key.startswith(f"{phase}_"):
+                    subtask_name = key.replace(f"{phase}_", "")
+                    # Skip fake aggregated entries
                     if subtask_name not in ["simulation", "simulation_total", "results_total"]:
-                        subtasks[subtask_name] = value
+                        subtask_times = self.profiler.subtask_times.get(key, [])
+                        if subtask_times:
+                            # Use the LAST entry (current simulation's time)
+                            subtasks[subtask_name] = subtask_times[-1]
 
             timing[phase] = TimingBreakdown(
                 phase_name=phase,
-                avg_time_s=avg_time,
-                total_time_s=total_time,
+                avg_time_s=this_sim_time,  # For single sim, avg = actual time
+                total_time_s=this_sim_time,  # For single sim, total = actual time
                 num_executions=num_executions,
                 subtasks=subtasks,
             )
