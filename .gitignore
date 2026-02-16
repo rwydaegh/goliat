@@ -3,6 +3,7 @@
 .roo/
 .DS_Store
 .cursor/
+.agent/
 
 # Python
 __pycache__/
