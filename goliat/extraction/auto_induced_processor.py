@@ -69,6 +69,7 @@ class AutoInducedProcessor(LoggingMixin):
         search_metric = auto_cfg.get("search_metric", "E_magnitude")
         extraction_metric = auto_cfg.get("extraction_metric", "sapd")
         full_volume = auto_cfg.get("full_volume_combination", False)
+        combine_chunk_size = auto_cfg.get("combine_chunk_size", 50)
         # For SAR, only E-field is needed; for SAPD, both E and H
         field_types = ("E",) if extraction_metric == "sar" else ("E", "H")
 
@@ -118,6 +119,7 @@ class AutoInducedProcessor(LoggingMixin):
                         output_dir=output_dir,
                         candidate_idx=i,
                         cube_size_mm=cube_size_mm,
+                        combine_chunk_size=combine_chunk_size,
                         full_volume=True,
                         field_types=field_types,
                     )
@@ -388,6 +390,7 @@ class AutoInducedProcessor(LoggingMixin):
         progress_bar=None,
         full_volume: bool = False,
         field_types: tuple = ("E", "H"),
+        combine_chunk_size: int = 50,
     ) -> Path | None:
         """Combine E/H fields for a focus candidate.
 
@@ -400,6 +403,7 @@ class AutoInducedProcessor(LoggingMixin):
             progress_bar: Optional tqdm progress bar to update (only used for sliced mode).
             full_volume: If True, combine full volume using chunked processing.
             field_types: Which field types to combine, e.g. ("E",) for SAR or ("E", "H") for SAPD.
+            combine_chunk_size: Number of z-slices per chunk (use large value like 9999 for no chunking).
 
         Returns:
             Path to combined H5 file, or None if failed.
@@ -421,6 +425,7 @@ class AutoInducedProcessor(LoggingMixin):
                     template_h5_path=str(h5_paths[0]),
                     output_h5_path=str(output_path),
                     field_types=field_types,
+                    chunk_size=combine_chunk_size,
                 )
             else:
                 result = combine_fields_sliced(
