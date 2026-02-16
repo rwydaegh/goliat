@@ -14,7 +14,7 @@ repos:
     exclude: ^(\.vscode/)
 
 - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
-  rev: v2.15.0
+  rev: v2.16.0
   hooks:
   - id: pretty-format-yaml
     args: [--autofix]
@@ -22,7 +22,7 @@ repos:
     args: [--autofix, --trailing-commas]
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.14.6
+  rev: v0.15.1
   hooks:
   - id: ruff-format
     exclude: ^(analysis/)
@@ -31,7 +31,7 @@ repos:
     exclude: ^(analysis/|docs/)
 
 - repo: https://github.com/RobertCraigie/pyright-python
-  rev: v1.1.407
+  rev: v1.1.408
   hooks:
   - id: pyright
 
@@ -43,7 +43,7 @@ repos:
     - tomli
 
 - repo: https://github.com/astral-sh/uv-pre-commit
-  rev: 0.9.11
+  rev: 0.10.2
   hooks:
   - id: uv-lock
 
