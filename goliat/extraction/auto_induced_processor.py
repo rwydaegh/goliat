@@ -67,6 +67,10 @@ class AutoInducedProcessor(LoggingMixin):
         cube_size_mm = auto_cfg.get("cube_size_mm", 100)
         save_intermediate_files = auto_cfg.get("save_intermediate_files", False)
         search_metric = auto_cfg.get("search_metric", "E_magnitude")
+        extraction_metric = auto_cfg.get("extraction_metric", "sapd")
+        full_volume = auto_cfg.get("full_volume_combination", False)
+        # For SAR, only E-field is needed; for SAPD, both E and H
+        field_types = ("E",) if extraction_metric == "sar" else ("E", "H")
 
         self._log(
             f"\n--- Auto-Induced Analysis: {self.phantom_name}, {self.freq}MHz ---",
@@ -106,74 +110,104 @@ class AutoInducedProcessor(LoggingMixin):
             for i, candidate in candidates_pbar:
                 candidates_pbar.set_description(f"Combining fields (candidate {i}/{len(candidates)})")
 
-                # Create inner progress bar for field components (6 total: E_x, E_y, E_z, H_x, H_y, H_z)
-                with tqdm(
-                    total=6,
-                    desc=f"  Candidate #{i}",
-                    unit="component",
-                    leave=False,
-                ) as components_pbar:
+                if full_volume:
+                    # Full-volume combination (no inner progress bar, chunked internally)
                     combined_path = self._combine_fields_for_candidate(
                         h5_paths=h5_paths,
                         candidate=candidate,
                         output_dir=output_dir,
                         candidate_idx=i,
                         cube_size_mm=cube_size_mm,
-                        progress_bar=components_pbar,
+                        full_volume=True,
+                        field_types=field_types,
                     )
                     combined_h5_paths.append(combined_path)
+                else:
+                    # Sliced combination with component progress bar
+                    n_components = len(field_types) * 3  # 3 spatial components per field type
+                    with tqdm(
+                        total=n_components,
+                        desc=f"  Candidate #{i}",
+                        unit="component",
+                        leave=False,
+                    ) as components_pbar:
+                        combined_path = self._combine_fields_for_candidate(
+                            h5_paths=h5_paths,
+                            candidate=candidate,
+                            output_dir=output_dir,
+                            candidate_idx=i,
+                            cube_size_mm=cube_size_mm,
+                            progress_bar=components_pbar,
+                            field_types=field_types,
+                        )
+                        combined_h5_paths.append(combined_path)
 
             candidates_pbar.close()
 
-        # Step 3: Extract SAPD for each candidate
-        with self.study.subtask("auto_induced_extract_sapd"):
-            sapd_results = []
+        # Step 3: Extract dosimetric metric for each candidate
+        metric_key = "peak_sar_10g_W_kg" if extraction_metric == "sar" else "peak_sapd_w_m2"
+        metric_unit = "W/kg" if extraction_metric == "sar" else "W/m2"
+        subtask_name = "auto_induced_extract_sar" if extraction_metric == "sar" else "auto_induced_extract_sapd"
+
+        with self.study.subtask(subtask_name):
+            extraction_results = []
             for i, combined_h5 in enumerate(combined_h5_paths):
                 if combined_h5 and combined_h5.exists():
-                    result = self._extract_sapd(
-                        combined_h5=combined_h5,
-                        candidate_idx=i + 1,
-                        candidate=candidates[i],
-                        cube_size_mm=cube_size_mm,
-                        input_h5=input_h5,
-                        save_intermediate_files=save_intermediate_files,
-                    )
-                    sapd_results.append(result)
+                    if extraction_metric == "sar":
+                        result = self._extract_sar(
+                            combined_h5=combined_h5,
+                            candidate_idx=i + 1,
+                            candidate=candidates[i],
+                            input_h5=input_h5,
+                            save_intermediate_files=save_intermediate_files,
+                        )
+                    else:
+                        result = self._extract_sapd(
+                            combined_h5=combined_h5,
+                            candidate_idx=i + 1,
+                            candidate=candidates[i],
+                            cube_size_mm=cube_size_mm,
+                            input_h5=input_h5,
+                            save_intermediate_files=save_intermediate_files,
+                        )
+                    extraction_results.append(result)
 
                     # Log per-candidate progress
-                    sapd_val = result.get("peak_sapd_w_m2")
-                    sapd_str = f"{sapd_val:.4e} W/m2" if sapd_val else "ERROR"
+                    metric_val = result.get(metric_key)
+                    metric_str = f"{metric_val:.4e} {metric_unit}" if metric_val else "ERROR"
                     self._log(
-                        f"    Candidate #{i + 1}/{len(candidates)}: {sapd_str}",
+                        f"    Candidate #{i + 1}/{len(candidates)}: {metric_str}",
                         level="progress",
                         log_type="info",
                     )
                 else:
-                    sapd_results.append({"error": f"Combined H5 not found: {combined_h5}"})
+                    extraction_results.append({"error": f"Combined H5 not found: {combined_h5}"})
 
         # Find worst case
-        worst_case = self._find_worst_case(sapd_results)
+        worst_case = self._find_worst_case(extraction_results, metric_key=metric_key)
 
-        if worst_case and worst_case.get("peak_sapd_w_m2"):
+        if worst_case and worst_case.get(metric_key):
+            metric_label = "SAR 10g" if extraction_metric == "sar" else "SAPD"
             self._log(
-                f"  - Worst-case SAPD: {worst_case['peak_sapd_w_m2']:.4e} W/m2 (candidate #{worst_case.get('candidate_idx')})",
+                f"  - Worst-case {metric_label}: {worst_case[metric_key]:.4e} {metric_unit} (candidate #{worst_case.get('candidate_idx')})",
                 level="progress",
                 log_type="success",
             )
 
-        # Export proxy-SAPD correlation data
+        # Export proxy-metric correlation data
         correlation_data = []
-        for i, (candidate, sapd_result) in enumerate(zip(candidates, sapd_results)):
+        metric_col = "sar_10g_W_kg" if extraction_metric == "sar" else "sapd_w_m2"
+        for i, (candidate, ext_result) in enumerate(zip(candidates, extraction_results)):
             proxy_score = candidate.get("hotspot_score", candidate.get("metric_sum", 0.0))
-            sapd_value = sapd_result.get("peak_sapd_w_m2")
-            if sapd_value is not None:
+            metric_value = ext_result.get(metric_key)
+            if metric_value is not None:
                 entry = {
                     "candidate_idx": i + 1,
                     "voxel_x": candidate["voxel_idx"][0],
                     "voxel_y": candidate["voxel_idx"][1],
                     "voxel_z": candidate["voxel_idx"][2],
                     "proxy_score": proxy_score,
-                    "sapd_w_m2": sapd_value,
+                    metric_col: metric_value,
                 }
                 # Add distance to skin if available
                 if "distance_to_skin_mm" in candidate:
@@ -182,19 +216,21 @@ class AutoInducedProcessor(LoggingMixin):
         if correlation_data:
             import csv
 
-            corr_path = Path(output_dir) / "proxy_sapd_correlation.csv"
+            corr_filename = f"proxy_{extraction_metric}_correlation.csv"
+            corr_path = Path(output_dir) / corr_filename
             with open(corr_path, "w", newline="") as f:
                 writer = csv.DictWriter(f, fieldnames=correlation_data[0].keys())
                 writer.writeheader()
                 writer.writerows(correlation_data)
-            self.verbose_logger.info(f"  Exported proxy-SAPD correlation to {corr_path.name}")
+            self.verbose_logger.info(f"  Exported proxy-{extraction_metric.upper()} correlation to {corr_path.name}")
 
         return {
             "phantom": self.phantom_name,
             "frequency_mhz": self.freq,
+            "extraction_metric": extraction_metric,
             "candidates": candidates,
             "combined_h5_files": [str(p) for p in combined_h5_paths if p],
-            "sapd_results": sapd_results,
+            "extraction_results": extraction_results,
             "worst_case": worst_case,
         }
 
@@ -308,7 +344,7 @@ class AutoInducedProcessor(LoggingMixin):
                     "phase_weights": candidate_weights,
                     "search_mode": search_mode,
                 }
-                
+
                 # Add distance to skin if available (air mode only)
                 if candidate_distances is not None and i < len(candidate_distances):
                     candidate_dict["distance_to_skin_mm"] = float(candidate_distances[i])
@@ -350,6 +386,8 @@ class AutoInducedProcessor(LoggingMixin):
         candidate_idx: int,
         cube_size_mm: float,
         progress_bar=None,
+        full_volume: bool = False,
+        field_types: tuple = ("E", "H"),
     ) -> Path | None:
         """Combine E/H fields for a focus candidate.
 
@@ -358,8 +396,10 @@ class AutoInducedProcessor(LoggingMixin):
             candidate: Candidate dict with voxel_idx and phase_weights.
             output_dir: Directory to write combined H5.
             candidate_idx: 1-based index for naming.
-            cube_size_mm: Size of extraction cube in mm.
-            progress_bar: Optional tqdm progress bar to update.
+            cube_size_mm: Size of extraction cube in mm (only used for sliced mode).
+            progress_bar: Optional tqdm progress bar to update (only used for sliced mode).
+            full_volume: If True, combine full volume using chunked processing.
+            field_types: Which field types to combine, e.g. ("E",) for SAR or ("E", "H") for SAPD.
 
         Returns:
             Path to combined H5 file, or None if failed.
@@ -372,25 +412,188 @@ class AutoInducedProcessor(LoggingMixin):
         start_time = time.monotonic()
 
         try:
-            result = combine_fields_sliced(
-                h5_paths=[str(p) for p in h5_paths],
-                weights=candidate["phase_weights"],
-                template_h5_path=str(h5_paths[0]),
-                output_h5_path=str(output_path),
-                center_idx=candidate["voxel_idx"],
-                side_length_mm=cube_size_mm,
-                progress_bar=progress_bar,
-            )
+            if full_volume:
+                from .field_combiner import combine_fields_chunked
+
+                result = combine_fields_chunked(
+                    h5_paths=[str(p) for p in h5_paths],
+                    weights=candidate["phase_weights"],
+                    template_h5_path=str(h5_paths[0]),
+                    output_h5_path=str(output_path),
+                    field_types=field_types,
+                )
+            else:
+                result = combine_fields_sliced(
+                    h5_paths=[str(p) for p in h5_paths],
+                    weights=candidate["phase_weights"],
+                    template_h5_path=str(h5_paths[0]),
+                    output_h5_path=str(output_path),
+                    center_idx=candidate["voxel_idx"],
+                    side_length_mm=cube_size_mm,
+                    field_types=field_types,
+                    progress_bar=progress_bar,
+                )
 
             elapsed = time.monotonic() - start_time
-            sliced_shape = result.get("sliced_shape", "unknown")
-            self.verbose_logger.info(f"Candidate #{candidate_idx}: {sliced_shape} ({elapsed:.2f}s)")
+            shape_info = result.get("grid_shape", result.get("sliced_shape", "unknown"))
+            mode_str = "full-volume" if full_volume else "sliced"
+            self.verbose_logger.info(f"Candidate #{candidate_idx}: {shape_info} [{mode_str}] ({elapsed:.2f}s)")
 
             return output_path
 
         except Exception as e:
             self._log(f"      ERROR combining fields: {e}", log_type="error")
             return None
+
+    def _extract_sar(
+        self,
+        combined_h5: Path,
+        candidate_idx: int,
+        candidate: dict,
+        input_h5: Path,
+        save_intermediate_files: bool = False,
+    ) -> dict:
+        """Extract SAR from a full-volume combined H5 file.
+
+        Uses Sim4Life's SarStatisticsEvaluator to compute whole-body SAR and
+        peak spatial-average SAR (10g). Unlike SAPD extraction, no skin mesh
+        or surface processing is needed — SAR is computed volumetrically from
+        the E-field and tissue properties.
+
+        The project must already be open with phantom geometry loaded so that
+        the SAR evaluator can map E-field to tissue conductivity.
+
+        Args:
+            combined_h5: Path to combined _Output.h5 file (full-volume).
+            candidate_idx: 1-based candidate index.
+            candidate: Candidate dict with 'voxel_idx' for center location.
+            input_h5: Path to an input H5 for grid axis info.
+            save_intermediate_files: If True, save smash file after extraction.
+
+        Returns:
+            Dict with SAR extraction results including peak_sar_10g_W_kg,
+            whole_body_sar_W_kg, and peak_sar_details.
+        """
+        self.verbose_logger.info(f"Extracting SAR from {combined_h5.name}")
+
+        try:
+            import s4l_v1.analysis as analysis
+            import s4l_v1.document as document
+            import s4l_v1.units as units
+
+            # Create SimulationExtractor for the combined H5
+            sim_extractor = analysis.extractors.SimulationExtractor(inputs=[])
+            sim_extractor.Name = f"AutoInduced_SAR_Candidate{candidate_idx}"
+            sim_extractor.FileName = str(combined_h5)
+            sim_extractor.UpdateAttributes()
+            document.AllAlgorithms.Add(sim_extractor)
+
+            # Get EM sensor extractor
+            em_sensor_extractor = sim_extractor["Overall Field"]
+            em_sensor_extractor.FrequencySettings.ExtractedFrequency = "All"
+            em_sensor_extractor.UpdateAttributes()
+            document.AllAlgorithms.Add(em_sensor_extractor)
+            em_sensor_extractor.Update()
+
+            # --- SAR Statistics ---
+            sar_inputs = [em_sensor_extractor.Outputs["EM E(x,y,z,f0)"]]
+            sar_stats_evaluator = analysis.em_evaluators.SarStatisticsEvaluator(inputs=sar_inputs)
+            sar_stats_evaluator.PeakSpatialAverageSAR = True
+            sar_stats_evaluator.PeakSAR.TargetMass = 10.0, units.Unit("g")
+            sar_stats_evaluator.UpdateAttributes()
+            document.AllAlgorithms.Add(sar_stats_evaluator)
+            sar_stats_evaluator.Update()
+
+            # Parse results
+            stats_output = sar_stats_evaluator.Outputs
+            results_data = stats_output.item_at(0).Data if len(stats_output) > 0 and hasattr(stats_output.item_at(0), "Data") else None
+
+            whole_body_sar = None
+            peak_sar_10g = None
+
+            if results_data and hasattr(results_data, "NumberOfRows") and results_data.NumberOfRows() > 0:
+                import pandas as pd
+
+                columns = ["Tissue"] + [cap for cap in results_data.ColumnMainCaptions]
+                raw_tissue_names = [results_data.RowCaptions[i] for i in range(results_data.NumberOfRows())]
+                data = [
+                    [raw_tissue_names[i]] + [results_data.Value(i, j) for j in range(results_data.NumberOfColumns())]
+                    for i in range(results_data.NumberOfRows())
+                ]
+                df = pd.DataFrame(data, columns=columns)
+                numeric_cols = [col for col in df.columns if col != "Tissue"]
+                df[numeric_cols] = df[numeric_cols].apply(pd.to_numeric, errors="coerce").fillna(0)
+
+                # Extract whole-body SAR and peak 10g SAR
+                all_regions = df[df["Tissue"] == "All Regions"]
+                if not all_regions.empty:
+                    whole_body_sar = float(all_regions["Mass-Averaged SAR"].iloc[0])
+                    peak_sar_col = "Peak Spatial-Average SAR[IEEE/IEC62704-1] (10g)"
+                    if peak_sar_col in all_regions.columns:
+                        peak_sar_10g = float(all_regions[peak_sar_col].iloc[0])
+
+            document.AllAlgorithms.Remove(sar_stats_evaluator)
+
+            # --- Peak SAR Location Details ---
+            peak_sar_details = {}
+            try:
+                peak_inputs = [em_sensor_extractor.Outputs["SAR(x,y,z,f0)"]]
+                avg_sar_evaluator = analysis.em_evaluators.AverageSarFieldEvaluator(inputs=peak_inputs)
+                avg_sar_evaluator.TargetMass = 10.0, units.Unit("g")
+                avg_sar_evaluator.UpdateAttributes()
+                document.AllAlgorithms.Add(avg_sar_evaluator)
+                avg_sar_evaluator.Update()
+
+                peak_sar_output = avg_sar_evaluator.Outputs["Peak Spatial SAR (psSAR) Results"]
+                peak_sar_output.Update()
+
+                data_collection = peak_sar_output.Data.DataSimpleDataCollection
+                if data_collection:
+                    for key in data_collection.Keys():
+                        try:
+                            value = data_collection.FieldValue(key, 0)
+                            if value is not None:
+                                peak_sar_details[key] = value
+                        except Exception:
+                            pass
+
+                document.AllAlgorithms.Remove(avg_sar_evaluator)
+            except Exception as e:
+                self.verbose_logger.warning(f"  Could not extract peak SAR details: {e}")
+
+            result = {
+                "candidate_idx": candidate_idx,
+                "peak_sar_10g_W_kg": peak_sar_10g,
+                "whole_body_sar_W_kg": whole_body_sar,
+                "peak_sar_details": peak_sar_details if peak_sar_details else None,
+                "combined_h5": str(combined_h5),
+            }
+
+            # Cleanup Sim4Life algorithms
+            try:
+                document.AllAlgorithms.Remove(em_sensor_extractor)
+                document.AllAlgorithms.Remove(sim_extractor)
+            except Exception:
+                pass
+
+            self._log(
+                f"      Candidate #{candidate_idx}: peak SAR 10g = {peak_sar_10g:.4e} W/kg, WB SAR = {whole_body_sar:.4e} W/kg"
+                if peak_sar_10g is not None
+                else f"      Candidate #{candidate_idx}: SAR extraction failed",
+                log_type="info",
+            )
+
+            return result
+
+        except Exception as e:
+            self._log(f"      ERROR extracting SAR: {e}", log_type="error")
+            import traceback
+
+            self.verbose_logger.error(traceback.format_exc())
+            return {
+                "candidate_idx": candidate_idx,
+                "error": str(e),
+            }
 
     def _extract_sapd(
         self,
@@ -644,22 +847,23 @@ class AutoInducedProcessor(LoggingMixin):
         except Exception:
             return ["Skin", "Ear_skin"]
 
-    def _find_worst_case(self, sapd_results: list[dict]) -> dict:
-        """Find the worst-case (highest SAPD) result.
+    def _find_worst_case(self, results: list[dict], metric_key: str = "peak_sapd_w_m2") -> dict:
+        """Find the worst-case (highest metric) result.
 
         Args:
-            sapd_results: List of SAPD result dicts.
+            results: List of extraction result dicts.
+            metric_key: Key to compare (e.g., "peak_sapd_w_m2" or "peak_sar_10g_W_kg").
 
         Returns:
-            The result dict with highest peak SAPD.
+            The result dict with highest metric value.
         """
         worst = None
-        worst_sapd = -1.0
+        worst_val = -1.0
 
-        for result in sapd_results:
-            sapd = result.get("peak_sapd_w_m2")
-            if sapd is not None and sapd > worst_sapd:
-                worst_sapd = sapd
+        for result in results:
+            val = result.get(metric_key)
+            if val is not None and val > worst_val:
+                worst_val = val
                 worst = result
 
         return worst or {}
