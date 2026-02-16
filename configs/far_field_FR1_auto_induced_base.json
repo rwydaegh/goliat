@@ -1,0 +1,104 @@
+{
+    "extends": "base_config.json",
+    "use_web": false,
+    "study_type": "far_field",
+    "extraction": {
+        "sar": false,
+        "power_balance": false,
+        "sapd": false,
+        "point_sensors": false
+    },
+    "execution_control": {
+        "do_setup": true,
+        "only_write_input_file": false,
+        "do_run": true,
+        "do_extract": false,
+        "batch_run": false,
+        "auto_cleanup_previous_results": []
+    },
+    "phantoms": [
+        "duke",
+        "ella",
+        "eartha",
+        "thelonious"
+    ],
+    "auto_induced": {
+        "enabled": true,
+        "top_n": 20,
+        "cube_size_mm": 50,
+        "search_metric": "E_magnitude",
+        "extraction_metric": "sar",
+        "full_volume_combination": true,
+        "save_intermediate_files": false,
+        "use_xy_diagonal_for_sim_time": true,
+        "search": {
+            "mode": "air",
+            "n_samples": 10000,
+            "random_seed": 42,
+            "shell_size_mm": 10.0,
+            "selection_percentile": 95.0,
+            "min_candidate_distance_mm": 50.0,
+            "low_memory_mode": null,
+            "slab_cache_gb": 2.0,
+            "compute_distance": true
+        }
+    },
+    "far_field_setup": {
+        "type": "environmental",
+        "environmental": {
+            "spherical_tessellation": {
+                "theta_values": [
+                    90
+                ],
+                "phi_values": [
+                    90,
+                    150,
+                    210,
+                    270
+                ]
+            },
+            "polarizations": [
+                "theta"
+            ]
+        },
+        "auto_induced": {
+            "grid_resolution_deg": 15
+        }
+    },
+    "simulation_parameters": {
+        "bbox_padding_mm": 0,
+        "simulation_bbox_points": 8,
+        "number_of_point_sensors": 0,
+        "simulation_time_multiplier": 3.0,
+        "overall_field_sensor": {
+            "enabled": true,
+            "record_e_field": true,
+            "record_h_field": false,
+            "recording_domain": "frequency",
+            "on_the_fly_dft": true
+        }
+    },
+    "gridding_parameters": {
+        "global_gridding": {
+            "grid_mode": "manual",
+            "manual_fallback_max_step_mm": 2.5
+        },
+        "global_gridding_per_frequency": {
+            "700": 2.5,
+            "3500": 1.0
+        },
+        "padding": {
+            "padding_mode": "manual",
+            "manual_bottom_padding_mm": [
+                0,
+                0,
+                0
+            ],
+            "manual_top_padding_mm": [
+                0,
+                0,
+                0
+            ]
+        }
+    }
+}
