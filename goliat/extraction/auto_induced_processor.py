@@ -98,6 +98,30 @@ class AutoInducedProcessor(LoggingMixin):
         with self.study.subtask("auto_induced_combine_fields"):
             combined_h5_paths = []
             from tqdm import tqdm
+            from .focus_optimizer import FieldCache
+
+            # Pre-load all source fields once, shared across all candidates.
+            # FieldCache auto-detects available RAM:
+            #   - Memory mode (RAM sufficient): loads all files into numpy arrays.
+            #     Weighted sum per candidate is then pure numpy — no file I/O.
+            #   - Streaming mode (low RAM): uses slab LRU cache, falls back to
+            #     the original chunked approach.
+            slab_cache_gb = (self.config["auto_induced"] or {}).get("search", {}).get("slab_cache_gb", 2.0)
+            low_memory_mode = (self.config["auto_induced"] or {}).get("search", {}).get("low_memory_mode", None)
+
+            # Only pre-load E (SAR) or E+H (SAPD) — same field types we'll combine
+            # FieldCache only supports one field_type at a time, so load each separately
+            field_caches = {}
+            for ft in field_types:
+                self._log(f"  Pre-loading {ft}-fields from {len(h5_paths)} files...", level="progress", log_type="info")
+                field_caches[ft] = FieldCache(
+                    h5_paths=[str(p) for p in h5_paths],
+                    field_type=ft,
+                    low_memory=low_memory_mode,
+                    slab_cache_gb=slab_cache_gb,
+                )
+                mode = "streaming" if field_caches[ft].streaming_mode else "memory"
+                self._log(f"    {ft}-field cache ready ({mode} mode)", level="progress", log_type="info")
 
             # Create outer progress bar for candidates
             candidates_pbar = tqdm(
@@ -112,7 +136,7 @@ class AutoInducedProcessor(LoggingMixin):
                 candidates_pbar.set_description(f"Combining fields (candidate {i}/{len(candidates)})")
 
                 if full_volume:
-                    # Full-volume combination (no inner progress bar, chunked internally)
+                    # Full-volume combination — uses pre-loaded cache if in memory mode
                     combined_path = self._combine_fields_for_candidate(
                         h5_paths=h5_paths,
                         candidate=candidate,
@@ -122,6 +146,7 @@ class AutoInducedProcessor(LoggingMixin):
                         combine_chunk_size=combine_chunk_size,
                         full_volume=True,
                         field_types=field_types,
+                        field_caches=field_caches,
                     )
                     combined_h5_paths.append(combined_path)
                 else:
@@ -145,6 +170,10 @@ class AutoInducedProcessor(LoggingMixin):
                         combined_h5_paths.append(combined_path)
 
             candidates_pbar.close()
+
+            # Clean up field caches (closes file handles in streaming mode)
+            for fc in field_caches.values():
+                fc.close()
 
         # Step 3: Extract dosimetric metric for each candidate
         metric_key = "peak_sar_10g_W_kg" if extraction_metric == "sar" else "peak_sapd_w_m2"
@@ -396,6 +425,7 @@ class AutoInducedProcessor(LoggingMixin):
         full_volume: bool = False,
         field_types: tuple = ("E", "H"),
         combine_chunk_size: int = 50,
+        field_caches: dict | None = None,
     ) -> Path | None:
         """Combine E/H fields for a focus candidate.
 
@@ -408,7 +438,9 @@ class AutoInducedProcessor(LoggingMixin):
             progress_bar: Optional tqdm progress bar to update (only used for sliced mode).
             full_volume: If True, combine full volume using chunked processing.
             field_types: Which field types to combine, e.g. ("E",) for SAR or ("E", "H") for SAPD.
-            combine_chunk_size: Number of z-slices per chunk (use large value like 9999 for no chunking).
+            combine_chunk_size: Number of z-slices per chunk (fallback when no cache).
+            field_caches: Dict mapping field_type -> FieldCache. If provided and cache
+                is in memory mode, uses pre-loaded arrays (no file I/O per candidate).
 
         Returns:
             Path to combined H5 file, or None if failed.
@@ -424,14 +456,18 @@ class AutoInducedProcessor(LoggingMixin):
             if full_volume:
                 from .field_combiner import combine_fields_chunked
 
-                result = combine_fields_chunked(
-                    h5_paths=[str(p) for p in h5_paths],
-                    weights=candidate["phase_weights"],
-                    template_h5_path=str(h5_paths[0]),
-                    output_h5_path=str(output_path),
-                    field_types=field_types,
-                    chunk_size=combine_chunk_size,
-                )
+                result: dict = {}
+                for field_type in field_types:
+                    fc = (field_caches or {}).get(field_type)
+                    result = combine_fields_chunked(
+                        h5_paths=[str(p) for p in h5_paths],
+                        weights=candidate["phase_weights"],
+                        template_h5_path=str(h5_paths[0]),
+                        output_h5_path=str(output_path),
+                        field_types=(field_type,),
+                        chunk_size=combine_chunk_size,
+                        field_cache=fc,
+                    )
             else:
                 result = combine_fields_sliced(
                     h5_paths=[str(p) for p in h5_paths],

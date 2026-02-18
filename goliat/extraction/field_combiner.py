@@ -10,7 +10,7 @@ import logging
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Sequence, Union, Optional, Tuple
+from typing import Optional, Sequence, Tuple, Union
 
 import h5py
 import numpy as np
@@ -81,19 +81,24 @@ def combine_fields_chunked(
     output_h5_path: Union[str, Path],
     chunk_size: int = 50,
     field_types: Sequence[str] = ("E", "H"),
+    field_cache=None,
 ) -> dict:
     """Combine weighted fields from multiple H5 files and write to output.
 
-    Uses z-slab chunking for memory efficiency. For a typical phantom with
-    Nz=1900, chunk_size=50 gives ~38 chunks, each loading ~56MB per direction.
+    If field_cache is provided (a FieldCache in memory mode), uses pre-loaded
+    numpy arrays for pure-numpy weighted summation — no per-candidate file I/O.
+    Otherwise falls back to the original z-slab chunked streaming approach.
 
     Args:
         h5_paths: List of _Output.h5 file paths (one per direction).
         weights: Complex weights for each direction, shape (N,).
         template_h5_path: Path to an existing _Output.h5 to use as template.
         output_h5_path: Path for the combined output H5 file.
-        chunk_size: Number of z-slabs to process at once.
+        chunk_size: Number of z-slabs to process at once (ignored when field_cache
+            is provided in memory mode).
         field_types: Which fields to combine ('E', 'H', or both).
+        field_cache: Optional pre-loaded FieldCache. If provided and not in
+            streaming mode, uses in-memory arrays for maximum speed.
 
     Returns:
         Dict with info about the combination (grid shape, num directions, etc.).
@@ -117,16 +122,29 @@ def combine_fields_chunked(
         if fg_path is None:
             raise ValueError("No 'Overall Field' FieldGroup found in template")
 
+        # Use pre-loaded cache if available and in memory mode (fastest path)
+        use_preloaded = field_cache is not None and not getattr(field_cache, "streaming_mode", True) and field_cache.fields
+
         for field_type in field_types:
-            _combine_single_field_chunked(
-                h5_paths=h5_paths,
-                weights=weights,
-                out_file=out_f,
-                fg_path=fg_path,
-                field_type=field_type,
-                Nz=Nz,
-                chunk_size=chunk_size,
-            )
+            if use_preloaded:
+                _combine_single_field_preloaded(
+                    h5_paths=h5_paths,
+                    weights=weights,
+                    out_file=out_f,
+                    fg_path=fg_path,
+                    field_type=field_type,
+                    field_cache=field_cache,
+                )
+            else:
+                _combine_single_field_chunked(
+                    h5_paths=h5_paths,
+                    weights=weights,
+                    out_file=out_f,
+                    fg_path=fg_path,
+                    field_type=field_type,
+                    Nz=Nz,
+                    chunk_size=chunk_size,
+                )
 
     return {
         "grid_shape": (Nx, Ny, Nz),
@@ -135,6 +153,48 @@ def combine_fields_chunked(
         "chunk_size": chunk_size,
         "field_types": list(field_types),
     }
+
+
+def _combine_single_field_preloaded(
+    h5_paths: Sequence[Path],
+    weights: np.ndarray,
+    out_file: h5py.File,
+    fg_path: str,
+    field_type: str,
+    field_cache,
+) -> None:
+    """Combine a single field type using pre-loaded in-memory arrays.
+
+    This is the fast path: all source data is already in RAM as complex64
+    numpy arrays. The weighted sum is a pure numpy operation — no file I/O.
+    Runs in seconds instead of minutes.
+    """
+    field_path = get_field_path(fg_path, field_type)
+
+    for comp_idx in tqdm(range(3), desc=f"{field_type}-field", leave=False):
+        # Accumulate weighted sum across all directions using cached arrays
+        combined: Optional[np.ndarray] = None
+        for h5_path, weight in zip(h5_paths, weights):
+            h5_str = str(h5_path)
+            if h5_str not in field_cache.fields:
+                raise ValueError(f"Field cache missing entry for {h5_str}")
+            comp_data = field_cache.fields[h5_str][comp_idx]  # shape (Nx, Ny, Nz), complex64
+            if combined is None:
+                combined = weight * comp_data
+            else:
+                combined += weight * comp_data
+
+        if combined is None:
+            continue
+
+        # Write real and imaginary parts back to output H5
+        ds_path = f"{field_path}/comp{comp_idx}"
+        if ds_path in out_file:
+            ds = out_file[ds_path]
+            # Dataset shape is (Nx, Ny, Nz, 2) — last dim is [real, imag]
+            Nz_ds = ds.shape[2]
+            ds[:, :, :Nz_ds, 0] = np.real(combined[:, :, :Nz_ds])
+            ds[:, :, :Nz_ds, 1] = np.imag(combined[:, :, :Nz_ds])
 
 
 def _combine_single_field_chunked(
