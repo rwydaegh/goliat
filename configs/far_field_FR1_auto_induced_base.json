@@ -29,6 +29,7 @@
         "search_metric": "E_magnitude",
         "extraction_metric": "sar",
         "full_volume_combination": true,
+        "combine_chunk_size": 9999,
         "save_intermediate_files": false,
         "use_xy_diagonal_for_sim_time": true,
         "search": {
