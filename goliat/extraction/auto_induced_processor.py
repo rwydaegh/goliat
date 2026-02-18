@@ -10,8 +10,11 @@ for a (phantom, frequency) pair complete.
 """
 
 import os
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional
+
+from tqdm import tqdm
 
 from ..logging_manager import LoggingMixin
 from .field_combiner import combine_fields_sliced
@@ -19,6 +22,22 @@ from .focus_optimizer import find_focus_and_compute_weights
 
 if TYPE_CHECKING:
     from ..studies.far_field_study import FarFieldStudy
+
+
+@dataclass
+class _CombineRequest:
+    """Parameters for a single field combination operation."""
+
+    h5_paths: list[Path]
+    candidate: dict
+    output_dir: Path
+    candidate_idx: int
+    cube_size_mm: float
+    progress_bar: Optional[tqdm] = field(default=None, repr=False)
+    full_volume: bool = False
+    field_types: tuple = ("E", "H")
+    combine_chunk_size: int = 50
+    field_caches: dict | None = None
 
 
 class AutoInducedProcessor(LoggingMixin):
@@ -138,15 +157,17 @@ class AutoInducedProcessor(LoggingMixin):
                 if full_volume:
                     # Full-volume combination — uses pre-loaded cache if in memory mode
                     combined_path = self._combine_fields_for_candidate(
-                        h5_paths=h5_paths,
-                        candidate=candidate,
-                        output_dir=output_dir,
-                        candidate_idx=i,
-                        cube_size_mm=cube_size_mm,
-                        combine_chunk_size=combine_chunk_size,
-                        full_volume=True,
-                        field_types=field_types,
-                        field_caches=field_caches,
+                        _CombineRequest(
+                            h5_paths=h5_paths,
+                            candidate=candidate,
+                            output_dir=output_dir,
+                            candidate_idx=i,
+                            cube_size_mm=cube_size_mm,
+                            combine_chunk_size=combine_chunk_size,
+                            full_volume=True,
+                            field_types=field_types,
+                            field_caches=field_caches,
+                        )
                     )
                     combined_h5_paths.append(combined_path)
                 else:
@@ -159,13 +180,15 @@ class AutoInducedProcessor(LoggingMixin):
                         leave=False,
                     ) as components_pbar:
                         combined_path = self._combine_fields_for_candidate(
-                            h5_paths=h5_paths,
-                            candidate=candidate,
-                            output_dir=output_dir,
-                            candidate_idx=i,
-                            cube_size_mm=cube_size_mm,
-                            progress_bar=components_pbar,
-                            field_types=field_types,
+                            _CombineRequest(
+                                h5_paths=h5_paths,
+                                candidate=candidate,
+                                output_dir=output_dir,
+                                candidate_idx=i,
+                                cube_size_mm=cube_size_mm,
+                                progress_bar=components_pbar,
+                                field_types=field_types,
+                            )
                         )
                         combined_h5_paths.append(combined_path)
 
@@ -414,76 +437,52 @@ class AutoInducedProcessor(LoggingMixin):
             self.verbose_logger.error(traceback.format_exc())
             return []
 
-    def _combine_fields_for_candidate(
-        self,
-        h5_paths: list[Path],
-        candidate: dict,
-        output_dir: Path,
-        candidate_idx: int,
-        cube_size_mm: float,
-        progress_bar=None,
-        full_volume: bool = False,
-        field_types: tuple = ("E", "H"),
-        combine_chunk_size: int = 50,
-        field_caches: dict | None = None,
-    ) -> Path | None:
+    def _combine_fields_for_candidate(self, req: _CombineRequest) -> Path | None:
         """Combine E/H fields for a focus candidate.
 
         Args:
-            h5_paths: List of _Output.h5 file paths.
-            candidate: Candidate dict with voxel_idx and phase_weights.
-            output_dir: Directory to write combined H5.
-            candidate_idx: 1-based index for naming.
-            cube_size_mm: Size of extraction cube in mm (only used for sliced mode).
-            progress_bar: Optional tqdm progress bar to update (only used for sliced mode).
-            full_volume: If True, combine full volume using chunked processing.
-            field_types: Which field types to combine, e.g. ("E",) for SAR or ("E", "H") for SAPD.
-            combine_chunk_size: Number of z-slices per chunk (fallback when no cache).
-            field_caches: Dict mapping field_type -> FieldCache. If provided and cache
-                is in memory mode, uses pre-loaded arrays (no file I/O per candidate).
+            req: All parameters for this combination operation.
 
         Returns:
             Path to combined H5 file, or None if failed.
         """
         import time
 
-        output_filename = f"combined_candidate{candidate_idx}_Output.h5"
-        output_path = output_dir / output_filename
-
+        output_path = req.output_dir / f"combined_candidate{req.candidate_idx}_Output.h5"
         start_time = time.monotonic()
 
         try:
-            if full_volume:
+            if req.full_volume:
                 from .field_combiner import combine_fields_chunked
 
                 result: dict = {}
-                for field_type in field_types:
-                    fc = (field_caches or {}).get(field_type)
+                for field_type in req.field_types:
+                    fc = (req.field_caches or {}).get(field_type)
                     result = combine_fields_chunked(
-                        h5_paths=[str(p) for p in h5_paths],
-                        weights=candidate["phase_weights"],
-                        template_h5_path=str(h5_paths[0]),
+                        h5_paths=[str(p) for p in req.h5_paths],
+                        weights=req.candidate["phase_weights"],
+                        template_h5_path=str(req.h5_paths[0]),
                         output_h5_path=str(output_path),
                         field_types=(field_type,),
-                        chunk_size=combine_chunk_size,
+                        chunk_size=req.combine_chunk_size,
                         field_cache=fc,
                     )
             else:
                 result = combine_fields_sliced(
-                    h5_paths=[str(p) for p in h5_paths],
-                    weights=candidate["phase_weights"],
-                    template_h5_path=str(h5_paths[0]),
+                    h5_paths=[str(p) for p in req.h5_paths],
+                    weights=req.candidate["phase_weights"],
+                    template_h5_path=str(req.h5_paths[0]),
                     output_h5_path=str(output_path),
-                    center_idx=candidate["voxel_idx"],
-                    side_length_mm=cube_size_mm,
-                    field_types=field_types,
-                    progress_bar=progress_bar,
+                    center_idx=req.candidate["voxel_idx"],
+                    side_length_mm=req.cube_size_mm,
+                    field_types=req.field_types,
+                    progress_bar=req.progress_bar,
                 )
 
             elapsed = time.monotonic() - start_time
             shape_info = result.get("grid_shape", result.get("sliced_shape", "unknown"))
-            mode_str = "full-volume" if full_volume else "sliced"
-            self.verbose_logger.info(f"Candidate #{candidate_idx}: {shape_info} [{mode_str}] ({elapsed:.2f}s)")
+            mode_str = "full-volume" if req.full_volume else "sliced"
+            self.verbose_logger.info(f"Candidate #{req.candidate_idx}: {shape_info} [{mode_str}] ({elapsed:.2f}s)")
 
             return output_path
 
@@ -613,6 +612,88 @@ class AutoInducedProcessor(LoggingMixin):
                 "error": str(e),
             }
 
+    def _read_grid_axes(self, input_h5: Path) -> "tuple | None":
+        """Read grid axis arrays from input H5, returning (x, y, z) in mm, or None."""
+        import h5py
+
+        with h5py.File(input_h5, "r") as f:
+            for mesh_key in f["Meshes"].keys():
+                mesh = f[f"Meshes/{mesh_key}"]
+                if "axis_x" in mesh:
+                    return (
+                        mesh["axis_x"][:] * 1000,
+                        mesh["axis_y"][:] * 1000,
+                        mesh["axis_z"][:] * 1000,
+                    )
+        return None
+
+    def _resolve_skin_entity(self, candidate_idx: int, model) -> Any:
+        """Return a united skin entity from cache or by uniting model entities.
+
+        Returns None if no skin entities are found.
+        """
+        cache_dir = os.path.join(self.config.base_dir, "data", "phantom_skins")
+        cache_path = os.path.join(cache_dir, f"{self.phantom_name}_skin.sab")
+        united_entity = None
+
+        if os.path.exists(cache_path):
+            try:
+                imported_entities = list(model.Import(cache_path))
+                if imported_entities:
+                    united_entity = imported_entities[0]
+                    united_entity.Name = f"AutoInduced_CachedSkin_{candidate_idx}"
+            except Exception:
+                pass
+
+        if united_entity is None:
+            skin_entity_names = self._get_skin_entity_names()
+            all_entities = model.AllEntities()
+            skin_entities = [all_entities[n] for n in skin_entity_names if n in all_entities]
+
+            if not skin_entities:
+                return None
+
+            united_entity = model.Unite([e.Clone() for e in skin_entities]) if len(skin_entities) > 1 else skin_entities[0].Clone()
+
+            try:
+                os.makedirs(cache_dir, exist_ok=True)
+                model.Export([united_entity], cache_path)
+            except Exception:
+                pass
+
+        return united_entity
+
+    @staticmethod
+    def _parse_sapd_data_collection(data_collection) -> "tuple[Any, Any]":
+        """Extract peak SAPD value and location from a DataSimpleDataCollection."""
+
+        def _safe_get(key):
+            try:
+                return data_collection.FieldValue(key, 0)
+            except TypeError:
+                return None
+
+        keys = list(data_collection.Keys())
+        peak_sapd = peak_loc = None
+
+        for key in keys:
+            val = _safe_get(key)
+            if val is not None:
+                if "Peak" in key and "Power" in key:
+                    peak_sapd = val
+                if "Peak" in key and "Location" in key:
+                    peak_loc = val
+
+        if peak_sapd is None:
+            for key in keys:
+                if "Power" in key or "Density" in key:
+                    val = _safe_get(key)
+                    if val is not None:
+                        peak_sapd = val
+                        break
+
+        return peak_sapd, peak_loc
+
     def _extract_sapd(
         self,
         combined_h5: Path,
@@ -638,102 +719,45 @@ class AutoInducedProcessor(LoggingMixin):
         Returns:
             Dict with SAPD extraction results.
         """
-
-        import h5py
-
         from ..utils.mesh_slicer import slice_entity_to_box, voxel_idx_to_mm
 
         self.verbose_logger.info(f"Extracting SAPD from {combined_h5.name}")
 
         try:
-            # Import here to avoid circular imports and ensure Sim4Life is available
             import XCoreModeling
             import s4l_v1.analysis as analysis
             import s4l_v1.document as document
             import s4l_v1.model as model
             import s4l_v1.units as units
 
-            # Read grid axes from input H5 for voxel->mm conversion
-            x_axis = y_axis = z_axis = None
-            with h5py.File(input_h5, "r") as f:
-                for mesh_key in f["Meshes"].keys():
-                    mesh = f[f"Meshes/{mesh_key}"]
-                    if "axis_x" in mesh:
-                        x_axis = mesh["axis_x"][:] * 1000  # m to mm
-                        y_axis = mesh["axis_y"][:] * 1000
-                        z_axis = mesh["axis_z"][:] * 1000
-                        break
+            # Phase 1: resolve grid axes and compute focus centre
+            axes = self._read_grid_axes(input_h5)
+            if axes is None:
+                return {"candidate_idx": candidate_idx, "error": "Could not read grid axes from input H5"}
 
-            if x_axis is None:
-                return {
-                    "candidate_idx": candidate_idx,
-                    "error": "Could not read grid axes from input H5",
-                }
-
-            voxel_idx = candidate["voxel_idx"]
-            center_mm = voxel_idx_to_mm(voxel_idx, (x_axis, y_axis, z_axis))
+            center_mm = voxel_idx_to_mm(candidate["voxel_idx"], axes)
             self.verbose_logger.info(f"  Focus center: {center_mm} mm")
 
-            # Create SimulationExtractor for the combined H5
+            # Phase 2: set up EM field extractor
             sim_extractor = analysis.extractors.SimulationExtractor(inputs=[])
             sim_extractor.Name = f"AutoInduced_Candidate{candidate_idx}"
             sim_extractor.FileName = str(combined_h5)
             sim_extractor.UpdateAttributes()
             document.AllAlgorithms.Add(sim_extractor)
 
-            # Get EM sensor extractor
             em_sensor_extractor = sim_extractor["Overall Field"]
             em_sensor_extractor.FrequencySettings.ExtractedFrequency = "All"
             em_sensor_extractor.UpdateAttributes()
             document.AllAlgorithms.Add(em_sensor_extractor)
             em_sensor_extractor.Update()
 
-            # Try to load cached skin first (avoids duplicate entity name issues)
-            cache_dir = os.path.join(self.config.base_dir, "data", "phantom_skins")
-            cache_path = os.path.join(cache_dir, f"{self.phantom_name}_skin.sab")
-            united_entity = None
-
-            if os.path.exists(cache_path):
-                try:
-                    imported_entities = list(model.Import(cache_path))
-                    if imported_entities:
-                        united_entity = imported_entities[0]
-                        united_entity.Name = f"AutoInduced_CachedSkin_{candidate_idx}"
-                except Exception:
-                    pass  # Fall through to create it
-
+            # Phase 3: resolve skin surface and slice to bounding cube
+            united_entity = self._resolve_skin_entity(candidate_idx, model)
             if united_entity is None:
-                # No cache - look up skin entities and unite them
-                skin_entity_names = self._get_skin_entity_names()
-                skin_entities = []
-                all_entities = model.AllEntities()
-                for name in skin_entity_names:
-                    if name in all_entities:
-                        skin_entities.append(all_entities[name])
+                return {"candidate_idx": candidate_idx, "error": "No skin entities found in project"}
 
-                if not skin_entities:
-                    return {
-                        "candidate_idx": candidate_idx,
-                        "error": "No skin entities found in project",
-                    }
-
-                # Create surface entity (same pattern as SapdExtractor)
-                if len(skin_entities) > 1:
-                    united_entity = model.Unite([e.Clone() for e in skin_entities])
-                else:
-                    united_entity = skin_entities[0].Clone()
-
-                # Save to cache for next time
-                try:
-                    os.makedirs(cache_dir, exist_ok=True)
-                    model.Export([united_entity], cache_path)
-                except Exception:
-                    pass  # Caching is optional
-
-            surface_entity = united_entity.Clone()  # Clone the cached entity for slicing
+            surface_entity = united_entity.Clone()
             surface_entity.Name = f"AutoInduced_Skin_{candidate_idx}"
-
-            # Slice the skin mesh to a box around the focus point (critical for speed!)
             surface_entity, sliced = slice_entity_to_box(
                 entity=surface_entity,
                 center_mm=center_mm,
@@ -747,75 +771,39 @@ class AutoInducedProcessor(LoggingMixin):
             else:
                 self.verbose_logger.warning("  Mesh slicing failed, using full skin mesh")
 
-            # Create ModelToGridFilter (matching SapdExtractor pattern)
+            # Phase 4: run SAPD evaluator
             model_to_grid_filter = analysis.core.ModelToGridFilter(inputs=[])
             model_to_grid_filter.Name = f"AutoInduced_SkinSurface_{candidate_idx}"
             model_to_grid_filter.Entity = surface_entity
             model_to_grid_filter.UpdateAttributes()
             document.AllAlgorithms.Add(model_to_grid_filter)
 
-            # Create SAPD evaluator with correct inputs (matching SapdExtractor)
-            # Inputs: Poynting Vector S(x,y,z,f0) and Surface
             inputs = [em_sensor_extractor.Outputs["S(x,y,z,f0)"], model_to_grid_filter.Outputs["Surface"]]
-
             sapd_evaluator = analysis.em_evaluators.GenericSAPDEvaluator(inputs=inputs)
             sapd_evaluator.AveragingArea = 4.0, units.SquareCentiMeters
-            sapd_evaluator.Threshold = 0.01, units.Meters  # 10 mm
+            sapd_evaluator.Threshold = 0.01, units.Meters
             sapd_evaluator.UpdateAttributes()
             document.AllAlgorithms.Add(sapd_evaluator)
 
-            # Get report and update
             sapd_report = sapd_evaluator.Outputs["Spatial-Averaged Power Density Report"]
             sapd_report.Update()
 
-            # Parse results from the DataSimpleDataCollection (matching SapdExtractor)
+            # Phase 5: parse results
             data_collection = sapd_report.Data.DataSimpleDataCollection
             if not data_collection:
-                return {
-                    "candidate_idx": candidate_idx,
-                    "error": "No SAPD data available",
-                }
+                return {"candidate_idx": candidate_idx, "error": "No SAPD data available"}
 
-            # Get keys and extract peak SAPD and location
-            keys = list(data_collection.Keys())
-            peak_sapd = None
-            peak_loc = None
+            peak_sapd, peak_loc = self._parse_sapd_data_collection(data_collection)
 
-            def safe_get_value(key):
-                """Safely get value from data collection, handling nullptr."""
-                try:
-                    return data_collection.FieldValue(key, 0)
-                except TypeError:
-                    # C++ nullptr can't be converted to Python
-                    return None
-
-            for key in keys:
-                val = safe_get_value(key)
-                if val is not None:
-                    if "Peak" in key and "Power" in key:
-                        peak_sapd = val
-                    if "Peak" in key and "Location" in key:
-                        peak_loc = val
-
-            if peak_sapd is None:
-                # Fallback: look for any power density value
-                for key in keys:
-                    if "Power" in key or "Density" in key:
-                        val = safe_get_value(key)
-                        if val is not None:
-                            peak_sapd = val
-                            break
-
-            # Optionally save debug smash file with focus center marker
+            # Optional: save debug artefacts
             if save_intermediate_files:
                 try:
                     focus_point = model.CreatePoint(model.Vec3(center_mm[0], center_mm[1], center_mm[2]))
                     focus_point.Name = f"Focus_Center_Candidate{candidate_idx}"
                 except Exception:
                     pass
-                debug_smash_path = str(combined_h5).replace("_Output.h5", "_intermediate.smash")
                 try:
-                    document.SaveAs(debug_smash_path)
+                    document.SaveAs(str(combined_h5).replace("_Output.h5", "_intermediate.smash"))
                 except Exception:
                     pass
 
@@ -826,19 +814,16 @@ class AutoInducedProcessor(LoggingMixin):
                 "combined_h5": str(combined_h5),
             }
 
-            # Cleanup: remove temporary entities and algorithms to avoid memory growth
+            # Phase 6: cleanup — remove temporary algorithms and entities
             try:
-                # Remove algorithms (in reverse order of creation)
                 document.AllAlgorithms.Remove(sapd_evaluator)
                 document.AllAlgorithms.Remove(model_to_grid_filter)
                 document.AllAlgorithms.Remove(em_sensor_extractor)
                 document.AllAlgorithms.Remove(sim_extractor)
-
-                # Remove temporary model entities
                 surface_entity.Delete()
                 united_entity.Delete()
             except Exception:
-                pass  # Cleanup is best-effort
+                pass
 
             return result
 
@@ -847,10 +832,7 @@ class AutoInducedProcessor(LoggingMixin):
             import traceback
 
             self.verbose_logger.error(traceback.format_exc())
-            return {
-                "candidate_idx": candidate_idx,
-                "error": str(e),
-            }
+            return {"candidate_idx": candidate_idx, "error": str(e)}
 
     def _get_skin_entity_names(self) -> list[str]:
         """Get skin entity names from config.
