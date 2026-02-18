@@ -368,6 +368,7 @@ class SarExtractor(LoggingMixin):
                                the SAR field data.
         """
         self._log("  - Extracting peak SAR details...", log_type="progress")
+        average_sar_field_evaluator = None
         try:
             inputs = [em_sensor_extractor.Outputs["SAR(x,y,z,f0)"]]
             average_sar_field_evaluator = self.analysis.em_evaluators.AverageSarFieldEvaluator(inputs=inputs)
@@ -380,10 +381,24 @@ class SarExtractor(LoggingMixin):
             peak_sar_output.Update()  # type: ignore
 
             data_collection = peak_sar_output.Data.DataSimpleDataCollection  # type: ignore
-            if data_collection:
-                # Extract values, filtering out None (which can occur in Sim4Life 9.2+)
+
+            # data_collection may be a Sim4Life wrapper around a null JSON object.
+            # The Python truthiness check passes even for null-wrapped objects, so
+            # we must guard the Keys() call with its own try-except.
+            if data_collection is not None:
                 peak_sar_details = {}
-                for key in data_collection.Keys():
+                try:
+                    keys = list(data_collection.Keys())
+                except Exception:
+                    # Sim4Life returns a null JSON wrapper when SAR is zero
+                    # everywhere (e.g. combined field has no energy).
+                    keys = []
+                    self._log(
+                        "  - WARNING: Peak SAR data collection is null (SAR may be zero everywhere).",
+                        log_type="warning",
+                    )
+
+                for key in keys:
                     try:
                         value = data_collection.FieldValue(key, 0)
                         if value is not None:
@@ -400,11 +415,9 @@ class SarExtractor(LoggingMixin):
                     )
             else:
                 self._log(
-                    "  - WARNING: Could not extract peak SAR details.",
+                    "  - WARNING: Could not extract peak SAR details (data collection is None).",
                     log_type="warning",
                 )
-
-            self.document.AllAlgorithms.Remove(average_sar_field_evaluator)
 
         except Exception as e:
             self._log(
@@ -412,3 +425,11 @@ class SarExtractor(LoggingMixin):
                 log_type="error",
             )
             self.verbose_logger.error(traceback.format_exc())
+        finally:
+            # Always remove the evaluator to avoid accumulating stale algorithms
+            # in AllAlgorithms across candidates (causes cascading state corruption).
+            if average_sar_field_evaluator is not None:
+                try:
+                    self.document.AllAlgorithms.Remove(average_sar_field_evaluator)
+                except Exception:
+                    pass
