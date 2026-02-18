@@ -1,13 +1,12 @@
 """
 Sim4Life License Installer Automation Script (TEMPLATE)
 
-This script fully automates the Sim4Life License Installer:
+Automates the Sim4Life License Installer:
 1. Launches the License Installer executable
 2. Waits for the window to appear
 3. Types the license server address into the text box
 4. Clicks "Next" and waits for license validation
-5. Detects success or failure
-6. Clicks "Finish" to complete
+5. Detects success or failure and clicks "Finish"
 
 Requirements:
     pip install pywinauto
@@ -15,410 +14,322 @@ Requirements:
 Usage:
     python license_automation.py --license-server @myserver.domain.com
 
-    Or, for personal use, copy this file to my_license_automation.py and
-    fill in your LICENSE_SERVER value.
+    For personal use, copy to my_license_automation.py and set LICENSE_SERVER below.
 """
 
 import argparse
-import subprocess
-import time
-import sys
 import os
+import subprocess
+import sys
+import time
 
 # ============================================================================
-# CONFIGURATION - Can be overridden via --license-server argument
+# CONFIGURATION
 # ============================================================================
 LICENSE_SERVER = "YOUR_LICENSE_SERVER"  # e.g., "@myserver.domain.com"
-
-# License Installer path (installed with Sim4Life)
 LICENSE_INSTALLER_PATH = r"C:\Users\Public\Documents\ZMT\Licensing Tools\8.2\LicenseInstall.exe"
 
-# Timing configuration
-WINDOW_WAIT_TIMEOUT_SECONDS = 30  # Max time to wait for window to appear
-VALIDATION_TIMEOUT_SECONDS = 120  # Max time to wait for license validation
-POLL_INTERVAL_SECONDS = 2  # How often to check for state changes
-
-# Window settings
+WINDOW_WAIT_TIMEOUT_SECONDS = 30
+VALIDATION_TIMEOUT_SECONDS = 120
+POLL_INTERVAL_SECONDS = 2
 WINDOW_TITLE = "License Installer"
 
 
-def ensure_pywinauto():
-    """Ensure pywinauto and its dependencies are installed.
+# ============================================================================
+# DEPENDENCY MANAGEMENT
+# ============================================================================
 
-    Returns True if ready to use, False if script will be restarted.
+
+def ensure_pywinauto() -> bool:
+    """Install pywinauto if missing, restarting the process if necessary.
+
+    Returns True if ready to use, False on unrecoverable error.
     """
-    # First, try to import win32api to check if pywin32 is properly installed
     try:
         import win32api  # noqa: F401
         from pywinauto import Application  # noqa: F401
 
-        return True  # Everything works
+        return True
     except ImportError:
-        pass  # Need to install
+        pass
 
-    # Check if we're in a restart loop (env var set by previous run)
     if os.environ.get("PYWIN32_INSTALLED") == "1":
-        print("ERROR: pywin32 was installed but still can't import win32api.")
-        print("Please restart your terminal/command prompt and run the script again.")
+        print("ERROR: pywin32 was installed but still cannot import win32api.")
+        print("Please restart your terminal and try again.")
         return False
 
-    print("pywinauto or pywin32 not found/working. Installing...")
+    print("pywinauto or pywin32 not found. Installing...")
     try:
-        # Install pywin32 first (required by pywinauto)
         subprocess.check_call([sys.executable, "-m", "pip", "install", "pywin32", "--quiet"])
 
-        # Run pywin32 post-install script directly
         scripts_dir = os.path.join(os.path.dirname(sys.executable), "Scripts")
         postinstall_exe = os.path.join(scripts_dir, "pywin32_postinstall.exe")
-
         if os.path.exists(postinstall_exe):
-            try:
-                subprocess.check_call(
-                    [postinstall_exe, "-install", "-silent"],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                )
-                print("  pywin32 post-install completed.")
-            except subprocess.CalledProcessError:
-                pass  # May fail, continue anyway
+            subprocess.call(
+                [postinstall_exe, "-install", "-silent"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
 
-        # Now install pywinauto
         subprocess.check_call([sys.executable, "-m", "pip", "install", "pywinauto", "--quiet"])
-        print("pywinauto installed successfully.")
+        print("pywinauto installed. Restarting...")
 
-        # Restart this script with same arguments (new Python process sees the DLLs)
-        print("Restarting script to load newly installed modules...")
         env = os.environ.copy()
         env["PYWIN32_INSTALLED"] = "1"
-        result = subprocess.call([sys.executable] + sys.argv, env=env)
-        sys.exit(result)
+        sys.exit(subprocess.call([sys.executable] + sys.argv, env=env))
 
     except Exception as e:
         print(f"ERROR: Failed to install pywinauto: {e}")
         return False
 
 
-def launch_license_installer():
-    """Launch the License Installer executable."""
-    print("\nLaunching License Installer...")
-    print(f"  Path: {LICENSE_INSTALLER_PATH}")
+# ============================================================================
+# WINDOW MANAGEMENT
+# ============================================================================
+
+
+def launch_license_installer() -> None:
+    """Launch the License Installer executable.
+
+    Raises:
+        FileNotFoundError: If the installer is not found.
+        RuntimeError: If the installer fails to launch.
+    """
+    print(f"\nLaunching License Installer from: {LICENSE_INSTALLER_PATH}")
 
     if not os.path.exists(LICENSE_INSTALLER_PATH):
-        print(f"ERROR: License Installer not found at: {LICENSE_INSTALLER_PATH}")
-        print("Sim4Life may not be installed correctly.")
-        return False
+        raise FileNotFoundError(f"License Installer not found at: {LICENSE_INSTALLER_PATH}\nSim4Life may not be installed correctly.")
 
-    try:
-        # Launch in background (non-blocking)
-        subprocess.Popen([LICENSE_INSTALLER_PATH], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        print("  License Installer launched.")
-        return True
-    except Exception as e:
-        print(f"ERROR: Failed to launch License Installer: {e}")
-        return False
+    subprocess.Popen([LICENSE_INSTALLER_PATH], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    print("  License Installer launched.")
 
 
-def wait_for_window(timeout_seconds):
-    """Wait for the License Installer window to appear."""
+def wait_for_window(timeout_seconds: int):
+    """Wait for the License Installer window to appear.
+
+    Returns:
+        Tuple of (app, window, backend).
+
+    Raises:
+        RuntimeError: If the window doesn't appear within the timeout.
+    """
     from pywinauto import Application
 
     print(f"\nWaiting for '{WINDOW_TITLE}' window (up to {timeout_seconds}s)...")
 
-    start_time = time.time()
-
-    while time.time() - start_time < timeout_seconds:
+    start = time.time()
+    while time.time() - start < timeout_seconds:
         for backend in ["win32", "uia"]:
             try:
                 app = Application(backend=backend).connect(title=WINDOW_TITLE, timeout=1)
                 window = app.top_window()
-                elapsed = int(time.time() - start_time)
-                print(f"  Window found after {elapsed}s (using {backend} backend)")
+                print(f"  Window found after {int(time.time() - start)}s (backend: {backend})")
                 return app, window, backend
             except Exception:
                 pass
-
         time.sleep(0.5)
 
-    print(f"ERROR: Window not found after {timeout_seconds} seconds")
-    return None, None, None
+    raise RuntimeError(f"'{WINDOW_TITLE}' window not found after {timeout_seconds}s")
 
 
-def get_window_text_content(window):
-    """Get all text content from the window for status detection."""
+def get_window_text_content(window) -> str:
+    """Collect all visible text from the window."""
     try:
-        texts = []
-        for ctrl in window.descendants():
-            try:
-                text = ctrl.window_text()
-                if text and len(text) > 5:
-                    texts.append(text)
-            except Exception:
-                pass
+        texts = [ctrl.window_text() for ctrl in window.descendants() if ctrl.window_text() and len(ctrl.window_text()) > 5]
         return "\n".join(texts)
     except Exception:
         return ""
 
 
-def detect_license_status(window):
-    """
-    Detect if license validation succeeded or failed.
-    Returns: "loading", "success", "failure", or "unknown"
+def detect_license_status(window) -> str:
+    """Detect license validation state.
+
+    Returns:
+        One of: "loading", "success", "failure", "unknown".
     """
     content = get_window_text_content(window).lower()
 
-    # Check for loading state
     if "please wait" in content:
         return "loading"
 
-    # Check for failure indicators
-    failure_indicators = [
-        "can't fetch",
-        "cannot fetch",
-        "failed",
-        "kindly re-check",
-        "unable to connect",
-        "connection refused",
-    ]
+    failure_indicators = ["can't fetch", "cannot fetch", "failed", "kindly re-check", "unable to connect", "connection refused"]
+    if any(ind in content for ind in failure_indicators):
+        return "failure"
 
-    for indicator in failure_indicators:
-        if indicator in content:
-            return "failure"
-
-    # Check for success indicators (Step 6 with licenses found)
-    if "step 6 of 6" in content or "licenses summary" in content:
-        # Make sure it's not a failure
-        if "can't fetch" not in content and "kindly re-check" not in content:
-            return "success"
-        else:
-            return "failure"
+    if ("step 6 of 6" in content or "licenses summary" in content) and "can't fetch" not in content:
+        return "success"
 
     return "unknown"
 
 
-def step1_enter_license_and_next(window, backend):
-    """Step 1: Enter license server and click Next.
+# ============================================================================
+# AUTOMATION STEPS
+# ============================================================================
 
-    Note: This function avoids set_focus() and click_input() methods
-    which require an active desktop/mouse cursor. Instead, it uses
-    message-based methods that work even in headless/RDP environments.
+
+def _click_button(button, backend: str) -> bool:
+    """Click a pywinauto button using the most reliable method for the backend.
+
+    Uses message-based methods that work without an active desktop/cursor.
+
+    Returns True on success, False on failure.
     """
-    print(f"\n[Step 1] Entering license server: {LICENSE_SERVER}")
-
-    try:
-        # Find the Edit control (text box)
-        edit_control = None
-
-        if backend == "win32":
-            try:
-                edit_control = window.child_window(class_name="Edit")
-            except Exception:
-                pass
-
-        if edit_control is None:
-            try:
-                edit_control = window.child_window(control_type="Edit")
-            except Exception:
-                pass
-
-        if edit_control is None:
-            print("ERROR: Could not find the text box control.")
-            return False
-
-        # Enter the license server using set_edit_text (works without focus)
-        # NOTE: We skip set_focus() as it requires an active desktop/cursor
+    if backend == "uia":
         try:
-            edit_control.set_edit_text(LICENSE_SERVER)
-        except Exception:
-            # Fallback: try setting text via window_text property
-            edit_control.set_text(LICENSE_SERVER)
-        print(f"  Entered: {LICENSE_SERVER}")
-
-        # Click Next button using message-based click (no mouse simulation)
-        time.sleep(0.5)
-        next_button = None
-
-        # Try to find Next button
-        try:
-            next_button = window.child_window(title="Next")
+            button.invoke()
+            return True
         except Exception:
             pass
 
-        if next_button is None:
-            try:
-                next_button = window.child_window(title_re=".*Next.*")
-            except Exception:
-                pass
-
-        if next_button is None:
-            print("ERROR: Could not find the 'Next' button.")
-            return False
-
-        # Use click() which sends WM_CLICK message (no cursor required)
-        # For uia backend, try invoke() first as it's more reliable
-        clicked = False
-        if backend == "uia":
-            try:
-                next_button.invoke()
-                clicked = True
-            except Exception:
-                pass
-
-        if not clicked:
-            try:
-                # win32 click() sends BM_CLICK message - doesn't need cursor
-                next_button.click()
-                clicked = True
-            except Exception as click_err:
-                # Last resort: try to send Enter key to the button
-                try:
-                    next_button.type_keys("{ENTER}", set_foreground=False)
-                    clicked = True
-                except Exception:
-                    print(f"ERROR: Could not click Next button: {click_err}")
-                    return False
-
-        print("  Clicked 'Next' button")
+    try:
+        button.click()
         return True
+    except Exception:
+        pass
 
-    except Exception as e:
-        print(f"ERROR in step 1: {e}")
+    try:
+        button.type_keys("{ENTER}", set_foreground=False)
+        return True
+    except Exception:
         return False
 
 
-def wait_for_validation(window):
-    """Wait for license validation to complete."""
-    print("\n[Step 2] Waiting for license validation...")
-    print("  (This may take 30-60+ seconds)")
+def step1_enter_license_and_next(window, backend: str, license_server: str) -> None:
+    """Enter the license server address and click Next.
 
-    start_time = time.time()
+    Uses message-based methods that work in headless/RDP environments.
+
+    Raises:
+        RuntimeError: If the text box or Next button cannot be found/clicked.
+    """
+    print(f"\n[Step 1] Entering license server: {license_server}")
+
+    edit_control = None
+    for kwarg in [{"class_name": "Edit"}, {"control_type": "Edit"}]:
+        try:
+            edit_control = window.child_window(**kwarg)
+            break
+        except Exception:
+            pass
+
+    if edit_control is None:
+        raise RuntimeError("Could not find the license server text box.")
+
+    try:
+        edit_control.set_edit_text(license_server)
+    except Exception:
+        edit_control.set_text(license_server)
+    print(f"  Entered: {license_server}")
+
+    time.sleep(0.5)
+
+    next_button = None
+    for kwarg in [{"title": "Next"}, {"title_re": ".*Next.*"}]:
+        try:
+            next_button = window.child_window(**kwarg)
+            break
+        except Exception:
+            pass
+
+    if next_button is None:
+        raise RuntimeError("Could not find the 'Next' button.")
+
+    if not _click_button(next_button, backend):
+        raise RuntimeError("Could not click the 'Next' button.")
+
+    print("  Clicked 'Next'")
+
+
+def wait_for_validation(window) -> None:
+    """Wait for license validation to complete.
+
+    Raises:
+        RuntimeError: If validation fails or times out.
+    """
+    print("\n[Step 2] Waiting for license validation (30-60+ seconds)...")
+
+    start = time.time()
     last_status = None
 
-    while time.time() - start_time < VALIDATION_TIMEOUT_SECONDS:
+    while time.time() - start < VALIDATION_TIMEOUT_SECONDS:
         status = detect_license_status(window)
 
         if status != last_status:
-            elapsed = int(time.time() - start_time)
-            print(f"  [{elapsed}s] Status: {status}")
+            print(f"  [{int(time.time() - start)}s] Status: {status}")
             last_status = status
 
         if status == "success":
-            return True, "License validation successful!"
-        elif status == "failure":
-            return False, "License validation FAILED! Check VPN connection and license server."
+            return
+        if status == "failure":
+            raise RuntimeError("License validation FAILED. Check VPN connection and license server.")
 
         time.sleep(POLL_INTERVAL_SECONDS)
 
-    return False, f"Timeout after {VALIDATION_TIMEOUT_SECONDS} seconds"
+    raise RuntimeError(f"License validation timed out after {VALIDATION_TIMEOUT_SECONDS}s")
 
 
-def click_finish(window, backend):
-    """Click the Finish button to complete the process.
+def click_finish(window, backend: str) -> None:
+    """Click the Finish button to complete the installation.
 
-    Uses message-based click methods that work without an active desktop.
+    Raises:
+        RuntimeError: If the button cannot be found or clicked.
     """
-    print("\n[Step 3] Clicking 'Finish' button...")
+    print("\n[Step 3] Clicking 'Finish'...")
 
     try:
         finish_button = window.child_window(title="Finish")
-
-        # Use invoke() for uia backend, click() for win32
-        clicked = False
-        if backend == "uia":
-            try:
-                finish_button.invoke()
-                clicked = True
-            except Exception:
-                pass
-
-        if not clicked:
-            try:
-                finish_button.click()
-                clicked = True
-            except Exception:
-                pass
-
-        if clicked:
-            print("  Clicked 'Finish' button")
-            return True
-        else:
-            print("  Could not click Finish button")
-            return False
     except Exception as e:
-        print(f"  Could not find/click Finish button: {e}")
-        return False
+        raise RuntimeError(f"Could not find 'Finish' button: {e}") from e
+
+    if not _click_button(finish_button, backend):
+        raise RuntimeError("Could not click 'Finish' button.")
+
+    print("  Clicked 'Finish'")
 
 
-def main():
-    global LICENSE_SERVER
+# ============================================================================
+# ENTRY POINT
+# ============================================================================
 
-    # Parse command line arguments
+
+def main() -> None:
     parser = argparse.ArgumentParser(description="Automate Sim4Life License Installer")
     parser.add_argument("--license-server", type=str, help="License server address (e.g., @myserver.domain.com)")
     args = parser.parse_args()
 
-    # Override LICENSE_SERVER if provided via command line
-    if args.license_server:
-        LICENSE_SERVER = args.license_server
+    license_server = args.license_server or LICENSE_SERVER
 
     print("=" * 60)
     print("Sim4Life License Installer Automation")
     print("=" * 60)
 
-    # Check configuration
-    if LICENSE_SERVER == "YOUR_LICENSE_SERVER":
-        print("\nERROR: LICENSE_SERVER not configured!")
-        print("Please use --license-server argument or edit this file")
+    if license_server == "YOUR_LICENSE_SERVER":
+        print("\nERROR: LICENSE_SERVER not configured.")
+        print("Use --license-server or edit this file.")
         sys.exit(1)
 
-    print(f"License server: {LICENSE_SERVER}")
+    print(f"License server: {license_server}")
 
-    # Ensure pywinauto is installed
     if not ensure_pywinauto():
         sys.exit(1)
 
-    # Import after ensuring it's installed
+    try:
+        launch_license_installer()
+        time.sleep(0.5)
 
-    # Launch License Installer
-    if not launch_license_installer():
-        sys.exit(1)
+        _, window, backend = wait_for_window(WINDOW_WAIT_TIMEOUT_SECONDS)
 
-    # Wait for window to appear
-    app, window, backend = wait_for_window(WINDOW_WAIT_TIMEOUT_SECONDS)
+        step1_enter_license_and_next(window, backend, license_server)
+        wait_for_validation(window)
+        click_finish(window, backend)
 
-    if window is None:
-        print("\nERROR: Failed to find the License Installer window.")
-        sys.exit(1)
-
-    # Note: We skip set_focus() here as it requires an active desktop/cursor
-    # The automation methods we use (set_edit_text, invoke, click) work without focus
-    time.sleep(0.5)  # Brief pause to ensure window is ready
-
-    # Step 1: Enter license and click Next
-    if not step1_enter_license_and_next(window, backend):
-        print("\nFAILED at Step 1")
-        sys.exit(1)
-
-    # Step 2: Wait for validation
-    success, message = wait_for_validation(window)
-    print(f"\n{'SUCCESS' if success else 'FAILURE'}: {message}")
-
-    # Step 3: Click Finish
-    click_finish(window, backend)
-
-    # Final result
-    print("\n" + "=" * 60)
-    if success:
+        print("\n" + "=" * 60)
         print("LICENSE INSTALLATION COMPLETED SUCCESSFULLY!")
         print("=" * 60)
-        sys.exit(0)
-    else:
-        print("LICENSE INSTALLATION FAILED!")
-        print("=" * 60)
-        print("\nPossible causes:")
-        print("  - VPN not connected")
-        print("  - License server unreachable")
-        print("  - Invalid license server address")
-        print("\nPlease check your VPN connection and try again.")
+
+    except (RuntimeError, FileNotFoundError) as e:
+        print(f"\nFAILED: {e}")
+        print("\nPossible causes: VPN not connected, license server unreachable, wrong address.")
         sys.exit(1)
 
 
