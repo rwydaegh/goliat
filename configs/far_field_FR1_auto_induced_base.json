@@ -24,21 +24,21 @@
     ],
     "auto_induced": {
         "enabled": true,
-        "top_n": 20,
+        "top_n": 40,
         "cube_size_mm": 50,
         "search_metric": "E_magnitude",
         "extraction_metric": "sar",
         "full_volume_combination": true,
         "combine_chunk_size": 9999,
         "save_intermediate_files": false,
-        "use_xy_diagonal_for_sim_time": true,
+        "use_xy_diagonal_for_sim_time": false,
         "search": {
             "mode": "air",
             "n_samples": 10000,
             "random_seed": 42,
-            "shell_size_mm": 10.0,
-            "selection_percentile": 95.0,
-            "min_candidate_distance_mm": 50.0,
+            "shell_size_mm": 50.0,
+            "selection_percentile": 80.0,
+            "min_candidate_distance_mm": 100.0,
             "low_memory_mode": null,
             "slab_cache_gb": 2.0,
             "compute_distance": true
@@ -91,14 +91,14 @@
         "padding": {
             "padding_mode": "manual",
             "manual_bottom_padding_mm": [
-                0,
-                0,
-                0
+                100,
+                100,
+                100
             ],
             "manual_top_padding_mm": [
-                0,
-                0,
-                0
+                100,
+                100,
+                100
             ]
         }
     }
