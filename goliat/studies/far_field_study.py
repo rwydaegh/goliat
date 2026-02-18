@@ -651,10 +651,13 @@ class FarFieldStudy(BaseStudy):
                 results_dir = base_path / placement_name / f"{project_filename}.smash_Results"
 
                 if results_dir.exists():
-                    for f in results_dir.iterdir():
-                        if f.name.endswith("_Output.h5"):
-                            h5_paths.append(f)
-                            break  # Only one _Output.h5 per simulation
+                    candidates = sorted(
+                        (f for f in results_dir.iterdir() if f.name.endswith("_Output.h5")),
+                        key=lambda f: f.stat().st_mtime,
+                        reverse=True,
+                    )
+                    if candidates:
+                        h5_paths.append(candidates[0])
 
         return h5_paths
 
@@ -688,9 +691,13 @@ class FarFieldStudy(BaseStudy):
                 results_dir = base_path / placement_name / f"{project_filename}.smash_Results"
 
                 if results_dir.exists():
-                    for f in results_dir.iterdir():
-                        if f.name.endswith("_Input.h5"):
-                            return f
+                    candidates = sorted(
+                        (f for f in results_dir.iterdir() if f.name.endswith("_Input.h5")),
+                        key=lambda f: f.stat().st_mtime,
+                        reverse=True,
+                    )
+                    if candidates:
+                        return candidates[0]
 
         return None
 
