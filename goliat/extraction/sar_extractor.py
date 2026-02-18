@@ -76,19 +76,25 @@ class SarExtractor(LoggingMixin):
             if self.parent.study:
                 with self.parent.study.profiler.subtask("extract_sar_statistics"):  # type: ignore
                     em_sensor_extractor = self._setup_em_sensor_extractor(simulation_extractor)
-                    results = self._evaluate_sar_statistics(em_sensor_extractor)
+                    try:
+                        results = self._evaluate_sar_statistics(em_sensor_extractor)
 
-                    if not results:
-                        return
+                        if not results:
+                            return
 
-                    df = self._create_sar_dataframe(results)
-                    tissue_groups = self.tissue_grouper.group_tissues(df["Tissue"].tolist())
-                    group_sar_stats = self._calculate_group_sar(df, tissue_groups)
+                        df = self._create_sar_dataframe(results)
+                        tissue_groups = self.tissue_grouper.group_tissues(df["Tissue"].tolist())
+                        group_sar_stats = self._calculate_group_sar(df, tissue_groups)
 
-                    self._store_group_sar_results(group_sar_stats)
-                    self._store_all_regions_sar(df)
-                    self.extract_peak_sar_details(em_sensor_extractor)
-                    self._store_temporary_data(df, tissue_groups, group_sar_stats)
+                        self._store_group_sar_results(group_sar_stats)
+                        self._store_all_regions_sar(df)
+                        self.extract_peak_sar_details(em_sensor_extractor)
+                        self._store_temporary_data(df, tissue_groups, group_sar_stats)
+                    finally:
+                        try:
+                            self.document.AllAlgorithms.Remove(em_sensor_extractor)
+                        except Exception:
+                            pass
 
                 elapsed = self.parent.study.profiler.subtask_times["extract_sar_statistics"][-1]
             self._log(f"      - Subtask 'extract_sar_statistics' done in {elapsed:.2f}s", log_type="verbose")
