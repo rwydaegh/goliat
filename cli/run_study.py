@@ -396,7 +396,7 @@ def run_study_subprocess(config_filename: str, title: str, no_cache: bool) -> in
     if no_cache:
         cmd.append("--no-cache")
 
-    print(f"Starting study subprocess...")
+    print("Starting study subprocess...")
     print(f"  Command: {' '.join(cmd)}")
 
     # Run subprocess and wait for completion

@@ -106,117 +106,121 @@ fi
         logging.warning(f"Could not update ~/.bash_profile: {e}")
 
 
-def update_bashrc(selected_python_path, base_dir=None):
-    """
-    Creates/updates a project-local .bashrc file with PATH entries for Sim4Life Python.
+def _to_bash_path(selected_python_path: str) -> tuple[str, str, str]:
+    """Convert a Windows/Linux Python path to bash-compatible PATH export lines.
 
-    This creates a .bashrc file in the project directory (non-intrusive).
+    Returns:
+        (bash_path, python_export_line, scripts_export_line)
+    """
+    selected_python_path = selected_python_path.strip().strip('"').strip("'")
+    drive, path_rest = os.path.splitdrive(selected_python_path)
+    # os.path.splitdrive may not recognise Windows paths on Linux — handle manually
+    if not drive and path_rest and len(path_rest) >= 2 and path_rest[1] == ":":
+        drive = path_rest[0:2]
+        path_rest = path_rest[2:]
+
+    path_rest_normalized = path_rest.replace("\\", "/")
+    drive_letter = drive.replace(":", "").upper() if drive else ""
+    bash_path = f"/{drive_letter}{path_rest_normalized}"
+
+    python_line = f'export PATH="{bash_path}:$PATH"'
+    scripts_line = f'export PATH="{bash_path}/Scripts:$PATH"'
+    return bash_path, python_line, scripts_line
+
+
+def _parse_existing_bashrc(bashrc_path: str) -> tuple[list[str], dict[str, str], bool, bool]:
+    """Read and classify lines from an existing .bashrc.
+
+    Returns:
+        (preserved_lines, preserved_vars, has_ax_unsupported, has_pythonioencoding)
+    """
+    preserved_lines: list[str] = []
+    preserved_vars: dict[str, str] = {}
+    has_ax_unsupported = False
+    has_pythonioencoding = False
+
+    if not os.path.exists(bashrc_path):
+        return preserved_lines, preserved_vars, has_ax_unsupported, has_pythonioencoding
+
+    try:
+        with open(bashrc_path, "r", encoding="utf-8") as f:
+            all_lines = f.readlines()
+
+        for line in all_lines:
+            stripped = line.strip()
+            if stripped.startswith("export PATH") and "Sim4Life" in line:
+                continue
+            if "AX_USE_UNSUPPORTED_CARDS" in line:
+                has_ax_unsupported = True
+                preserved_vars["AX_USE_UNSUPPORTED_CARDS"] = line.rstrip("\n")
+                continue
+            if "PYTHONIOENCODING" in line:
+                has_pythonioencoding = True
+                preserved_vars["PYTHONIOENCODING"] = line.rstrip("\n")
+                continue
+            if stripped.startswith("export ") and "PATH" not in line:
+                var_name = stripped.split("=")[0].replace("export ", "").strip()
+                if var_name:
+                    preserved_vars[var_name] = line.rstrip("\n")
+                    continue
+            preserved_lines.append(line.rstrip("\n"))
+    except Exception as e:
+        logging.warning(f"Could not read existing .bashrc: {e}")
+
+    return preserved_lines, preserved_vars, has_ax_unsupported, has_pythonioencoding
+
+
+def _build_bashrc_lines(
+    python_line: str,
+    scripts_line: str,
+    preserved_lines: list[str],
+    preserved_vars: dict[str, str],
+    has_ax_unsupported: bool,
+    has_pythonioencoding: bool,
+) -> list[str]:
+    """Assemble the final line list for the updated .bashrc."""
+    new_lines = list(preserved_lines)
+    new_lines.append(python_line)
+    new_lines.append(scripts_line)
+
+    if not has_ax_unsupported:
+        new_lines.append("export AX_USE_UNSUPPORTED_CARDS=1")
+    elif "AX_USE_UNSUPPORTED_CARDS" in preserved_vars:
+        new_lines.append(preserved_vars["AX_USE_UNSUPPORTED_CARDS"])
+
+    if not has_pythonioencoding:
+        new_lines.append("export PYTHONIOENCODING=utf-8")
+    elif "PYTHONIOENCODING" in preserved_vars:
+        new_lines.append(preserved_vars["PYTHONIOENCODING"])
+
+    for var_name, var_line in preserved_vars.items():
+        if var_name not in ("AX_USE_UNSUPPORTED_CARDS", "PYTHONIOENCODING"):
+            new_lines.append(var_line)
+
+    return new_lines
+
+
+def update_bashrc(selected_python_path, base_dir=None):
+    """Creates/updates a project-local .bashrc with PATH entries for Sim4Life Python.
+
+    This creates a .bashrc in the project directory (non-intrusive).
     If base_dir is provided and user preference is set, also syncs to ~/.bashrc.
 
     Preserves existing content that is not Sim4Life PATH related, including
     AX_USE_UNSUPPORTED_CARDS and other custom environment variables.
     """
     bashrc_path = os.path.join(os.getcwd(), ".bashrc")
+    _, python_line, scripts_line = _to_bash_path(selected_python_path)
+    preserved_lines, preserved_vars, has_ax_unsupported, has_pythonioencoding = _parse_existing_bashrc(bashrc_path)
+    new_lines = _build_bashrc_lines(python_line, scripts_line, preserved_lines, preserved_vars, has_ax_unsupported, has_pythonioencoding)
 
-    # Strip any existing quotes from the input path
-    selected_python_path = selected_python_path.strip().strip('"').strip("'")
-
-    # Prepare the new path lines
-    drive, path_rest = os.path.splitdrive(selected_python_path)
-    # On Linux, os.path.splitdrive may not split Windows paths correctly
-    # If drive is empty, extract it manually from the path
-    if not drive and path_rest:
-        # Check if path starts with a drive letter (e.g., "C:\...")
-        if len(path_rest) >= 2 and path_rest[1] == ":":
-            drive = path_rest[0:2]  # Get "C:"
-            path_rest = path_rest[2:]  # Get rest after "C:"
-
-    # Replace backslashes with forward slashes (works on both Windows and Linux)
-    path_rest_normalized = path_rest.replace("\\", "/")
-    # Remove colon from drive letter (C: -> C) for bash path conversion
-    drive_letter = drive.replace(":", "").upper() if drive else ""
-    bash_path = f"/{drive_letter}{path_rest_normalized}"
-
-    # Write BOTH Python and Scripts directories to PATH
-    # Python directory: for python.exe itself
-    python_line = f'export PATH="{bash_path}:$PATH"\n'
-    # Scripts directory: for pip-installed executables like goliat.exe
-    scripts_line = f'export PATH="{bash_path}/Scripts:$PATH"\n'
-
-    # Read existing content to preserve non-Sim4Life lines
-    preserved_lines = []  # Lines to preserve (comments, non-Sim4Life exports, etc.)
-    preserved_vars = {}  # Track preserved environment variables
-    has_ax_unsupported = False
-    has_pythonioencoding = False
-
-    if os.path.exists(bashrc_path):
-        try:
-            with open(bashrc_path, "r", encoding="utf-8") as f:
-                all_lines = f.readlines()
-
-            # Parse existing content and preserve non-Sim4Life PATH lines
-            for line in all_lines:
-                stripped = line.strip()
-                # Skip Sim4Life PATH lines (will be replaced)
-                if stripped.startswith("export PATH") and "Sim4Life" in line:
-                    continue
-                # Preserve AX_USE_UNSUPPORTED_CARDS
-                if "AX_USE_UNSUPPORTED_CARDS" in line:
-                    has_ax_unsupported = True
-                    preserved_vars["AX_USE_UNSUPPORTED_CARDS"] = line.rstrip("\n")
-                    continue
-                # Preserve PYTHONIOENCODING
-                if "PYTHONIOENCODING" in line:
-                    has_pythonioencoding = True
-                    preserved_vars["PYTHONIOENCODING"] = line.rstrip("\n")
-                    continue
-                # Preserve other export statements that aren't Sim4Life PATH
-                if stripped.startswith("export ") and "PATH" not in line:
-                    var_name = stripped.split("=")[0].replace("export ", "").strip()
-                    if var_name:
-                        preserved_vars[var_name] = line.rstrip("\n")
-                        continue
-                # Preserve comments and other non-export lines
-                preserved_lines.append(line.rstrip("\n"))
-        except Exception as e:
-            logging.warning(f"Could not read existing .bashrc: {e}")
-
-    # Build new content
-    new_lines = []
-
-    # Add preserved non-export lines first
-    new_lines.extend(preserved_lines)
-
-    # Add Sim4Life PATH lines
-    new_lines.append(python_line.rstrip("\n"))
-    new_lines.append(scripts_line.rstrip("\n"))
-
-    # Add AX_USE_UNSUPPORTED_CARDS if not already present
-    if not has_ax_unsupported:
-        new_lines.append("export AX_USE_UNSUPPORTED_CARDS=1")
-    elif "AX_USE_UNSUPPORTED_CARDS" in preserved_vars:
-        new_lines.append(preserved_vars["AX_USE_UNSUPPORTED_CARDS"])
-
-    # Add PYTHONIOENCODING if not already present (fixes Unicode on older Windows)
-    if not has_pythonioencoding:
-        new_lines.append("export PYTHONIOENCODING=utf-8")
-    elif "PYTHONIOENCODING" in preserved_vars:
-        new_lines.append(preserved_vars["PYTHONIOENCODING"])
-
-    # Add other preserved environment variables
-    for var_name, var_line in preserved_vars.items():
-        if var_name not in ("AX_USE_UNSUPPORTED_CARDS", "PYTHONIOENCODING"):
-            new_lines.append(var_line)
-
-    # Write the updated content
     with open(bashrc_path, "w", encoding="utf-8") as f:
         f.write("\n".join(new_lines))
-        if new_lines:  # Add trailing newline if file has content
+        if new_lines:
             f.write("\n")
 
     logging.info("'.bashrc' has been updated. Please restart your shell or run 'source .bashrc'.")
 
-    # Check if user wants to sync to home directory
     if base_dir:
         prefs = get_user_preferences(base_dir)
         if prefs.get("sync_bashrc_to_home", False):
