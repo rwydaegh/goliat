@@ -100,14 +100,14 @@ def _estimate_cache_size_gb(h5_paths: Sequence[Union[str, Path]]) -> float:
 
 class SlabLRUCache:
     """LRU cache for z-slabs of field data.
-    
+
     Caches rectangular z-slabs to exploit spatial locality when scoring
     nearby air focus points. Much faster than single-point reads.
     """
-    
+
     def __init__(self, max_size_gb: float = 2.0, slab_thickness: int = 32):
         """Initialize the slab cache.
-        
+
         Args:
             max_size_gb: Maximum cache size in GB.
             slab_thickness: Number of z-slices per slab (default 32).
@@ -119,7 +119,7 @@ class SlabLRUCache:
         self._cache: OrderedDict[Tuple[str, int, int], np.ndarray] = OrderedDict()
         self._hits = 0
         self._misses = 0
-    
+
     def get_slab(
         self,
         h5_file: h5py.File,
@@ -129,50 +129,50 @@ class SlabLRUCache:
         z_slab_idx: int,
     ) -> np.ndarray:
         """Get a z-slab from cache or load from disk.
-        
+
         Args:
             h5_file: Open HDF5 file handle.
             h5_path: Path to H5 file (for cache key).
             field_path: Path to field group in H5.
             comp: Component index (0, 1, or 2).
             z_slab_idx: Which z-slab (z // slab_thickness).
-            
+
         Returns:
             Complex array of shape (Nx, Ny, slab_thickness, 2) or smaller at boundary.
         """
         key = (h5_path, comp, z_slab_idx)
-        
+
         if key in self._cache:
             # Move to end (most recently used)
             self._cache.move_to_end(key)
             self._hits += 1
             return self._cache[key]
-        
+
         # Cache miss - load from disk
         self._misses += 1
         dataset = h5_file[f"{field_path}/comp{comp}"]
         shape = dataset.shape  # (Nx, Ny, Nz, 2)
-        
+
         z_start = z_slab_idx * self.slab_thickness
         z_end = min(z_start + self.slab_thickness, shape[2])
-        
+
         # Read the slab
         slab_data = dataset[:, :, z_start:z_end, :]
         # Convert to complex immediately to save memory
         slab_complex = (slab_data[..., 0] + 1j * slab_data[..., 1]).astype(np.complex64)
-        
+
         # Evict old entries if needed
         slab_bytes = slab_complex.nbytes
         while self.current_size_bytes + slab_bytes > self.max_size_bytes and self._cache:
             _, evicted = self._cache.popitem(last=False)
             self.current_size_bytes -= evicted.nbytes
-        
+
         # Add to cache
         self._cache[key] = slab_complex
         self.current_size_bytes += slab_bytes
-        
+
         return slab_complex
-    
+
     def get_stats(self) -> Dict[str, float]:
         """Get cache statistics."""
         total = self._hits + self._misses
@@ -202,7 +202,7 @@ class FieldCache:
 
     # Minimum recommended headroom (GB) after loading cache
     MIN_HEADROOM_GB = 8.0
-    
+
     # Default slab cache size for streaming mode (GB)
     DEFAULT_SLAB_CACHE_GB = 2.0
 
@@ -228,7 +228,7 @@ class FieldCache:
         self.fields: Dict[str, List[np.ndarray]] = {}
         self.shapes: Dict[str, Tuple[int, int, int]] = {}
         self.slab_cache_gb = slab_cache_gb
-        
+
         # Slab cache for streaming mode (initialized lazily)
         self._slab_cache: Optional[SlabLRUCache] = None
         # Keep file handles open in streaming mode for efficiency
@@ -297,26 +297,26 @@ class FieldCache:
 
             total_mb = sum(sum(c.nbytes for c in comps) for comps in self.fields.values()) / 1e6
             logger.info(f"  [timing] Field cache loaded: {time.perf_counter() - t0:.2f}s, {total_mb:.0f} MB")
-    
+
     def _init_streaming_mode(self):
         """Initialize streaming mode with slab cache and open file handles."""
         self._slab_cache = SlabLRUCache(
             max_size_gb=self.slab_cache_gb,
             slab_thickness=32,  # ~32 z-slices per slab, good balance
         )
-        
+
         # Open all files and cache field paths
         for h5_path in self.h5_paths:
             f = h5py.File(h5_path, "r")
             self._open_files[h5_path] = f
-            
+
             fg_path = find_overall_field_group(f)
             if fg_path is None:
                 raise ValueError(f"No 'Overall Field' found in {h5_path}")
-            
+
             field_path = get_field_path(fg_path, self.field_type)
             self._field_paths[h5_path] = field_path
-            
+
             # Get shape from first component
             dataset = f[f"{field_path}/comp0"]
             self.shapes[h5_path] = dataset.shape[:3]
@@ -394,7 +394,7 @@ class FieldCache:
 
     def _read_at_indices_streaming_optimized(self, h5_path: str, indices: np.ndarray) -> np.ndarray:
         """Read using direct point reads for scattered points, slab cache for local clusters.
-        
+
         Strategy:
         - For small N (<= 1000): Use direct point reads (no slab overhead)
         - For large N with spatial locality: Use slab caching
@@ -402,107 +402,106 @@ class FieldCache:
         """
         result = np.zeros((len(indices), 3), dtype=np.complex64)
         n_points = len(indices)
-        
+
         if n_points == 0:
             return result
-        
-        f = self._open_files[h5_path]
-        field_path = self._field_paths[h5_path]
-        
+
         # For scattered points (like random focus points), direct reads are faster
         # because slab reads load huge amounts of unused data
         # Threshold: if we'd need to read more than 50% of slabs, use direct reads
+        assert self._slab_cache is not None
         slab_thickness = self._slab_cache.slab_thickness
-        
+
         # Check spatial locality: how many unique z-slabs would we need?
         sample_iz = np.minimum(indices[:, 2], self.shapes[h5_path][2] - 1)
         unique_slabs_needed = len(np.unique(sample_iz // slab_thickness))
         total_slabs = (self.shapes[h5_path][2] + slab_thickness - 1) // slab_thickness
-        
+
         # Use direct reads if:
         # 1. Small number of points (< 1000)
         # 2. Points are scattered (need > 50% of slabs)
         use_direct_reads = n_points < 1000 or unique_slabs_needed > total_slabs * 0.5
-        
+
         if use_direct_reads:
             return self._read_at_indices_direct(h5_path, indices)
         else:
             return self._read_at_indices_slab_cached(h5_path, indices)
-    
+
     def _read_at_indices_direct(self, h5_path: str, indices: np.ndarray) -> np.ndarray:
         """Read points by iterating through z-slices (memory efficient, reasonably fast).
-        
+
         Strategy: Read one z-slice at a time (contiguous read), extract needed points.
         This is much faster than individual point reads and uses minimal memory.
-        
+
         Memory usage: ~2 MB per z-slice (500x500x2x4 bytes)
         """
         result = np.zeros((len(indices), 3), dtype=np.complex64)
         n_points = len(indices)
-        
+
         if n_points == 0:
             return result
-        
+
         f = self._open_files[h5_path]
         field_path = self._field_paths[h5_path]
-        
+
         for comp in range(3):
             dataset = f[f"{field_path}/comp{comp}"]
             shape = dataset.shape[:3]
-            
+
             # Clamp indices to valid range
             ix = np.minimum(indices[:, 0], shape[0] - 1)
             iy = np.minimum(indices[:, 1], shape[1] - 1)
             iz = np.minimum(indices[:, 2], shape[2] - 1)
-            
+
             # Group points by z-index
             unique_z = np.unique(iz)
-            
+
             # Read one z-slice at a time and extract points
             for z_val in unique_z:
                 # Find points at this z
                 mask = iz == z_val
                 point_indices = np.where(mask)[0]
-                
+
                 # Read single z-slice (contiguous, fast)
                 z_slice = dataset[:, :, int(z_val), :]  # Shape: (Nx, Ny, 2)
-                
+
                 # Extract points from this slice
                 ix_at_z = ix[mask]
                 iy_at_z = iy[mask]
                 data = z_slice[ix_at_z, iy_at_z, :]  # Shape: (n_points_at_z, 2)
                 result[point_indices, comp] = data[:, 0] + 1j * data[:, 1]
-        
+
         return result
-    
+
     def _read_at_indices_slab_cached(self, h5_path: str, indices: np.ndarray) -> np.ndarray:
         """Read using slab-based LRU cache (for spatially clustered points).
-        
+
         Best when points are clustered (like skin voxels in a cube around focus).
         """
         result = np.zeros((len(indices), 3), dtype=np.complex64)
         n_points = len(indices)
-        
+
         if n_points == 0:
             return result
-        
+
         f = self._open_files[h5_path]
         field_path = self._field_paths[h5_path]
+        assert self._slab_cache is not None
         slab_thickness = self._slab_cache.slab_thickness
-        
+
         for comp in range(3):
             dataset = f[f"{field_path}/comp{comp}"]
             shape = dataset.shape[:3]
-            
+
             # Clamp indices to valid range for this component
             ix = np.minimum(indices[:, 0], shape[0] - 1)
             iy = np.minimum(indices[:, 1], shape[1] - 1)
             iz = np.minimum(indices[:, 2], shape[2] - 1)
-            
+
             # Group points by z-slab for efficient batch reads
             z_slab_indices = iz // slab_thickness
             unique_slabs = np.unique(z_slab_indices)
-            
+
             for z_slab_idx in unique_slabs:
                 # Get slab from cache (loads from disk if not cached)
                 slab = self._slab_cache.get_slab(
@@ -512,25 +511,25 @@ class FieldCache:
                     comp=comp,
                     z_slab_idx=int(z_slab_idx),
                 )
-                
+
                 # Find points in this slab
                 mask = z_slab_indices == z_slab_idx
                 point_indices = np.where(mask)[0]
-                
+
                 # Local z-index within slab
                 z_local = iz[mask] - (z_slab_idx * slab_thickness)
-                
+
                 # Vectorized read from cached slab
                 result[point_indices, comp] = slab[ix[mask], iy[mask], z_local]
-        
+
         return result
-    
+
     def get_cache_stats(self) -> Optional[Dict[str, float]]:
         """Get slab cache statistics (streaming mode only)."""
         if self._slab_cache is not None:
             return self._slab_cache.get_stats()
         return None
-    
+
     def close(self):
         """Close open file handles (streaming mode cleanup)."""
         for f in self._open_files.values():
@@ -539,7 +538,7 @@ class FieldCache:
             except Exception:
                 pass
         self._open_files.clear()
-    
+
     def __del__(self):
         """Cleanup on garbage collection."""
         self.close()
@@ -795,20 +794,20 @@ def compute_all_hotspot_scores_chunked(
     chunk_size: int = 100,
 ) -> np.ndarray:
     """Compute hotspot scores using chunked processing with deduplication.
-    
+
     DEPRECATED: This function is kept for backward compatibility.
     Use compute_all_hotspot_scores_streaming() instead for low-memory mode.
-    
+
     Key insight: Nearby air points share many skin voxels. By processing in chunks
     and deduplicating skin indices, we dramatically reduce I/O.
-    
+
     Algorithm:
     1. Read E_z at ALL focus points (small, ~10K points)
     2. For each chunk of air points:
        a. Find all unique skin voxels across the chunk
        b. Read E-field at unique voxels from all directions
        c. Compute scores using the cached data
-    
+
     Args:
         h5_paths: List of _Output.h5 files (one per direction/polarization).
         sampled_air_indices: (N_air, 3) array of air focus point indices.
@@ -817,14 +816,14 @@ def compute_all_hotspot_scores_chunked(
         cube_size_mm: Size of cube around focus to evaluate (mm).
         field_cache: Optional pre-loaded field cache.
         chunk_size: Number of air points to process per chunk.
-        
+
     Returns:
         Array of shape (N_air,) with hotspot scores.
     """
     logger = logging.getLogger("progress")
     n_air = len(sampled_air_indices)
     n_dirs = len(h5_paths)
-    
+
     # Pre-compute cube half-sizes in voxels
     dx = np.mean(np.diff(axis_x))
     dy = np.mean(np.diff(axis_y))
@@ -833,12 +832,12 @@ def compute_all_hotspot_scores_chunked(
     half_nx = int(np.ceil(cube_size_m / (2 * dx)))
     half_ny = int(np.ceil(cube_size_m / (2 * dy)))
     half_nz = int(np.ceil(cube_size_m / (2 * dz)))
-    
+
     # Step 1: Read E_z at ALL focus points (this is small - just n_air points)
     logger.info("  [chunked] Step 1: Reading E_z at all focus points...")
     all_focus_indices = np.array(sampled_air_indices)
     E_z_at_focus_all = np.zeros((n_dirs, n_air), dtype=np.complex64)
-    
+
     for dir_idx, h5_path in enumerate(tqdm(h5_paths, desc="Reading focus E_z", leave=False)):
         h5_str = str(h5_path)
         if field_cache is not None:
@@ -846,30 +845,29 @@ def compute_all_hotspot_scores_chunked(
         else:
             E_focus = read_field_at_indices(h5_str, all_focus_indices, field_type="E")
         E_z_at_focus_all[dir_idx, :] = E_focus[:, 2]
-    
+
     # Step 2: Process in chunks
     n_chunks = (n_air + chunk_size - 1) // chunk_size
     logger.info(f"  [chunked] Step 2: Processing {n_air} air points in {n_chunks} chunks of {chunk_size}...")
-    
+
     hotspot_scores = np.zeros(n_air, dtype=np.float64)
-    
+
     # Track timing for first chunk to estimate total
     first_chunk_time = None
-    
+
     for chunk_idx in tqdm(range(n_chunks), desc="Processing chunks"):
         chunk_start_time = time.perf_counter()
         chunk_start = chunk_idx * chunk_size
         chunk_end = min(chunk_start + chunk_size, n_air)
         chunk_air_indices = sampled_air_indices[chunk_start:chunk_end]
-        n_in_chunk = len(chunk_air_indices)
-        
+
         # Find all skin voxels for this chunk and deduplicate
         all_skin_indices_list = []
         skin_ranges = []  # (start, end) in the deduplicated array for each air point
-        
+
         for air_idx in chunk_air_indices:
             ix, iy, iz = air_idx
-            
+
             # Cube bounds
             ix_min = max(0, ix - half_nx)
             ix_max = min(skin_mask.shape[0], ix + half_nx + 1)
@@ -877,42 +875,42 @@ def compute_all_hotspot_scores_chunked(
             iy_max = min(skin_mask.shape[1], iy + half_ny + 1)
             iz_min = max(0, iz - half_nz)
             iz_max = min(skin_mask.shape[2], iz + half_nz + 1)
-            
+
             # Find skin voxels in cube
             skin_cube = skin_mask[ix_min:ix_max, iy_min:iy_max, iz_min:iz_max]
             skin_indices_local = np.argwhere(skin_cube)
-            
+
             if len(skin_indices_local) == 0:
                 skin_ranges.append((None, None))
             else:
                 skin_indices_global = skin_indices_local + np.array([ix_min, iy_min, iz_min])
                 all_skin_indices_list.append(skin_indices_global)
                 skin_ranges.append(len(all_skin_indices_list) - 1)  # Index into list
-        
+
         if not all_skin_indices_list:
             # No skin voxels in this chunk
             continue
-        
+
         # Concatenate and deduplicate skin indices
         all_skin_concat = np.vstack(all_skin_indices_list)
-        
+
         # Convert to tuples for deduplication
         skin_tuples = [tuple(idx) for idx in all_skin_concat]
         unique_tuples = list(set(skin_tuples))
         unique_skin_indices = np.array(unique_tuples)
-        
+
         # Create mapping from original indices to unique indices
         tuple_to_unique_idx = {t: i for i, t in enumerate(unique_tuples)}
-        
+
         n_unique = len(unique_skin_indices)
-        
+
         # Log first chunk stats for debugging
         if chunk_idx == 0:
             logger.info(f"  [chunk 0] {n_unique:,} unique skin voxels from {len(all_skin_concat):,} total")
-        
+
         # Read E-field at unique skin voxels from all directions
         E_skin_unique = np.zeros((n_dirs, n_unique, 3), dtype=np.complex64)
-        
+
         for dir_idx, h5_path in enumerate(h5_paths):
             h5_str = str(h5_path)
             if field_cache is not None:
@@ -920,44 +918,41 @@ def compute_all_hotspot_scores_chunked(
             else:
                 E_skin = read_field_at_indices(h5_str, unique_skin_indices, field_type="E")
             E_skin_unique[dir_idx, :, :] = E_skin
-        
+
         # Log timing for first chunk
         if chunk_idx == 0:
             first_chunk_time = time.perf_counter() - chunk_start_time
             estimated_total = first_chunk_time * n_chunks
             logger.info(f"  [chunk 0] Took {first_chunk_time:.1f}s, estimated total: {estimated_total / 60:.1f} min")
-        
+
         # Compute scores for each air point in chunk
-        list_idx = 0
         for local_i, air_idx in enumerate(chunk_air_indices):
             global_i = chunk_start + local_i
             range_info = skin_ranges[local_i]
-            
+
             if range_info == (None, None):
                 hotspot_scores[global_i] = 0.0
                 continue
-            
+
             # Get skin indices for this air point
             skin_indices_for_point = all_skin_indices_list[range_info]
-            
+
             # Map to unique indices
-            unique_idx_for_point = np.array([
-                tuple_to_unique_idx[tuple(idx)] for idx in skin_indices_for_point
-            ])
-            
+            unique_idx_for_point = np.array([tuple_to_unique_idx[tuple(idx)] for idx in skin_indices_for_point])
+
             # Get E_z at focus and compute weights
             E_z_focus = E_z_at_focus_all[:, global_i]
             phases = -np.angle(E_z_focus)
             weights = (1.0 / np.sqrt(n_dirs)) * np.exp(1j * phases)
-            
+
             # Get E-field at skin voxels and combine with weights
             E_skin_point = E_skin_unique[:, unique_idx_for_point, :]  # (n_dirs, n_skin, 3)
             E_combined = np.sum(weights[:, np.newaxis, np.newaxis] * E_skin_point, axis=0)
-            
+
             # Compute |E_combined|² and mean
             E_combined_sq = np.sum(np.abs(E_combined) ** 2, axis=1)
             hotspot_scores[global_i] = float(np.mean(E_combined_sq))
-    
+
     return hotspot_scores
 
 
@@ -970,13 +965,13 @@ def _precompute_skin_indices_for_air_points(
     subsample: int = 1,
 ) -> Tuple[List[np.ndarray], int]:
     """Precompute (subsampled) skin voxel indices for each air focus point.
-    
+
     Args:
         sampled_air_indices: (N_air, 3) array of air focus point indices.
         skin_mask: Boolean mask of skin voxels.
         half_nx, half_ny, half_nz: Half-cube sizes in voxels.
         subsample: Subsampling factor (1 = no subsampling, 4 = every 4th voxel).
-        
+
     Returns:
         Tuple of:
             - List of (N_skin_i, 3) arrays, one per air point
@@ -984,10 +979,10 @@ def _precompute_skin_indices_for_air_points(
     """
     air_to_skin = []
     total_skin = 0
-    
+
     for air_idx in sampled_air_indices:
         ix, iy, iz = air_idx
-        
+
         # Cube bounds
         ix_min = max(0, ix - half_nx)
         ix_max = min(skin_mask.shape[0], ix + half_nx + 1)
@@ -995,25 +990,25 @@ def _precompute_skin_indices_for_air_points(
         iy_max = min(skin_mask.shape[1], iy + half_ny + 1)
         iz_min = max(0, iz - half_nz)
         iz_max = min(skin_mask.shape[2], iz + half_nz + 1)
-        
+
         # Find skin voxels in cube
         skin_cube = skin_mask[ix_min:ix_max, iy_min:iy_max, iz_min:iz_max]
         skin_indices_local = np.argwhere(skin_cube)
-        
+
         if len(skin_indices_local) == 0:
             air_to_skin.append(np.zeros((0, 3), dtype=np.int32))
         else:
             # Convert to global indices
             skin_indices_global = skin_indices_local + np.array([ix_min, iy_min, iz_min])
-            
+
             # Subsample if requested
             if subsample > 1 and len(skin_indices_global) > subsample:
                 # Take every nth voxel (deterministic subsampling)
                 skin_indices_global = skin_indices_global[::subsample]
-            
+
             air_to_skin.append(skin_indices_global.astype(np.int32))
             total_skin += len(skin_indices_global)
-    
+
     return air_to_skin, total_skin
 
 
@@ -1028,19 +1023,19 @@ def compute_all_hotspot_scores_streaming(
     skin_subsample: int = 4,
 ) -> np.ndarray:
     """Compute hotspot scores using direction-major streaming with subsampled skin.
-    
+
     This is the FAST low-memory algorithm. Key insights:
-    
+
     1. **Direction-major processing**: Load one E-field at a time (3 GB), process
        ALL air points, then free memory. This is sequential I/O = fast.
-       
+
     2. **Skin subsampling**: Use every Nth skin voxel for scoring. Since the score
        is a mean, subsampling gives an unbiased estimate with acceptable variance.
        Reduces memory from 370M entries to ~6M entries.
-       
+
     3. **Accumulate E_combined incrementally**: Store partial sums for each
        (air_point, skin_voxel) pair. Memory: ~150 MB for 10K air points.
-    
+
     Algorithm:
         1. Precompute subsampled skin indices for each air point (~72 MB)
         2. Read E_z at all focus points from all directions (small I/O)
@@ -1050,10 +1045,10 @@ def compute_all_hotspot_scores_streaming(
            b. For each air point, accumulate weighted E at its skin voxels
            c. Free E-field memory
         5. Compute final scores from accumulated E_combined
-    
+
     Memory usage: ~3.5 GB (one E-field + accumulators + indices)
     Time: ~72 × 30s = 36 minutes (vs 42 hours for naive approach)
-    
+
     Args:
         h5_paths: List of _Output.h5 files (one per direction/polarization).
         sampled_air_indices: (N_air, 3) array of air focus point indices.
@@ -1062,16 +1057,16 @@ def compute_all_hotspot_scores_streaming(
         cube_size_mm: Size of cube around focus to evaluate (mm).
         skin_subsample: Subsampling factor for skin voxels (default 4 = use 1/4 of voxels).
             Higher = faster but noisier scores. Recommended: 2-8.
-        
+
     Returns:
         Array of shape (N_air,) with hotspot scores.
     """
     logger = logging.getLogger("progress")
     n_air = len(sampled_air_indices)
     n_dirs = len(h5_paths)
-    
+
     logger.info(f"  [streaming] Direction-major streaming with {skin_subsample}x skin subsampling")
-    
+
     # Pre-compute cube half-sizes in voxels
     dx = np.mean(np.diff(axis_x))
     dy = np.mean(np.diff(axis_y))
@@ -1080,14 +1075,14 @@ def compute_all_hotspot_scores_streaming(
     half_nx = int(np.ceil(cube_size_m / (2 * dx)))
     half_ny = int(np.ceil(cube_size_m / (2 * dy)))
     half_nz = int(np.ceil(cube_size_m / (2 * dz)))
-    
+
     # Step 1: Precompute subsampled skin indices for each air point
     t0 = time.perf_counter()
     logger.info("  [streaming] Step 1: Precomputing skin indices...")
     air_to_skin, total_skin = _precompute_skin_indices_for_air_points(
         sampled_air_indices, skin_mask, half_nx, half_ny, half_nz, subsample=skin_subsample
     )
-    
+
     # Count air points with skin
     n_with_skin = sum(1 for s in air_to_skin if len(s) > 0)
     avg_skin_per_point = total_skin / max(n_with_skin, 1)
@@ -1096,96 +1091,95 @@ def compute_all_hotspot_scores_streaming(
         f"  [streaming] {n_with_skin}/{n_air} air points have skin, "
         f"avg {avg_skin_per_point:.0f} skin voxels/point, {indices_memory_mb:.1f} MB for indices"
     )
-    
+
     # Step 2: Read E_z at all focus points from all directions
     # OPTIMIZATION: Read entire E_z component at once (~1.5 GB) instead of slice-by-slice
     # Slice-by-slice was taking ~1s per slice × 2800 slices = 47 min per file!
     logger.info("  [streaming] Step 2: Reading E_z at all focus points...")
     logger.info("    Loading entire E_z component per file (~1.5 GB) - much faster than slice-by-slice")
     E_z_at_focus_all = np.zeros((n_dirs, n_air), dtype=np.complex64)
-    
+
     for dir_idx, h5_path in enumerate(tqdm(h5_paths, desc="Reading focus E_z", leave=False)):
         t_file_start = time.perf_counter()
-        
+
         with h5py.File(h5_path, "r") as f:
             fg_path = find_overall_field_group(f)
+            assert fg_path is not None
             field_path = get_field_path(fg_path, "E")
-            
+
             # Read ENTIRE E_z component at once (much faster than slice-by-slice)
             dataset = f[f"{field_path}/comp2"]
             shape = dataset.shape[:3]
-            
+
             # Load entire E_z field (~1.5 GB for 452×472×3007×2 float32)
             t_load_start = time.perf_counter()
             E_z_full = dataset[:]  # Shape: (Nx, Ny, Nz, 2)
             t_load = time.perf_counter() - t_load_start
-            
+
             # Convert to complex
             E_z_complex = (E_z_full[..., 0] + 1j * E_z_full[..., 1]).astype(np.complex64)
             del E_z_full  # Free memory
-            
+
             # Clamp indices and extract values
             ix = np.minimum(sampled_air_indices[:, 0], shape[0] - 1)
             iy = np.minimum(sampled_air_indices[:, 1], shape[1] - 1)
             iz = np.minimum(sampled_air_indices[:, 2], shape[2] - 1)
-            
+
             # Vectorized extraction (very fast)
             E_z_at_focus_all[dir_idx, :] = E_z_complex[ix, iy, iz]
-            
+
             del E_z_complex  # Free memory
-            
+
             t_total = time.perf_counter() - t_file_start
             if dir_idx == 0:
                 logger.info(f"    [dir 0] First file: load={t_load:.1f}s, total={t_total:.1f}s")
-    
+
     # Step 3: Compute all MRT weights
     logger.info("  [streaming] Step 3: Computing MRT weights...")
     phases = -np.angle(E_z_at_focus_all)  # (n_dirs, n_air)
     weights = (1.0 / np.sqrt(n_dirs)) * np.exp(1j * phases).astype(np.complex64)  # (n_dirs, n_air)
-    
+
     # Step 4: Allocate accumulators for E_combined at each (air_point, skin_voxel)
     # We store as a list of arrays to handle variable skin counts per air point
     logger.info("  [streaming] Step 4: Allocating accumulators...")
-    E_combined_accum = [
-        np.zeros((len(skin_idx), 3), dtype=np.complex64) if len(skin_idx) > 0 else None
-        for skin_idx in air_to_skin
-    ]
+    E_combined_accum = [np.zeros((len(skin_idx), 3), dtype=np.complex64) if len(skin_idx) > 0 else None for skin_idx in air_to_skin]
     accum_memory_mb = sum(a.nbytes for a in E_combined_accum if a is not None) / 1e6
     logger.info(f"  [streaming] Accumulator memory: {accum_memory_mb:.1f} MB")
-    
+
     # Step 5: Stream through directions, accumulate weighted E
     logger.info(f"  [streaming] Step 5: Streaming through {n_dirs} directions...")
     t_stream_start = time.perf_counter()
-    
+
     for dir_idx, h5_path in enumerate(tqdm(h5_paths, desc="Processing directions")):
         t_dir_start = time.perf_counter()
-        
+
         # Load ENTIRE E-field for this direction
         # NOTE: Components may have different shapes due to Yee grid staggering,
         # so we load them separately and index each one individually
         with h5py.File(h5_path, "r") as f:
             fg_path = find_overall_field_group(f)
+            assert fg_path is not None
             field_path = get_field_path(fg_path, "E")
-            
+
             # Load all 3 components as separate arrays (they may have different shapes!)
             E_components = []
             for comp in range(3):
                 dataset = f[f"{field_path}/comp{comp}"]
                 data = dataset[:]  # Load entire component
                 E_components.append((data[..., 0] + 1j * data[..., 1]).astype(np.complex64))
-        
+
         t_load = time.perf_counter() - t_dir_start
-        
+
         # For each air point, accumulate weighted contribution
         dir_weights = weights[dir_idx, :]  # (n_air,)
-        
+
         for air_idx in range(n_air):
             skin_indices = air_to_skin[air_idx]
             if len(skin_indices) == 0:
                 continue
-            
+
             w = dir_weights[air_idx]
-            
+
             # Read from each component separately (they may have different shapes)
             E_at_skin = np.zeros((len(skin_indices), 3), dtype=np.complex64)
             for comp in range(3):
@@ -1195,29 +1189,26 @@ def compute_all_hotspot_scores_streaming(
                 iy = np.minimum(skin_indices[:, 1], E_comp.shape[1] - 1)
                 iz = np.minimum(skin_indices[:, 2], E_comp.shape[2] - 1)
                 E_at_skin[:, comp] = E_comp[ix, iy, iz]
-            
+
             E_combined_accum[air_idx] += w * E_at_skin
-        
+
         t_process = time.perf_counter() - t_dir_start - t_load
-        
+
         # Log progress for first direction
         if dir_idx == 0:
             estimated_total = (t_load + t_process) * n_dirs
-            logger.info(
-                f"  [dir 0] Load: {t_load:.1f}s, Process: {t_process:.1f}s, "
-                f"Est. total: {estimated_total / 60:.1f} min"
-            )
-        
+            logger.info(f"  [dir 0] Load: {t_load:.1f}s, Process: {t_process:.1f}s, Est. total: {estimated_total / 60:.1f} min")
+
         # Explicitly free E_field memory
         del E_components
-    
+
     t_stream_total = time.perf_counter() - t_stream_start
     logger.info(f"  [streaming] Streaming completed in {t_stream_total / 60:.1f} min")
-    
+
     # Step 6: Compute final scores from accumulated E_combined
     logger.info("  [streaming] Step 6: Computing final scores...")
     hotspot_scores = np.zeros(n_air, dtype=np.float64)
-    
+
     for air_idx in range(n_air):
         E_combined = E_combined_accum[air_idx]
         if E_combined is None or len(E_combined) == 0:
@@ -1226,10 +1217,10 @@ def compute_all_hotspot_scores_streaming(
             # |E_combined|² = |Ex|² + |Ey|² + |Ez|²
             E_combined_sq = np.sum(np.abs(E_combined) ** 2, axis=1)
             hotspot_scores[air_idx] = float(np.mean(E_combined_sq))
-    
+
     total_time = time.perf_counter() - t0
     logger.info(f"  [streaming] Total time: {total_time / 60:.1f} min ({total_time / n_air * 1000:.1f} ms/sample)")
-    
+
     return hotspot_scores
 
 
@@ -1374,18 +1365,18 @@ def _find_focus_air_based(
     compute_distance: bool = True,
 ) -> Tuple[np.ndarray, np.ndarray, dict]:
     """Air-based focus search - physically correct MaMIMO beamforming model.
-    
+
     In low-memory mode, uses direction-major streaming with skin subsampling:
     - Loads one E-field at a time (3 GB) instead of all 72 (216 GB)
     - Uses subsampled skin voxels for scoring (unbiased estimate)
     - Completes in ~30-40 minutes instead of 42+ hours
-    
+
     Args:
         compute_distance: If True, compute and export distance-to-skin for each air point.
             Uses scipy's EDT (~5-10s for 500³ grid). Enabled by default.
     """
     logger = logging.getLogger("progress")
-    
+
     valid_air_indices, ax_x, ax_y, ax_z, skin_mask = find_valid_air_focus_points(
         input_h5_path=str(input_h5_path),
         cube_size_mm=cube_size_mm,
@@ -1395,7 +1386,7 @@ def _find_focus_air_based(
 
     n_valid = len(valid_air_indices)
     logger.info(f"Found {n_valid:,} valid air focus points near skin")
-    
+
     # Compute distance-to-skin map if requested (for analysis/export)
     distance_map = None
     if compute_distance:
@@ -1420,19 +1411,19 @@ def _find_focus_air_based(
     # Determine memory mode
     available_gb = _get_available_memory_gb()
     estimated_gb = _estimate_cache_size_gb(h5_paths)
-    
+
     if low_memory is None:
         # Auto-detect: use streaming if RAM is insufficient
         use_streaming = available_gb > 0 and estimated_gb > available_gb - FieldCache.MIN_HEADROOM_GB
     else:
         use_streaming = low_memory
-    
+
     if available_gb > 0:
         logger.info(f"  Memory check: {estimated_gb:.1f} GB needed, {available_gb:.1f} GB available")
-    
+
     t_scoring_start = time.perf_counter()
     cache_stats = None
-    
+
     if use_streaming:
         # LOW-MEMORY MODE: Direction-major streaming with skin subsampling
         # This is the new fast algorithm that completes in ~30-40 minutes
@@ -1442,7 +1433,7 @@ def _find_focus_air_based(
             f"  - Uses {skin_subsample}x skin subsampling for scoring\n"
             f"  - Expected time: ~30-40 minutes for 72 directions"
         )
-        
+
         hotspot_scores = compute_all_hotspot_scores_streaming(
             h5_paths=h5_paths,
             sampled_air_indices=sampled_air_indices,
@@ -1453,20 +1444,19 @@ def _find_focus_air_based(
             cube_size_mm=cube_size_mm,
             skin_subsample=skin_subsample,
         )
-        
+
         # For streaming mode, we need to read phases separately at the end
         # (the streaming function doesn't keep a cache open)
         field_cache = None
-        
+
     else:
         # HIGH-RAM MODE: Pre-load all fields, use simple loop (original, fast ~3 min)
-        logger.info(f"  Using IN-MEMORY mode (high RAM) - pre-loading all E-fields...")
-        
+        logger.info("  Using IN-MEMORY mode (high RAM) - pre-loading all E-fields...")
+
         field_cache = FieldCache(h5_paths, field_type="E", low_memory=False, slab_cache_gb=slab_cache_gb)
-        
+
         hotspot_scores = []
-        for air_idx in tqdm(sampled_air_indices, desc="Scoring air focus points",
-                           dynamic_ncols=True, mininterval=30.0):
+        for air_idx in tqdm(sampled_air_indices, desc="Scoring air focus points", dynamic_ncols=True, mininterval=30.0):
             score = compute_hotspot_score_at_air_point(
                 h5_paths=h5_paths,
                 air_focus_idx=air_idx,
@@ -1479,17 +1469,19 @@ def _find_focus_air_based(
             )
             hotspot_scores.append(score)
         hotspot_scores = np.array(hotspot_scores)
-        
+
         cache_stats = field_cache.get_cache_stats()
-    
+
     t_scoring_end = time.perf_counter()
 
     # Log scoring statistics
     n_with_skin = np.sum(hotspot_scores > 0)
     n_no_skin = np.sum(hotspot_scores == 0)
     logger.info(f"  Scoring stats: {n_with_skin}/{len(hotspot_scores)} points had skin in cube, {n_no_skin} had no skin (score=0)")
-    logger.info(f"  [timing] Scoring completed in {t_scoring_end - t_scoring_start:.1f}s ({(t_scoring_end - t_scoring_start) / n_to_sample * 1000:.1f}ms/sample)")
-    
+    logger.info(
+        f"  [timing] Scoring completed in {t_scoring_end - t_scoring_start:.1f}s ({(t_scoring_end - t_scoring_start) / n_to_sample * 1000:.1f}ms/sample)"
+    )
+
     # Log cache statistics if available
     if cache_stats is not None:
         logger.info(
@@ -1525,7 +1517,7 @@ def _find_focus_air_based(
     # In memory mode, we can use the still-alive cache
     all_candidate_phases = []
     all_candidate_weights = []
-    
+
     if field_cache is not None:
         # Memory mode: use cache
         for candidate_idx in top_air_indices:
@@ -1548,6 +1540,7 @@ def _find_focus_air_based(
             for h5_path in h5_paths:
                 with h5py.File(h5_path, "r") as f:
                     fg_path = find_overall_field_group(f)
+                    assert fg_path is not None
                     field_path = get_field_path(fg_path, "E")
                     dataset = f[f"{field_path}/comp2"]
                     shape = dataset.shape[:3]
@@ -1581,13 +1574,13 @@ def _find_focus_air_based(
     sampled_distances_mm = None
     if distance_map is not None:
         sampled_distances_mm = get_distances_at_indices(distance_map, sampled_air_indices)
-    
+
     all_scores_data = []
     for i, (idx, score) in enumerate(zip(sampled_air_indices, hotspot_scores)):
         x_mm = float(ax_x[min(idx[0], len(ax_x) - 1)]) * 1000
         y_mm = float(ax_y[min(idx[1], len(ax_y) - 1)]) * 1000
         z_mm = float(ax_z[min(idx[2], len(ax_z) - 1)]) * 1000
-        
+
         entry = {
             "idx": i,
             "voxel_x": int(idx[0]),
@@ -1598,13 +1591,13 @@ def _find_focus_air_based(
             "z_mm": z_mm,
             "proxy_score": float(score),
         }
-        
+
         # Add distance to skin if computed
         if sampled_distances_mm is not None:
             entry["distance_to_skin_mm"] = float(sampled_distances_mm[i])
-        
+
         all_scores_data.append(entry)
-    
+
     # Compute distances for selected candidates (for summary output)
     candidate_distances_mm = None
     if distance_map is not None:
@@ -1632,7 +1625,7 @@ def _find_focus_air_based(
         "streaming_mode": use_streaming,
         "skin_subsample": skin_subsample if use_streaming else 1,
     }
-    
+
     # Cleanup: close file handles if cache was used
     if field_cache is not None:
         field_cache.close()
