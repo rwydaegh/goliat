@@ -534,7 +534,7 @@ class AutoInducedProcessor(LoggingMixin):
             candidate_output_dir = combined_h5.parent / f"candidate_{candidate_idx:02d}"
         candidate_output_dir.mkdir(parents=True, exist_ok=True)
 
-        self.verbose_logger.info(f"Extracting SAR (full pipeline) from {combined_h5.name} → {candidate_output_dir.name}/")
+        self.verbose_logger.info(f"Extracting SAR (full pipeline) from {combined_h5.name} -> {candidate_output_dir.name}/")
 
         try:
             import s4l_v1.analysis as analysis
