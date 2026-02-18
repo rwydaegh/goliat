@@ -12,9 +12,7 @@ for a (phantom, frequency) pair complete.
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional
-
-from tqdm import tqdm
+from typing import TYPE_CHECKING, Any
 
 from ..logging_manager import LoggingMixin
 from .field_combiner import combine_fields_sliced
@@ -33,7 +31,7 @@ class _CombineRequest:
     output_dir: Path
     candidate_idx: int
     cube_size_mm: float
-    progress_bar: Optional[tqdm] = field(default=None, repr=False)
+    progress_bar: Any = field(default=None, repr=False)
     full_volume: bool = False
     field_types: tuple = ("E", "H")
     combine_chunk_size: int = 50
