@@ -349,14 +349,14 @@ class FarFieldSetup(BaseSetup):
         Returns:
             Grid resolution in mm.
         """
-        gridding_params = self.config["gridding_parameters"]
+        gridding_params = self.config["gridding_parameters"] or {}
         per_freq_gridding = gridding_params.get("global_gridding_per_frequency", {})
-        
+
         if isinstance(per_freq_gridding, dict):
             freq_key = str(int(freq_mhz))
             if freq_key in per_freq_gridding:
                 return per_freq_gridding[freq_key]
-        
+
         # Fallback to global default
         global_gridding = gridding_params.get("global_gridding", {})
         if isinstance(global_gridding, dict):

@@ -39,6 +39,7 @@ class MemoryErrorRetryException(Exception):
 
     pass
 
+
 if TYPE_CHECKING:
     from .isolve_process_manager import ISolveProcessManager
 
@@ -121,6 +122,7 @@ class ISolveManualStrategy(ExecutionStrategy, LoggingMixin):
                     # Also try to free GPU memory if possible
                     try:
                         import torch
+
                         if torch.cuda.is_available():
                             torch.cuda.empty_cache()
                             self._log("Cleared CUDA cache", level="progress", log_type="info")
@@ -430,6 +432,77 @@ class ISolveManualStrategy(ExecutionStrategy, LoggingMixin):
             return True
         return False
 
+    def _run_single_attempt(
+        self,
+        command: list[str],
+        output_parser: ISolveOutputParser,
+        keep_awake_handler: KeepAwakeHandler,
+        retry_handler: RetryHandler,
+    ) -> str:
+        """Execute one iSolve subprocess attempt.
+
+        Returns:
+            ``"done"``  — loop should stop (success or non-retryable failure).
+            ``"retry"`` — loop should continue with another attempt.
+
+        Raises:
+            StudyCancelledError: forwarded immediately; caller must handle.
+        """
+        detected_errors: list = []
+        process_manager: ISolveProcessManager | None = None
+
+        try:
+            process_manager = ISolveProcessManager(command, self.gui, self.verbose_logger, self.progress_logger)
+            process_manager.start()
+            self.current_isolve_process = process_manager.process
+            self.current_process_manager = process_manager
+
+            self._monitor_running_process(process_manager, output_parser, keep_awake_handler, detected_errors)
+            return_code = process_manager.get_return_code()
+            self._process_remaining_output(process_manager, output_parser, detected_errors)
+            stderr_output = process_manager.read_stderr()
+
+            self._check_for_memory_error_and_exit(detected_errors, stderr_output)
+            self.current_isolve_process = None
+            self.current_process_manager = None
+
+            if return_code == 0:
+                return "done"
+
+            should_retry = (
+                self._handle_process_failure(
+                    process_manager,
+                    return_code,
+                    detected_errors,
+                    stderr_output,
+                    retry_handler,
+                    output_parser,
+                    keep_awake_handler,
+                )
+                if return_code is not None
+                else False
+            )
+            return "retry" if should_retry else "done"
+
+        except StudyCancelledError:
+            if process_manager is not None:
+                process_manager.cleanup()
+            raise
+
+        except MemoryErrorRetryException as e:
+            self._log(f"Internal memory retry triggered: {e}", level="progress", log_type="info")
+            if process_manager is not None:
+                process_manager.cleanup()
+            output_parser.reset_milestones()
+            keep_awake_handler.reset()
+            return "retry"
+
+        except Exception as e:
+            should_retry = self._handle_execution_exception(
+                e, process_manager, detected_errors, retry_handler, output_parser, keep_awake_handler
+            )
+            return "retry" if should_retry else "done"
+
     def run(self) -> None:
         """Runs iSolve.exe directly with real-time output logging.
 
@@ -467,111 +540,26 @@ class ISolveManualStrategy(ExecutionStrategy, LoggingMixin):
                 output_parser = ISolveOutputParser(self.verbose_logger, self.progress_logger, self.gui)
                 keep_awake_handler = KeepAwakeHandler(self.config)
                 retry_handler = RetryHandler(self.progress_logger, self.gui)
-
-                # Call keep_awake before first attempt
                 keep_awake_handler.trigger_before_retry()
 
                 while True:
-                    # Check for stop signal before starting new subprocess
                     self._check_for_stop_signal()
-
-                    # Call keep_awake before each retry attempt
                     if retry_handler.get_attempt_number() > 0:
                         keep_awake_handler.trigger_before_retry()
-
-                    # Track iSolve errors detected in stdout (iSolve writes errors to stdout, not stderr)
-                    # Initialize outside try block so it's available in exception handler
-                    detected_errors = []
-                    process_manager: ISolveProcessManager | None = None
-
-                    try:
-                        process_manager = ISolveProcessManager(command, self.gui, self.verbose_logger, self.progress_logger)
-                        process_manager.start()
-                        self.current_isolve_process = process_manager.process
-                        self.current_process_manager = process_manager
-
-                        # Monitor running process and process output in real-time
-                        self._monitor_running_process(process_manager, output_parser, keep_awake_handler, detected_errors)
-
-                        # Process has finished, get the return code
-                        return_code = process_manager.get_return_code()
-
-                        # Process all remaining output after process finishes
-                        self._process_remaining_output(process_manager, output_parser, detected_errors)
-
-                        # Read stderr output from iSolve (as fallback - most errors are in stdout)
-                        stderr_output = process_manager.read_stderr()
-
-                        # Check for memory/alloc errors and exit if found
-                        self._check_for_memory_error_and_exit(detected_errors, stderr_output)
-
-                        # Clear process tracking since it's finished
-                        self.current_isolve_process = None
-                        self.current_process_manager = None
-
-                        if return_code == 0:
-                            # Success, break out of retry loop
-                            break
-
-                        # Handle process failure and check if should retry
-                        # Only handle failure if return_code is not None (process finished)
-                        if return_code is not None:
-                            should_retry = self._handle_process_failure(
-                                process_manager,
-                                return_code,
-                                detected_errors,
-                                stderr_output,
-                                retry_handler,
-                                output_parser,
-                                keep_awake_handler,
-                            )
-                        else:
-                            # Process didn't finish properly, don't retry
-                            should_retry = False
-                        if not should_retry:
-                            break
-
-                    except StudyCancelledError:
-                        # Re-raise cancellation errors immediately
-                        if process_manager is not None:
-                            process_manager.cleanup()
-                        raise
-                    except MemoryErrorRetryException as e:
-                        # Memory error with internal retry - cleanup and retry within same session
-                        self._log(
-                            f"Internal memory retry triggered: {e}",
-                            level="progress",
-                            log_type="info",
-                        )
-                        if process_manager is not None:
-                            process_manager.cleanup()
-                        # Reset handlers for retry
-                        output_parser.reset_milestones()
-                        keep_awake_handler.reset()
-                        # Continue to next iteration of while loop (retry)
-                        continue
-                    except Exception as e:
-                        # Handle execution exception and check if should retry
-                        should_retry = self._handle_execution_exception(
-                            e, process_manager, detected_errors, retry_handler, output_parser, keep_awake_handler
-                        )
-                        if not should_retry:
-                            break
+                    if self._run_single_attempt(command, output_parser, keep_awake_handler, retry_handler) == "done":
+                        break
 
             elapsed = self.profiler.subtask_times["run_isolve_execution"][-1]
             self._log(f"      - Subtask 'run_isolve_execution' done in {elapsed:.2f}s", log_type="verbose")
             self._log(f"      - Done in {elapsed:.2f}s", level="progress", log_type="success")
 
-            # Post-simulation steps
             post_handler = PostSimulationHandler(self.project_path, self.profiler, self.verbose_logger, self.progress_logger)
             post_handler.wait_and_reload()
 
         except StudyCancelledError:
-            # Clean up subprocess on cancellation
             self._cleanup()
             raise
         except Exception as e:
-            # Clean up subprocess on any exception
             self._cleanup()
             self._log(
                 f"An unexpected error occurred while running iSolve.exe: {e}",
@@ -581,7 +569,6 @@ class ISolveManualStrategy(ExecutionStrategy, LoggingMixin):
             self.verbose_logger.error(traceback.format_exc())
             raise
         finally:
-            # Always ensure cleanup, even on successful completion
             self._cleanup()
 
     def _cleanup(self) -> None:

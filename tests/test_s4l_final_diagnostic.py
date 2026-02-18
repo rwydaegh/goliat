@@ -79,20 +79,20 @@ def main():
             "PySide6 + matplotlib.use('Qt5Agg')",
             [
                 ("Import PySide6", lambda: __import__("PySide6.QtWidgets")),
-                ("matplotlib.use('Qt5Agg')", lambda: (__import__("matplotlib").use("Qt5Agg"))),
+                ("matplotlib.use('Qt5Agg')", lambda: __import__("matplotlib").use("Qt5Agg")),
             ],
         ),
         4: (
             "PySide6 + matplotlib.use('Agg') [non-Qt backend]",
             [
                 ("Import PySide6", lambda: __import__("PySide6.QtWidgets")),
-                ("matplotlib.use('Agg')", lambda: (__import__("matplotlib").use("Agg"))),
+                ("matplotlib.use('Agg')", lambda: __import__("matplotlib").use("Agg")),
             ],
         ),
         5: (
             "matplotlib.use('Qt5Agg') FIRST, then PySide6",
             [
-                ("matplotlib.use('Qt5Agg')", lambda: (__import__("matplotlib").use("Qt5Agg"))),
+                ("matplotlib.use('Qt5Agg')", lambda: __import__("matplotlib").use("Qt5Agg")),
                 ("Import PySide6", lambda: __import__("PySide6.QtWidgets")),
             ],
         ),
