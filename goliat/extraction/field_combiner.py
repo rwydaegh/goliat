@@ -187,14 +187,16 @@ def _combine_single_field_preloaded(
         if combined is None:
             continue
 
-        # Write real and imaginary parts back to output H5
+        # Write real and imaginary parts back to output H5 in one contiguous write.
+        # Writing ds[...,0] then ds[...,1] separately causes strided scatter-writes
+        # which are very slow. Stacking into (Nx, Ny, Nz, 2) and writing at once
+        # is fully contiguous in the HDF5 file layout.
         ds_path = f"{field_path}/comp{comp_idx}"
         if ds_path in out_file:
             ds = out_file[ds_path]
-            # Dataset shape is (Nx, Ny, Nz, 2) — last dim is [real, imag]
             Nz_ds = ds.shape[2]
-            ds[:, :, :Nz_ds, 0] = np.real(combined[:, :, :Nz_ds])
-            ds[:, :, :Nz_ds, 1] = np.imag(combined[:, :, :Nz_ds])
+            c = combined[:, :, :Nz_ds]
+            ds[:, :, :Nz_ds, :] = np.stack([np.real(c), np.imag(c)], axis=-1)
 
 
 def _combine_single_field_chunked(
@@ -244,8 +246,8 @@ def _combine_component_chunk(
     combined_chunk = _accumulate_weighted_chunk(h5_paths, weights, field_type, comp_key, z_start_comp, z_end_comp)
 
     if combined_chunk is not None:
-        ds[:, :, z_start_comp:z_end_comp, 0] = np.real(combined_chunk)
-        ds[:, :, z_start_comp:z_end_comp, 1] = np.imag(combined_chunk)
+        # Single contiguous write instead of two strided writes
+        ds[:, :, z_start_comp:z_end_comp, :] = np.stack([np.real(combined_chunk), np.imag(combined_chunk)], axis=-1)
 
 
 def _accumulate_weighted_chunk(
