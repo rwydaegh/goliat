@@ -155,12 +155,17 @@ class AutoInducedProcessor(LoggingMixin):
             extraction_results = []
             for i, combined_h5 in enumerate(combined_h5_paths):
                 if combined_h5 and combined_h5.exists():
+                    # Each candidate gets its own output subdirectory
+                    candidate_output_dir = Path(output_dir) / f"candidate_{i + 1:02d}"
+                    candidate_output_dir.mkdir(parents=True, exist_ok=True)
+
                     if extraction_metric == "sar":
                         result = self._extract_sar(
                             combined_h5=combined_h5,
                             candidate_idx=i + 1,
                             candidate=candidates[i],
                             input_h5=input_h5,
+                            candidate_output_dir=candidate_output_dir,
                             save_intermediate_files=save_intermediate_files,
                         )
                     else:
@@ -456,142 +461,114 @@ class AutoInducedProcessor(LoggingMixin):
         candidate_idx: int,
         candidate: dict,
         input_h5: Path,
+        candidate_output_dir: Path | None = None,
         save_intermediate_files: bool = False,
     ) -> dict:
-        """Extract SAR from a full-volume combined H5 file.
+        """Run the full SAR extraction pipeline on a combined H5 file.
 
-        Uses Sim4Life's SarStatisticsEvaluator to compute whole-body SAR and
-        peak spatial-average SAR (10g). Unlike SAPD extraction, no skin mesh
-        or surface processing is needed — SAR is computed volumetrically from
-        the E-field and tissue properties.
+        Uses the existing SarExtractor and Reporter classes (via AutoInducedSarContext shim)
+        to produce the same outputs as a normal simulation extraction:
+          - sar_results.json  (full metrics: whole-body SAR, peak 10g, group SAR, peak details)
+          - sar_stats_all_tissues.pkl  (tissue DataFrame + groups for programmatic access)
+          - sar_stats_all_tissues.html  (human-readable tissue table)
+
+        These are written to candidate_output_dir (e.g. auto_induced/candidate_01/).
 
         The project must already be open with phantom geometry loaded so that
         the SAR evaluator can map E-field to tissue conductivity.
 
         Args:
-            combined_h5: Path to combined _Output.h5 file (full-volume).
-            candidate_idx: 1-based candidate index.
-            candidate: Candidate dict with 'voxel_idx' for center location.
-            input_h5: Path to an input H5 for grid axis info.
-            save_intermediate_files: If True, save smash file after extraction.
+            combined_h5: Path to combined _Output.h5 file (full-volume, E-field only).
+            candidate_idx: 1-based candidate index (used for naming and logging).
+            candidate: Candidate dict (not used for SAR, kept for API consistency).
+            input_h5: Path to an _Input.h5 file (not used for SAR, kept for API consistency).
+            candidate_output_dir: Directory to write per-candidate results into.
+                Defaults to combined_h5.parent / f"candidate_{candidate_idx:02d}".
+            save_intermediate_files: If True, save the Sim4Life project after extraction
+                for debugging.
 
         Returns:
-            Dict with SAR extraction results including peak_sar_10g_W_kg,
-            whole_body_sar_W_kg, and peak_sar_details.
+            Dict with at minimum 'candidate_idx' and 'peak_sar_10g_W_kg'. On error,
+            contains 'error' key instead of metric values.
         """
-        self.verbose_logger.info(f"Extracting SAR from {combined_h5.name}")
+        from .auto_induced_sar_context import AutoInducedSarContext, AutoInducedReporter, save_candidate_json
+        from .sar_extractor import SarExtractor
+
+        if candidate_output_dir is None:
+            candidate_output_dir = combined_h5.parent / f"candidate_{candidate_idx:02d}"
+        candidate_output_dir.mkdir(parents=True, exist_ok=True)
+
+        self.verbose_logger.info(f"Extracting SAR (full pipeline) from {combined_h5.name} → {candidate_output_dir.name}/")
 
         try:
             import s4l_v1.analysis as analysis
             import s4l_v1.document as document
-            import s4l_v1.units as units
 
-            # Create SimulationExtractor for the combined H5
+            # --- Step 1: Create SimulationExtractor from the combined H5 ---
             sim_extractor = analysis.extractors.SimulationExtractor(inputs=[])
             sim_extractor.Name = f"AutoInduced_SAR_Candidate{candidate_idx}"
             sim_extractor.FileName = str(combined_h5)
             sim_extractor.UpdateAttributes()
             document.AllAlgorithms.Add(sim_extractor)
 
-            # Get EM sensor extractor
-            em_sensor_extractor = sim_extractor["Overall Field"]
-            em_sensor_extractor.FrequencySettings.ExtractedFrequency = "All"
-            em_sensor_extractor.UpdateAttributes()
-            document.AllAlgorithms.Add(em_sensor_extractor)
-            em_sensor_extractor.Update()
+            # --- Step 2: Build context shim and run SarExtractor ---
+            context = AutoInducedSarContext(self, candidate_output_dir)
+            results_data: dict = {}
 
-            # --- SAR Statistics ---
-            sar_inputs = [em_sensor_extractor.Outputs["EM E(x,y,z,f0)"]]
-            sar_stats_evaluator = analysis.em_evaluators.SarStatisticsEvaluator(inputs=sar_inputs)
-            sar_stats_evaluator.PeakSpatialAverageSAR = True
-            sar_stats_evaluator.PeakSAR.TargetMass = 10.0, units.Unit("g")
-            sar_stats_evaluator.UpdateAttributes()
-            document.AllAlgorithms.Add(sar_stats_evaluator)
-            sar_stats_evaluator.Update()
+            sar_extractor = SarExtractor(context, results_data)  # type: ignore[arg-type]
+            sar_extractor.extract_sar_statistics(sim_extractor)
 
-            # Parse results
-            stats_output = sar_stats_evaluator.Outputs
-            results_data = stats_output.item_at(0).Data if len(stats_output) > 0 and hasattr(stats_output.item_at(0), "Data") else None
+            # --- Step 3: Save reports if extraction succeeded ---
+            if "_temp_sar_df" in results_data:
+                reporter = AutoInducedReporter(context)  # type: ignore[arg-type]
+                reporter.save_reports(
+                    results_data.pop("_temp_sar_df"),
+                    results_data.pop("_temp_tissue_groups"),
+                    results_data.pop("_temp_group_sar_stats"),
+                    results_data,
+                )
+                save_candidate_json(results_data, candidate_output_dir)
+            else:
+                self._log(
+                    f"      Candidate #{candidate_idx}: SarExtractor produced no data (check logs)",
+                    log_type="warning",
+                )
 
-            whole_body_sar = None
-            peak_sar_10g = None
-
-            if results_data and hasattr(results_data, "NumberOfRows") and results_data.NumberOfRows() > 0:
-                import pandas as pd
-
-                columns = ["Tissue"] + [cap for cap in results_data.ColumnMainCaptions]
-                raw_tissue_names = [results_data.RowCaptions[i] for i in range(results_data.NumberOfRows())]
-                data = [
-                    [raw_tissue_names[i]] + [results_data.Value(i, j) for j in range(results_data.NumberOfColumns())]
-                    for i in range(results_data.NumberOfRows())
-                ]
-                df = pd.DataFrame(data, columns=columns)
-                numeric_cols = [col for col in df.columns if col != "Tissue"]
-                df[numeric_cols] = df[numeric_cols].apply(pd.to_numeric, errors="coerce").fillna(0)
-
-                # Extract whole-body SAR and peak 10g SAR
-                all_regions = df[df["Tissue"] == "All Regions"]
-                if not all_regions.empty:
-                    whole_body_sar = float(all_regions["Mass-Averaged SAR"].iloc[0])
-                    peak_sar_col = "Peak Spatial-Average SAR[IEEE/IEC62704-1] (10g)"
-                    if peak_sar_col in all_regions.columns:
-                        peak_sar_10g = float(all_regions[peak_sar_col].iloc[0])
-
-            document.AllAlgorithms.Remove(sar_stats_evaluator)
-
-            # --- Peak SAR Location Details ---
-            peak_sar_details = {}
+            # --- Step 4: Cleanup Sim4Life algorithms ---
             try:
-                peak_inputs = [em_sensor_extractor.Outputs["SAR(x,y,z,f0)"]]
-                avg_sar_evaluator = analysis.em_evaluators.AverageSarFieldEvaluator(inputs=peak_inputs)
-                avg_sar_evaluator.TargetMass = 10.0, units.Unit("g")
-                avg_sar_evaluator.UpdateAttributes()
-                document.AllAlgorithms.Add(avg_sar_evaluator)
-                avg_sar_evaluator.Update()
-
-                peak_sar_output = avg_sar_evaluator.Outputs["Peak Spatial SAR (psSAR) Results"]
-                peak_sar_output.Update()
-
-                data_collection = peak_sar_output.Data.DataSimpleDataCollection
-                if data_collection:
-                    for key in data_collection.Keys():
-                        try:
-                            value = data_collection.FieldValue(key, 0)
-                            if value is not None:
-                                peak_sar_details[key] = value
-                        except Exception:
-                            pass
-
-                document.AllAlgorithms.Remove(avg_sar_evaluator)
-            except Exception as e:
-                self.verbose_logger.warning(f"  Could not extract peak SAR details: {e}")
-
-            result = {
-                "candidate_idx": candidate_idx,
-                "peak_sar_10g_W_kg": peak_sar_10g,
-                "whole_body_sar_W_kg": whole_body_sar,
-                "peak_sar_details": peak_sar_details if peak_sar_details else None,
-                "combined_h5": str(combined_h5),
-            }
-
-            # Cleanup Sim4Life algorithms
-            try:
-                document.AllAlgorithms.Remove(em_sensor_extractor)
                 document.AllAlgorithms.Remove(sim_extractor)
             except Exception:
                 pass
 
+            # Optional: save debug project
+            if save_intermediate_files:
+                try:
+                    debug_path = str(combined_h5).replace("_Output.h5", "_intermediate.smash")
+                    document.SaveAs(debug_path)
+                except Exception:
+                    pass
+
+            # Build return dict for worst-case comparison and summary JSON
+            result = {
+                "candidate_idx": candidate_idx,
+                "peak_sar_10g_W_kg": results_data.get("peak_sar_10g_W_kg"),
+                "whole_body_sar_W_kg": results_data.get("whole_body_sar"),
+                "combined_h5": str(combined_h5),
+                "output_dir": str(candidate_output_dir),
+            }
+
+            peak = result["peak_sar_10g_W_kg"]
             self._log(
-                f"      Candidate #{candidate_idx}: peak SAR 10g = {peak_sar_10g:.4e} W/kg, WB SAR = {whole_body_sar:.4e} W/kg"
-                if peak_sar_10g is not None
-                else f"      Candidate #{candidate_idx}: SAR extraction failed",
+                f"      Candidate #{candidate_idx}: peak SAR 10g = {peak:.4e} W/kg"
+                if peak is not None
+                else f"      Candidate #{candidate_idx}: SAR extraction produced no peak value",
                 log_type="info",
             )
 
             return result
 
         except Exception as e:
-            self._log(f"      ERROR extracting SAR: {e}", log_type="error")
+            self._log(f"      ERROR extracting SAR for candidate #{candidate_idx}: {e}", log_type="error")
             import traceback
 
             self.verbose_logger.error(traceback.format_exc())
