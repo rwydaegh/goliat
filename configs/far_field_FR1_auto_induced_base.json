@@ -91,14 +91,14 @@
         "padding": {
             "padding_mode": "manual",
             "manual_bottom_padding_mm": [
-                100,
-                100,
-                100
+                20,
+                20,
+                0
             ],
             "manual_top_padding_mm": [
-                100,
-                100,
-                100
+                20,
+                20,
+                0
             ]
         }
     }
