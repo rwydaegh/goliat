@@ -2,5 +2,8 @@
     "extends": "far_field_FR1_auto_induced_base.json",
     "frequencies_mhz": [
         3500
-    ]
+    ],
+    "auto_induced": {
+        "full_volume_combination": false
+    }
 }
