@@ -372,12 +372,15 @@ Classes for extracting and processing simulation results.
       show_source: true
 
 
-### Focus Optimizer
+### Field Cache
 
-::: goliat.extraction.focus_optimizer.FieldCache
+::: goliat.extraction.field_cache.FieldCache
     options:
       show_root_heading: true
       show_source: true
+
+
+### Focus Optimizer
 
 
 ### Json Encoder
