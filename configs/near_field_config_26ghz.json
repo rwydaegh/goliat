@@ -21,7 +21,8 @@
       20,
       20
     ],
-    "number_of_point_sensors": 2
+    "number_of_point_sensors": 2,
+    "simulation_time_multiplier": 2.0
   },
   "gridding_parameters": {
     "global_gridding": {
@@ -43,49 +44,15 @@
         0,
         0
       ]
+    },
+    "phantom_bbox_reduction": {
+      "use_symmetry_reduction": true
     }
   },
   "antenna_config": {
     "26000": {
       "center_frequency": 26000,
       "target_power_mW": 1.38,
-      "model_type": "IFA",
-      "source_name": "Feed",
-      "materials": {
-        "Antenna": "Copper",
-        "Battery": "Copper",
-        "Ground": "Copper"
-      },
-      "gridding": {
-        "automatic": [
-          "Feed"
-        ],
-        "manual": {
-          "group1": [
-            "Antenna"
-          ],
-          "group2": [
-            "Battery",
-            "Ground"
-          ]
-        },
-        "manual_grid_step": {
-          "group1": [
-            0.1,
-            0.1,
-            0.1
-          ],
-          "group2": [
-            0.3,
-            1,
-            1
-          ]
-        }
-      }
-    },
-    "26000": {
-      "center_frequency": 26000,
-      "target_power_mW": 54,
       "model_type": "IFA",
       "source_name": "Feed",
       "materials": {

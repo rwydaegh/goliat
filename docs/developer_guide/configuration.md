@@ -212,7 +212,16 @@ These settings define the spatial discretization of the simulation domain.
 | `phantom_bbox_reduction.auto_reduce_bbox` | boolean | `false` | **(Far-Field)** If `true`, enables automatic phantom height reduction for frequencies above `reference_frequency_mhz`. |
 | `phantom_bbox_reduction.reference_frequency_mhz` | number | `5800` | **(Far-Field)** The reference frequency where full-body simulation fits in memory. For higher frequencies, height is reduced by `(reference/current)³`. |
 | `phantom_bbox_reduction.height_limit_per_frequency_mm` | object | `{}` | **(Far-Field)** Manual height limits per frequency in mm (e.g., `{"10000": 400}`). Overrides automatic calculation. |
-| `phantom_bbox_reduction.use_symmetry_reduction` | boolean | `false` | **(Far-Field)** If `true`, cuts the phantom bounding box at x=0 to exploit left-right symmetry. Reduces cell count by ~50%. **Not compatible with auto-induced exposure** (you'd miss half the body's skin surface). |
+| `phantom_bbox_reduction.use_symmetry_reduction` | boolean | `false` | **(Far-Field + Near-Field)** If `true`, cuts the phantom bounding box in half to exploit anatomical symmetry, reducing cell count by ~50%. The cut axis depends on the placement context — see note below. **Not compatible with auto-induced exposure** (you'd miss half the body's skin surface). |
+
+> [!NOTE]
+> **Near-field symmetry reduction: axis depends on placement**
+>
+> For near-field simulations, the symmetry cut adapts to where the phone actually is:
+> - **Head placements** (`by_cheek`, `front_of_eyes`): cuts at **x = 0**, keeping the **positive-x (right) side** — the side the phone is on, since the `Ear_skin` entity sits at positive x.
+> - **Trunk placements** (`by_belly`): cuts at **y = 0**, keeping the **positive-y (front) side** — where the belly and the phone face.
+>
+> Far-field always cuts at x = 0 regardless of placement direction.
 
 <br>
 

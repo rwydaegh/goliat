@@ -429,6 +429,15 @@ class NearFieldSetup(BaseSetup):
 
         For free-space, expands antenna bbox. For phantom, combines antenna
         bbox with head/trunk/whole-body bbox based on config.
+
+        Supports optional symmetry reduction via
+        `gridding_parameters.phantom_bbox_reduction.use_symmetry_reduction`.
+        When enabled, the bbox is cut in half to exploit anatomical symmetry:
+        - Head placements (by_cheek, front_of_eyes): cut at x=0, keep positive-x
+          (the right/cheek side where the phone is).
+        - Trunk placements (by_belly): cut at y=0, keep positive-y
+          (the front/belly side where the phone is).
+        This reduces cell count by ~50%, significantly cutting simulation time.
         """
         if self.free_space:
             antenna_bbox_entity = next(
@@ -500,6 +509,38 @@ class NearFieldSetup(BaseSetup):
                 expansion_mm = 10.0
                 combined_bbox_max = self.model.Vec3(combined_bbox_max[0], combined_bbox_max[1] + expansion_mm, combined_bbox_max[2])
                 self._log(f"  - Expanded +Y face by {expansion_mm}mm for low frequency ({self.frequency_mhz} MHz)", log_type="info")
+
+            # Check for symmetry reduction (cut bbox in half to exploit anatomical symmetry)
+            bbox_reduction = self.config["gridding_parameters.phantom_bbox_reduction"]
+            use_symmetry = False
+            if bbox_reduction and isinstance(bbox_reduction, dict):
+                use_symmetry = bbox_reduction.get("use_symmetry_reduction", False)
+
+            if use_symmetry:
+                if self.base_placement_name in ["front_of_eyes", "by_cheek"]:
+                    # Head placement: cut along X-axis at x=0, keep positive-x (right/cheek side)
+                    original_x_min = combined_bbox_min[0]
+                    combined_bbox_min = self.model.Vec3(0.0, combined_bbox_min[1], combined_bbox_min[2])
+                    self._log(
+                        f"  - Symmetry reduction (head): cutting bbox at x=0 "
+                        f"(original x_min: {original_x_min:.1f}mm, new x_min: 0.0mm)",
+                        log_type="info",
+                    )
+                elif self.base_placement_name == "by_belly":
+                    # Trunk placement: cut along Y-axis at y=0, keep positive-y (front/belly side)
+                    original_y_min = combined_bbox_min[1]
+                    combined_bbox_min = self.model.Vec3(combined_bbox_min[0], 0.0, combined_bbox_min[2])
+                    self._log(
+                        f"  - Symmetry reduction (trunk): cutting bbox at y=0 "
+                        f"(original y_min: {original_y_min:.1f}mm, new y_min: 0.0mm)",
+                        log_type="info",
+                    )
+                else:
+                    self._log(
+                        f"  - Symmetry reduction enabled but '{self.base_placement_name}' "
+                        "is not a supported placement. Skipping.",
+                        log_type="warning",
+                    )
 
             sim_bbox = self.XCoreModeling.CreateWireBlock(combined_bbox_min, combined_bbox_max)
             sim_bbox.Name = f"{self.placement_name.lower()}_simulation_bbox"
