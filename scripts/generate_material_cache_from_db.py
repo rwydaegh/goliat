@@ -18,7 +18,7 @@ from datetime import datetime
 from pathlib import Path
 
 # Configuration
-FREQUENCIES_MHZ = [450, 700, 835, 1450, 2140, 2450, 3500, 5200, 5800]
+FREQUENCIES_MHZ = [450, 700, 835, 1450, 2140, 2450, 3500, 5200, 5800, 7000, 9000, 11000, 13000, 15000, 26000]
 DB_PATH = Path(__file__).parent.parent / "data" / "itis_v5.db"
 OUTPUT_PATH = Path(__file__).parent.parent / "data" / "material_properties_cache.json"
 
