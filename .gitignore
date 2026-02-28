@@ -73,6 +73,7 @@ configs/*
 !configs/far_field_*GHz*.json
 !configs/near_field_config.json
 !configs/near_field_config_no_subgrid.json
+!configs/near_field_config_26ghz.json
 !configs/near_field_harmonic.json
 !configs/near_field_gaussian.json
 !configs/tutorial_*.json
