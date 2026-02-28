@@ -1,5 +1,6 @@
 {
     "extends": "base_config.json",
+    "study_type": "far_field",
     "execution_control": {
         "do_setup": true,
         "do_run": false,
@@ -19,7 +20,13 @@
         2450,
         3500,
         5200,
-        5800
+        5800,
+        7000,
+        9000,
+        11000,
+        13000,
+        15000,
+        26000
     ],
     "far_field_setup": {
         "type": "environmental",
@@ -32,10 +39,27 @@
             ]
         }
     },
-    "simulation_parameters": {
-        "bbox_padding_mm": 50,
-        "simulation_bbox_points": 8,
-        "global_gridding": 10.0,
-        "number_of_point_sensors": 2
+    "gridding_parameters": {
+        "global_gridding": {
+            "grid_mode": "manual",
+            "manual_fallback_max_step_mm": 5.0
+        },
+        "global_gridding_per_frequency": {
+            "450": 5.0,
+            "700": 5.0,
+            "835": 5.0,
+            "1450": 5.0,
+            "2140": 5.0,
+            "2450": 5.0,
+            "3500": 5.0,
+            "5200": 5.0,
+            "5800": 5.0,
+            "7000": 5.0,
+            "9000": 5.0,
+            "11000": 5.0,
+            "13000": 5.0,
+            "15000": 5.0,
+            "26000": 5.0
+        }
     }
 }
