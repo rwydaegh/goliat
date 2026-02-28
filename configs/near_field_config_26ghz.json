@@ -22,7 +22,8 @@
       20
     ],
     "number_of_point_sensors": 0,
-    "simulation_time_multiplier": 2.0
+    "simulation_time_multiplier": 2.0,
+    "global_auto_termination": "GlobalAutoTerminationNone"
   },
   "gridding_parameters": {
     "global_gridding": {
