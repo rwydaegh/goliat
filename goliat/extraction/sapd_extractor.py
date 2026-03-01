@@ -107,11 +107,25 @@ class SapdExtractor(LoggingMixin):
             simulation_extractor: The simulation results extractor.
             ctx: Extraction context to store intermediate state.
         """
-        # Phase 0: Slicing optimization
-        ctx.center_m = self._get_peak_sar_location()
+        # Check for cache flag: if 'use_this_sapd.txt' exists in the results dir,
+        # skip phantom slicing / H5 creation and trust whatever is already on disk.
+        results_dir = self._get_results_dir()
+        cache_flag_path = os.path.join(results_dir, "use_this_sapd.txt")
+        use_cache = os.path.exists(cache_flag_path)
 
-        if ctx.center_m:
-            ctx.sliced_h5_path = self._create_sliced_h5(ctx.center_m)
+        if use_cache:
+            self._log(
+                "      - SAPD cache flag found ('use_this_sapd.txt'). Skipping phantom slicing and H5 creation — trusting existing files.",
+                log_type="info",
+            )
+            ctx.center_m = self._get_peak_sar_location()  # Still used for skin mesh slicing if available
+            ctx.sliced_h5_path = self._get_cached_sliced_h5(results_dir)
+        else:
+            # Phase 0: Slicing optimization
+            ctx.center_m = self._get_peak_sar_location()
+
+            if ctx.center_m:
+                ctx.sliced_h5_path = self._create_sliced_h5(ctx.center_m)
 
         # Phase 1: Setup extractors
         ctx.active_extractor, ctx.sliced_extractor = self._setup_extractor(simulation_extractor, ctx.sliced_h5_path)
@@ -303,6 +317,40 @@ class SapdExtractor(LoggingMixin):
             f"{self.parent.frequency_mhz}MHz",
         )
         return os.path.join(base_path, self.parent.placement_name)
+
+    def _get_cached_sliced_h5(self, results_dir: str) -> Optional[str]:
+        """Returns the path to a pre-existing sliced H5 file in the results directory.
+
+        Looks for a file matching the expected sliced-H5 naming pattern
+        (``sliced_output_<freq>MHz.h5``). Falls back to any ``*_Output.h5``
+        or ``*sliced*.h5`` file found in the directory.
+
+        Args:
+            results_dir: The results directory for the current simulation.
+
+        Returns:
+            Absolute path to the sliced H5 file, or None if none is found.
+        """
+        import glob
+
+        # Primary: canonical name produced by _create_sliced_h5
+        canonical = os.path.join(results_dir, f"sliced_output_{self.parent.frequency_mhz}MHz.h5")
+        if os.path.exists(canonical):
+            self._log(f"      - Using cached sliced H5: {os.path.basename(canonical)}", log_type="info")
+            return canonical
+
+        # Fallback: any sliced H5 in the results dir
+        sliced_files = glob.glob(os.path.join(results_dir, "sliced_output_*.h5"))
+        if sliced_files:
+            path = max(sliced_files, key=os.path.getmtime)
+            self._log(f"      - Using cached sliced H5 (fallback): {os.path.basename(path)}", log_type="info")
+            return path
+
+        self._log(
+            "      - WARNING: Cache flag set but no sliced H5 found in results dir. Will use full simulation H5.",
+            log_type="warning",
+        )
+        return None
 
     def _create_sliced_h5(self, center_m: list) -> str | None:
         """Creates a sliced H5 file and returns its path.
