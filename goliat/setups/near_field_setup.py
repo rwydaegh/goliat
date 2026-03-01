@@ -522,8 +522,7 @@ class NearFieldSetup(BaseSetup):
                     original_x_min = combined_bbox_min[0]
                     combined_bbox_min = self.model.Vec3(0.0, combined_bbox_min[1], combined_bbox_min[2])
                     self._log(
-                        f"  - Symmetry reduction (head): cutting bbox at x=0 "
-                        f"(original x_min: {original_x_min:.1f}mm, new x_min: 0.0mm)",
+                        f"  - Symmetry reduction (head): cutting bbox at x=0 (original x_min: {original_x_min:.1f}mm, new x_min: 0.0mm)",
                         log_type="info",
                     )
                 elif self.base_placement_name == "by_belly":
@@ -531,14 +530,12 @@ class NearFieldSetup(BaseSetup):
                     original_y_min = combined_bbox_min[1]
                     combined_bbox_min = self.model.Vec3(combined_bbox_min[0], 0.0, combined_bbox_min[2])
                     self._log(
-                        f"  - Symmetry reduction (trunk): cutting bbox at y=0 "
-                        f"(original y_min: {original_y_min:.1f}mm, new y_min: 0.0mm)",
+                        f"  - Symmetry reduction (trunk): cutting bbox at y=0 (original y_min: {original_y_min:.1f}mm, new y_min: 0.0mm)",
                         log_type="info",
                     )
                 else:
                     self._log(
-                        f"  - Symmetry reduction enabled but '{self.base_placement_name}' "
-                        "is not a supported placement. Skipping.",
+                        f"  - Symmetry reduction enabled but '{self.base_placement_name}' is not a supported placement. Skipping.",
                         log_type="warning",
                     )
 
