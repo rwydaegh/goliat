@@ -89,6 +89,7 @@ configs/*
 !configs/skin_mesh_config.json
 !configs/skin_voxel*.json
 !configs/near_field_config_26ghz_remaining.json
+!configs/near_field_config_26ghz_coarse_forskin.json
 !configs/near_field_config_26ghz_parallel/
 
 # Generated files
