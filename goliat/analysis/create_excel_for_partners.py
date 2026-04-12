@@ -166,14 +166,25 @@ def create_sheet_data(
 
     # Add Input Power column based on frequency (matching CNR's Excel format)
     result_df["Input Power (mW)"] = result_df["frequency_mhz"].map(power_mapping)
+    # Fill in any missing target powers (e.g. for new frequencies not in the power_mapping)
+    result_df["Input Power (mW)"] = result_df["Input Power (mW)"].fillna("N/A")
 
-    # Map SAR columns to match CNR's Excel format
-    result_df["SAR_wholebody (mW/kg)"] = filtered_df["SAR_whole_body"]
-    result_df["SAR_head (mW/kg)"] = filtered_df["SAR_head"]
-    result_df["SAR_trunk (mW/kg)"] = filtered_df["SAR_trunk"]
-    result_df["psSAR10g_eyes (mW/kg)"] = filtered_df["psSAR10g_eyes"]
-    result_df["psSAR10g_skin (mW/kg)"] = filtered_df["psSAR10g_skin"]
-    result_df["psSAR10g_brain (mW/kg)"] = filtered_df["psSAR10g_brain"]
+    # Map SAR and SAPD columns to match CNR's Excel format
+    sar_mapping = {
+        "SAR_wholebody (mW/kg)": "SAR_whole_body",
+        "SAR_head (mW/kg)": "SAR_head",
+        "SAR_trunk (mW/kg)": "SAR_trunk",
+        "psSAR10g_eyes (mW/kg)": "psSAR10g_eyes",
+        "psSAR10g_skin (mW/kg)": "psSAR10g_skin",
+        "psSAR10g_brain (mW/kg)": "psSAR10g_brain",
+        "Peak SAPD (W/m²)": "peak_sapd_W_m2",
+    }
+
+    for excel_col, csv_col in sar_mapping.items():
+        if csv_col in filtered_df.columns:
+            result_df[excel_col] = filtered_df[csv_col]
+        else:
+            result_df[excel_col] = pd.NA
 
     # Sort by frequency and placement
     result_df = result_df.sort_values(by=["frequency_mhz", "placement"]).reset_index(drop=True)
@@ -223,13 +234,22 @@ def create_cnr_excel(
     print(f"  - Sheet 3 ({cheek_name}): {len(sheet_cheek)} rows")
 
 
-def main():
+def main(config_path: str | None = None):
     """Main function to create a single Excel file matching CNR's Excel format for both phantoms."""
     # Paths
     # __file__ is in goliat/goliat/analysis/, so we need to go up to goliat/
     base_dir = Path(__file__).parent.parent.parent
     results_dir = base_dir / "results" / "near_field"
-    config_path = base_dir / "configs" / "near_field_config.json"
+
+    if config_path is None:
+        # Check for 26GHz config first as it's the current focus
+        potential_configs = [base_dir / "configs" / "near_field_config_26ghz.json", base_dir / "configs" / "near_field_config.json"]
+        for cp in potential_configs:
+            if cp.exists():
+                config_path = str(cp)
+                break
+        if config_path is None:
+            config_path = str(base_dir / "configs" / "near_field_config.json")
 
     phantoms = ["thelonious", "eartha"]
 

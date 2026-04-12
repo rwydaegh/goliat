@@ -1,0 +1,86 @@
+{
+  "extends": "base_config.json",
+  "study_type": "near_field",
+  "phantoms": ["eartha"],
+  "gridding_parameters": {
+    "global_gridding": {
+      "grid_mode": "manual",
+      "manual_fallback_max_step_mm": 3.0
+    },
+    "global_gridding_per_frequency": {
+      "26000": 0.3
+    },
+    "padding": {
+      "padding_mode": "manual",
+      "manual_bottom_padding_mm": [0, 0, 0],
+      "manual_top_padding_mm": [0, 0, 0]
+    },
+    "phantom_bbox_reduction": {
+      "use_symmetry_reduction": true
+    }
+  },
+  "antenna_config": {
+    "26000": {
+      "center_frequency": 26000,
+      "target_power_mW": 1.38,
+      "model_type": "IFA",
+      "source_name": "Feed",
+      "materials": {
+        "Antenna": "Copper",
+        "Battery": "Copper",
+        "Ground": "Copper"
+      },
+      "gridding": {
+        "automatic": ["Feed"],
+        "manual": {
+          "group1": ["Antenna"],
+          "group2": ["Battery", "Ground"]
+        },
+        "manual_grid_step": {
+          "group1": [0.1, 0.1, 0.1],
+          "group2": [0.3, 1, 1]
+        }
+      }
+    }
+  },
+  "placement_scenarios": {
+    "by_belly": {
+      "bounding_box": "default",
+      "positions": {
+        "left": [-150, 0, 0],
+        "right": [150, 0, 0],
+        "up": [0, 0, 100]
+      },
+      "orientations": {
+        "vertical": [],
+        "horizontal": [
+          {"axis": "Y", "angle_deg": 90}
+        ]
+      },
+      "antenna_reference": {
+        "distance_from_top": 10
+      },
+      "phantom_reference": "belly_button"
+    }
+  },
+  "phantom_definitions": {
+    "eartha": {
+      "head_y_separation": 386,
+      "trunk_z_separation": 100,
+      "chest_extension": 79,
+      "back_of_head": -55,
+      "lips": [24, 122, 418],
+      "tragus": [0, 14, -1],
+      "belly_button": [-6, 0, -171],
+      "nasion": [-2, 0, 0],
+      "placements": {
+        "do_front_of_eyes": false,
+        "do_by_belly": true,
+        "do_by_cheek": false,
+        "distance_from_eye": 200,
+        "distance_from_belly": 200,
+        "distance_from_cheek": 8
+      }
+    }
+  }
+}

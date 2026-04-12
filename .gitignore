@@ -88,6 +88,8 @@ configs/*
 !configs/generate_skin_cache.json
 !configs/skin_mesh_config.json
 !configs/skin_voxel*.json
+!configs/near_field_config_26ghz_remaining.json
+!configs/near_field_config_26ghz_parallel/
 
 # Generated files
 *.csv

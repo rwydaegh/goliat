@@ -110,6 +110,7 @@ class Analyzer:
         results_dir = os.path.join(self.results_base_dir, f"{frequency_mhz}MHz", detailed_placement_name)
         pickle_path = os.path.join(results_dir, "sar_stats_all_tissues.pkl")
         json_path = os.path.join(results_dir, "sar_results.json")
+        sapd_json_path = os.path.join(results_dir, "sapd_results.json")
 
         # Check if files exist - skip silently if missing (partial results)
         if not os.path.exists(json_path):
@@ -132,16 +133,35 @@ class Analyzer:
             extra={"log_type": "progress"},
         )
         try:
-            # Load JSON (required)
+            # Load SAR JSON (required)
             with open(json_path, "r") as f:
                 sar_results = json.load(f)
 
+            # Load SAPD JSON if it exists (optional, only present when sapd=true)
+            sapd_results = None
+            if os.path.exists(sapd_json_path):
+                with open(sapd_json_path, "r") as f:
+                    sapd_results = json.load(f)
+
             # Load PKL if available
             if os.path.exists(pickle_path):
-                with open(pickle_path, "rb") as f:
-                    pickle_data = pickle.load(f)
+                try:
+                    with open(pickle_path, "rb") as f:
+                        pickle_data = pickle.load(f)
+                except Exception as pkl_err:
+                    # This can happen when the PKL was saved on a worker with a different
+                    # pandas version (e.g. StringDtype.__setstate__ incompatibility).
+                    # Fall back to JSON-only mode: summary SAR + SAPD still extracted.
+                    logging.getLogger("progress").warning(
+                        f"    - WARNING: Could not load PKL for {detailed_placement_name} "
+                        f"at {frequency_mhz}MHz (pandas version mismatch?). "
+                        f"Falling back to JSON-only mode (no organ-level detail). Error: {pkl_err.__class__.__name__}",
+                        extra={"log_type": "warning"},
+                    )
+                    pickle_data = {}
 
-                # Collect tissue_group_composition from pickle files
+                # Collect tissue_group_composition from pickle files (only if load succeeded)
+
                 # This contains the actual tissue names that were matched during extraction
                 # Clean tissue names early to avoid repeated cleaning later
                 if "tissue_group_composition" in pickle_data:
@@ -223,6 +243,7 @@ class Analyzer:
                 simulated_power_w,
                 normalization_factor,
                 sar_results=sar_results,
+                sapd_results=sapd_results,
             )
             result_entry = self.strategy.apply_bug_fixes(result_entry)
 

@@ -24,7 +24,7 @@ from cli.utils import get_base_dir
 base_dir = get_base_dir()
 
 # Valid split-by options
-SPLIT_BY_OPTIONS = ["auto", "phantom", "direction", "polarization", "frequency", "freq_x_pol", "custom"]
+SPLIT_BY_OPTIONS = ["auto", "phantom", "direction", "polarization", "frequency", "freq_x_pol", "custom", "scenario"]
 
 
 def setup_console_logging():
@@ -251,6 +251,51 @@ def split_config_by_dimension(config_path, split_by, logger):
         )
         for i, cfg in enumerate(assignment_configs):
             logger.info(f"  Assignment {i}: {cfg['items'][0]}")
+
+    elif split_by == "scenario":
+        # One assignment per placement scenario × orientation combination (near-field only)
+        if study_type != "near_field":
+            logger.error(f"{colorama.Fore.RED}Error: Scenario splitting is only supported for near-field studies.")
+            sys.exit(1)
+
+        placement_scenarios = base_config.get("placement_scenarios", {})
+        if not placement_scenarios:
+            logger.error(f"{colorama.Fore.RED}Error: No placement_scenarios found in config for scenario splitting.")
+            sys.exit(1)
+
+        for scenario_name, scenario_details in placement_scenarios.items():
+            orientations = scenario_details.get("orientations", {})
+            if not orientations:
+                # No orientations defined — treat the whole scenario as one assignment
+                assignment_config = deepcopy(base_config)
+                assignment_config["placement_scenarios"] = {scenario_name: scenario_details}
+                assignment_configs.append(
+                    {
+                        "config": assignment_config,
+                        "phantoms": phantom_list,
+                        "items": [scenario_name],
+                        "items_name": "scenario",
+                    }
+                )
+            else:
+                for orient_name, orient_value in orientations.items():
+                    assignment_config = deepcopy(base_config)
+                    # Keep only this scenario, with only this orientation
+                    reduced_scenario = deepcopy(scenario_details)
+                    reduced_scenario["orientations"] = {orient_name: orient_value}
+                    assignment_config["placement_scenarios"] = {scenario_name: reduced_scenario}
+                    assignment_configs.append(
+                        {
+                            "config": assignment_config,
+                            "phantoms": phantom_list,
+                            "items": [f"{scenario_name}_{orient_name}"],
+                            "items_name": "scenario",
+                        }
+                    )
+
+        logger.info(f"Split by scenario×orientation: {len(assignment_configs)} assignments")
+        for i, cfg in enumerate(assignment_configs):
+            logger.info(f"  Assignment {i}: {cfg['items'][0]} (phantoms: {cfg['phantoms']})")
 
     else:
         logger.error(f"{colorama.Fore.RED}Error: Unknown split_by value '{split_by}'")
@@ -514,11 +559,12 @@ def main():
         default="auto",
         choices=SPLIT_BY_OPTIONS,
         help=f"Dimension to split by. Options: {', '.join(SPLIT_BY_OPTIONS)}. "
-        "'auto' splits by phantoms × frequencies (default). "
+        "'auto' splits by phantoms × frequencies/antennas (default). "
         "'phantom' creates one assignment per phantom. "
         "'frequency' creates one assignment per frequency. "
         "'direction' creates one assignment per incident direction (far-field only). "
-        "'polarization' creates one assignment per polarization (far-field only).",
+        "'polarization' creates one assignment per polarization (far-field only). "
+        "'scenario' creates one assignment per placement scenario × orientation combination (near-field only).",
     )
     parser.add_argument(
         "--server-url",

@@ -31,6 +31,9 @@ goliat super_study configs/far_field_config.json --name direction_study --split-
 
 # Split by polarization (one assignment per polarization, far-field only)
 goliat super_study configs/far_field_config.json --name pol_study --split-by polarization
+
+# Split by scenario (one assignment per placement scenario × orientation, near-field only)
+goliat super_study configs/near_field_config.json --name nf_study --split-by scenario
 ```
 
 This will:
@@ -89,6 +92,7 @@ goliat super_study <config> --name <name> [options]
 | `frequency` | One assignment per frequency | Number of frequencies |
 | `direction` | One assignment per incident direction (far-field only) | Number of directions |
 | `polarization` | One assignment per polarization (far-field only) | Number of polarizations |
+| `scenario` | One assignment per placement scenario × orientation (near-field only) | scenarios × orientations |
 
 **Examples:**
 ```bash
@@ -112,6 +116,12 @@ goliat super_study configs/far_field_config.json \
 goliat super_study configs/far_field_config.json \
   --name pol_study \
   --split-by polarization
+```
+
+# By scenario×orientation: 6 assignments (one per scenario/orientation combo) with all phantoms
+goliat super_study configs/near_field_config_26ghz.json \
+  --name 26ghz \
+  --split-by scenario
 ```
 
 ### `goliat worker`
@@ -164,6 +174,20 @@ Creates one assignment per incident direction. Each assignment runs all phantoms
 Creates one assignment per polarization. Each assignment runs all phantoms/frequencies/directions for that polarization.
 
 **Use case:** Running theta and phi polarizations on separate machines.
+
+### By Scenario×Orientation (Near-Field Only)
+
+Creates one assignment per placement scenario × orientation combination. Each assignment keeps all phantoms and antennas, but restricts to a single scenario and a single orientation within that scenario.
+
+**Example:** A config with `front_of_eyes` (vertical, horizontal), `by_cheek` (cheek_base, tilt_base), and `by_belly` (vertical, horizontal) → 6 assignments:
+- Assignment 0: `front_of_eyes / vertical` — both phantoms
+- Assignment 1: `front_of_eyes / horizontal` — both phantoms
+- Assignment 2: `by_cheek / cheek_base` — both phantoms
+- Assignment 3: `by_cheek / tilt_base` — both phantoms
+- Assignment 4: `by_belly / vertical` — both phantoms
+- Assignment 5: `by_belly / horizontal` — both phantoms
+
+**Use case:** Distributing near-field placement configurations across workers (e.g. 6 cloud machines, one per placement).
 
 ## API Endpoints
 

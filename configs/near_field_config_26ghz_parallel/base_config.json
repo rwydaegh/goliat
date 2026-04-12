@@ -1,0 +1,82 @@
+{
+  "use_gui": true,
+  "use_web": true,
+  "extraction": {
+    "sar": true,
+    "power_balance": false,
+    "sapd": true
+  },
+  "power_balance": {
+    "input_method": "bounding_box"
+  },
+  "execution_control": {
+    "do_setup": true,
+    "do_run": true,
+    "do_extract": true,
+    "only_write_input_file": false,
+    "auto_cleanup_previous_results": ["output", "input", "smash"]
+  },
+  "simulation_parameters": {
+    "excitation_type": "Harmonic",
+    "bandwidth_mhz": 50.0,
+    "target_freq_resolution_mhz": 10.0,
+    "s4l_arma_speedup_factor": 1.0,
+    "gaussian_pulse_k": 3,
+    "global_auto_termination": "GlobalAutoTerminationNone",
+    "convergence_level_dB": -15,
+    "simulation_time_multiplier": 2.0,
+    "number_of_point_sensors": 0,
+    "point_source_order": [
+      "lower_left_bottom",
+      "top_right_up",
+      "lower_right_bottom",
+      "top_left_up",
+      "lower_left_up",
+      "top_right_bottom",
+      "lower_right_up",
+      "top_left_bottom"
+    ],
+    "multisine_ramp_periods": 2.0,
+    "overall_field_sensor": {
+      "enabled": true,
+      "record_e_field": true,
+      "record_h_field": true,
+      "recording_domain": "frequency",
+      "on_the_fly_dft": true
+    },
+    "freespace_antenna_bbox_expansion_mm": [20, 20, 20],
+    "sapd_slicing_side_length_mm": 10000,
+    "sapd_mesh_slicing_side_length_mm": 10000
+  },
+  "gridding_parameters": {
+    "global_gridding": {
+      "grid_mode": "manual",
+      "manual_fallback_max_step_mm": 3.0
+    },
+    "padding": {
+      "padding_mode": "manual",
+      "manual_bottom_padding_mm": [0, 0, 0],
+      "manual_top_padding_mm": [0, 0, 0]
+    },
+    "phantom_bbox_reduction": {
+      "use_symmetry_reduction": true
+    }
+  },
+  "solver_settings": {
+    "kernel": "acceleware",
+    "server": "localhost",
+    "boundary_conditions": {
+      "type": "UpmlCpml",
+      "strength": "Low"
+    }
+  },
+  "verbose": false,
+  "manual_isolve": true,
+  "keep_awake": true,
+  "data_setup": {
+    "gdrive_url": "https://drive.google.com/drive/folders/1Ps0ilW6yx4Z5VoWRZKrkhP225m8lBQOV?usp=sharing&confirm=t",
+    "gdrive_url_aws": "https://drive.google.com/uc?id=1etS9uyi0Ns-vOtG2q0G1hU0LLw0M_dq7",
+    "data_dir": "data"
+  },
+  "save_retry_count": 4
+}

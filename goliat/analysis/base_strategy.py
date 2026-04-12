@@ -96,6 +96,7 @@ class BaseAnalysisStrategy(ABC):
         sim_power: float,
         norm_factor: float,
         sar_results: dict | None = None,
+        sapd_results: dict | None = None,
     ) -> tuple[dict, list]:
         """Extracts and structures data from a single simulation's result files.
 
@@ -107,6 +108,7 @@ class BaseAnalysisStrategy(ABC):
             sim_power: Simulated input power in Watts.
             norm_factor: Normalization factor to apply.
             sar_results: Optional JSON results dict containing additional data like power balance.
+            sapd_results: Optional SAPD JSON results dict (present when sapd=true in config).
 
         Returns:
             Tuple of (main result entry dict, list of organ-specific entries).

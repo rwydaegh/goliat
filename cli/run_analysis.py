@@ -328,7 +328,7 @@ def main():
 
             logging.getLogger("progress").info("--- Generating Excel file for partners ---", extra={"log_type": "header"})
             try:
-                excel_main()
+                excel_main(config_path=args.config)
                 logging.getLogger("progress").info("--- Excel file generation complete ---", extra={"log_type": "success"})
             except Exception as e:
                 logging.getLogger("progress").warning(f"Failed to generate Excel file: {e}", extra={"log_type": "warning"})

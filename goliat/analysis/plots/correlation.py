@@ -31,6 +31,16 @@ class CorrelationPlotter(BasePlotter):
         else:
             plot_df = results_df.copy()
 
+        # Check if columns exist
+        if "SAR_head" not in plot_df.columns or "psSAR10g_eyes" not in plot_df.columns:
+            logging.getLogger("progress").warning(
+                f"Missing required columns for head vs eye correlation plot: "
+                f"{'SAR_head ' if 'SAR_head' not in plot_df.columns else ''}"
+                f"{'psSAR10g_eyes' if 'psSAR10g_eyes' not in plot_df.columns else ''}",
+                extra={"log_type": "warning"},
+            )
+            return
+
         plot_df["SAR_head"] = pd.to_numeric(plot_df["SAR_head"], errors="coerce")
         plot_df["psSAR10g_eyes"] = pd.to_numeric(plot_df["psSAR10g_eyes"], errors="coerce")
         correlation_df = plot_df.dropna(subset=["SAR_head", "psSAR10g_eyes"])

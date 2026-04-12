@@ -138,8 +138,9 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
         sim_power: float,
         norm_factor: float,
         sar_results: dict | None = None,
+        sapd_results: dict | None = None,
     ) -> tuple[dict, list]:
-        """Extracts and normalizes SAR data from a single near-field result.
+        """Extracts and normalizes SAR and SAPD data from a single near-field result.
 
         Args:
             pickle_data: Data loaded from the .pkl result file.
@@ -149,6 +150,7 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
             sim_power: The simulated input power in Watts.
             norm_factor: The normalization factor to apply to SAR values.
             sar_results: Optional JSON results dict containing power balance data.
+            sapd_results: Optional SAPD JSON results dict (present when sapd=true in config).
 
         Returns:
             A tuple containing the main result entry and a list of organ-specific entries.
@@ -202,6 +204,16 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
         for group_name, stats in grouped_stats.items():
             key = f"psSAR10g_{group_name.replace('_group', '')}"
             result_entry[key] = stats.get("peak_sar", pd.NA) * norm_factor
+
+        # Include SAPD data if available (not scaled by norm_factor — already at target power;
+        # however, like SAR we apply norm_factor since SAPD scales linearly with power)
+        if sapd_results is not None:
+            raw_sapd = sapd_results.get("peak_sapd_W_m2", pd.NA)
+            result_entry["peak_sapd_W_m2"] = raw_sapd * norm_factor if pd.notna(raw_sapd) else pd.NA
+            result_entry["peak_sapd_location_m"] = sapd_results.get("peak_sapd_location_m", pd.NA)
+        else:
+            result_entry["peak_sapd_W_m2"] = pd.NA
+            result_entry["peak_sapd_location_m"] = pd.NA
 
         # Extract power balance data if available
         power_balance = None

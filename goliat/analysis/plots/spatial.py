@@ -26,7 +26,9 @@ class SpatialPlotter(BasePlotter):
         all_side_lengths = []
 
         for idx, row in peak_data.iterrows():
-            if pd.isna(row.get("PeakLocation")) or pd.isna(row.get("PeakCubeSideLength")):
+            loc = row.get("PeakLocation")
+            side = row.get("PeakCubeSideLength")
+            if loc is None or side is None or (np.isscalar(loc) and pd.isna(loc)) or (np.isscalar(side) and pd.isna(side)):
                 continue
 
             location = row["PeakLocation"]
@@ -123,7 +125,9 @@ class SpatialPlotter(BasePlotter):
             scenario_color_map = {}
 
         for idx, row in plot_data.iterrows():
-            if pd.isna(row.get("PeakLocation")) or pd.isna(row.get("PeakCubeSideLength")):
+            loc = row.get("PeakLocation")
+            side = row.get("PeakCubeSideLength")
+            if loc is None or side is None or (np.isscalar(loc) and pd.isna(loc)) or (np.isscalar(side) and pd.isna(side)):
                 continue
 
             location = row["PeakLocation"]
@@ -294,7 +298,8 @@ class SpatialPlotter(BasePlotter):
         locations = []
         peak_values = []
         for idx, row in peak_data.iterrows():
-            if pd.isna(row.get("PeakLocation")):
+            loc = row.get("PeakLocation")
+            if loc is None or (np.isscalar(loc) and pd.isna(loc)):
                 continue
             location = row["PeakLocation"]
             if isinstance(location, str):

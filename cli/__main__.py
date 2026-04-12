@@ -275,8 +275,8 @@ Examples:
         "--split-by",
         type=str,
         default="auto",
-        choices=["auto", "phantom", "direction", "polarization", "frequency", "freq_x_pol", "custom"],
-        help="Dimension to split by: 'auto' (phantoms × frequencies), 'phantom', 'direction', 'polarization', 'frequency', 'freq_x_pol' (frequency × polarization = 18 assignments), or 'custom' (with --frequency-groups).",
+        choices=["auto", "phantom", "direction", "polarization", "frequency", "freq_x_pol", "custom", "scenario"],
+        help="Dimension to split by: 'auto' (phantoms × frequencies/antennas), 'phantom', 'direction', 'polarization', 'frequency', 'freq_x_pol', 'custom' (with --frequency-groups), or 'scenario' (scenario × orientation, near-field only).",
     )
     super_study_parser.add_argument(
         "--frequency-groups",

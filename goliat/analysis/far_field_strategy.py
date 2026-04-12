@@ -127,6 +127,7 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
         sim_power: float,
         norm_factor: float,
         sar_results: dict | None = None,
+        sapd_results: dict | None = None,
     ) -> tuple[dict, list]:
         """Extract and normalize SAR data from pickle file for far-field results."""
         summary_results = pickle_data.get("summary_results", {})
