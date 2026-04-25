@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation
+
+- New `cloud_setup/ssh/` directory with one-shot script (`setup_tensordock_ssh.ps1`) and from-scratch README for SSH bring-up of Tensordock Windows VMs from a Linux box. Covers key-only OpenSSH (re-using the Tensordock `:8888` forward), the locked ACL on `administrators_authorized_keys`, `LocalAccountTokenFilterPolicy` for admin SSH tokens, the `schtasks`-not-`Start-Process` rule for launching `my_setup.bat` over SSH, and conventions for running `goliat study` headlessly. Cross-referenced from `docs/cloud/cloud_setup.md`.
+
 ## [1.4.0] - 2025-01-15
 
 Major release with Sim4Life 9.2 support, air-based auto-induced exposure analysis, SAPD extraction, and far-field optimizations. ~41 commits since v1.3.0.

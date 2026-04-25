@@ -159,7 +159,12 @@ For current pricing and availability, consult TensorDock's dashboard directly.
 
 While this guide focuses on TensorDock, similar setups work with AWS EC2 (G4/G5 instances with Windows Server), Google Cloud Platform (GPU-enabled Windows VMs), and Azure (NV-series VMs with Windows). The setup script may need minor modifications for different providers (e.g., different default usernames, network configurations).
 
+## Headless / SSH access
+
+For driving the VM programmatically (e.g. an agent running on a Linux box), see [`cloud_setup/ssh/README.md`](https://github.com/rwydaegh/goliat/blob/master/cloud_setup/ssh/README.md). It documents a one-shot script to enable key-only OpenSSH on the VM (re-using the Tensordock `:8888` port forward, locked-down ACL on `administrators_authorized_keys`, elevated admin tokens for SSH sessions), plus the conventions for running `goliat study` from SSH.
+
 ## Related documentation
 
 - [oSPARC](osparc.md): Cloud batch execution via oSPARC platform (alternative to VM setup)
 - [Monitoring dashboard](monitoring.md): When running studies across multiple cloud VMs, use the monitoring dashboard to track progress, view logs, and coordinate super studies across all workers
+- [SSH bring-up](https://github.com/rwydaegh/goliat/blob/master/cloud_setup/ssh/README.md): Drive the VM from a Linux box (intended for autonomous agents)
