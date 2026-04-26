@@ -1,0 +1,86 @@
+{
+    "_comment_": "Tier 1 of the AEGIS validation campaign — Path A: methodical 12 direction x 2 polarisation environmental sweep at FR3 (7/9/11 GHz) on full thelonious. Phase 1 disagreed at matching x for an understood (dispersion) reason, so the proposal's Path B (scaled-phantom shortcut to high-x) is closed; Tier 1 must run on the full body. Single 24 GB 3090 means we use the paper-baseline grid (0.6/0.5/0.5 mm at 7/9/11 GHz, ~6 CPW in skin) rather than the original 12 CPW sketch — the 12 CPW row at 11 GHz alone is ~6 GCells half-body, well past 24 GB. The 0.5 mm row fits at ~764 MCells half-body. Bbox padding 20 mm matches the 2026 PMB sub-6 GHz campaign snapshot (so Tier 1 is apples-to-apples with Tier 0). Both peak SAPD and per-vertex SAPD field extracted via the dual-evaluator pipeline; _Output.h5 retained.",
+    "extends": "far_field_FR3_base.json",
+    "use_gui": false,
+    "use_web": false,
+    "phantoms": [
+        "thelonious"
+    ],
+    "frequencies_mhz": [
+        7000,
+        9000,
+        11000
+    ],
+    "auto_induced": {
+        "enabled": false
+    },
+    "extraction": {
+        "sar": true,
+        "power_balance": true,
+        "sapd": true,
+        "sapd_field": true,
+        "point_sensors": false
+    },
+    "execution_control": {
+        "do_setup": true,
+        "do_run": true,
+        "do_extract": true,
+        "only_write_input_file": false,
+        "batch_run": false,
+        "auto_cleanup_previous_results": []
+    },
+    "far_field_setup": {
+        "type": "environmental",
+        "environmental": {
+            "spherical_tessellation": null,
+            "incident_directions": [
+                "x_pos",
+                "x_neg",
+                "y_pos",
+                "y_neg",
+                "z_pos",
+                "z_neg"
+            ],
+            "polarizations": [
+                "theta",
+                "phi"
+            ]
+        }
+    },
+    "simulation_parameters": {
+        "bbox_padding_mm": 20,
+        "convergence_level_dB": -30,
+        "simulation_time_multiplier": 3.5,
+        "number_of_point_sensors": 0
+    },
+    "gridding_parameters": {
+        "global_gridding": {
+            "grid_mode": "manual",
+            "manual_fallback_max_step_mm": 3.0
+        },
+        "global_gridding_per_frequency": {
+            "7000": 0.6,
+            "9000": 0.5,
+            "11000": 0.5
+        },
+        "padding": {
+            "padding_mode": "manual",
+            "manual_bottom_padding_mm": [
+                0,
+                0,
+                0
+            ],
+            "manual_top_padding_mm": [
+                0,
+                0,
+                0
+            ]
+        },
+        "phantom_bbox_reduction": {
+            "auto_reduce_bbox": false,
+            "use_symmetry_reduction": true,
+            "reference_frequency_mhz": 7000,
+            "height_limit_per_frequency_mm": {}
+        }
+    }
+}

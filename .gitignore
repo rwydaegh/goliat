@@ -92,6 +92,7 @@ configs/*
 !configs/near_field_config_26ghz_coarse_forskin.json
 !configs/near_field_config_26ghz_parallel/
 !configs/scaled_thelonious_*.json
+!configs/far_field_aegis_*.json
 
 # Generated files
 *.csv
