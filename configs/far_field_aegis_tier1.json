@@ -7,9 +7,7 @@
         "thelonious"
     ],
     "frequencies_mhz": [
-        7000,
-        9000,
-        11000
+        7000
     ],
     "auto_induced": {
         "enabled": false
@@ -27,7 +25,7 @@
         "do_extract": true,
         "only_write_input_file": false,
         "batch_run": false,
-        "auto_cleanup_previous_results": []
+        "auto_cleanup_previous_results": ["output"]
     },
     "far_field_setup": {
         "type": "environmental",
@@ -42,8 +40,7 @@
                 "z_neg"
             ],
             "polarizations": [
-                "theta",
-                "phi"
+                "theta"
             ]
         }
     },
