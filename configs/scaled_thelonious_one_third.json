@@ -1,0 +1,88 @@
+{
+    "_comment_": "Phase 1 of the AEGIS validation campaign — scaled-(1/3) thelonious sanity check. Five frequencies span 700 MHz to 28 GHz on a single direction (x_pos) and single polarisation (theta), matching the scaled_thelonious_proposal.md. Both peak SAPD (4 cm² windowed) and per-vertex SAPD field are extracted via the dual-evaluator pipeline; _Output.h5 is retained for AEGIS-side surface comparison fallback. Half-body symmetry reduction is on so the run fits a single 24 GB 3090 even at 28 GHz.",
+    "extends": "far_field_FR3_base.json",
+    "use_gui": false,
+    "use_web": false,
+    "phantoms": [
+        "thelonious_one_third"
+    ],
+    "frequencies_mhz": [
+        700,
+        2400,
+        5200,
+        10000,
+        28000
+    ],
+    "auto_induced": {
+        "enabled": false
+    },
+    "extraction": {
+        "sar": true,
+        "power_balance": true,
+        "sapd": true,
+        "sapd_field": true,
+        "point_sensors": false
+    },
+    "execution_control": {
+        "do_setup": true,
+        "do_run": true,
+        "do_extract": true,
+        "only_write_input_file": false,
+        "batch_run": false,
+        "auto_cleanup_previous_results": []
+    },
+    "far_field_setup": {
+        "type": "environmental",
+        "environmental": {
+            "spherical_tessellation": {
+                "theta_values": [
+                    90
+                ],
+                "phi_values": [
+                    0
+                ]
+            },
+            "polarizations": [
+                "theta"
+            ]
+        }
+    },
+    "simulation_parameters": {
+        "bbox_padding_mm": 50,
+        "convergence_level_dB": -30,
+        "simulation_time_multiplier": 3.5,
+        "number_of_point_sensors": 0
+    },
+    "gridding_parameters": {
+        "global_gridding": {
+            "grid_mode": "manual",
+            "manual_fallback_max_step_mm": 3.0
+        },
+        "global_gridding_per_frequency": {
+            "700": 2.5,
+            "2400": 1.482,
+            "5200": 1.0,
+            "10000": 0.5,
+            "28000": 0.22
+        },
+        "padding": {
+            "padding_mode": "manual",
+            "manual_bottom_padding_mm": [
+                0,
+                0,
+                0
+            ],
+            "manual_top_padding_mm": [
+                0,
+                0,
+                0
+            ]
+        },
+        "phantom_bbox_reduction": {
+            "auto_reduce_bbox": false,
+            "use_symmetry_reduction": true,
+            "reference_frequency_mhz": 7000,
+            "height_limit_per_frequency_mm": {}
+        }
+    }
+}
