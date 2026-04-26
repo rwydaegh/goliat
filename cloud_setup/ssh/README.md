@@ -189,6 +189,39 @@ ssh goliat 'cd ~/goliat && nohup bash -lc "goliat study X --auto-close > X.log 2
   actually need to change. The merge is deep, so `simulation_parameters` and
   `gridding_parameters` overrides only touch the keys you specify.
 
+## Reconnect VPN after a VM reboot — over SSH (no RDP needed)
+
+`my_connect_vpn.bat` lives in your Linux-side `goliat/cloud_setup/`, NOT
+on the VM. Don't try to run it on the VM (UAC-aware shortcut, GUI
+prompts, paths assume an interactive desktop). Replicate its core actions
+over SSH instead — the SSH session is already elevated thanks to
+`LocalAccountTokenFilterPolicy=1` (Step 2.4 above), so `net session`
+returns success and OpenVPN can write to its config dir.
+
+```bash
+# 0. Verify the cert + auth files are still on the VM Desktop. Done once
+#    after a fresh provision; persists across reboots:
+ssh goliat 'ls "/c/Users/$USERNAME/Desktop/certs/"'
+# Should show: ca-vpn-zp.crt, Intec-iGent.ovpn, openvpn_auth.txt
+
+# 1. Launch openvpn detached. The VM's pre-installed OpenVPNService is
+#    the auto-start service; this launches a *user-mode* tunnel using
+#    your stored auth file. Both can coexist.
+ssh goliat 'cd "/c/Users/$USERNAME/Desktop/certs/" && \
+    nohup "/c/Program Files/OpenVPN/bin/openvpn.exe" \
+        --config Intec-iGent.ovpn --auth-user-pass openvpn_auth.txt \
+        > /tmp/openvpn.log 2>&1 &'
+
+# 2. Wait ~10 s, then verify the tunnel is up.
+ssh goliat 'tail -10 /tmp/openvpn.log; ipconfig | grep -A 4 "TAP-Windows6"'
+# Look for: "Initialization Sequence Completed" in the openvpn log,
+# and "IPv4 Address. . . . . . . . . . . : 192.168.126.X" on TAP-Windows6.
+```
+
+Without VPN, `import s4l_v1` hangs >60 s waiting on the license server
+(symptom: goliat run starts, log stays at 0 bytes). First diagnostic
+when a goliat run looks stuck: `ipconfig` for `TAP-Windows6` IP.
+
 ## Reference: filesystem map
 
 | Linux box | VM |

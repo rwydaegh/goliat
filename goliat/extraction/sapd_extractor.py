@@ -23,6 +23,7 @@ class SapdExtractionContext:
     em_sensor_extractor: Optional[Any] = None
     model_to_grid_filter: Optional[Any] = None
     sapd_evaluator: Optional[Any] = None
+    sapd_field_evaluator: Optional[Any] = None
 
 
 class SapdExtractor(LoggingMixin):
@@ -136,17 +137,27 @@ class SapdExtractor(LoggingMixin):
             self._log("      - WARNING: No skin entities found for SAPD extraction.", log_type="warning")
             return
 
-        # Phase 3: Setup surface and SAPD evaluator
+        # Phase 3: Setup surface and SAPD evaluator(s).
+        # When extraction.sapd_field is true we build TWO evaluators sharing the
+        # same ModelToGridFilter: one without SetAPD (gives the standard
+        # spatial-averaged report, which the paper uses) and one with SetAPD=True
+        # (gives the per-vertex APD(x,y,z,f0) field for AEGIS NRMSE/3D-paint).
+        # This is needed because SetAPD=True swaps the report port out of the
+        # Outputs collection rather than adding the field port alongside.
         ctx.em_sensor_extractor = self._setup_em_sensor_extractor(ctx.active_extractor)
-        ctx.model_to_grid_filter, ctx.sapd_evaluator = self._setup_sapd_evaluator(skin_entities, ctx.center_m, ctx.em_sensor_extractor)
+        (
+            ctx.model_to_grid_filter,
+            ctx.sapd_evaluator,
+            ctx.sapd_field_evaluator,
+        ) = self._setup_sapd_evaluator(skin_entities, ctx.center_m, ctx.em_sensor_extractor)
 
-        # Phase 4: Extract and store results
+        # Phase 4: Extract and store results from the report evaluator
         success = self._extract_and_store_results(ctx.sapd_evaluator)
 
         # Phase 4b: Optional per-vertex SAPD field dump for AEGIS validation
-        if success and self.config["extraction.sapd_field"]:
+        if success and ctx.sapd_field_evaluator is not None:
             try:
-                self._dump_sapd_field(ctx.sapd_evaluator)
+                self._dump_sapd_field(ctx.sapd_field_evaluator)
             except Exception as e:
                 self._log(
                     f"      - WARNING: SAPD field dump failed: {e}",
@@ -188,11 +199,23 @@ class SapdExtractor(LoggingMixin):
         skin_entities: List["model.Entity"],
         center_m: Optional[List[float]],
         em_sensor_extractor: "analysis.Extractor",
-    ) -> Tuple[Any, Any]:
-        """Sets up the ModelToGridFilter and GenericSAPDEvaluator.
+    ) -> Tuple[Any, Any, Any]:
+        """Sets up the ModelToGridFilter and GenericSAPDEvaluator(s).
+
+        Always builds the standard report evaluator (peak SAPD over a 4 cm^2
+        averaging window, paper-baseline output). When extraction.sapd_field
+        is true, also builds a *second* evaluator with SetAPD=True that
+        exposes the per-vertex Outputs["APD(x,y,z,f0)"] port. Both share the
+        same ModelToGridFilter, so the surface mesh discretisation is
+        identical between report and field.
+
+        We need two separate evaluator instances because SetAPD=True swaps
+        the "Spatial-Averaged Power Density Report" port OUT of the Outputs
+        collection rather than adding the field port alongside.
 
         Returns:
-            Tuple of (model_to_grid_filter, sapd_evaluator).
+            Tuple of (model_to_grid_filter, sapd_evaluator, sapd_field_evaluator).
+            sapd_field_evaluator is None when extraction.sapd_field is false.
         """
         # Prepare skin surface
         mesh_side_cfg = self.config["simulation_parameters.sapd_mesh_slicing_side_length_mm"]
@@ -207,37 +230,35 @@ class SapdExtractor(LoggingMixin):
         model_to_grid_filter.UpdateAttributes()
         self.document.AllAlgorithms.Add(model_to_grid_filter)
 
-        # Create SAPD evaluator
         inputs = [
             em_sensor_extractor.Outputs["S(x,y,z,f0)"],
             model_to_grid_filter.Outputs["Surface"],
         ]
+
+        # Report evaluator — paper-baseline, always present
         sapd_evaluator = self.analysis.em_evaluators.GenericSAPDEvaluator(inputs=inputs)
         sapd_evaluator.AveragingArea = 4.0, self.units.SquareCentiMeters
         sapd_evaluator.Threshold = 0.01, self.units.Meters  # 10 mm
-
-        # When extraction.sapd_field is on, also expose the per-vertex APD
-        # field port. SetAPD must be flipped before UpdateAttributes() so
-        # the C++ side registers the extra output port.
-        if self.config["extraction.sapd_field"]:
-            sapd_evaluator.SetAPD = True
-            self._log("      - SAPD field dump enabled (Outputs['APD(x,y,z,f0)']).", log_type="info")
-
+        sapd_evaluator.Name = "SAPD_Report_Evaluator"
         sapd_evaluator.UpdateAttributes()
         self.document.AllAlgorithms.Add(sapd_evaluator)
 
-        # Diagnostic: with SetAPD=True the Outputs collection may swap the
-        # "Spatial-Averaged Power Density Report" port out for "APD(x,y,z,f0)"
-        # rather than add it. Log the actual port names so the downstream
-        # extractor can adapt.
+        # Field evaluator — only when sapd_field is requested
+        sapd_field_evaluator = None
         if self.config["extraction.sapd_field"]:
-            try:
-                port_names = [getattr(p, "Name", "?") for p in sapd_evaluator.Outputs]
-                self._log(f"      - SAPD evaluator output ports: {port_names}", log_type="info")
-            except Exception as e:
-                self._log(f"      - Could not enumerate SAPD output ports: {e}", log_type="warning")
+            sapd_field_evaluator = self.analysis.em_evaluators.GenericSAPDEvaluator(inputs=inputs)
+            sapd_field_evaluator.AveragingArea = 4.0, self.units.SquareCentiMeters
+            sapd_field_evaluator.Threshold = 0.01, self.units.Meters
+            sapd_field_evaluator.SetAPD = True
+            sapd_field_evaluator.Name = "SAPD_Field_Evaluator"
+            sapd_field_evaluator.UpdateAttributes()
+            self.document.AllAlgorithms.Add(sapd_field_evaluator)
+            self._log(
+                "      - SAPD field dump enabled (parallel evaluator with SetAPD=True).",
+                log_type="info",
+            )
 
-        return model_to_grid_filter, sapd_evaluator
+        return model_to_grid_filter, sapd_evaluator, sapd_field_evaluator
 
     def _extract_and_store_results(self, sapd_evaluator: Any) -> bool:
         """Extracts results from SAPD evaluator and stores them.
@@ -246,15 +267,6 @@ class SapdExtractor(LoggingMixin):
             True if extraction succeeded, False otherwise.
         """
         sapd_report = sapd_evaluator.Outputs["Spatial-Averaged Power Density Report"]
-        if sapd_report is None:
-            # SetAPD=True can swap the report port out for the field port.
-            # Skip peak extraction; the field dump downstream still runs and
-            # AEGIS-side analysis can derive peak/4cm^2 from the per-vertex data.
-            self._log(
-                "      - 'Spatial-Averaged Power Density Report' port absent (SetAPD=True swap); skipping peak SAPD extraction. Field dump will continue.",
-                log_type="warning",
-            )
-            return True
         sapd_report.Update()
 
         data_collection = sapd_report.Data.DataSimpleDataCollection
@@ -387,6 +399,8 @@ class SapdExtractor(LoggingMixin):
         """Cleans up all algorithms created during extraction."""
         if ctx.sapd_evaluator:
             self.document.AllAlgorithms.Remove(ctx.sapd_evaluator)
+        if ctx.sapd_field_evaluator:
+            self.document.AllAlgorithms.Remove(ctx.sapd_field_evaluator)
         if ctx.model_to_grid_filter:
             self.document.AllAlgorithms.Remove(ctx.model_to_grid_filter)
         if ctx.em_sensor_extractor:
