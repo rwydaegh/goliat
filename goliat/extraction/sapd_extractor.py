@@ -226,6 +226,17 @@ class SapdExtractor(LoggingMixin):
         sapd_evaluator.UpdateAttributes()
         self.document.AllAlgorithms.Add(sapd_evaluator)
 
+        # Diagnostic: with SetAPD=True the Outputs collection may swap the
+        # "Spatial-Averaged Power Density Report" port out for "APD(x,y,z,f0)"
+        # rather than add it. Log the actual port names so the downstream
+        # extractor can adapt.
+        if self.config["extraction.sapd_field"]:
+            try:
+                port_names = [getattr(p, "Name", "?") for p in sapd_evaluator.Outputs]
+                self._log(f"      - SAPD evaluator output ports: {port_names}", log_type="info")
+            except Exception as e:
+                self._log(f"      - Could not enumerate SAPD output ports: {e}", log_type="warning")
+
         return model_to_grid_filter, sapd_evaluator
 
     def _extract_and_store_results(self, sapd_evaluator: Any) -> bool:
@@ -235,6 +246,15 @@ class SapdExtractor(LoggingMixin):
             True if extraction succeeded, False otherwise.
         """
         sapd_report = sapd_evaluator.Outputs["Spatial-Averaged Power Density Report"]
+        if sapd_report is None:
+            # SetAPD=True can swap the report port out for the field port.
+            # Skip peak extraction; the field dump downstream still runs and
+            # AEGIS-side analysis can derive peak/4cm^2 from the per-vertex data.
+            self._log(
+                "      - 'Spatial-Averaged Power Density Report' port absent (SetAPD=True swap); skipping peak SAPD extraction. Field dump will continue.",
+                log_type="warning",
+            )
+            return True
         sapd_report.Update()
 
         data_collection = sapd_report.Data.DataSimpleDataCollection
@@ -313,7 +333,7 @@ class SapdExtractor(LoggingMixin):
         apd = field if field.ndim == 1 else np.linalg.norm(field, axis=-1)
         apd = apd.astype(np.float32, copy=False)
 
-        verts, faces = self._vtk_grid_to_arrays(data.Grid.GetVtkUnstructuredGrid())
+        verts, faces = self._surface_grid_to_arrays(data.Grid)
 
         if apd.size != len(verts) and apd.size != len(faces):
             raise RuntimeError(
@@ -345,42 +365,23 @@ class SapdExtractor(LoggingMixin):
         )
 
     @staticmethod
-    def _vtk_grid_to_arrays(vtk_grid):
-        """Pulls (vertices, faces) from a vtkUnstructuredGrid via vtk_to_numpy.
+    def _surface_grid_to_arrays(grid):
+        """Pulls (vertices, faces) from an S4L SurfaceGrid via GetPoint/GetCellPoints.
 
-        ~100x faster than iterating GetPoint/GetCellPoints in pure Python on
-        a 16k-vertex sphere. Handles VTK 9+ modern API (ConnectivityArray +
-        OffsetsArray) with a legacy-flat-array fallback. Asserts pure
-        triangles since GenericSAPDEvaluator surfaces are triangulated.
+        S4L's grid.GetVtkUnstructuredGrid() returns a raw C++ pointer
+        (vtkUnstructuredGrid*) that Boost.Python's by-value converter cannot
+        unwrap, so we stick to the documented iteration accessors. Cost is
+        a few seconds on a ~50k-vertex thelonious skin; tolerable for Tier 1.
         """
         import numpy as np
-        from vtk.util import numpy_support as vns
 
-        n_pts = vtk_grid.GetNumberOfPoints()
-        n_cells = vtk_grid.GetNumberOfCells()
-        verts = vns.vtk_to_numpy(vtk_grid.GetPoints().GetData()).reshape(n_pts, 3)
-        cell_array = vtk_grid.GetCells()
-        try:
-            conn = vns.vtk_to_numpy(cell_array.GetConnectivityArray())
-            offs = vns.vtk_to_numpy(cell_array.GetOffsetsArray())
-            sizes = np.diff(offs)
-            if not (sizes == 3).all():
-                raise ValueError(
-                    f"non-triangle cells: sizes={np.unique(sizes).tolist()}"
-                )
-            faces = conn.reshape(n_cells, 3)
-        except (AttributeError, NotImplementedError):
-            flat = vns.vtk_to_numpy(cell_array.GetData())
-            if flat.size != 4 * n_cells:
-                raise ValueError(
-                    f"flat connectivity size {flat.size} != 4 * n_cells "
-                    f"{n_cells} -> mesh is not pure triangles"
-                )
-            rs = flat.reshape(n_cells, 4)
-            if not (rs[:, 0] == 3).all():
-                raise ValueError("legacy flat array has non-3 cell sizes")
-            faces = rs[:, 1:]
-        return verts.astype(np.float64), faces.astype(np.int32)
+        n_pts = grid.NumberOfPoints
+        n_cells = grid.NumberOfCells
+        verts = np.array([grid.GetPoint(i) for i in range(n_pts)], dtype=np.float64)
+        faces = np.array([grid.GetCellPoints(i) for i in range(n_cells)], dtype=np.int32)
+        if faces.ndim != 2 or faces.shape[1] != 3:
+            raise ValueError(f"expected (T,3) triangle faces, got shape {faces.shape}")
+        return verts, faces
 
     def _cleanup_algorithms(self, ctx: SapdExtractionContext) -> None:
         """Cleans up all algorithms created during extraction."""
