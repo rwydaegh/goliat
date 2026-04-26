@@ -13,7 +13,7 @@
         "enabled": false
     },
     "extraction": {
-        "sar": true,
+        "sar": false,
         "power_balance": true,
         "sapd": true,
         "sapd_field": true,
@@ -32,7 +32,6 @@
         "environmental": {
             "spherical_tessellation": null,
             "incident_directions": [
-                "x_pos",
                 "x_neg",
                 "y_pos",
                 "y_neg",
