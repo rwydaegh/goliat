@@ -13,7 +13,7 @@
         "enabled": false
     },
     "extraction": {
-        "sar": false,
+        "sar": true,
         "power_balance": true,
         "sapd": true,
         "sapd_field": true,
