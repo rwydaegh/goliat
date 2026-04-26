@@ -143,6 +143,17 @@ class SapdExtractor(LoggingMixin):
         # Phase 4: Extract and store results
         success = self._extract_and_store_results(ctx.sapd_evaluator)
 
+        # Phase 4b: Optional per-vertex SAPD field dump for AEGIS validation
+        if success and self.config["extraction.sapd_field"]:
+            try:
+                self._dump_sapd_field(ctx.sapd_evaluator)
+            except Exception as e:
+                self._log(
+                    f"      - WARNING: SAPD field dump failed: {e}",
+                    log_type="warning",
+                )
+                self.verbose_logger.error(traceback.format_exc())
+
         # Phase 5: Cleanup
         self._cleanup_algorithms(ctx)
 
@@ -204,6 +215,14 @@ class SapdExtractor(LoggingMixin):
         sapd_evaluator = self.analysis.em_evaluators.GenericSAPDEvaluator(inputs=inputs)
         sapd_evaluator.AveragingArea = 4.0, self.units.SquareCentiMeters
         sapd_evaluator.Threshold = 0.01, self.units.Meters  # 10 mm
+
+        # When extraction.sapd_field is on, also expose the per-vertex APD
+        # field port. SetAPD must be flipped before UpdateAttributes() so
+        # the C++ side registers the extra output port.
+        if self.config["extraction.sapd_field"]:
+            sapd_evaluator.SetAPD = True
+            self._log("      - SAPD field dump enabled (Outputs['APD(x,y,z,f0)']).", log_type="info")
+
         sapd_evaluator.UpdateAttributes()
         self.document.AllAlgorithms.Add(sapd_evaluator)
 
@@ -272,6 +291,96 @@ class SapdExtractor(LoggingMixin):
                         break
 
         return peak_sapd, peak_loc
+
+    def _dump_sapd_field(self, sapd_evaluator: Any) -> None:
+        """Writes per-vertex APD field to <results_dir>/skin_apd.npz.
+
+        Consumes the `APD(x,y,z,f0)` output port (only present when
+        SetAPD=True on the evaluator). The port carries an XPostProcessor
+        FloatFieldData with ValueLocation=kNode on a SurfaceGrid; we pull
+        vertices and triangle connectivity from the underlying VTK
+        unstructured grid. The renorm factor 753.46 = 2*eta_0 converts
+        Sim4Life's E=1 V/m unit excitation to a Sinc=1 W/m^2 reference,
+        matching what AEGIS uses internally.
+        """
+        import numpy as np
+
+        port = sapd_evaluator.Outputs["APD(x,y,z,f0)"]
+        port.Update()
+        data = port.Data
+
+        field = np.asarray(data.Field(0))
+        apd = field if field.ndim == 1 else np.linalg.norm(field, axis=-1)
+        apd = apd.astype(np.float32, copy=False)
+
+        verts, faces = self._vtk_grid_to_arrays(data.Grid.GetVtkUnstructuredGrid())
+
+        if apd.size != len(verts) and apd.size != len(faces):
+            raise RuntimeError(
+                f"APD has {apd.size} entries but mesh has V={len(verts)}, "
+                f"T={len(faces)}; ValueLocation="
+                f"{getattr(data, 'ValueLocation', '?')}"
+            )
+
+        renorm = 753.46  # 2 * eta_0 — converts E=1 V/m to Sinc=1 W/m^2
+        out_dir = self._get_results_dir()
+        os.makedirs(out_dir, exist_ok=True)
+        out_path = os.path.join(out_dir, "skin_apd.npz")
+        np.savez(
+            out_path,
+            apd_w_m2=apd * renorm,
+            vertices_m=verts,
+            faces=faces,
+            port_name="APD(x,y,z,f0)",
+            value_location=str(getattr(data, "ValueLocation", "kNode")),
+            algorithm="GenericSAPDEvaluator",
+            renorm=renorm,
+            n_vertices=len(verts),
+            n_faces=len(faces),
+        )
+        self._log(
+            f"      - Wrote SAPD field: {os.path.basename(out_path)} "
+            f"(V={len(verts)}, T={len(faces)}, peak={float(apd.max()) * renorm:.4f} W/m^2)",
+            log_type="info",
+        )
+
+    @staticmethod
+    def _vtk_grid_to_arrays(vtk_grid):
+        """Pulls (vertices, faces) from a vtkUnstructuredGrid via vtk_to_numpy.
+
+        ~100x faster than iterating GetPoint/GetCellPoints in pure Python on
+        a 16k-vertex sphere. Handles VTK 9+ modern API (ConnectivityArray +
+        OffsetsArray) with a legacy-flat-array fallback. Asserts pure
+        triangles since GenericSAPDEvaluator surfaces are triangulated.
+        """
+        import numpy as np
+        from vtk.util import numpy_support as vns
+
+        n_pts = vtk_grid.GetNumberOfPoints()
+        n_cells = vtk_grid.GetNumberOfCells()
+        verts = vns.vtk_to_numpy(vtk_grid.GetPoints().GetData()).reshape(n_pts, 3)
+        cell_array = vtk_grid.GetCells()
+        try:
+            conn = vns.vtk_to_numpy(cell_array.GetConnectivityArray())
+            offs = vns.vtk_to_numpy(cell_array.GetOffsetsArray())
+            sizes = np.diff(offs)
+            if not (sizes == 3).all():
+                raise ValueError(
+                    f"non-triangle cells: sizes={np.unique(sizes).tolist()}"
+                )
+            faces = conn.reshape(n_cells, 3)
+        except (AttributeError, NotImplementedError):
+            flat = vns.vtk_to_numpy(cell_array.GetData())
+            if flat.size != 4 * n_cells:
+                raise ValueError(
+                    f"flat connectivity size {flat.size} != 4 * n_cells "
+                    f"{n_cells} -> mesh is not pure triangles"
+                )
+            rs = flat.reshape(n_cells, 4)
+            if not (rs[:, 0] == 3).all():
+                raise ValueError("legacy flat array has non-3 cell sizes")
+            faces = rs[:, 1:]
+        return verts.astype(np.float64), faces.astype(np.int32)
 
     def _cleanup_algorithms(self, ctx: SapdExtractionContext) -> None:
         """Cleans up all algorithms created during extraction."""

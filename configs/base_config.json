@@ -5,6 +5,7 @@
         "sar": true,
         "power_balance": true,
         "sapd": false,
+        "sapd_field": false,
         "point_sensors": true
     },
     "power_balance": {
