@@ -32,8 +32,6 @@
         "environmental": {
             "spherical_tessellation": null,
             "incident_directions": [
-                "x_neg",
-                "y_pos",
                 "y_neg",
                 "z_pos",
                 "z_neg"
