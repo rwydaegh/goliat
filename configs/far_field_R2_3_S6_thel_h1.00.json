@@ -1,0 +1,7 @@
+{
+    "extends": "far_field_R2_3_base.json",
+    "phantoms": [
+        "thelonious"
+    ],
+    "run_tag": "h1.00"
+}
