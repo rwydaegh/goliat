@@ -1,0 +1,11 @@
+{
+    "extends": "far_field_R2_3_base.json",
+    "run_tag": "h0.42",
+    "gridding_parameters": {
+        "phantom_bbox_reduction": {
+            "height_limit_per_frequency_mm": {
+                "450": 743
+            }
+        }
+    }
+}

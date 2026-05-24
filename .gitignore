@@ -65,7 +65,10 @@ Sim4Life_Introduction.pdf
 configs/*
 !configs/base_config.json
 !configs/far_field_config.json
-!configs/far_field_R2_3_truncation_validation.json
+!configs/far_field_R2_3_base.json
+!configs/far_field_R2_3_S2_h0.58.json
+!configs/far_field_R2_3_S3_h0.42.json
+!configs/far_field_R2_3_S4_h0.30.json
 !configs/far_field_sim4life_web.json
 !configs/far_field_FR3_barebones.json
 !configs/far_field_FR3_*.json
