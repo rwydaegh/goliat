@@ -1,0 +1,64 @@
+{
+    "extends": "base_config.json",
+    "study_type": "far_field",
+    "phantoms": [
+        "duke"
+    ],
+    "frequencies_mhz": [
+        3500
+    ],
+    "far_field_setup": {
+        "type": "environmental",
+        "environmental": {
+            "incident_directions": [
+                "x_pos"
+            ],
+            "polarizations": [
+                "theta"
+            ]
+        }
+    },
+    "execution_control": {
+        "do_setup": true,
+        "only_write_input_file": false,
+        "do_run": true,
+        "do_extract": true,
+        "batch_run": false,
+        "auto_cleanup_previous_results": [
+            "output"
+        ]
+    },
+    "simulation_parameters": {
+        "simulation_time_multiplier": 2,
+        "bbox_padding_mm": 20,
+        "simulation_bbox_points": 8,
+        "number_of_point_sensors": 2
+    },
+    "gridding_parameters": {
+        "global_gridding": {
+            "grid_mode": "manual",
+            "manual_fallback_max_step_mm": 3
+        },
+        "global_gridding_per_frequency": {
+            "3500": 1
+        },
+        "padding": {
+            "padding_mode": "manual",
+            "manual_bottom_padding_mm": [
+                0,
+                0,
+                0
+            ],
+            "manual_top_padding_mm": [
+                0,
+                0,
+                0
+            ]
+        },
+        "phantom_bbox_reduction": {
+            "use_symmetry_reduction": false,
+            "auto_reduce_bbox": false,
+            "height_limit_per_frequency_mm": {}
+        }
+    }
+}
