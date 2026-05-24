@@ -9,7 +9,7 @@ import h5py
 from .constants import H5_SIZE_INCREASE_THRESHOLD, MIN_H5_FILE_SIZE_BYTES
 from .logging_manager import LoggingMixin
 from .results_extractor import ResultsExtractor
-from .utils import open_project
+from .utils import apply_run_tag, open_project
 
 if TYPE_CHECKING:
     from logging import Logger
@@ -619,8 +619,11 @@ class ProjectManager(LoggingMixin):
         # Validate placement parameters
         self._validate_placement_params(study_type, phantom_name, frequency_mhz, scenario_name, position_name, orientation_name)
 
-        # Build placement name and project paths
+        # Build placement name and project paths. Apply the optional run_tag
+        # before building the path so both the directory and the .smash filename
+        # pick up the suffix.
         placement_name = f"{scenario_name}_{position_name}_{orientation_name}"
+        placement_name = apply_run_tag(placement_name, self.config["run_tag"])
         project_dir, project_filename = self._build_project_path(study_type, phantom_name, frequency_mhz, placement_name)
 
         os.makedirs(project_dir, exist_ok=True)

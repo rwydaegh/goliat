@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from ..logging_manager import add_simulation_log_handlers, remove_simulation_log_handlers
 from ..results_extractor import ResultsExtractor
 from ..setups.far_field_setup import FarFieldSetup
-from ..utils import profile
+from ..utils import apply_run_tag, profile
 from .base_study import BaseStudy
 
 if TYPE_CHECKING:
@@ -583,7 +583,10 @@ class FarFieldStudy(BaseStudy):
             Path to auto_induced output directory.
         """
         freq_str = f"{'+'.join(str(f) for f in freq)}" if isinstance(freq, list) else str(freq)
-        return Path(self.config.base_dir) / "results" / "far_field" / phantom_name.lower() / f"{freq_str}MHz" / "auto_induced"
+        # The auto_induced root is a literal sibling of the placement folders,
+        # not derived from a placement_name, so apply the tag to it directly.
+        auto_induced_dir = apply_run_tag("auto_induced", self.config["run_tag"])
+        return Path(self.config.base_dir) / "results" / "far_field" / phantom_name.lower() / f"{freq_str}MHz" / auto_induced_dir
 
     def _is_auto_induced_done(
         self,
@@ -646,7 +649,7 @@ class FarFieldStudy(BaseStudy):
         h5_paths = []
         for direction in incident_directions:
             for polarization in polarizations:
-                placement_name = f"environmental_{direction}_{polarization}"
+                placement_name = apply_run_tag(f"environmental_{direction}_{polarization}", self.config["run_tag"])
                 project_filename = f"far_field_{phantom_name.lower()}_{freq_str}MHz_{placement_name}"
                 results_dir = base_path / placement_name / f"{project_filename}.smash_Results"
 
@@ -686,7 +689,7 @@ class FarFieldStudy(BaseStudy):
 
         for direction in incident_directions:
             for polarization in polarizations:
-                placement_name = f"environmental_{direction}_{polarization}"
+                placement_name = apply_run_tag(f"environmental_{direction}_{polarization}", self.config["run_tag"])
                 project_filename = f"far_field_{phantom_name.lower()}_{freq_str}MHz_{placement_name}"
                 results_dir = base_path / placement_name / f"{project_filename}.smash_Results"
 

@@ -12,6 +12,7 @@ from .extraction.sapd_extractor import SapdExtractor
 from .extraction.sar_extractor import SarExtractor
 from .extraction.sensor_extractor import SensorExtractor
 from .logging_manager import LoggingMixin
+from .utils.run_tag import apply_run_tag
 
 if TYPE_CHECKING:
     from logging import Logger
@@ -65,6 +66,10 @@ class ResultsExtractor(LoggingMixin):
         self.scenario_name = context.scenario_name
         self.position_name = context.position_name  # For far-field: direction. For near-field: position.
         self.placement_name = f"{context.scenario_name}_{context.position_name}_{context.orientation_name}"
+        # Apply the optional run_tag so tagged runs read/write their isolated
+        # results folder. Read from config (always present on the context); falsy
+        # tag leaves placement_name byte-for-byte unchanged.
+        self.placement_name = apply_run_tag(self.placement_name, context.config["run_tag"])
         self.orientation_name = context.orientation_name  # For far-field: polarization. For near-field: orientation.
         self.study_type = context.study_type
         self.verbose_logger = context.verbose_logger

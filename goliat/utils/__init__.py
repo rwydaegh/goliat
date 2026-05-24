@@ -26,6 +26,9 @@ from .skin_voxel_utils import (
     get_skin_voxel_coordinates,
 )
 
+# Run-tag helper for simulation output isolation
+from .run_tag import apply_run_tag
+
 # Version detection utilities
 from .version import (
     get_sim4life_version,
@@ -48,6 +51,7 @@ __all__ = [
     "initial_setup",
     "extract_skin_voxels",
     "get_skin_voxel_coordinates",
+    "apply_run_tag",
     # Version utilities
     "get_sim4life_version",
     "get_sim4life_major_minor",
