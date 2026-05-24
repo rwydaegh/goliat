@@ -65,6 +65,7 @@ Sim4Life_Introduction.pdf
 configs/*
 !configs/base_config.json
 !configs/far_field_config.json
+!configs/far_field_R2_3_truncation_validation.json
 !configs/far_field_sim4life_web.json
 !configs/far_field_FR3_barebones.json
 !configs/far_field_FR3_*.json
@@ -90,6 +91,8 @@ configs/*
 !configs/skin_voxel*.json
 !configs/near_field_config_26ghz_remaining.json
 !configs/near_field_config_26ghz_coarse_forskin.json
+!configs/near_field_config_26ghz_coarse_analysis.json
+!configs/analysis_26ghz_coarse.json
 !configs/near_field_config_26ghz_parallel/
 !configs/scaled_thelonious_*.json
 !configs/far_field_aegis_*.json
