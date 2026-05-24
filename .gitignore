@@ -112,6 +112,8 @@ configs/*
 
 # Scripts
 goliat/utils/scripts/keep_awake.py
+scripts/*
+!scripts/run_far_field_uncertainty.py
 
 # Cloud setup - credentials and personal scripts
 cloud_setup/tensordock_documentation.md

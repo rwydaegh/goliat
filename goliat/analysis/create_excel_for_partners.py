@@ -20,10 +20,10 @@ def _auto_size_columns(worksheet, df: pd.DataFrame):
     # Calculate max width for each column
     for idx, column in enumerate(df.columns, start=1):
         # Get max length in column (including header)
-        max_length = max(
-            df[column].astype(str).map(len).max(),  # Max data length
-            len(str(column)),  # Header length
-        )
+        data_max = df[column].fillna("").astype(str).apply(len).max()
+        if pd.isna(data_max):
+            data_max = 0
+        max_length = max(int(data_max), len(str(column)))
         # Add some padding and set minimum width
         adjusted_width = min(max(max_length + 2, 10), 50)  # Min 10, max 50
         worksheet.column_dimensions[worksheet.cell(1, idx).column_letter].width = adjusted_width
@@ -174,9 +174,6 @@ def create_sheet_data(
         "SAR_wholebody (mW/kg)": "SAR_whole_body",
         "SAR_head (mW/kg)": "SAR_head",
         "SAR_trunk (mW/kg)": "SAR_trunk",
-        "psSAR10g_eyes (mW/kg)": "psSAR10g_eyes",
-        "psSAR10g_skin (mW/kg)": "psSAR10g_skin",
-        "psSAR10g_brain (mW/kg)": "psSAR10g_brain",
         "Peak SAPD (W/m²)": "peak_sapd_W_m2",
     }
 
@@ -251,7 +248,23 @@ def main(config_path: str | None = None):
         if config_path is None:
             config_path = str(base_dir / "configs" / "near_field_config.json")
 
-    phantoms = ["thelonious", "eartha"]
+    # Read phantom names from config instead of hardcoding
+    resolved_config_path = Path(config_path)
+    if not resolved_config_path.is_absolute():
+        resolved_config_path = base_dir / config_path
+    # Try common resolution paths (matching Config._resolve_config_path behavior)
+    candidates = [
+        resolved_config_path,
+        base_dir / "configs" / config_path,
+        base_dir / "configs" / f"{config_path}.json",
+    ]
+    try:
+        actual_path = next(c for c in candidates if c.exists())
+        with open(actual_path, "r") as f:
+            config_data = json.load(f)
+        phantoms = config_data.get("phantoms", ["thelonious", "eartha"])
+    except (StopIteration, Exception):
+        phantoms = ["thelonious", "eartha"]
 
     # Create a single Excel file with all sheets
     output_path = results_dir / "Final_Data_UGent.xlsx"
@@ -278,10 +291,12 @@ def main(config_path: str | None = None):
             sheet_belly = create_sheet_data(df, "belly", power_mapping)
             sheet_cheek = create_sheet_data(df, "cheek", power_mapping)
 
-            # Create sheet names
-            sheet_name_fronteyes = f"{phantom_name.capitalize()}_fronteyes"
-            sheet_name_belly = f"{phantom_name.capitalize()}_belly"
-            sheet_name_cheek = f"{phantom_name.capitalize()}_cheek"
+            # Create sheet names (Excel limits sheet names to 31 characters)
+            # Strip frequency/resolution suffixes like _26ghz_coarse for clean tab names
+            clean_name = phantom_name.split("_")[0].capitalize()
+            sheet_name_fronteyes = f"{clean_name}_fronteyes"[:31]
+            sheet_name_belly = f"{clean_name}_belly"[:31]
+            sheet_name_cheek = f"{clean_name}_cheek"[:31]
 
             # Write sheets
             sheet_fronteyes.to_excel(writer, sheet_name=sheet_name_fronteyes, index=False)
