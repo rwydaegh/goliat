@@ -66,6 +66,7 @@ configs/*
 !configs/base_config.json
 !configs/far_field_config.json
 !configs/far_field_R2_3_base.json
+!configs/far_field_R2_3_S1_h1.00.json
 !configs/far_field_R2_3_S2_h0.58.json
 !configs/far_field_R2_3_S3_h0.42.json
 !configs/far_field_R2_3_S4_h0.30.json
