@@ -1,0 +1,12 @@
+{
+    "extends": "far_field_R2_3_3500_base.json",
+    "run_tag": "symfull",
+    "far_field_setup": {
+        "type": "environmental",
+        "environmental": {
+            "incident_directions": [
+                "x_neg"
+            ]
+        }
+    }
+}
