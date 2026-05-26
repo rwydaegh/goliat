@@ -1,0 +1,20 @@
+{
+    "extends": "far_field_config.json",
+    "phantoms": [
+        "thelonious"
+    ],
+    "frequencies_mhz": [
+        3500
+    ],
+    "far_field_setup": {
+        "type": "environmental",
+        "environmental": {
+            "incident_directions": [
+                "x_pos"
+            ],
+            "polarizations": [
+                "theta"
+            ]
+        }
+    }
+}

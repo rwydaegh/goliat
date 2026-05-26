@@ -1,0 +1,12 @@
+{
+    "extends": "far_field_FR3_FR2_environmental.json",
+    "phantoms": [
+        "thelonious"
+    ],
+    "frequencies_mhz": [
+        7000
+    ],
+    "extraction": {
+        "power_balance": true
+    }
+}
