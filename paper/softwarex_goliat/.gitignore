@@ -1,0 +1,25 @@
+# Submission sources, required figure assets, and the latest clean PDF.
+*
+!.gitignore
+!README.md
+!main.tex
+!references.bib
+!acronyms.tex
+!SoftwareX.pdf
+!workflow.tex
+!workflow.pdf
+!exposure_modes.tex
+!exposure_modes.pdf
+!near_field_campaign.tex
+!near_field_campaign.pdf
+!run_directory.tex
+!run_directory.pdf
+!monitoring_and_output.tex
+!monitoring_and_output.pdf
+!monitoring_worker_crop.png
+!point_sensor_plot.png
+!phantom_renders/
+phantom_renders/*
+!phantom_renders/duke_far_field.png
+!phantom_renders/thelonious_landmarks.png
+!phantom_renders/thelonious_near_field.png

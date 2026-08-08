@@ -1,0 +1,33 @@
+\documentclass[tikz,border=5pt]{standalone}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc}
+
+\begin{document}
+\begin{tikzpicture}[
+  font=\rmfamily\small,
+  box/.style={draw=black, rectangle, minimum width=29mm, minimum height=12mm, align=center, inner sep=4pt},
+  ext/.style={draw=black, dashed, rectangle, minimum width=29mm, minimum height=10mm, align=center, inner sep=4pt},
+  arrow/.style={-{Latex[length=2.2mm]}, line width=0.7pt},
+]
+  \node[box] (config) {Hierarchical JSON\\Configuration};
+  \node[box, right=8mm of config] (setup) {Setup\\Scene, source, grid};
+  \node[box, right=8mm of setup] (run) {Run\\Local or batch};
+  \node[box, right=8mm of run] (extract) {Extract\\SAR, APD, metadata};
+  \node[box, right=8mm of extract] (analyse) {Analyze\\Tables and plots};
+
+  \draw[arrow] (config) -- (setup);
+  \draw[arrow] (setup) -- (run);
+  \draw[arrow] (run) -- (extract);
+  \draw[arrow] (extract) -- (analyse);
+
+  \node[ext, below=4mm of setup] (models) {Sim4Life API and\\Licensed models};
+  \node[ext, below=4mm of run] (solvers) {iSolve or\\oSPARC};
+  \draw[arrow] (models) -- (setup);
+  \draw[arrow] (solvers) -- (run);
+
+  \node[box, below=13mm of extract] (record) {Per-job files\\Config, logs, results};
+  \draw[arrow] (config.south) |- (record.west);
+  \draw[arrow] (extract) -- (record);
+  \draw[arrow] (record.east) -| (analyse.south);
+\end{tikzpicture}
+\end{document}

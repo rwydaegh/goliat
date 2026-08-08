@@ -1,0 +1,10 @@
+# JOSS source, source figure, and the latest rendered manuscript.
+*
+!.gitignore
+!README.md
+!paper.md
+!paper.bib
+!acronyms.tex
+!workflow.tex
+!workflow.png
+!Journal_of_Open_Source_Software.pdf

@@ -1,0 +1,16 @@
+# LaTeX build products generated inside source/. Final PDFs live one level up.
+source/*.aux
+source/*.acn
+source/*.bbl
+source/*.bcf
+source/*.blg
+source/*.fdb_latexmk
+source/*.fls
+source/*.glo
+source/*.ist
+source/*.log
+source/*.out
+source/*.run.xml
+source/*.synctex.gz
+source/*.toc
+source/*.pdf
