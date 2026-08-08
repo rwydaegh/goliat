@@ -177,8 +177,9 @@ def main():
     # Setup logging
     setup_loggers()
 
-    # GUI is enabled by default unless --no-gui is specified or import failed
-    gui_enabled = not args.no_gui and GUI_MODE
+    # GUI is enabled by default for interactive use. Test and CI processes must
+    # stay headless even when a caller forgets to pass --no-gui.
+    gui_enabled = not args.no_gui and GUI_MODE and not os.environ.get("CI") and not os.environ.get("PYTEST_CURRENT_TEST")
 
     config = Config(base_dir, config_filename=args.config)
     analysis_config = load_analysis_config(args.analysis)

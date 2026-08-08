@@ -29,17 +29,22 @@ class TestRunAnalysis:
         }.get(key)
 
         # Mock the strategy and analyzer imports
-        with patch("cli.run_analysis.initial_setup"), patch("cli.run_analysis.setup_loggers"), patch(
-            "cli.run_analysis.Config", return_value=mock_config
+        with patch.dict("os.environ", {"CI": "true"}), patch("cli.run_analysis.QApplication") as mock_application, patch(
+            "cli.run_analysis.initial_setup"
+        ), patch("cli.run_analysis.setup_loggers"), patch("cli.run_analysis.Config", return_value=mock_config), patch(
+            "cli.run_analysis.load_analysis_config",
+            return_value={"generate_excel": False, "run_stats": False},
         ), patch("cli.run_analysis.NearFieldAnalysisStrategy") as mock_strategy, patch("cli.run_analysis.Analyzer") as mock_analyzer:
             mock_strategy_instance = MagicMock()
             mock_strategy.return_value = mock_strategy_instance
             mock_analyzer_instance = MagicMock()
             mock_analyzer.return_value = mock_analyzer_instance
 
-            # Mock argparse - config is now a positional argument
+            # CI must force headless mode even if --no-gui is omitted.
             with patch("sys.argv", ["run_analysis.py", "test_config.json"]):
                 cli_run_analysis_module.main()
+
+            mock_application.assert_not_called()
 
     def test_main_far_field(self, cli_run_analysis_module):
         """Test main function with far-field study."""
@@ -51,13 +56,16 @@ class TestRunAnalysis:
 
         with patch("cli.run_analysis.initial_setup"), patch("cli.run_analysis.setup_loggers"), patch(
             "cli.run_analysis.Config", return_value=mock_config
+        ), patch(
+            "cli.run_analysis.load_analysis_config",
+            return_value={"generate_excel": False, "run_stats": False},
         ), patch("cli.run_analysis.FarFieldAnalysisStrategy") as mock_strategy, patch("cli.run_analysis.Analyzer") as mock_analyzer:
             mock_strategy_instance = MagicMock()
             mock_strategy.return_value = mock_strategy_instance
             mock_analyzer_instance = MagicMock()
             mock_analyzer.return_value = mock_analyzer_instance
 
-            with patch("sys.argv", ["run_analysis.py", "test_config.json"]):
+            with patch("sys.argv", ["run_analysis.py", "test_config.json", "--no-gui"]):
                 cli_run_analysis_module.main()
 
     def test_main_no_phantoms(self, cli_run_analysis_module):
@@ -75,7 +83,7 @@ class TestRunAnalysis:
         ), patch("cli.run_analysis.logging") as mock_logging:
             mock_logging.getLogger.return_value = mock_logger
 
-            with patch("sys.argv", ["run_analysis.py", "test_config.json"]):
+            with patch("sys.argv", ["run_analysis.py", "test_config.json", "--no-gui"]):
                 cli_run_analysis_module.main()
 
         # Should log error
@@ -96,7 +104,7 @@ class TestRunAnalysis:
         ), patch("cli.run_analysis.logging") as mock_logging:
             mock_logging.getLogger.return_value = mock_logger
 
-            with patch("sys.argv", ["run_analysis.py", "test_config.json"]):
+            with patch("sys.argv", ["run_analysis.py", "test_config.json", "--no-gui"]):
                 cli_run_analysis_module.main()
 
         # Should log error
