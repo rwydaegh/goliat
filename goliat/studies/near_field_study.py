@@ -245,6 +245,7 @@ class NearFieldStudy(BaseStudy):
     ):
         """Runs a full placement scenario for a single position and orientation."""
         placement_name = f"{scenario_name}_{position_name}_{orientation_name}"
+        free_space = phantom_name == "freespace"
         try:
             simulation = None
 
@@ -280,6 +281,7 @@ class NearFieldStudy(BaseStudy):
                             self.progress_logger,
                             self.profiler,
                             self.gui,
+                            free_space=free_space,
                         )
 
                         with self.subtask("setup_simulation", instance_to_profile=setup):
@@ -336,6 +338,8 @@ class NearFieldStudy(BaseStudy):
 
                 if s4l_v1.document.AllSimulations:
                     sim_name = f"EM_FDTD_{phantom_name}_{freq}MHz_{placement_name}"
+                    if free_space:
+                        sim_name += "_freespace"
                     simulation = next(
                         (s for s in s4l_v1.document.AllSimulations if s.Name == sim_name),
                         None,
@@ -388,6 +392,7 @@ class NearFieldStudy(BaseStudy):
                             position_name=position_name,
                             orientation_name=orientation_name,
                             study_type="near_field",
+                            free_space=free_space,
                             verbose_logger=self.verbose_logger,
                             progress_logger=self.progress_logger,
                             gui=self.gui,  # type: ignore

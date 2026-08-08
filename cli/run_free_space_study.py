@@ -1,27 +1,31 @@
 import json
 import os
+import sys
 import tempfile
 import traceback
 
-from goliat.utils.setup import initial_setup
+# Base directory for config files
+from cli.utils import get_base_dir
 from goliat.config import Config
 from goliat.logging_manager import setup_loggers, shutdown_loggers
 from goliat.studies.near_field_study import NearFieldStudy
-
-# Base directory for config files
-from cli.utils import get_base_dir
+from goliat.utils.setup import initial_setup
 
 base_dir = get_base_dir()
 
 # --- Centralized Startup ---
 # Only run initial_setup if not in test/CI environment
-if not os.environ.get("PYTEST_CURRENT_TEST") and not os.environ.get("CI"):
+if "pytest" not in sys.modules and not os.environ.get("PYTEST_CURRENT_TEST") and not os.environ.get("CI"):
     initial_setup()
 # --- End Centralized Startup ---
 
 
 class ConsoleLogger:
-    """A console-based logger for headless script execution."""
+    """A console-based logger for headless script execution.
+
+    GUI callbacks evolve independently from this command, so unknown callbacks
+    are accepted as no-ops. Only logging and stop-state checks have behavior.
+    """
 
     def __init__(self, progress_logger, verbose_logger):
         self.progress_logger = progress_logger
@@ -33,23 +37,14 @@ class ConsoleLogger:
         else:
             self.verbose_logger.info(message)
 
-    def update_overall_progress(self, current, total):
-        pass
-
-    def update_stage_progress(self, name, current, total):
-        pass
-
-    def start_stage_animation(self, task_name, end_value):
-        pass
-
-    def end_stage_animation(self):
-        pass
-
-    def update_profiler(self):
-        pass
-
-    def is_stopped(self):
+    def is_stopped(self, *args, **kwargs):
         return False
+
+    def __getattr__(self, name):
+        def _noop(*args, **kwargs):
+            return None
+
+        return _noop
 
 
 def create_temp_config(base_config, frequency_mhz):
@@ -59,7 +54,8 @@ def create_temp_config(base_config, frequency_mhz):
     config_data = json.loads(json.dumps(base_config.config))
 
     # Override for a single free-space simulation
-    config_data["phantoms"] = {"freespace": {"do_front_of_eyes_center_vertical": True}}
+    config_data["phantoms"] = ["freespace"]
+    config_data["phantom_definitions"] = {"freespace": {"placements": {"do_front_of_eyes_center_vertical": True}}}
     config_data["antenna_config"] = {str(frequency_mhz): (base_config["antenna_config"] or {}).get(str(frequency_mhz))}
     config_data["placement_scenarios"] = {
         "front_of_eyes_center_vertical": {
@@ -73,6 +69,14 @@ def create_temp_config(base_config, frequency_mhz):
         "do_run": True,
         "do_extract": True,
     }
+
+    # Place the absorbing boundary at least half a wavelength away. The graded
+    # mesh keeps this added air coarse while avoiding a boundary in the
+    # antenna's reactive near field.
+    half_wavelength_mm = 299792.458 / float(frequency_mhz) / 2.0
+    simulation_parameters = dict(config_data.get("simulation_parameters") or {})
+    simulation_parameters["freespace_antenna_bbox_expansion_mm"] = [half_wavelength_mm] * 3
+    config_data["simulation_parameters"] = simulation_parameters
 
     # Write to a temporary file
     temp_file = tempfile.NamedTemporaryFile(mode="w+", delete=False, suffix=".json", dir=os.path.join(base_dir, "configs"))
