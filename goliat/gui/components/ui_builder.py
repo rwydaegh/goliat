@@ -11,19 +11,19 @@ from PySide6.QtWidgets import (
     QLabel,
     QProgressBar,
     QPushButton,
-    QTabWidget,
     QTableWidget,
+    QTabWidget,
+    QTextEdit,
     QVBoxLayout,
     QWidget,
-    QTextEdit,
 )
 
-from goliat.gui.components.plots import DiskIOPlot, PieChartsManager, SystemUtilizationPlot, TimeRemainingPlot, OverallProgressPlot
+from goliat.gui.components.plots import DiskIOPlot, OverallProgressPlot, PieChartsManager, SystemUtilizationPlot, TimeRemainingPlot
 from goliat.gui.components.timings_table import TimingsTable
 
 if TYPE_CHECKING:
-    from goliat.gui.progress_gui import ProgressGUI
     from goliat.gui.components.status_manager import StatusManager
+    from goliat.gui.progress_gui import ProgressGUI
 
 
 class UIBuilder:

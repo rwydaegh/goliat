@@ -1,6 +1,6 @@
 # Scale a Sim4Life phantom (.sab) by a uniform factor and save under a new
 # phantom name, preserving entity names and material grouping so that
-# goliat can re-use the existing material-name mapping for the parent
+# goliat can reuse the existing material-name mapping for the parent
 # phantom.
 #
 # Used by the AEGIS scaled-thelonious validation campaign: scale_thelonious.py
@@ -76,7 +76,7 @@ def scale_sab(src_path: str, dst_path: str, factor: float) -> None:
     os.makedirs(os.path.dirname(dst_path), exist_ok=True)
     model.Export(imported, dst_path)
     document.Close()
-    print(f"[scale_phantom] done")
+    print("[scale_phantom] done")
 
 
 def main() -> None:

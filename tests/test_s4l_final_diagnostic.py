@@ -12,8 +12,8 @@ Run with:
     python tests/test_s4l_final_diagnostic.py
 """
 
-import sys
 import os
+import sys
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)

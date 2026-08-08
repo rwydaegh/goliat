@@ -8,9 +8,9 @@ if TYPE_CHECKING:
 
     from ..config import Config
     from ..gui_manager import QueueGUI
+    from ..logging_manager import LoggingMixin
     from ..profiler import Profiler
     from ..project_manager import ProjectManager
-    from ..logging_manager import LoggingMixin
 
 
 class ExecutionStrategy(ABC):

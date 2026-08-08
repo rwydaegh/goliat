@@ -2,19 +2,19 @@ import logging
 import os
 
 from .plots.bar import BarPlotter
-from .plots.base import BasePlotter, METRIC_LABELS, LEGEND_LABELS
-from .plots.line import LinePlotter
+from .plots.base import LEGEND_LABELS, METRIC_LABELS, BasePlotter
 from .plots.boxplot import BoxplotPlotter
-from .plots.heatmap import HeatmapPlotter
-from .plots.spatial import SpatialPlotter
-from .plots.correlation import CorrelationPlotter
 from .plots.bubble import BubblePlotter
-from .plots.ranking import RankingPlotter
-from .plots.power import PowerPlotter
-from .plots.penetration import PenetrationPlotter
-from .plots.tissue_analysis import TissueAnalysisPlotter
 from .plots.cdf import CdfPlotter
+from .plots.correlation import CorrelationPlotter
+from .plots.heatmap import HeatmapPlotter
+from .plots.line import LinePlotter
 from .plots.outliers import OutliersPlotter
+from .plots.penetration import PenetrationPlotter
+from .plots.power import PowerPlotter
+from .plots.ranking import RankingPlotter
+from .plots.spatial import SpatialPlotter
+from .plots.tissue_analysis import TissueAnalysisPlotter
 
 # Re-export constants for backward compatibility
 __all__ = ["Plotter", "METRIC_LABELS", "LEGEND_LABELS"]

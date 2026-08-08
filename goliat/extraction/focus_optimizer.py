@@ -16,9 +16,6 @@ import h5py
 import numpy as np
 from tqdm import tqdm
 
-from .field_cache import FieldCache, _estimate_cache_size_gb, _get_available_memory_gb
-from .field_reader import find_overall_field_group, get_field_path, read_field_at_indices
-from .hotspot_scoring import compute_all_hotspot_scores_streaming, compute_hotspot_score_at_air_point
 from ..utils.skin_voxel_utils import (
     compute_distance_to_skin,
     extract_skin_voxels,
@@ -26,6 +23,9 @@ from ..utils.skin_voxel_utils import (
     get_distances_at_indices,
     get_skin_voxel_coordinates,
 )
+from .field_cache import FieldCache, _estimate_cache_size_gb, _get_available_memory_gb
+from .field_reader import find_overall_field_group, get_field_path, read_field_at_indices
+from .hotspot_scoring import compute_all_hotspot_scores_streaming, compute_hotspot_score_at_air_point
 
 
 def compute_metric_sum_at_skin(

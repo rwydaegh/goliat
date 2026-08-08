@@ -87,8 +87,6 @@ class PowerExtractor(LoggingMixin):
 
         The method is configured via config["power_balance.input_method"].
 
-        See docs/technical/power_normalization_philosophy.md for full discussion.
-
         Args:
             simulation_extractor: Results extractor from the simulation.
         """

@@ -10,12 +10,12 @@ import subprocess
 import sys
 
 from .bashrc import prompt_copy_bashrc_to_home, update_bashrc
-from .data_prep import prepare_data
-from .package import check_package_installed, check_repo_root
-from .python_interpreter import check_python_interpreter, find_sim4life_python_executables
 
 # Import config_setup
 from .config_setup import setup_configs
+from .data_prep import prepare_data
+from .package import check_package_installed, check_repo_root
+from .python_interpreter import check_python_interpreter, find_sim4life_python_executables
 
 
 def _pull_lfs_files(base_dir: str) -> None:

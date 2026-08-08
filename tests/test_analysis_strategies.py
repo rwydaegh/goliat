@@ -2,7 +2,6 @@
 
 from unittest.mock import MagicMock, patch
 
-
 from goliat.analysis.far_field_strategy import FarFieldAnalysisStrategy
 from goliat.analysis.near_field_strategy import NearFieldAnalysisStrategy
 

@@ -21,7 +21,6 @@ import trimesh
 from matplotlib import cm
 from scipy.spatial import ConvexHull
 
-
 # ============================================================================
 # Constants
 # ============================================================================

@@ -1,7 +1,7 @@
 """Web bridge manager component for remote monitoring."""
 
 import socket
-from typing import TYPE_CHECKING, Optional, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
     from goliat.gui.progress_gui import ProgressGUI
@@ -50,8 +50,8 @@ class WebBridgeManager:
 
         if self.machine_id:
             try:
-                from goliat.utils.gui_bridge import WebGUIBridge
                 from goliat.gui.components.system_monitor import SystemMonitor
+                from goliat.utils.gui_bridge import WebGUIBridge
 
                 self.web_bridge = WebGUIBridge(self.server_url, self.machine_id)
 

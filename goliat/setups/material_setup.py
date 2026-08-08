@@ -147,9 +147,9 @@ class MaterialSetup(BaseSetup):
         """
         import time
 
-        from ..dispersion import fit_dispersion, get_material_properties
-
         import XMaterials as xm
+
+        from ..dispersion import fit_dispersion, get_material_properties
 
         self._log(
             f"  - Multisine mode: fitting dispersion models for frequencies {self.frequencies_mhz} MHz",

@@ -5,12 +5,12 @@ This script extracts all key metrics from GOLIAT/Sim4Life verbose logs
 for reporting and analysis purposes.
 """
 
-import re
-import json
 import argparse
+import json
+import re
+from datetime import datetime
 from pathlib import Path
 from typing import Any
-from datetime import datetime
 
 
 def parse_verbose_log(log_path: str | Path) -> dict[str, Any]:

@@ -3,13 +3,13 @@
 from unittest.mock import patch
 
 from goliat.utils.version import (
+    SUPPORTED_MAJOR_VERSIONS,
+    UNSUPPORTED_VERSIONS,
     _parse_version_from_path,
     _parse_version_string,
     is_sim4life_92_or_later,
     is_version_supported,
     sort_versions_by_preference,
-    SUPPORTED_MAJOR_VERSIONS,
-    UNSUPPORTED_VERSIONS,
 )
 
 

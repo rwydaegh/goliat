@@ -5,9 +5,9 @@ This test imports from cli/run_study.py which triggers module-level S4L init.
 Run with: python tests/test_child_mimics_study.py
 """
 
-import sys
-import os
 import multiprocessing
+import os
+import sys
 
 # Add base dir to path
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

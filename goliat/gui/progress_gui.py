@@ -5,15 +5,15 @@ import os
 import time
 from multiprocessing import Process, Queue
 from multiprocessing.synchronize import Event
-from typing import TYPE_CHECKING, Optional, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 import matplotlib
 
 matplotlib.use("Qt5Agg")
 try:
-    from PySide6.QtCore import QTimer, Qt
-    from PySide6.QtWidgets import QWidget, QProgressBar, QLabel, QTextEdit, QPushButton, QTabWidget
+    from PySide6.QtCore import Qt, QTimer
     from PySide6.QtGui import QCloseEvent
+    from PySide6.QtWidgets import QLabel, QProgressBar, QPushButton, QTabWidget, QTextEdit, QWidget
 except ImportError:
     # Fallback for environments without PySide6
     QTimer = Any  # type: ignore
@@ -26,19 +26,19 @@ except ImportError:
     QTabWidget = Any  # type: ignore
     QCloseEvent = Any  # type: ignore
 
+from goliat.gui.components.clock_manager import ClockManager
 from goliat.gui.components.data_manager import DataManager
-from goliat.gui.components.status_manager import StatusManager
+from goliat.gui.components.graph_manager import GraphManager
+from goliat.gui.components.machine_id_detector import MachineIdDetector
 from goliat.gui.components.progress_animation import ProgressAnimation
+from goliat.gui.components.progress_manager import ProgressManager
 from goliat.gui.components.queue_handler import QueueHandler
+from goliat.gui.components.status_manager import StatusManager
+from goliat.gui.components.system_monitor import PSUTIL_AVAILABLE, SystemMonitor
 from goliat.gui.components.tray_manager import TrayManager
 from goliat.gui.components.ui_builder import UIBuilder
-from goliat.gui.components.system_monitor import SystemMonitor, PSUTIL_AVAILABLE
-from goliat.gui.components.machine_id_detector import MachineIdDetector
-from goliat.gui.components.web_bridge_manager import WebBridgeManager
-from goliat.gui.components.progress_manager import ProgressManager
-from goliat.gui.components.clock_manager import ClockManager
 from goliat.gui.components.utilization_manager import UtilizationManager
-from goliat.gui.components.graph_manager import GraphManager
+from goliat.gui.components.web_bridge_manager import WebBridgeManager
 from goliat.logging_manager import shutdown_loggers
 
 if TYPE_CHECKING:

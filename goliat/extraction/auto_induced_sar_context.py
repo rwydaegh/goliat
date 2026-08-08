@@ -19,9 +19,9 @@ from collections import defaultdict
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from ..results_extractor import ResultsExtractor
 from .json_encoder import NumpyArrayEncoder
 from .reporter import Reporter
-from ..results_extractor import ResultsExtractor
 
 if TYPE_CHECKING:
     from ..extraction.auto_induced_processor import AutoInducedProcessor

@@ -1,8 +1,8 @@
 """HTTP client helper for web bridge API calls."""
 
-import time
 import logging
-from typing import Dict, Any, Optional
+import time
+from typing import Any, Dict, Optional
 
 from goliat.logging_manager import LoggingMixin
 

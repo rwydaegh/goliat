@@ -114,7 +114,7 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
         To normalize to 1 W/m² (our "1 W" convention for comparison with near-field),
         we scale by 754 (since SAR scales as E², and E for 1 W/m² is 27.46 V/m).
 
-        See docs/technical/power_normalization_philosophy.md for full derivation.
+        The factor is 1 / (1 / (2 * 376.73)) = 753.46, rounded to 754.
         """
         return 754.0
 

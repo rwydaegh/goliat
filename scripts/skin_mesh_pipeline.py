@@ -24,7 +24,7 @@ import json
 import pickle
 import sys
 from pathlib import Path
-from typing import Dict, Any, Tuple
+from typing import Any, Dict, Tuple
 
 import numpy as np
 
@@ -121,9 +121,9 @@ def install_via_wheel_download(packages: list, target_dir: Path):
     Alternative installer that downloads wheels directly using urllib.
     This bypasses pip entirely when pip is broken.
     """
+    import tempfile
     import urllib.request
     import zipfile
-    import tempfile
 
     # PyPI JSON API URLs for each package
     pypi_api = "https://pypi.org/pypi/{}/json"
@@ -375,8 +375,8 @@ def optimize_mesh_blender(
     config: Dict[str, Any],
 ) -> Any:
     """Apply Blender modifiers to optimize mesh."""
-    import bpy
     import bmesh
+    import bpy
 
     # Create new mesh and object
     mesh_data = bpy.data.meshes.new("SkinMesh")

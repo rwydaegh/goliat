@@ -5,9 +5,9 @@ Both main AND child processes do the module-level S4L init.
 Run with: python tests/test_full_study_flow.py
 """
 
-import sys
-import os
 import multiprocessing
+import os
+import sys
 
 # Add base dir to path before any imports
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

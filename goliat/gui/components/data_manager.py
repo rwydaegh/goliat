@@ -5,10 +5,10 @@ import hashlib
 import os
 import time
 from datetime import datetime
-
-from goliat.gui.components.plots.utils import get_ntp_utc_time
 from logging import Logger
 from typing import List, Optional
+
+from goliat.gui.components.plots.utils import get_ntp_utc_time
 
 
 class DataManager:

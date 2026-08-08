@@ -4,9 +4,8 @@ import os
 import time
 from typing import TYPE_CHECKING
 
-from ..utils.version import get_version_display_string, is_sim4life_92_or_later
-
 from ..logging_manager import LoggingMixin
+from ..utils.version import get_version_display_string, is_sim4life_92_or_later
 from .execution_strategy import ExecutionStrategy
 from .post_simulation_handler import PostSimulationHandler
 

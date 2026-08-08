@@ -2,7 +2,6 @@
 
 import logging
 
-
 from cli.run_study import ConsoleLogger
 
 

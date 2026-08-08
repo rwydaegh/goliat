@@ -6,7 +6,7 @@ import math
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from .base import BasePlotter, METRIC_LABELS, LEGEND_LABELS
+from .base import LEGEND_LABELS, METRIC_LABELS, BasePlotter
 
 
 class LinePlotter(BasePlotter):

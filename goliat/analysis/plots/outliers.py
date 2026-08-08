@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from .base import BasePlotter, METRIC_LABELS
+from .base import METRIC_LABELS, BasePlotter
 
 
 class OutliersPlotter(BasePlotter):

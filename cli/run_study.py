@@ -8,7 +8,6 @@ import sys
 import traceback
 from typing import Optional
 
-
 from goliat.utils.setup import initial_setup
 
 # --- Pre-check and Setup ---
@@ -113,12 +112,11 @@ else:
 
 
 # --- Common imports (for both main and child processes) ---
+# Base directory for config files
+from cli.utils import get_base_dir  # noqa: E402
 from goliat.config import Config  # noqa: E402
 from goliat.logging_manager import LoggingMixin, setup_loggers, shutdown_loggers  # noqa: E402
 from goliat.studies.base_study import StudyCancelledError  # noqa: E402
-
-# Base directory for config files
-from cli.utils import get_base_dir  # noqa: E402
 
 base_dir = get_base_dir()
 

@@ -3,7 +3,7 @@
 import socket
 import struct
 import time
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Tuple
 
 # Cache for NTP time to avoid querying NTP too frequently

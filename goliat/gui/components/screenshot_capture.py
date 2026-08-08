@@ -1,7 +1,7 @@
 """Screenshot capture component for GUI tabs."""
 
 import logging
-from typing import TYPE_CHECKING, Dict, Optional, Any
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 if TYPE_CHECKING:
     from goliat.gui.progress_gui import ProgressGUI
@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 try:
     from PySide6.QtCore import QBuffer, QIODevice, QRect
     from PySide6.QtGui import QPixmap
-    from PySide6.QtWidgets import QWidget, QApplication
+    from PySide6.QtWidgets import QApplication, QWidget
 except ImportError:
     # Fallback for environments without PySide6
     QBuffer = None  # type: ignore

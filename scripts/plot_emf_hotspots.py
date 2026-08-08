@@ -12,16 +12,17 @@ auto-induced exposure simulations. It focuses on:
 Author: Generated for GOLIAT project
 """
 
-import h5py
-import numpy as np
-import matplotlib.pyplot as plt
-from pathlib import Path
-from typing import Tuple, Optional, Dict, List
 import json
-from dataclasses import dataclass
+import re
 import warnings
 from collections import defaultdict
-import re
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
+import h5py
+import matplotlib.pyplot as plt
+import numpy as np
 
 # Suppress matplotlib warnings
 warnings.filterwarnings("ignore", category=UserWarning)

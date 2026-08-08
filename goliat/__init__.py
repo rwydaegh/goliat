@@ -4,8 +4,9 @@ try:
     __version__ = metadata.version("goliat")
 except metadata.PackageNotFoundError:
     # Fallback: read from pyproject.toml directly
-    import tomllib
     from pathlib import Path
+
+    import tomllib
 
     pyproject_path = Path(__file__).parent.parent / "pyproject.toml"
     if pyproject_path.exists():

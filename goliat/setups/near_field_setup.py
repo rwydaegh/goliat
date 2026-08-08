@@ -12,11 +12,13 @@ from .source_setup import SourceSetup
 
 if TYPE_CHECKING:
     from logging import Logger
+
+    import s4l_v1.simulation.emfdtd as emfdtd
+
     from ..antenna import Antenna
     from ..config import Config
     from ..profiler import Profiler
     from ..project_manager import ProjectManager
-    import s4l_v1.simulation.emfdtd as emfdtd
 
 
 class NearFieldSetup(BaseSetup):
@@ -261,8 +263,8 @@ class NearFieldSetup(BaseSetup):
 
         self._log("Aligning simulation scene with phone...", log_type="progress")
 
-        from XCoreMath import Transform
         from QTech import Vec3
+        from XCoreMath import Transform
 
         model_type = self.antenna.get_model_type()
         if model_type == "PIFA":

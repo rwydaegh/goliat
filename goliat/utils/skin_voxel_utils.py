@@ -213,8 +213,9 @@ def find_valid_air_focus_points(
     Raises:
         ValueError: If no valid air focus points are found.
     """
-    import time
     import logging
+    import time
+
     from scipy import ndimage
 
     logger = logging.getLogger("progress")
@@ -261,8 +262,9 @@ def find_valid_air_focus_points(
 
     # Multi-core CPU with Dask
     try:
-        import dask.array as da
         import multiprocessing
+
+        import dask.array as da
 
         n_cores = multiprocessing.cpu_count()
         logger.info(f"  Using multi-core CPU with Dask ({n_cores} cores available)")

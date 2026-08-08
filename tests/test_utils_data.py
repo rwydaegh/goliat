@@ -3,7 +3,6 @@
 import json
 from unittest.mock import MagicMock, patch
 
-
 from goliat.utils.data import download_and_extract_data, setup_console_logging
 
 

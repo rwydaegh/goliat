@@ -11,13 +11,13 @@ Usage:
 Set TESTING = False to enable actual file deletion.
 """
 
+import logging
 import os
 import shutil
 import sys
 import time
-import logging
-from pathlib import Path
 from datetime import datetime, timedelta
+from pathlib import Path
 
 # ============== CONFIGURATION ==============
 TESTING = False  # Set to False to actually delete files

@@ -10,10 +10,9 @@ from copy import deepcopy
 
 import colorama
 
-from goliat.colors import init_colorama
-
 # Base directory for config files
 from cli.utils import get_base_dir
+from goliat.colors import init_colorama
 
 base_dir = get_base_dir()
 

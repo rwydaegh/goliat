@@ -3,9 +3,9 @@ Test to verify console logging works from child processes.
 Run with: source .bashrc && python tests/test_child_console.py
 """
 
-import sys
-import multiprocessing
 import logging
+import multiprocessing
+import sys
 
 # Store original stdout/stderr before any imports
 _ORIGINAL_STDOUT = sys.stdout

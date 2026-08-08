@@ -12,11 +12,12 @@ IMPROVEMENTS:
 import json
 import logging
 import re
-from pathlib import Path
-from datetime import datetime
 from collections import defaultdict
-import matplotlib.pyplot as plt
+from datetime import datetime
+from pathlib import Path
+
 import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt
 import numpy as np
 
 from goliat.analysis.parse_verbose_log import parse_verbose_log

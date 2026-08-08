@@ -144,8 +144,9 @@ class TestProjectManager:
 
     def test_project_manager_get_deliverables_status(self, dummy_config, tmp_path):
         """Test _get_deliverables_status method."""
-        from goliat.project_manager import ProjectManager
         import time
+
+        from goliat.project_manager import ProjectManager
 
         manager = ProjectManager(
             config=dummy_config,
@@ -177,8 +178,9 @@ class TestProjectManager:
 
     def test_project_manager_get_deliverables_status_small_file(self, dummy_config, tmp_path):
         """Test _get_deliverables_status with small H5 file (should be ignored)."""
-        from goliat.project_manager import ProjectManager
         import time
+
+        from goliat.project_manager import ProjectManager
 
         manager = ProjectManager(
             config=dummy_config,

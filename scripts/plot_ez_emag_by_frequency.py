@@ -12,24 +12,26 @@ Usage:
     python scripts/plot_ez_emag_by_frequency.py
 """
 
-from pathlib import Path
 import sys
+from pathlib import Path
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import matplotlib
+import numpy as np
+
 from scripts.plot_emf_hotspots import (
-    discover_h5_files,
     compute_averaged_field_slice,
+    discover_h5_files,
     load_emf_data,
 )
-import numpy as np
-import matplotlib
 
 matplotlib.use("Agg")
+from typing import List, Tuple
+
 import matplotlib.pyplot as plt
 from scipy.ndimage import zoom
-from typing import Tuple, List
 
 # Minimum domain size filter (Y and Z must be >= this, X can be smaller)
 MIN_DOMAIN_SIZE_MM = 48.0

@@ -453,7 +453,7 @@ def main():
         return
 
     elif args.command == "config":
-        from cli.commands import config_show, config_set_version
+        from cli.commands import config_set_version, config_show
         from cli.utils import get_base_dir
 
         base_dir = get_base_dir()

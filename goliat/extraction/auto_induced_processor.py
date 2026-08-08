@@ -116,6 +116,7 @@ class AutoInducedProcessor(LoggingMixin, _AutoInducedExtractionMixin):
         with self.study.subtask("auto_induced_combine_fields"):
             combined_h5_paths = []
             from tqdm import tqdm
+
             from .field_cache import FieldCache
 
             # Pre-load all source fields once, shared across all candidates.

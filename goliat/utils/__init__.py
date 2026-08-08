@@ -6,16 +6,19 @@ All existing imports from `goliat.utils` will continue to work.
 
 # Re-export all commonly used utilities from core module
 from .core import (
-    StudyCancelledError,
     Profiler,
+    StudyCancelledError,
+    delete_project_file,
+    ensure_s4l_running,
     format_time,
     non_blocking_sleep,
-    profile,
-    ensure_s4l_running,
     open_project,
-    delete_project_file,
+    profile,
     suppress_stdout_stderr,
 )
+
+# Run-tag helper for simulation output isolation
+from .run_tag import apply_run_tag
 
 # Also expose setup utilities for convenience
 from .setup import initial_setup
@@ -26,13 +29,10 @@ from .skin_voxel_utils import (
     get_skin_voxel_coordinates,
 )
 
-# Run-tag helper for simulation output isolation
-from .run_tag import apply_run_tag
-
 # Version detection utilities
 from .version import (
-    get_sim4life_version,
     get_sim4life_major_minor,
+    get_sim4life_version,
     get_version_display_string,
     is_sim4life_92_or_later,
     is_version_supported,

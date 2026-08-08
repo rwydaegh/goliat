@@ -5,8 +5,8 @@ This module provides utilities for executing bash commands with proper
 encoding and real-time output streaming, especially useful on Windows.
 """
 
-import subprocess
 import os
+import subprocess
 import sys
 from pathlib import Path
 

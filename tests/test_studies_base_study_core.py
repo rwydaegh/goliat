@@ -12,8 +12,9 @@ class TestBaseStudyCoreMethods:
     @pytest.fixture
     def base_study(self, tmp_path):
         """Create a BaseStudy instance for testing."""
-        from goliat.studies.base_study import BaseStudy
         import json
+
+        from goliat.studies.base_study import BaseStudy
 
         # Create minimal config structure
         config_dir = tmp_path / "configs"

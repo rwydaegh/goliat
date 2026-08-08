@@ -4,17 +4,17 @@ import logging
 import time
 from typing import Callable
 
-from PySide6.QtCore import QThread, Signal, Slot, QObject, QTimer
+from PySide6.QtCore import QObject, QThread, QTimer, Signal, Slot
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QApplication,
+    QHBoxLayout,
     QLabel,
     QProgressBar,
     QPushButton,
+    QTextEdit,
     QVBoxLayout,
     QWidget,
-    QTextEdit,
-    QHBoxLayout,
 )
 
 from goliat.gui.components.ui_builder import UIBuilder

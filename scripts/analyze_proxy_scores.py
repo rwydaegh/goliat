@@ -1,12 +1,13 @@
 """Generate publication-quality plots for proxy scores and correlation analysis."""
 
-import pandas as pd
-import numpy as np
 import matplotlib
+import numpy as np
+import pandas as pd
 
 matplotlib.use("Agg")  # Non-interactive backend for headless servers
-import matplotlib.pyplot as plt
 from pathlib import Path
+
+import matplotlib.pyplot as plt
 from scipy.stats import spearmanr
 
 # Set up nice plotting style

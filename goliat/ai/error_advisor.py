@@ -22,8 +22,8 @@ Usage:
 
 import os
 import threading
-from typing import Optional, Callable
 from dataclasses import dataclass
+from typing import Callable, Optional
 
 from .config import AIConfig, get_default_config
 from .types import BackendType, SeverityType

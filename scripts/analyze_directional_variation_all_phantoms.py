@@ -12,8 +12,8 @@ Purpose: Answer Bram #106 — verify data for Ella/Thelonious
 """
 
 import csv
-from pathlib import Path
 import sys
+from pathlib import Path
 
 # Force UTF-8 output
 if sys.stdout.encoding != "utf-8":

@@ -1,10 +1,10 @@
 """Timings table component for displaying profiling statistics."""
 
-from typing import TYPE_CHECKING, Dict, List, Any
+from typing import TYPE_CHECKING, Any, Dict, List
 
 import numpy as np
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QTableWidget, QTableWidgetItem, QHeaderView
+from PySide6.QtWidgets import QHeaderView, QTableWidget, QTableWidgetItem
 
 if TYPE_CHECKING:
     from goliat.profiler import Profiler

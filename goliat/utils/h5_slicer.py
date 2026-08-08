@@ -4,9 +4,10 @@ Slices Sim4Life _Output.h5 files to a smaller cube around a given center,
 preserving the HDF5 structure and updating axes/bounding boxes to match.
 """
 
+from typing import Dict, Optional, Tuple
+
 import h5py
 import numpy as np
-from typing import Dict, Tuple, Optional
 
 
 def get_slice_indices(axis: np.ndarray, b_min: float, b_max: float) -> slice:

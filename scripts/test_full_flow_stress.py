@@ -8,11 +8,13 @@ Usage:
 
 import argparse
 import time
+
 import numpy as np
-from tqdm import tqdm
 from scipy import ndimage
-from goliat.utils.skin_voxel_utils import extract_skin_voxels, extract_air_voxels
+from tqdm import tqdm
+
 from goliat.extraction.field_reader import read_field_at_indices
+from goliat.utils.skin_voxel_utils import extract_air_voxels, extract_skin_voxels
 
 
 def test_input_h5_and_dilation(input_h5_path: str):

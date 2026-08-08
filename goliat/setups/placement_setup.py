@@ -205,6 +205,7 @@ class PlacementSetup(BaseSetup):
             position_offset is additional offset from config for fine-tuning.
         """
         if self.free_space:
+            self.orientation_rotations = []
             return self.model.Vec3(0, 0, 0), [0, 0, 0]
 
         scenario = (self.config["placement_scenarios"] or {}).get(self.base_placement_name)

@@ -14,12 +14,12 @@ Or to keep Blender open for inspection:
     "C:\Program Files\Blender Foundation\Blender 4.4\blender.exe" --python scripts/visualize_sar_blender.py
 """
 
-import bpy
 import json
 import math
 from pathlib import Path
-from mathutils import Vector
 
+import bpy
+from mathutils import Vector
 
 # =============================================================================
 # Configuration

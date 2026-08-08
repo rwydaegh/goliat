@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from .base import BasePlotter, LEGEND_LABELS
+from .base import LEGEND_LABELS, BasePlotter
 
 
 class BarPlotter(BasePlotter):
@@ -55,8 +55,8 @@ class BarPlotter(BasePlotter):
         y_marker = break_point * 1.1
 
         # Draw curly bracket using Path
-        from matplotlib.path import Path
         import matplotlib.patches as patches
+        from matplotlib.path import Path
 
         # Create curly bracket path (simplified version)
         bracket_height = break_point * 0.05
@@ -247,8 +247,9 @@ class BarPlotter(BasePlotter):
                 formatted_legend_labels.append(formatted_label)
 
             # Move legend below plot - create handles manually to ensure we get all of them
-            from .line import LinePlotter
             import matplotlib.patches as mpatches
+
+            from .line import LinePlotter
 
             line_plotter = LinePlotter(self.plots_dir, self.phantom_name, self.plot_format)
             # Always create patches manually to ensure we have the correct number and colors
@@ -427,8 +428,9 @@ class BarPlotter(BasePlotter):
                 formatted_legend_labels.append(formatted_label)
 
             # Move legend below plot - create handles manually to ensure we get all of them
-            from .line import LinePlotter
             import matplotlib.patches as mpatches
+
+            from .line import LinePlotter
 
             line_plotter = LinePlotter(self.plots_dir, self.phantom_name, self.plot_format)
             # Always create patches manually to ensure we have the correct number and colors

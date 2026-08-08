@@ -1,7 +1,7 @@
 """System resource monitoring component for GUI."""
 
 import subprocess
-from typing import Tuple, Optional
+from typing import Optional, Tuple
 
 try:
     import psutil

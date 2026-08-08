@@ -1,4 +1,4 @@
-from .load_far_field import load_far_field, METRICS, PHANTOMS, FREQS_MHZ, DIRECTIONS, POLARIZATIONS
+from .load_far_field import DIRECTIONS, FREQS_MHZ, METRICS, PHANTOMS, POLARIZATIONS, load_far_field
 from .reml_anova import decompose_balanced, decompose_reml
 from .report import build_report
 

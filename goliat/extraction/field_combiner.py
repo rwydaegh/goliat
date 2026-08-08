@@ -17,8 +17,8 @@ import h5py
 import numpy as np
 from tqdm import tqdm
 
-from .field_reader import find_overall_field_group, get_field_path, get_field_shape
 from .field_combiner_sliced import combine_fields_sliced  # noqa: F401 - re-export
+from .field_reader import find_overall_field_group, get_field_path, get_field_shape
 
 
 @dataclass
@@ -323,7 +323,7 @@ if __name__ == "__main__":
     import glob
     import time
 
-    from .focus_optimizer import find_focus_and_compute_weights, compute_optimal_phases, compute_weights
+    from .focus_optimizer import compute_optimal_phases, compute_weights, find_focus_and_compute_weights
 
     # Set up basic logging for CLI usage
     logging.basicConfig(

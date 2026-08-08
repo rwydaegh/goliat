@@ -8,7 +8,7 @@ Supports memory-efficient reading for auto-induced exposure calculations:
 
 import logging
 from pathlib import Path
-from typing import Tuple, Optional, Union
+from typing import Optional, Tuple, Union
 
 import h5py
 import numpy as np

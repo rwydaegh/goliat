@@ -111,9 +111,9 @@ class PieChartsManager:
         """Sets up matplotlib figure with 2x2 subplot grid."""
         if Figure is None or FigureCanvas is None:
             raise ImportError("matplotlib is required for plotting")
-        from matplotlib.figure import Figure as _Figure
-        from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as _FigureCanvas
         from matplotlib.axes import Axes as _Axes
+        from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as _FigureCanvas
+        from matplotlib.figure import Figure as _Figure
 
         self.figure: _Figure = _Figure(figsize=(12, 10), facecolor="#2b2b2b")
         self.canvas: _FigureCanvas = _FigureCanvas(self.figure)

@@ -128,8 +128,9 @@ class TestNearFieldStudy:
 
     def test_near_field_study_all_phases_disabled(self, tmp_path):
         """Test behavior when all execution phases are disabled."""
-        from goliat.studies.near_field_study import NearFieldStudy
         import json
+
+        from goliat.studies.near_field_study import NearFieldStudy
 
         # Create config with all phases disabled
         config_dir = tmp_path / "configs"
@@ -183,8 +184,9 @@ class TestNearFieldStudy:
 
     def test_near_field_study_only_write_input_file_warning(self, tmp_path):
         """Test warning for only_write_input_file without do_run."""
-        from goliat.studies.near_field_study import NearFieldStudy
         import json
+
+        from goliat.studies.near_field_study import NearFieldStudy
 
         # Create config with only_write_input_file but do_run=False
         config_dir = tmp_path / "configs"

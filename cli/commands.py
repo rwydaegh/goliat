@@ -179,6 +179,7 @@ def show_version():
         # Fallback: try reading from pyproject.toml
         try:
             import tomllib
+
             from cli.utils import get_base_dir
 
             base_dir = get_base_dir()

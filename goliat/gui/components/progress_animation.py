@@ -37,8 +37,8 @@ class ProgressAnimation:
             timer: QTimer instance for animation updates (50ms interval).
             debug: Enable debug logging (currently unused).
         """
-        from PySide6.QtWidgets import QProgressBar as _QProgressBar
         from PySide6.QtCore import QTimer as _QTimer
+        from PySide6.QtWidgets import QProgressBar as _QProgressBar
 
         self.progress_bar: _QProgressBar = progress_bar
         self.timer: _QTimer = timer

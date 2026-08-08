@@ -2,7 +2,6 @@
 
 import json
 
-
 from goliat.data_extractor import get_parameter, get_parameter_from_json
 
 

@@ -1,7 +1,7 @@
 import os
 import traceback
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, List, Optional, Tuple, Any
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 
 from ..logging_manager import LoggingMixin
 from ..utils.h5_slicer import slice_h5_output
@@ -9,6 +9,7 @@ from ..utils.h5_slicer import slice_h5_output
 if TYPE_CHECKING:
     import s4l_v1.analysis as analysis
     import s4l_v1.model as model
+
     from ..results_extractor import ResultsExtractor
 
 
@@ -51,8 +52,8 @@ class SapdExtractor(LoggingMixin):
         self.gui = parent.gui
 
         import s4l_v1.analysis as analysis
-        import s4l_v1.model as model
         import s4l_v1.document as document
+        import s4l_v1.model as model
         import s4l_v1.units as units
 
         self.analysis = analysis

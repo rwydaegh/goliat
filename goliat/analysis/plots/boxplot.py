@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
-from .base import BasePlotter, METRIC_LABELS
+from .base import METRIC_LABELS, BasePlotter
 
 
 class BoxplotPlotter(BasePlotter):

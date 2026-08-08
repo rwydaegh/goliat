@@ -27,10 +27,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from scipy import stats
 from scipy.optimize import curve_fit
 
@@ -256,7 +256,7 @@ class AutoInducedAnalyzer:
                     df["freq_ghz"] = freq_ghz
                     df["phantom"] = phantom_folder.name
                     # Normalize all values from E=1V/m to 1 W/m² incident power density
-                    # Multiply by 754 (see docs/technical/power_normalization_philosophy.md)
+                    # Multiply by 754 to normalize E=1 V/m to 1 W/m² incident power density.
                     if "sapd_w_m2" in df.columns:
                         df["peak_sapd"] = df["sapd_w_m2"] * 754  # W/m² at 1 W/m² incident
                     if "proxy_score" in df.columns:

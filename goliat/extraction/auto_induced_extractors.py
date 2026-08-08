@@ -241,11 +241,11 @@ class _AutoInducedExtractionMixin:
         self.verbose_logger.info(f"Extracting SAPD from {combined_h5.name}")
 
         try:
-            import XCoreModeling
             import s4l_v1.analysis as analysis
             import s4l_v1.document as document
             import s4l_v1.model as model
             import s4l_v1.units as units
+            import XCoreModeling
 
             axes = self._read_grid_axes(input_h5)
             if axes is None:

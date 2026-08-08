@@ -1,9 +1,9 @@
 """QueueGUI proxy for worker process communication."""
 
-from typing import TYPE_CHECKING
 from logging import Logger
 from multiprocessing import Queue
 from multiprocessing.synchronize import Event
+from typing import TYPE_CHECKING
 
 from goliat.logging_manager import LoggingMixin
 

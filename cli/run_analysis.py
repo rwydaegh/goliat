@@ -14,17 +14,18 @@ import matplotlib  # noqa: E402
 # even when the GUI is running (the GUI is a separate PyQt window)
 matplotlib.use("Agg")
 
-from goliat.utils.setup import initial_setup  # noqa: E402
 from goliat.analysis.analyzer import Analyzer  # noqa: E402
 from goliat.analysis.far_field_strategy import FarFieldAnalysisStrategy  # noqa: E402
 from goliat.analysis.near_field_strategy import NearFieldAnalysisStrategy  # noqa: E402
 from goliat.config import Config  # noqa: E402
 from goliat.logging_manager import setup_loggers  # noqa: E402
+from goliat.utils.setup import initial_setup  # noqa: E402
 
 # Imports for GUI
 if GUI_MODE:
     try:
         from PySide6.QtWidgets import QApplication
+
         from goliat.gui.analysis_gui import AnalysisGUI
     except ImportError:
         print("Error: PySide6 not installed or AnalysisGUI not found. Running in headless mode.")
@@ -81,6 +82,7 @@ def _generate_cross_phantom_plots(config, phantoms: list, plot_format: str, anal
     how SAR varies across different body types (adults vs children).
     """
     import pandas as pd
+
     from goliat.analysis.plotter import Plotter
 
     # Check if this plot type should be generated

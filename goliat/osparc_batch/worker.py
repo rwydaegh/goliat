@@ -146,10 +146,10 @@ class Worker(QObject):
 
     def _resubmit_job(self, file_path: Path):
         """Resubmits a failed job."""
+        from goliat.osparc_batch.logging_utils import setup_job_logging
         from goliat.osparc_batch.osparc_client import (
             _submit_job_in_process,
         )
-        from goliat.osparc_batch.logging_utils import setup_job_logging
 
         try:
             base_dir = self.config.base_dir  # type: ignore
@@ -227,6 +227,7 @@ class Worker(QObject):
         # Run the cancel_all_jobs function
         try:
             import os
+
             from goliat.utils.scripts.cancel_all_jobs import cancel_all_jobs
 
             config_path = self.config_path

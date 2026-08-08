@@ -11,8 +11,8 @@ Run with:
     python tests/test_s4l_import_bisect.py
 """
 
-import sys
 import os
+import sys
 
 # Get base directory
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-from .base import BasePlotter, METRIC_LABELS, LEGEND_LABELS
+from .base import LEGEND_LABELS, METRIC_LABELS, BasePlotter
 
 
 class CorrelationPlotter(BasePlotter):

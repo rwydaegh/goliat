@@ -10,9 +10,10 @@ Usage:
     python scripts/generate_polarization_ratio_heatmaps.py
 """
 
+import logging
 import os
 import pickle
-import logging
+
 from goliat.analysis.plots.heatmap import HeatmapPlotter
 
 # Configure logging

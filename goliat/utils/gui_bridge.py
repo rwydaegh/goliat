@@ -1,11 +1,11 @@
 """Web GUI Bridge for forwarding GUI messages to monitoring dashboard."""
 
-import time
-import threading
 import logging
+import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
-from queue import Queue, Empty
-from typing import Dict, Any, Optional, Callable
+from queue import Empty, Queue
+from typing import Any, Callable, Dict, Optional
 
 from goliat.logging_manager import LoggingMixin
 from goliat.utils.http_client import HTTPClient

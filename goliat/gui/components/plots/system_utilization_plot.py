@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Tuple
 
 from ._matplotlib_imports import Figure, FigureCanvas, mdates  # type: ignore
-from .utils import convert_to_utc_plus_one, validate_timestamp, clean_plot_data
+from .utils import clean_plot_data, convert_to_utc_plus_one, validate_timestamp
 
 
 class SystemUtilizationPlot:
@@ -23,9 +23,9 @@ class SystemUtilizationPlot:
         """Sets up matplotlib figure and axes with dark theme."""
         if Figure is None or FigureCanvas is None:
             raise ImportError("matplotlib is required for plotting")
-        from matplotlib.figure import Figure as _Figure
-        from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as _FigureCanvas
         from matplotlib.axes import Axes as _Axes
+        from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as _FigureCanvas
+        from matplotlib.figure import Figure as _Figure
 
         self.figure: _Figure = _Figure(figsize=(10, 6), facecolor="#2b2b2b")
         self.canvas: _FigureCanvas = _FigureCanvas(self.figure)

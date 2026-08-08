@@ -8,11 +8,11 @@ This package provides:
 
 from .fitter import DispersionParams, PoleFit, fit_dispersion, validate_fit
 from .material_cache import (
-    get_material_properties,
-    get_cole_cole_params,
-    get_available_tissues,
-    load_material_cache,
     clear_cache,
+    get_available_tissues,
+    get_cole_cole_params,
+    get_material_properties,
+    load_material_cache,
 )
 
 __all__ = [

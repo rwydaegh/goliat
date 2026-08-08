@@ -6,6 +6,7 @@ from ..logging_manager import LoggingMixin
 
 if TYPE_CHECKING:
     from logging import Logger
+
     from ..gui_manager import QueueGUI
 
 

@@ -3,7 +3,6 @@
 import json
 import time
 
-
 from goliat.utils.core import Profiler, format_time, suppress_stdout_stderr
 
 

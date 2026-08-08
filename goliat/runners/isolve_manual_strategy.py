@@ -13,8 +13,8 @@ except ImportError:
     psutil = None  # type: ignore
 
 try:
-    import win32gui
     import win32con
+    import win32gui
 except ImportError:
     win32gui = None  # type: ignore
     win32con = None  # type: ignore

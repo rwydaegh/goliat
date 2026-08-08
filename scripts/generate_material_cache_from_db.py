@@ -13,9 +13,10 @@ Output:
 
 import json
 import sqlite3
-import numpy as np
 from datetime import datetime
 from pathlib import Path
+
+import numpy as np
 
 # Configuration
 FREQUENCIES_MHZ = [450, 700, 835, 1450, 2140, 2450, 3500, 5200, 5800, 7000, 9000, 11000, 13000, 15000, 26000]

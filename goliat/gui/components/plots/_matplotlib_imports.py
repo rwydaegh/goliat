@@ -1,10 +1,10 @@
 """Matplotlib imports with fallback handling for plotting components."""
 
+import os
+import sys
 from typing import TYPE_CHECKING
 
 import matplotlib
-import os
-import sys
 
 # Check for headless environment (CI or Linux without DISPLAY)
 # On Windows, DISPLAY is not used, so we assume GUI is available unless CI is set
@@ -29,14 +29,14 @@ mdates = None
 
 try:
     import matplotlib.dates as mdates
+    from matplotlib.axes import Axes
     from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
     from matplotlib.figure import Figure
-    from matplotlib.axes import Axes
 except ImportError:
     pass
 
 if TYPE_CHECKING:
-    from matplotlib.figure import Figure
     from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+    from matplotlib.figure import Figure
 
 __all__ = ["Figure", "FigureCanvas", "Axes", "mdates"]
