@@ -14,6 +14,8 @@ import os
 from pathlib import Path
 from typing import Optional
 
+from dotenv import load_dotenv
+
 from .chat_handler import ChatHandler
 from .config import AIConfig, get_default_config
 from .cost_tracker import CostTracker
@@ -108,17 +110,8 @@ class GOLIATAssistant:
         except ImportError:
             raise ImportError("OpenAI package not installed. Install with: pip install openai")
 
+        load_dotenv(Path(self.base_dir) / ".env", override=False)
         api_key = os.environ.get("OPENAI_API_KEY")
-        if not api_key:
-            # Try loading from .env file
-            env_path = os.path.join(self.base_dir, ".env")
-            if os.path.exists(env_path):
-                with open(env_path) as f:
-                    for line in f:
-                        line = line.strip()
-                        if line.startswith("OPENAI_API_KEY="):
-                            api_key = line.split("=", 1)[1].strip("\"'")
-                            break
 
         if not api_key:
             raise ValueError("OPENAI_API_KEY not found. Set it in environment or .env file.")
