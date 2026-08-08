@@ -4,6 +4,9 @@ site_author: rwydaegh
 site_url: https://docs.goliat.waves-ugent.be/
 
 docs_dir: docs
+exclude_docs: |
+  technical/**
+  superpowers/specs/**
 
 repo_name: rwydaegh/goliat
 repo_url: https://github.com/rwydaegh/goliat
