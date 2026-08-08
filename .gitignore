@@ -7,6 +7,7 @@
 
 # Python
 __pycache__/
+.venv/
 *.pyc
 *.lprof
 .pytest_cache/
@@ -17,12 +18,10 @@ results/
 !results/analysis_plots/
 /plots/
 !plots/organ_scatter/
-paper/
-!paper/IEEEtran.cls
-!paper/near_field/pure_results/results.pdf
-!paper/near_field/pure_results/results.tex
-!paper/far_field/pure_results/results.pdf
-!paper/far_field/pure_results/results.tex
+/paper/*
+!/paper/pmb/
+!/paper/softwarex_goliat/
+!/paper/joss_goliat/
 site/
 analysis/cpw/data/
 analysis/cpw/plots/
@@ -97,30 +96,56 @@ configs/*
 !configs/scaled_thelonious_*.json
 !configs/far_field_aegis_*.json
 
-# Generated files
-*.csv
-*.zip
-*.lock
-# Keep specific generated files in analysis
-!analysis/**/*.csv
+# Generated files are ignored at their owning directory, not globally.
+# This keeps source data, archives, and dependency lockfiles visible to Git.
 !analysis/**/*.png
 !analysis/**/*.pdf
+
+# Local scratch and crash artifacts
+/tmp/
+*.stackdump
+*.bak
+*.backup
+*.log
+/main.pdf
+/all_proxy_scores.csv
+/*.zip
+/6-stars.png
+/convo.md
+/RELEASE_AUDIT.md
 
 # Local environment
 #.bashrc
 .env
+.env.*
+!.env.example
+
+# Private design and investigation notes (kept locally only)
+docs/technical/
+docs/superpowers/specs/
 
 # Scripts
 goliat/utils/scripts/keep_awake.py
-scripts/*
-!scripts/run_far_field_uncertainty.py
+# Local exploratory 26 GHz analysis (preserved, not publication dependencies)
+/scripts/plot_all_26ghz.py
+/scripts/plot_linear.py
+/scripts/plot_sapd_sar.py
+/scripts/sar_sapd.py
 
 # Cloud setup - credentials and personal scripts
 cloud_setup/tensordock_documentation.md
 cloud_setup/availability_cache.json
+cloud_setup/_*.py
+cloud_setup/check_availability.py
+cloud_setup/start_devpc_watcher.ps1
+cloud_setup/linux_to_windows/
+# Legacy personal copies remain ignored during migration to .env.
 cloud_setup/my_*.bat
 cloud_setup/my_*.py
 cloud_setup/my_setup_b64.txt
+
+# Stray local LaTeX output from an old working directory
+/goliat/paper/
 
 # Python build artifacts
 *.egg-info/
