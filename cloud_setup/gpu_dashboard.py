@@ -20,14 +20,16 @@ from dotenv import load_dotenv
 # Windows consoles default to cp1252, which can't encode the emoji used in the
 # banner/log output (crashes on Python 3.14). Force UTF-8 so launch never dies.
 try:
-    sys.stdout.reconfigure(encoding="utf-8")
-    sys.stderr.reconfigure(encoding="utf-8")
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            reconfigure(encoding="utf-8")
 except Exception:
     pass
 
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
-API_TOKEN = "<REDACTED>"
+API_TOKEN = os.getenv("TENSORDOCK_API_TOKEN", "").strip()
 BASE_URL = "https://dashboard.tensordock.com/api/v2"
 
 # Cache for API data - show old data instantly while fetching new

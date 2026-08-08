@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
-API_TOKEN = "<REDACTED>"
+API_TOKEN = os.getenv("TENSORDOCK_API_TOKEN", "").strip()
 VM_PASSWORD = os.getenv("TENSORDOCK_VM_PASSWORD", "").strip()
 BASE_URL = "https://dashboard.tensordock.com/api/v2"
 GPU_TYPE = "geforcertx4090-pcie-24gb"  # Switched to RTX 4090
