@@ -29,7 +29,7 @@ class TestRunAnalysis:
         }.get(key)
 
         # Mock the strategy and analyzer imports
-        with patch.dict("os.environ", {"CI": "true"}), patch("cli.run_analysis.QApplication") as mock_application, patch(
+        with patch.dict("os.environ", {"CI": "true"}), patch("cli.run_analysis.QApplication", create=True) as mock_application, patch(
             "cli.run_analysis.initial_setup"
         ), patch("cli.run_analysis.setup_loggers"), patch("cli.run_analysis.Config", return_value=mock_config), patch(
             "cli.run_analysis.load_analysis_config",
