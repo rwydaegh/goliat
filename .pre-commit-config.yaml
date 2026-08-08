@@ -3,14 +3,14 @@ repos:
   rev: v6.0.0
   hooks:
   - id: trailing-whitespace
-    exclude: ^(docs/|analysis/|paper/)
+    exclude: ^(docs/|analysis/|paper/|papers/)
   - id: end-of-file-fixer
-    exclude: ^(docs/|analysis/|paper/)
+    exclude: ^(docs/|analysis/|paper/|papers/)
   - id: check-yaml
     exclude: ^mkdocs\.yml$
   - id: check-added-large-files
     args: [--maxkb=1000]
-    exclude: ^(uv\.lock|paper/(pmb|softwarex_goliat|joss_goliat)/.*\.pdf)$
+    exclude: ^(uv\.lock|papers/(pmb|softwarex|joss)/.*\.pdf)$
   - id: check-json
     exclude: ^(\.vscode/)
 
@@ -43,7 +43,7 @@ repos:
   - id: codespell
     additional_dependencies:
     - tomli
-    exclude: ^paper/
+    exclude: ^(paper/|papers/)
 
 - repo: https://github.com/astral-sh/uv-pre-commit
   rev: 0.12.1

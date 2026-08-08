@@ -7,7 +7,8 @@ Publication in *SoftwareX* and its latest clean PDF.
 
 - `main.tex`: submission source using Elsevier's `elsarticle` class with the
   `preprint,12pt,a4paper` options.
-- `SoftwareX.pdf`: current preprint built directly from `main.tex`. The exact
+- `preview.tex`: wrapper for the Elsevier CRC-styled reading copy.
+- `SoftwareX.pdf`: CRC-styled reading copy for visual review. The exact final
   ScienceDirect layout is applied by Elsevier after acceptance.
 - `workflow.tex` and `workflow.pdf`: configuration-to-results workflow figure.
 - `exposure_modes.tex` and `exposure_modes.pdf`: near- and far-field setup figure.
@@ -23,8 +24,9 @@ The complete running text is about 2,600 words by `texcount`. SoftwareX sets a 3
 ## Template note
 
 Published ScienceDirect PDFs use Elsevier's production system. The public
-source therefore uses the standard `elsarticle` author class and does not try
-to reproduce a final journal layout.
+submission source therefore uses the standard `elsarticle` author class. The
+CRC-styled PDF is a reading copy and should only be submitted if the editors
+request that format.
 
 - https://www.elsevier.com/researcher/author/tools-and-resources/research-elements-journals
 - https://www.elsevier.com/en-in/researcher/author/policies-and-guidelines/latex-instructions
@@ -39,5 +41,6 @@ latexmk -pdf -interaction=nonstopmode -halt-on-error exposure_modes.tex
 latexmk -pdf -interaction=nonstopmode -halt-on-error near_field_campaign.tex
 latexmk -pdf -interaction=nonstopmode -halt-on-error run_directory.tex
 latexmk -pdf -interaction=nonstopmode -halt-on-error monitoring_and_output.tex
-latexmk -pdf -interaction=nonstopmode -halt-on-error -jobname=SoftwareX main.tex
+latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex
+latexmk -pdf -interaction=nonstopmode -halt-on-error -jobname=SoftwareX preview.tex
 ```

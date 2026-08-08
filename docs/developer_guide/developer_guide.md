@@ -231,7 +231,7 @@ The system uses a strategy pattern (`BaseAnalysisStrategy`) with separate implem
 - Paper generation workflow
 
 Generated LaTeX result reports are local analysis artifacts. Curated
-publication manuscripts and their source packages are kept under `paper/`.
+publication manuscripts and their source packages are kept under `papers/`.
 
 For more, see [Contributing](https://github.com/rwydaegh/goliat/blob/master/.github/CONTRIBUTING.md). For a deep dive into all available parameters, refer to the [Configuration Guide](configuration.md). For a complete reference of all features, see the [Full List of Features](../reference/full_features_list.md).
 

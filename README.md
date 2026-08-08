@@ -4,13 +4,15 @@
 
 ### Comprehensive automated near- and far-field SAR assessments using Sim4Life
 
-<table>
+<table width="100%">
 <tr>
-<td align="center">
-🏆 <strong>Third Prize — Sim4Life Student Competition 2025</strong><br>
-GOLIAT was recognized for reproducible, scalable near- and far-field dosimetry workflows.<br>
-<a href="https://sim4life.swiss/news/sim4life-news/meet-the-winners-sim4life-student-competition-2025">Official announcement</a>
-· <a href="paper/pmb/paper.pdf">PMB paper</a>
+<td width="50%" align="center">
+📄 <strong>Research Paper<br>
+<a href="papers/pmb/paper.pdf">Physics in Medicine &amp; Biology</a></strong>
+</td>
+<td width="50%" align="center">
+🏆 <strong>Third Prize<br>
+<a href="https://sim4life.swiss/news/sim4life-news/meet-the-winners-sim4life-student-competition-2025">Sim4Life Student Competition 2025</a></strong>
 </td>
 </tr>
 </table>
@@ -414,8 +416,8 @@ This project is licensed under the **Apache 2.0 License** – see [LICENSE](LICE
 
 ## Results
 
-The [PMB paper](paper/pmb/paper.pdf) and its curated
-[LaTeX source](paper/pmb/source/) document the far-field research campaign.
+The [PMB paper](papers/pmb/paper.pdf) and its curated
+[LaTeX source](papers/pmb/source/) document the far-field research campaign.
 GOLIAT can also generate local LaTeX result reports for near- or far-field
 studies with the `--generate-paper` analysis option.
 

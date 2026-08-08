@@ -122,7 +122,7 @@ This generates `paper/near_field/pure_results/results.tex` with:
 - IEEE format document structure
 
 The generated report is a local analysis artifact. Curated publication
-manuscripts are kept separately under `paper/`.
+manuscripts are kept separately under `papers/`.
 
 ## Developer guide
 
@@ -348,4 +348,3 @@ Run tests:
 ```bash
 pytest tests/test_analysis_*.py
 ```
-

@@ -3,8 +3,12 @@
 !.gitignore
 !README.md
 !main.tex
+!preview.tex
 !references.bib
 !acronyms.tex
+!ecrc.sty
+!elsevier-logo-5p.pdf
+!SDlogo-5p.pdf
 !SoftwareX.pdf
 !workflow.tex
 !workflow.pdf

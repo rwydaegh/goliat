@@ -10,7 +10,7 @@ All values normalized to 1 W/m² incident.
 FR3/FR2 organ groups: bilateral ×½ correction applied.
 psSAR10g: no bilateral correction.
 
-Output: paper/pmb/source/figures/sar_trends_fr1_to_fr2.{png,pdf}
+Output: papers/pmb/source/figures/sar_trends_fr1_to_fr2.{png,pdf}
 """
 
 import json
@@ -57,7 +57,7 @@ SCALE_HALF_WB = ETA0 / 2  # ×188.37
 REPO = Path(__file__).parent.parent
 FR1_BASE = REPO / "results" / "far_field" / "thelonious"
 FR3_BASE = REPO / "results" / "thelonious_FR3"
-OUT_DIR = REPO / "paper" / "pmb" / "source" / "figures"
+OUT_DIR = REPO / "papers" / "pmb" / "source" / "figures"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 FR1_FREQS_MHZ = [450, 700, 835, 1450, 2140, 2450, 3500, 5200, 5800]

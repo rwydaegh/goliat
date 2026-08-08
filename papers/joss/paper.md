@@ -149,8 +149,8 @@ The far-field campaign has 550 jobs for two adult and two child anatomical
 models at 15 frequencies between 450 MHz and 26 GHz. Its cases use environmental
 plane waves or auto-induced exposure. The *Physics in Medicine & Biology* article
 used the campaign's numerical data and tables
-[@Wydaeghe2026]. Its postprocessed data and configuration family are being
-available in Harvard Dataverse [@WydaegheData2026]. Together, the completed campaigns
+[@Wydaeghe2026]. Its postprocessed data and configuration family are deposited
+in Harvard Dataverse [@WydaegheData2026]. Together, the completed campaigns
 have 902 job records with the same configuration, execution, extraction, and
 analysis structure.
 

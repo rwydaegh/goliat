@@ -19,9 +19,6 @@ results/
 /plots/
 !plots/organ_scatter/
 /paper/*
-!/paper/pmb/
-!/paper/softwarex_goliat/
-!/paper/joss_goliat/
 site/
 analysis/cpw/data/
 analysis/cpw/plots/
