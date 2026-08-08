@@ -121,7 +121,8 @@ This generates `paper/near_field/pure_results/results.tex` with:
 - Captions extracted from plot metadata files
 - IEEE format document structure
 
-Check out the [auto-generated first draft paper (only results)](https://github.com/rwydaegh/goliat/raw/master/paper/near_field/pure_results/results.pdf) to see an example.
+The generated report is a local analysis artifact. Curated publication
+manuscripts are kept separately under `paper/`.
 
 ## Developer guide
 

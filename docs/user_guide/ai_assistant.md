@@ -37,10 +37,14 @@ By default, the assistant classifies query complexity and picks a model automati
 
 ## Setup
 
-Requires an OpenAI API key in your environment:
+Copy the repository's example environment file and add your OpenAI API key:
 
-```bash
-export OPENAI_API_KEY=your_key_here
+```text
+cp .env.example .env
+# Edit .env and set OPENAI_API_KEY.
 ```
+
+The `.env` file is local and ignored by Git. You can alternatively export
+`OPENAI_API_KEY` in the process environment.
 
 Optional: Install with `pip install goliat[ai]` for the `rich` library (better terminal formatting).

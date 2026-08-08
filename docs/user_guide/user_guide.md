@@ -97,7 +97,7 @@ After the simulation, GOLIAT's `ResultsExtractor` and `Analyzer` components take
     - Exports formatted Excel files (`Final_Data_UGent.xlsx`) containing all data and metadata
     - Exports CSV files with detailed and summary statistics
     - Optionally generates a LaTeX paper with all figures organized by section
-    This is useful for comparing results across frequencies, placements, or other parameters. Check out the [auto-generated first draft paper (only results)](https://github.com/rwydaegh/goliat/raw/master/paper/near_field/pure_results/results.pdf) to see an example of compiled analysis output. For details, see the [Analysis Guide](../developer_guide/analysis.md).
+    This is useful for comparing results across frequencies, placements, or other parameters. For details, see the [Analysis Guide](../developer_guide/analysis.md).
 -   **Log Files**: For debugging and detailed tracking, GOLIAT generates two types of log files in the `logs/` directory for each run: a `.progress.log` for high-level updates and a `.log` for verbose, detailed information. The system automatically manages these files, keeping a maximum of 15 pairs to prevent excessive disk usage.
 
 **Example output interpretation**: For a near-field 700MHz simulation with an antenna by the cheek, you might observe:
@@ -149,7 +149,7 @@ While the core GOLIAT workflow remains consistent, the specifics of scene setup 
     
     Results are saved to `results/far_field/{phantom}/{freq}MHz/auto_induced/auto_induced_summary.json`. See the [Configuration Guide](../developer_guide/configuration.md#auto-induced-exposure-auto_induced) for all options.
 
--   **Multi-Sine Excitation**: For efficiency, GOLIAT can simulate multiple frequencies in a single FDTD run. Use the `"700+2450"` format in your `frequencies_mhz` array (e.g., `["700+2450", 5800]`). The simulation uses a UserDefined waveform with superimposed sinusoids and extracts SAR at each frequency via DFT post-processing. This provides ~4× speedup for widely-spaced frequencies (> 200 MHz apart) where beat period overhead is minimal. Frequency-dependent material dispersion is automatically handled through dispersion fitting. See [Technical Docs](../technical/multi_sine_excitation_analysis.md) for mathematical details.
+-   **Multi-Sine Excitation**: For efficiency, GOLIAT can simulate multiple frequencies in a single FDTD run. Use the `"700+2450"` format in your `frequencies_mhz` array (e.g., `["700+2450", 5800]`). The simulation uses a UserDefined waveform with superimposed sinusoids and extracts SAR at each frequency via DFT post-processing. This provides ~4× speedup for widely-spaced frequencies (> 200 MHz apart) where beat period overhead is minimal. Frequency-dependent material dispersion is automatically handled through dispersion fitting.
 
     **Example multi-sine config:**
     ```json
