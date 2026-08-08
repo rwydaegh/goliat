@@ -5,15 +5,18 @@ Shows focus z vs peak z, and focus-to-peak distance vs SAR, for all 4 phantoms a
 
 import json
 import os
-import numpy as np
+from pathlib import Path
+
 import matplotlib
+import numpy as np
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
 from collections import Counter
 
-BASE = r"c:\Users\rwydaegh\OneDrive - UGent\rwydaegh\GOLIAT code\goliat\results\auto_induced_FR1\extracted"
+import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt
+
+BASE = Path(__file__).resolve().parents[1] / "results" / "auto_induced_FR1" / "extracted"
 PHANTOMS = ["duke", "ella", "eartha", "thelonious"]
 LABELS = {"duke": "Duke (adult ♂)", "ella": "Ella (adult ♀)", "eartha": "Eartha (child ♀)", "thelonious": "Thelonious (child ♂)"}
 COLORS = {"duke": "#2166ac", "ella": "#4dac26", "eartha": "#d01c8b", "thelonious": "#f1a340"}

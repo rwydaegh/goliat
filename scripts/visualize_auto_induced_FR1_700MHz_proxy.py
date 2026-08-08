@@ -4,16 +4,18 @@ Deeper dive: proxy score quality and spatial analysis for FR1 700 MHz.
 
 import json
 import os
+from pathlib import Path
+
+import matplotlib
 import numpy as np
 import pandas as pd
-import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt
 from scipy.stats import spearmanr
 
-BASE = r"c:\Users\rwydaegh\OneDrive - UGent\rwydaegh\GOLIAT code\goliat\results\auto_induced_FR1\extracted"
+BASE = Path(__file__).resolve().parents[1] / "results" / "auto_induced_FR1" / "extracted"
 PHANTOMS = ["duke", "ella", "eartha", "thelonious"]
 LABELS = {"duke": "Duke (adult ♂)", "ella": "Ella (adult ♀)", "eartha": "Eartha (child ♀)", "thelonious": "Thelonious (child ♂)"}
 COLORS = {"duke": "#2166ac", "ella": "#4dac26", "eartha": "#d01c8b", "thelonious": "#f1a340"}
