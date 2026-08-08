@@ -84,8 +84,8 @@ docs = [
 goliat = "cli.__main__:main"
 
 [project.urls]
-Documentation = "https://rwydaegh.github.io/goliat/"
-Homepage = "https://rwydaegh.github.io/goliat/"
+Documentation = "https://docs.goliat.waves-ugent.be/"
+Homepage = "https://docs.goliat.waves-ugent.be/"
 Issues = "https://github.com/rwydaegh/goliat/issues"
 Repository = "https://github.com/rwydaegh/goliat"
 
@@ -128,14 +128,8 @@ exclude = [
   "dist",
 ]
 
-[tool.semantic_release]
-branch = "main"
-changelog_file = "CHANGELOG.md"
-commit_author = "rwydaegh <robin.wydaeghe@ugent.be>"
-commit_message = "chore(release): {version}"
-upload_to_pypi = false
-upload_to_release = true
-version_variables = []
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
 
 [tool.setuptools]
 packages = {find = {exclude = ["scripts*", "tests*", "cloud_setup*"]}}

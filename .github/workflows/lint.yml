@@ -18,10 +18,10 @@ jobs:
       pull-requests: write
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v7
 
     - name: Install pre-commit
       run: pip install pre-commit
@@ -30,7 +30,7 @@ jobs:
       run: pre-commit autoupdate
 
     - name: Create a pull request with updated versions
-      uses: peter-evans/create-pull-request@v6
+      uses: peter-evans/create-pull-request@v8
       with:
         branch: update/pre-commit-hooks
         title: 'chore(deps): update pre-commit hooks'
@@ -44,15 +44,15 @@ jobs:
     if: "!contains(github.event.head_commit.message, '[docs-only]') && !contains(github.event.head_commit.message, '[skip ci]')"
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Set up Python 3.11
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v7
       with:
         python-version: '3.11'
 
     - name: Setup uv
-      uses: astral-sh/setup-uv@v1
+      uses: astral-sh/setup-uv@v9
       with:
         enable-cache: true
 

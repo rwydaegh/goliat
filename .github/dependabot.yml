@@ -1,0 +1,16 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    labels:
+      - ci/cd
+      - dependencies
+
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: monthly
+    labels:
+      - dependencies

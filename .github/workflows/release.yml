@@ -3,79 +3,90 @@ name: Release
 on:
   push:
     tags:
-    - v*
+    - v[0-9]+.[0-9]+.[0-9]+
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      issues: write
-      pull-requests: write
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+    - name: Checkout tagged source
+      uses: actions/checkout@v7
       with:
         fetch-depth: 0
-        ref: master
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v7
       with:
-        python-version: 3.x
-    - name: Install dependencies
+        python-version: '3.11'
+
+    - name: Verify tag and release metadata
+      shell: bash
       run: |
-        python -m pip install --upgrade pip
-        pip install python-semantic-release
-    - name: Sync version to CITATION.cff, README.md, and pyproject.toml
-      run: |
-        # Extract version from tag (remove 'v' prefix)
-        VERSION=${GITHUB_REF_NAME#v}
-        echo "Syncing version: $VERSION"
+        git fetch origin master
+        git merge-base --is-ancestor "$GITHUB_SHA" origin/master || {
+          echo "Release tag must point to a commit on master." >&2
+          exit 1
+        }
 
-        # Get current date in YYYY-MM-DD format
-        RELEASE_DATE=$(date +%Y-%m-%d)
-        echo "Release date: $RELEASE_DATE"
+        python - <<'PY'
+        import os
+        import pathlib
+        import re
+        import tomllib
 
-        # Update CITATION.cff version and date-released
-        sed -i "s/^version: .*/version: $VERSION/" CITATION.cff
-        sed -i "s/^date-released: .*/date-released: $RELEASE_DATE/" CITATION.cff
+        version = os.environ["GITHUB_REF_NAME"].removeprefix("v")
+        pyproject = tomllib.loads(pathlib.Path("pyproject.toml").read_text(encoding="utf-8"))
+        citation = pathlib.Path("CITATION.cff").read_text(encoding="utf-8")
+        readme = pathlib.Path("README.md").read_text(encoding="utf-8")
+        changelog = pathlib.Path("CHANGELOG.md").read_text(encoding="utf-8")
 
-        # Update README.md citation
-        sed -i "s/version = {[^}]*}/version = {$VERSION}/" README.md
+        actual = {
+            "pyproject.toml": pyproject["project"]["version"],
+            "CITATION.cff": re.search(r"(?m)^version:\s*([^\s]+)", citation).group(1),
+            "README.md": re.search(r"version\s*=\s*\{([^}]+)\}", readme).group(1),
+        }
+        mismatches = {name: value for name, value in actual.items() if value != version}
+        if mismatches:
+            raise SystemExit(f"Tag v{version} disagrees with release metadata: {mismatches}")
+        if not re.search(rf"(?m)^## \[{re.escape(version)}\] - \d{{4}}-\d{{2}}-\d{{2}}$", changelog):
+            raise SystemExit(f"CHANGELOG.md has no dated [{version}] release section")
+        PY
 
-        # Update pyproject.toml version
-        sed -i "s/^version = \".*\"/version = \"$VERSION\"/" pyproject.toml
-
-        # Commit and push if changed
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git add CITATION.cff README.md pyproject.toml
-        git diff --staged --quiet || git commit -m "chore: sync version to $VERSION"
-        git push origin master || echo "No changes to push"
-    - name: Create GitHub Release
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        # Delete existing release if it exists (ignore errors)
-        gh release delete ${{ github.ref_name }} --yes 2>/dev/null || true
-        # Create new release
-        gh release create ${{ github.ref_name }} \
-          --title ${{ github.ref_name }} \
-          --notes-file CHANGELOG.md
-    - name: Release
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: semantic-release publish
-
-    - name: Build package
+    - name: Build and validate distributions
       run: |
         python -m pip install --upgrade build twine
         python -m build
+        python -m twine check dist/*
+
+    - name: Create or update draft GitHub release
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      shell: bash
+      run: |
+        if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+          gh release upload "$GITHUB_REF_NAME" dist/* --clobber
+        else
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --draft \
+            --generate-notes \
+            --title "$GITHUB_REF_NAME" \
+            --verify-tag
+        fi
 
     - name: Publish to PyPI
       env:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-      run: |
-        python -m twine upload dist/*
+      run: python -m twine upload --skip-existing dist/*
+
+    - name: Publish GitHub release
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: gh release edit "$GITHUB_REF_NAME" --draft=false --latest

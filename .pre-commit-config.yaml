@@ -3,18 +3,19 @@ repos:
   rev: v6.0.0
   hooks:
   - id: trailing-whitespace
-    exclude: ^(docs/|analysis/)
+    exclude: ^(docs/|analysis/|paper/)
   - id: end-of-file-fixer
-    exclude: ^(docs/|analysis/)
+    exclude: ^(docs/|analysis/|paper/)
   - id: check-yaml
     exclude: ^mkdocs\.yml$
   - id: check-added-large-files
     args: [--maxkb=1000]
+    exclude: ^(uv\.lock|paper/(pmb|softwarex_goliat|joss_goliat)/.*\.pdf)$
   - id: check-json
     exclude: ^(\.vscode/)
 
 - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
-  rev: v2.15.0
+  rev: v2.16.0
   hooks:
   - id: pretty-format-yaml
     args: [--autofix]
@@ -22,7 +23,7 @@ repos:
     args: [--autofix, --trailing-commas]
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.14.6
+  rev: v0.16.1
   hooks:
   - id: ruff-format
     exclude: ^(analysis/)
@@ -31,19 +32,19 @@ repos:
     exclude: ^(analysis/|docs/)
 
 - repo: https://github.com/RobertCraigie/pyright-python
-  rev: v1.1.407
+  rev: v1.1.411
   hooks:
   - id: pyright
 
 - repo: https://github.com/codespell-project/codespell
-  rev: v2.4.1
+  rev: v2.4.3
   hooks:
   - id: codespell
     additional_dependencies:
     - tomli
 
 - repo: https://github.com/astral-sh/uv-pre-commit
-  rev: 0.9.11
+  rev: 0.12.1
   hooks:
   - id: uv-lock
 

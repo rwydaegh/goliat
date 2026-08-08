@@ -6,6 +6,10 @@ on:
     - master
   workflow_dispatch: # Allows manual trigger
 
+concurrency:
+  group: documentation
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -13,7 +17,7 @@ jobs:
       contents: write
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
       with:
         fetch-depth: 0   # Required for git-revision-date-localized-plugin
         lfs: true        # Fetch Git LFS files (required for images in docs/img/tutorials/)
@@ -24,7 +28,7 @@ jobs:
         git lfs pull
 
     - name: Set up Python 3.11
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v7
       with:
         python-version: '3.11'
 
@@ -32,9 +36,13 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -e .[docs]
+      env:
+        CI: true
 
     - name: Build docs
       run: mkdocs build
+      env:
+        CI: true
 
     - name: Add CNAME
       run: echo "docs.goliat.waves-ugent.be" > ./site/CNAME
