@@ -13,8 +13,7 @@ Requirements:
 
 Usage:
     python license_automation.py --license-server @myserver.domain.com
-
-    For personal use, copy to my_license_automation.py and set LICENSE_SERVER below.
+    # Or set SIM4LIFE_LICENSE_SERVER in .env.
 """
 
 import argparse
@@ -23,10 +22,14 @@ import subprocess
 import sys
 import time
 
+from dotenv import load_dotenv
+
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
-LICENSE_SERVER = "YOUR_LICENSE_SERVER"  # e.g., "@myserver.domain.com"
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
+
+LICENSE_SERVER = os.getenv("SIM4LIFE_LICENSE_SERVER", "").strip()
 LICENSE_INSTALLER_PATH = r"C:\Users\Public\Documents\ZMT\Licensing Tools\8.2\LicenseInstall.exe"
 
 WINDOW_WAIT_TIMEOUT_SECONDS = 30
@@ -303,9 +306,9 @@ def main() -> None:
     print("Sim4Life License Installer Automation")
     print("=" * 60)
 
-    if license_server == "YOUR_LICENSE_SERVER":
+    if not license_server:
         print("\nERROR: LICENSE_SERVER not configured.")
-        print("Use --license-server or edit this file.")
+        print("Use --license-server or set SIM4LIFE_LICENSE_SERVER in .env.")
         sys.exit(1)
 
     print(f"License server: {license_server}")

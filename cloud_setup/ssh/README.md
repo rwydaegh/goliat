@@ -1,18 +1,8 @@
 # SSH bring-up for a fresh Tensordock Windows VM
 
 This directory has the one-shot script + procedure to get key-only SSH access
-from a Linux box to a freshly provisioned Tensordock Windows VM, so an agent
-can drive `my_setup.bat` and goliat from the Linux side.
-
-## Current state (as of 2026-04-25)
-
-There is **one VM already set up** following the procedure below. From this
-Linux box (`/home/user`), you can reach it with `ssh goliat` — alias is in
-`~/.ssh/config`, key is `~/.ssh/goliat`. `my_setup.bat` has been run, license
-installed manually, and SSH already lands in bash (`~/goliat` is on the VM).
-Connection details: `40.142.110.132:20819` → internal `:8888`. If the VM has
-been torn down or recycled by the time you're reading this, follow the
-from-scratch steps below; otherwise just `ssh goliat` and go.
+from a Linux host to a freshly provisioned Tensordock Windows VM, allowing
+remote administration and unattended GOLIAT runs.
 
 ## Prereqs
 
@@ -55,13 +45,13 @@ Idempotent. The script:
 ## Step 3 — `~/.ssh/config` on the Linux box
 
 From the Tensordock panel, grab:
-- Public IP (e.g. `40.142.110.132`)
-- The external port mapped to `:8888` (e.g. `20819`)
+- Public IP
+- The external port mapped to `:8888`
 
 ```
 Host goliat
-    HostName 40.142.110.132
-    Port 20819
+    HostName <ip>
+    Port <external-port>
     User user
     IdentityFile ~/.ssh/goliat
     StrictHostKeyChecking accept-new
@@ -69,13 +59,13 @@ Host goliat
 
 Test: `ssh goliat 'whoami'` should return `<vm-hostname>\user`.
 
-## Step 4 — run `my_setup.bat`
+## Step 4 — run `setup.bat`
 
 This is the long step (~10–15 min on a 3090 VM). The bat is interactive-by-design
 and assumes "right-click → Run as administrator". A few launch mechanisms that
 *don't* work cleanly over SSH:
 
-- Foreground SSH (`ssh goliat 'cmd /c my_setup.bat'`): SSH disconnect on the
+- Foreground SSH (`ssh goliat 'cmd /c setup.bat'`): SSH disconnect on the
   Linux side will SIGHUP the cmd, killing the install mid-flight.
 - `powershell -Command "Start-Process -WindowStyle Hidden ..."`: the spawned
   process *appears* detached but actually dies when its parent SSH session
@@ -84,15 +74,15 @@ and assumes "right-click → Run as administrator". A few launch mechanisms that
 **Use `schtasks`** — it's the only reliable detach. From the Linux box:
 
 ```bash
-# 1. Ship the bat + a tiny redirect wrapper to the VM.
-scp -i ~/.ssh/goliat -P 20819 ../my_setup.bat user@<ip>:Desktop/
+# 1. Ship the bat, local .env, and a tiny redirect wrapper to the VM.
+scp -i ~/.ssh/goliat -P <external-port> ../setup.bat ../../.env user@<ip>:Desktop/
 
 cat > /tmp/run_setup.cmd <<'EOF'
 @echo off
 cd /d %~dp0
-my_setup.bat < nul > setup.log 2>&1
+setup.bat < nul > setup.log 2>&1
 EOF
-scp -i ~/.ssh/goliat -P 20819 /tmp/run_setup.cmd user@<ip>:Desktop/
+scp -i ~/.ssh/goliat -P <external-port> /tmp/run_setup.cmd user@<ip>:Desktop/
 
 # 2. Schedule + run.
 ssh goliat 'schtasks /create /tn goliat-setup /tr "C:\Users\user\Desktop\run_setup.cmd" /sc once /st 23:59 /rl HIGHEST /f'
@@ -109,20 +99,14 @@ The schtasks job runs in the user's interactive session (RDP-Tcp#N), so any GUI
 that the bat launches (Sim4Life license installer, Git Bash, File Explorer)
 will appear in your RDP window — that's expected.
 
-### Things that go wrong during `my_setup.bat`
+### Things that go wrong during `setup.bat`
 
-- **License automation is flaky.** Step 8 calls `license_automation.py` which
-  drives the Sim4Life License Installer GUI via pywinauto to enter
-  `@wicacib.private.ugent.be`. It frequently fails ("FAILED at 0s") — it is
-  *known to be buggy even when launched interactively via "right-click → Run
-  as administrator" in RDP*, so this isn't an SSH/schtasks artifact. The race
-  with the VPN handshake is one cause, but not the only one. Fix path: skip
-  it, then run the installer manually via RDP:
+- **License automation can fail if the VPN route is not ready.** Step 8 calls
+  `license_automation.py`, which drives the Sim4Life License Installer GUI.
+  If validation fails, verify the VPN connection and retry. As a fallback,
+  run the installer manually via RDP:
   `C:\Users\Public\Documents\ZMT\Licensing Tools\8.2\LicenseInstall.exe`,
-  enter `@wicacib.private.ugent.be`, click Next.
-  TODO for a future agent with time: either rewrite the pywinauto flow to be
-  robust (verify VPN routes are up, retry validation, handle UI variants), or
-  ask Robin what the actual reproducible failure mode is and patch it.
+  enter the server configured by your institution, and click Next.
 - **"ERROR: Input redirection is not supported, exiting the process immediately"**
   in the log: harmless, comes from MSI installers complaining about `< nul`.
   The bat continues past it.
@@ -132,7 +116,7 @@ will appear in your RDP window — that's expected.
 
 ## Step 5 — switch SSH to bash (after the bat finishes)
 
-`my_setup.bat` installs Git for Windows. Switch the SSH default shell so you
+`setup.bat` installs Git for Windows. Switch the SSH default shell so you
 land in a Unix-style env with `goliat` on `PATH`:
 
 ```bash
@@ -151,10 +135,10 @@ marked auto-synced section.
 ## Step 6 — run goliat from SSH
 
 By default leave `use_gui: true`. The Qt GUI shows up in your RDP session and
-that's the conventional way to monitor a study — Robin watches it through RDP.
+that's the conventional way to monitor a study through RDP.
 Per-study `.log` files are always written under
-`~/goliat/results/<study>/.../verbose.log` regardless, so an agent driving via
-SSH can still see everything that happened without needing the GUI rendered in
+`~/goliat/results/<study>/.../verbose.log` regardless, so remote automation can
+still see everything that happened without needing the GUI rendered in
 its own session.
 
 `use_web: true` (the default in `base_config.json`) is fine to leave on for
@@ -191,12 +175,9 @@ ssh goliat 'cd ~/goliat && nohup bash -lc "goliat study X --auto-close > X.log 2
 
 ## Reconnect VPN after a VM reboot — over SSH (no RDP needed)
 
-`my_connect_vpn.bat` lives in your Linux-side `goliat/cloud_setup/`, NOT
-on the VM. Don't try to run it on the VM (UAC-aware shortcut, GUI
-prompts, paths assume an interactive desktop). Replicate its core actions
-over SSH instead — the SSH session is already elevated thanks to
-`LocalAccountTokenFilterPolicy=1` (Step 2.4 above), so `net session`
-returns success and OpenVPN can write to its config dir.
+After a reboot, reconnect OpenVPN over SSH. The SSH session is already elevated
+thanks to `LocalAccountTokenFilterPolicy=1` (Step 2.4 above), so `net session`
+returns success and OpenVPN can write to its config directory.
 
 ```bash
 # 0. Verify the cert + auth files are still on the VM Desktop. Done once

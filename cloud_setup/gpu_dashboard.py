@@ -8,12 +8,25 @@ Run this script and open http://localhost:8080 in your browser.
 import http.server
 import json
 import os
-import requests
+import sys
 import threading
 import time
+from pathlib import Path
 from urllib.parse import urlparse
 
-# API_TOKEN = "<REDACTED>"
+import requests
+from dotenv import load_dotenv
+
+# Windows consoles default to cp1252, which can't encode the emoji used in the
+# banner/log output (crashes on Python 3.14). Force UTF-8 so launch never dies.
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+except Exception:
+    pass
+
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+
 API_TOKEN = "<REDACTED>"
 BASE_URL = "https://dashboard.tensordock.com/api/v2"
 
@@ -46,6 +59,20 @@ def _save_availability_cache():
             json.dump(_availability_cache, f, indent=2)
     except Exception as e:
         print(f"[Availability] Failed to save cache: {e}")
+
+
+# SSH public key used for Ubuntu/Linux deploys + availability tests.
+SSH_PUBKEY_PATH = os.path.expanduser("~/.ssh/tensordock_ed25519.pub")
+
+
+def _load_ssh_pubkey():
+    """Return the SSH public key string for Linux instances, or None if unreadable."""
+    try:
+        with open(SSH_PUBKEY_PATH, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    except Exception as e:
+        print(f"[SSH] Could not read {SSH_PUBKEY_PATH}: {e}")
+        return None
 
 
 HTML_TEMPLATE = r"""
@@ -724,7 +751,13 @@ HTML_TEMPLATE = r"""
                 <button class="filter-btn" data-filter="multi-gpu">🔥 Multi-GPU (2+)</button>
                 <button class="filter-btn" data-filter="flagship">💎 Flagship</button>
                 <button class="filter-btn" data-filter="budget">💰 Under $0.35/hr</button>
-                <button class="filter-btn" id="test-availability-btn" onclick="testAllAvailability()" style="background: linear-gradient(135deg, #f59e0b, #d97706); margin-left: auto;">🧪 Test All Availability</button>
+                <div style="margin-left: auto; display: flex; gap: 0.5rem; align-items: center;">
+                    <div style="display: flex; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden;">
+                        <button class="os-btn" id="os-btn-windows" onclick="setOs('windows')" style="padding: 0.6rem 0.9rem; background: var(--accent-blue); color: #fff; border: none; cursor: pointer; font-size: 0.85rem; font-weight: 600;">🪟 Windows</button>
+                        <button class="os-btn" id="os-btn-ubuntu" onclick="setOs('ubuntu')" style="padding: 0.6rem 0.9rem; background: var(--bg-card); color: var(--text-secondary); border: none; cursor: pointer; font-size: 0.85rem; font-weight: 600;">🐧 Ubuntu</button>
+                    </div>
+                    <button class="filter-btn" id="test-availability-btn" onclick="testAllAvailability()" style="background: linear-gradient(135deg, #f59e0b, #d97706);">🧪 Test Windows Availability</button>
+                </div>
             </div>
 
             <div id="content">
@@ -812,6 +845,22 @@ HTML_TEMPLATE = r"""
         let searchQuery = '';
         let autoRefreshInterval = null;
         let availabilityState = {};  // Key: locationId_gpuV0Name, Value: true/false/null (tested/not tested)
+        let selectedOs = 'windows';  // 'windows' | 'ubuntu' - which OS to test / deploy
+
+        function setOs(os) {
+            selectedOs = os;
+            const win = document.getElementById('os-btn-windows');
+            const ubu = document.getElementById('os-btn-ubuntu');
+            if (win && ubu) {
+                const activeWin = os === 'windows';
+                win.style.background = activeWin ? 'var(--accent-blue)' : 'var(--bg-card)';
+                win.style.color = activeWin ? '#fff' : 'var(--text-secondary)';
+                ubu.style.background = !activeWin ? 'var(--accent-green)' : 'var(--bg-card)';
+                ubu.style.color = !activeWin ? '#fff' : 'var(--text-secondary)';
+            }
+            const btn = document.getElementById('test-availability-btn');
+            if (btn) btn.textContent = os === 'ubuntu' ? '🧪 Test Ubuntu Availability' : '🧪 Test Windows Availability';
+        }
 
         // Prettify GPU names from API format to readable format
         function formatGpuName(v0Name, displayName) {
@@ -1446,7 +1495,7 @@ HTML_TEMPLATE = r"""
                 return;
             }
 
-            if (!validatePassword(password)) {
+            if (selectedOs !== 'ubuntu' && !validatePassword(password)) {
                 showToast('Invalid password! Need 10+ chars, uppercase, number, symbol', true);
                 return;
             }
@@ -1459,7 +1508,7 @@ HTML_TEMPLATE = r"""
                 const resp = await fetch('/api/deploy', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
+                    body: JSON.stringify({ os: selectedOs,
                         name: 'my-windows-vm',
                         gpu: gpuName,
                         gpu_count: gpuCount,
@@ -1607,7 +1656,7 @@ HTML_TEMPLATE = r"""
                     const resp = await fetch('/api/test-deploy', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
+                        body: JSON.stringify({ os: selectedOs,
                             gpu: v0Name,
                             location_id: locationId,
                             vcpus: 4,
@@ -1641,7 +1690,7 @@ HTML_TEMPLATE = r"""
             }
 
             btn.disabled = false;
-            btn.textContent = '🧪 Test All Availability';
+            btn.textContent = selectedOs === 'ubuntu' ? '🧪 Test Ubuntu Availability' : '🧪 Test Windows Availability';
             showToast(`Done! ✅ ${available} available, ❌ ${unavailable} unavailable`);
 
             // Re-render to update table view with availability status
@@ -1782,18 +1831,36 @@ class GPUDashboardHandler(http.server.SimpleHTTPRequestHandler):
             return {"error": str(e)}
 
     def _deploy_vm(self, data):
-        # Auto-encode my_setup.bat to base64 at deploy time
+        # Ship the public setup script plus only the bootstrap settings it needs.
+        # Never embed the TensorDock token or unrelated values from the root .env.
         import base64
 
         setup_script_b64 = ""
+        bootstrap_env_b64 = ""
         try:
             script_dir = os.path.dirname(os.path.abspath(__file__))
-            bat_path = os.path.join(script_dir, "my_setup.bat")
+            bat_path = os.path.join(script_dir, "setup.bat")
             with open(bat_path, "rb") as f:
                 setup_script_b64 = base64.b64encode(f.read()).decode("utf-8")
-            print(f"[Deploy] Encoded my_setup.bat ({len(setup_script_b64)} chars)")
+
+            bootstrap_keys = (
+                "GOLIAT_GDRIVE_FOLDER_ID",
+                "GOLIAT_GDRIVE_INSTALLER_FILE_ID",
+                "GOLIAT_VPN_USERNAME",
+                "GOLIAT_VPN_PASSWORD",
+                "GOLIAT_GITHUB_USERNAME",
+                "GOLIAT_GIT_EMAIL",
+                "GOLIAT_GIT_NAME",
+                "SIM4LIFE_LICENSE_SERVER",
+            )
+            missing = [key for key in bootstrap_keys if not os.getenv(key, "").strip()]
+            if missing:
+                raise RuntimeError("Missing bootstrap .env values: " + ", ".join(missing))
+            env_text = "\r\n".join(f"{key}={os.environ[key]}" for key in bootstrap_keys) + "\r\n"
+            bootstrap_env_b64 = base64.b64encode(env_text.encode("utf-8")).decode("ascii")
+            print(f"[Deploy] Prepared setup.bat and filtered bootstrap environment ({len(bootstrap_keys)} settings)")
         except Exception as e:
-            print(f"[Deploy] Warning: Could not encode setup script: {e}")
+            return {"error": f"Could not prepare VM bootstrap files: {e}"}
 
         payload = {
             "data": {
@@ -1814,19 +1881,38 @@ class GPUDashboardHandler(http.server.SimpleHTTPRequestHandler):
                     "password": data.get("password"),
                     "cloud_init": {
                         "write_files": [
-                            {"path": "C:\\Users\\user\\Desktop\\my_setup.bat", "content": setup_script_b64, "encoding": "base64"}
+                            {"path": "C:\\Users\\user\\Desktop\\setup.bat", "content": setup_script_b64, "encoding": "base64"},
+                            {"path": "C:\\Users\\user\\Desktop\\.env", "content": bootstrap_env_b64, "encoding": "base64"},
                         ],
                         "runcmd": [
                             "echo VM deployed from TensorDock Dashboard > C:\\deploy_info.txt",
                             "echo Executing setup script... >> C:\\deploy_info.txt",
-                            "C:\\Users\\user\\Desktop\\my_setup.bat > C:\\setup_log.txt 2>&1",
+                            "C:\\Users\\user\\Desktop\\setup.bat > C:\\setup_log.txt 2>&1",
                         ],
                     },
                 },
             }
         }
+        attrs = payload["data"]["attributes"]
+        os_choice = (data.get("os") or "windows").lower()
+        if os_choice == "ubuntu":
+            # Ubuntu uses an SSH key, not an RDP password; the Windows setup.bat
+            # cloud-init does not apply. UI must supply data["ssh_keys"] for a real deploy.
+            attrs["image"] = "ubuntu2404"
+            attrs.pop("password", None)
+            attrs.pop("cloud_init", None)
+            # Ubuntu requires SSH (port 22) forwarded, not RDP (3389).
+            attrs["port_forwards"] = [{"internal_port": 22, "external_port": 2222, "protocol": "tcp"}]
+            ssh_key = data.get("ssh_key") or data.get("ssh_keys") or _load_ssh_pubkey()
+            if ssh_key:
+                attrs["ssh_key"] = ssh_key[0] if isinstance(ssh_key, list) else ssh_key
+
         try:
-            print(f"[Deploy] Sending request: {json.dumps(payload, indent=2)}")
+            print(
+                "[Deploy] Sending request for "
+                f"{attrs['name']} at {attrs['location_id']} "
+                f"({attrs['image']}, {data.get('gpu_count', 1)}x {data.get('gpu')})"
+            )
             resp = requests.post(f"{BASE_URL}/instances", headers=self._headers(), json=payload, timeout=30)
             print(f"[Deploy] Response {resp.status_code}: {resp.text}")
             result = resp.json()
@@ -1867,56 +1953,82 @@ class GPUDashboardHandler(http.server.SimpleHTTPRequestHandler):
 
         location_id = data.get("location_id")
         gpu_name = data.get("gpu")
+        os_choice = (data.get("os") or "windows").lower()
         cache_key = f"{location_id}_{gpu_name}"
 
-        payload = {
-            "data": {
-                "type": "virtualmachine",
-                "attributes": {
-                    "name": "availability-test",
-                    "type": "virtualmachine",
-                    "image": "windows10",
-                    "location_id": location_id,
-                    "useDedicatedIp": False,
-                    "resources": {
-                        "vcpu_count": data.get("vcpus", 4),
-                        "ram_gb": data.get("ram", 8),
-                        "storage_gb": data.get("storage", 100),
-                        "gpus": {gpu_name: {"count": data.get("gpu_count", 1)}},
-                    },
-                    "port_forwards": [{"internal_port": 3389, "external_port": 33389, "protocol": "tcp"}],
-                    "password": "TestPass123!@#",  # Valid password format for test
-                },
-            }
+        # OS image + auth per TensorDock API v2: windows10 (RDP+password) / ubuntu2404 (ssh_keys)
+        attributes = {
+            "name": "availability-test",
+            "type": "virtualmachine",
+            "image": "ubuntu2404" if os_choice == "ubuntu" else "windows10",
+            "location_id": location_id,
+            "useDedicatedIp": False,
+            "resources": {
+                "vcpu_count": data.get("vcpus", 4),
+                "ram_gb": data.get("ram", 8),
+                "storage_gb": data.get("storage", 100),
+                "gpus": {gpu_name: {"count": data.get("gpu_count", 1)}},
+            },
         }
+        if os_choice == "ubuntu":
+            # TensorDock API v2 uses singular "ssh_key" (string) for Linux images, and
+            # REQUIRES SSH (port 22) to be forwarded for Ubuntu VMs (RDP 3389 for Windows).
+            attributes["ssh_key"] = _load_ssh_pubkey() or (
+                "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILcAvailabilityTestKeyDoNotUse availability-test"
+            )
+            attributes["port_forwards"] = [{"internal_port": 22, "external_port": 2222, "protocol": "tcp"}]
+        else:
+            attributes["port_forwards"] = [{"internal_port": 3389, "external_port": 33389, "protocol": "tcp"}]
+            attributes["password"] = "TestPass123!@#"  # Valid password format for test
+
+        payload = {"data": {"type": "virtualmachine", "attributes": attributes}}
+
+        def extract_reason(parsed, raw_text):
+            # TensorDock may answer with a dict ({"error":..}/{"message":..}) OR a
+            # list of field-validation errors. Old code assumed dict and crashed
+            # ("'list' object has no attribute 'get'"), masking the real message.
+            if isinstance(parsed, dict):
+                for k in ("error", "message", "detail"):
+                    if parsed.get(k):
+                        return str(parsed[k])
+                errs = parsed.get("errors")
+                if isinstance(errs, list) and errs:
+                    return "; ".join(str(e.get("message", e) if isinstance(e, dict) else e) for e in errs)
+                return json.dumps(parsed)[:300]
+            if isinstance(parsed, list) and parsed:
+                parts = []
+                for e in parsed:
+                    if isinstance(e, dict):
+                        parts.append(str(e.get("message") or e.get("detail") or e.get("error") or e))
+                    else:
+                        parts.append(str(e))
+                return "; ".join(parts)[:300]
+            return (raw_text or "Unknown")[:300]
+
         try:
             resp = requests.post(f"{BASE_URL}/instances", headers=self._headers(), json=payload, timeout=15)
-            result = resp.json()
+            try:
+                result = resp.json()
+            except Exception:
+                result = None
 
-            # If we get "No available nodes" error, it's unavailable
-            if result.get("status") == 400 and "No available nodes" in result.get("error", ""):
-                cache_result = {"available": False, "reason": result.get("error"), "timestamp": time.time()}
-                _availability_cache[cache_key] = cache_result
-                _save_availability_cache()
-                return {"available": False, "reason": result.get("error")}
-
-            # If deploy started successfully, delete it immediately and mark as available
-            if resp.status_code in [200, 201] and result.get("data", {}).get("id"):
-                instance_id = result.get("data", {}).get("id")
-                # Delete the test instance immediately
+            # If deploy started successfully, delete it immediately and mark available
+            if resp.status_code in [200, 201] and isinstance(result, dict) and result.get("data", {}).get("id"):
+                instance_id = result["data"]["id"]
                 requests.delete(f"{BASE_URL}/instances/{instance_id}", headers=self._headers(), timeout=10)
-                cache_result = {"available": True, "reason": None, "timestamp": time.time()}
+                cache_result = {"available": True, "reason": None, "os": os_choice, "timestamp": time.time()}
                 _availability_cache[cache_key] = cache_result
                 _save_availability_cache()
                 return {"available": True}
 
-            # Any other error means unavailable
-            cache_result = {"available": False, "reason": result.get("error", "Unknown"), "timestamp": time.time()}
+            # Anything else: unavailable, with the real reason (handles list or dict)
+            reason = extract_reason(result, resp.text)
+            cache_result = {"available": False, "reason": reason, "os": os_choice, "timestamp": time.time()}
             _availability_cache[cache_key] = cache_result
             _save_availability_cache()
-            return {"available": False, "reason": result.get("error", "Unknown")}
+            return {"available": False, "reason": reason}
         except Exception as e:
-            cache_result = {"available": False, "reason": str(e), "timestamp": time.time()}
+            cache_result = {"available": False, "reason": str(e), "os": os_choice, "timestamp": time.time()}
             _availability_cache[cache_key] = cache_result
             _save_availability_cache()
             return {"available": False, "reason": str(e)}
@@ -1950,6 +2062,9 @@ class GPUDashboardHandler(http.server.SimpleHTTPRequestHandler):
 
 def main():
     port = 8080
+
+    if not API_TOKEN:
+        raise SystemExit("TENSORDOCK_API_TOKEN is not set. Copy .env.example to .env and add a TensorDock API token.")
 
     # Pre-warm cache before starting server
     print("⏳ Pre-warming cache (fetching GPU data from TensorDock API)...")

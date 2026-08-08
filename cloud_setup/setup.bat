@@ -1,5 +1,24 @@
 @echo off
-setlocal enabledelayedexpansion
+setlocal DisableDelayedExpansion
+
+:: Load local bootstrap settings. Keep this file beside setup.bat; it is never
+:: committed. Process-level environment variables take precedence.
+set "GOLIAT_ENV_FILE=%~dp0.env"
+if exist "%GOLIAT_ENV_FILE%" (
+    for /f "usebackq eol=# tokens=1,* delims==" %%A in ("%GOLIAT_ENV_FILE%") do (
+        if not "%%A"=="" if not defined %%A set "%%A=%%B"
+    )
+)
+setlocal EnableDelayedExpansion
+
+if not defined GOLIAT_GIT_EMAIL (
+    echo ERROR: GOLIAT_GIT_EMAIL is missing from the environment or %GOLIAT_ENV_FILE%.
+    exit /b 1
+)
+if not defined GOLIAT_GIT_NAME (
+    echo ERROR: GOLIAT_GIT_NAME is missing from the environment or %GOLIAT_ENV_FILE%.
+    exit /b 1
+)
 
 :: ============================================================================
 :: UNIFIED SETUP SCRIPT
@@ -126,10 +145,20 @@ if not exist "%DESKTOP_PATH%\certs\Intec-iGent.ovpn" (
 
 :: Create credentials file
 set "AUTH_FILE=%DESKTOP_PATH%\certs\openvpn_auth.txt"
+if not defined GOLIAT_VPN_USERNAME (
+    echo ERROR: GOLIAT_VPN_USERNAME is missing from the environment or %GOLIAT_ENV_FILE%.
+    exit /b 1
+)
+if not defined GOLIAT_VPN_PASSWORD (
+    echo ERROR: GOLIAT_VPN_PASSWORD is missing from the environment or %GOLIAT_ENV_FILE%.
+    exit /b 1
+)
+setlocal DisableDelayedExpansion
 (
-    echo YOUR_VPN_USERNAME
-    echo YOUR_VPN_PASSWORD
+    echo %GOLIAT_VPN_USERNAME%
+    echo %GOLIAT_VPN_PASSWORD%
 ) > "%AUTH_FILE%"
+endlocal
 
 :: Launch OpenVPN
 cd /d "%DESKTOP_PATH%\certs"
@@ -173,8 +202,8 @@ set "INIT_SCRIPT=%TEMP%\goliat_reconnect_%RANDOM%.sh"
 (
     echo cd /c/Users/%CURRENT_USER%/goliat
     echo git config --add safe.directory C:/Users/%CURRENT_USER%/goliat
-    echo git config --global user.email "YOUR_EMAIL@example.com"
-    echo git config --global user.name "YOUR_NAME"
+    echo git config --global user.email "%GOLIAT_GIT_EMAIL%"
+    echo git config --global user.name "%GOLIAT_GIT_NAME%"
     echo git pull
     echo echo ""
     echo echo "==================================================="
@@ -276,7 +305,11 @@ echo.
 echo [STEP 4/8] Downloading and Installing Sim4Life...
 set "STEP_START=%TIME%"
 set "SIM4LIFE_ZIP=%TEMP%\Sim4Life.zip"
-"C:/Program Files/Python311/python.exe" -m gdown "YOUR_PRIVATE_GDRIVE_FILE_ID" -O "%SIM4LIFE_ZIP%"
+if not defined GOLIAT_GDRIVE_INSTALLER_FILE_ID (
+    echo ERROR: GOLIAT_GDRIVE_INSTALLER_FILE_ID is missing from the environment or %GOLIAT_ENV_FILE%.
+    exit /b 1
+)
+"C:/Program Files/Python311/python.exe" -m gdown "%GOLIAT_GDRIVE_INSTALLER_FILE_ID%" -O "%SIM4LIFE_ZIP%"
 if %errorlevel% neq 0 (
     echo ERROR: Failed to download Sim4Life installer.
     pause
@@ -306,7 +339,11 @@ echo.
 :: 5. Download VPN Configuration Files
 echo [STEP 5/8] Downloading VPN configuration files from Google Drive...
 set "STEP_START=%TIME%"
-"C:/Program Files/Python311/python.exe" -m gdown "https://drive.google.com/drive/folders/YOUR_PRIVATE_GDRIVE_FOLDER_ID" --folder -O .
+if not defined GOLIAT_GDRIVE_FOLDER_ID (
+    echo ERROR: GOLIAT_GDRIVE_FOLDER_ID is missing from the environment or %GOLIAT_ENV_FILE%.
+    exit /b 1
+)
+"C:/Program Files/Python311/python.exe" -m gdown "https://drive.google.com/drive/folders/%GOLIAT_GDRIVE_FOLDER_ID%" --folder -O .
 if %errorlevel% neq 0 (
     echo ERROR: Failed to download VPN configuration files.
     pause
@@ -334,10 +371,20 @@ if not exist "%DESKTOP_PATH%\certs\Intec-iGent.ovpn" (
 
 echo Creating credentials file...
 set "AUTH_FILE=%DESKTOP_PATH%\certs\openvpn_auth.txt"
+if not defined GOLIAT_VPN_USERNAME (
+    echo ERROR: GOLIAT_VPN_USERNAME is missing from the environment or %GOLIAT_ENV_FILE%.
+    exit /b 1
+)
+if not defined GOLIAT_VPN_PASSWORD (
+    echo ERROR: GOLIAT_VPN_PASSWORD is missing from the environment or %GOLIAT_ENV_FILE%.
+    exit /b 1
+)
+setlocal DisableDelayedExpansion
 (
-    echo YOUR_VPN_USERNAME
-    echo YOUR_VPN_PASSWORD
+    echo %GOLIAT_VPN_USERNAME%
+    echo %GOLIAT_VPN_PASSWORD%
 ) > "%AUTH_FILE%"
+endlocal
 
 echo Launching OpenVPN with the specified profile...
 cd /d "%DESKTOP_PATH%\certs"
@@ -392,7 +439,8 @@ if not exist "%GIT_BIN%" (
 
 echo Cloning GOLIAT repository...
 cd /d C:\Users\%CURRENT_USER%
-"%GIT_BIN%" clone https://github.com/YOUR_USERNAME/goliat
+if not defined GOLIAT_GITHUB_USERNAME set "GOLIAT_GITHUB_USERNAME=rwydaegh"
+"%GIT_BIN%" clone "https://github.com/%GOLIAT_GITHUB_USERNAME%/goliat"
 if %errorlevel% neq 0 (
     echo ERROR: Failed to clone repository.
     pause
@@ -475,8 +523,8 @@ set "INIT_SCRIPT=%TEMP%\goliat_init_%RANDOM%.sh"
     echo source .bashrc
     echo python -m pip install -e .
     echo git config --add safe.directory C:/Users/%CURRENT_USER%/goliat
-    echo git config --global user.email "YOUR_EMAIL@example.com"
-    echo git config --global user.name "YOUR_NAME"
+    echo git config --global user.email "%GOLIAT_GIT_EMAIL%"
+    echo git config --global user.name "%GOLIAT_GIT_NAME%"
     echo goliat init
     echo exec bash --login -i
 ) > "%INIT_SCRIPT%"
@@ -488,7 +536,11 @@ set "INIT_SCRIPT_BASH=%INIT_SCRIPT_BASH:\=/%"
 :: Automate License Installation using Python script
 echo Automating Sim4Life License Installation...
 echo   (This will take 30-60+ seconds for license validation)
-"C:\Program Files\Python311\python.exe" "C:\Users\%CURRENT_USER%\goliat\cloud_setup\license_automation.py" --license-server "YOUR_LICENSE_SERVER"
+if not defined SIM4LIFE_LICENSE_SERVER (
+    echo ERROR: SIM4LIFE_LICENSE_SERVER is missing from the environment or %GOLIAT_ENV_FILE%.
+    exit /b 1
+)
+"C:\Program Files\Python311\python.exe" "C:\Users\%CURRENT_USER%\goliat\cloud_setup\license_automation.py" --license-server "%SIM4LIFE_LICENSE_SERVER%"
 if %errorlevel% neq 0 (
     echo.
     echo ============================================================================

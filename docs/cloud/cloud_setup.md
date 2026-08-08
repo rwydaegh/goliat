@@ -38,16 +38,15 @@ The entire setup process takes approximately 10 minutes and is fully automated o
 
 A Python script is provided in `cloud_setup/deploy_windows_vm.py` to automate VM deployment via the TensorDock API:
 
-```python
-# Edit deploy_windows_vm.py and set your credentials:
-API_TOKEN = "<REDACTED>"
-# ... other configuration ...
+```bat
+:: From the repository root:
+copy .env.example .env
+:: Set TENSORDOCK_API_TOKEN and TENSORDOCK_VM_PASSWORD in .env.
 
-# Then run:
-python deploy_windows_vm.py
+python cloud_setup\deploy_windows_vm.py
 ```
 
-**Note**: The template script (`deploy_windows_vm.py`) contains placeholders. Copy it to `my_deploy_windows_vm.py` and fill in your actual credentials. The `my_*.py` files are gitignored.
+The same `.env` file is used by `gpu_dashboard.py`. It is ignored by Git; `.env.example` documents the supported variables without containing credentials. Rotate a token immediately if it is ever committed or printed in a log.
 
 ## Step 2: Connect via RDP
 
@@ -99,15 +98,12 @@ This means you only need **one script** - just run `setup.bat` every time you co
 
 ### Running the script
 
-1. **Copy the setup script** to your VM (you can use RDP file transfer or download it). Only the `my_setup.bat` file needs to be copied - all other scripts are pulled from the git repository.
+1. Copy `cloud_setup/setup.bat` to the VM.
 
-2. **Edit the script** if needed (first time only):
-   - Replace `YOUR_PRIVATE_GDRIVE_FOLDER_ID` with your Google Drive folder ID containing `.ovpn` and `.crt` files
-   - Replace `YOUR_PRIVATE_GDRIVE_FILE_ID` with your Sim4Life installer file ID
-   - Replace `YOUR_VPN_USERNAME` and `YOUR_VPN_PASSWORD` with your VPN credentials
-   - Replace `YOUR_USERNAME` with your GitHub username
-   - Replace `YOUR_EMAIL@example.com` and `YOUR_NAME` with your git credentials
-   - Replace `YOUR_LICENSE_SERVER` with your Sim4Life license server address (e.g., `@myserver.domain.com`)
+2. Copy `.env.example` to `.env`, fill the `GOLIAT_*` bootstrap settings and
+   `SIM4LIFE_LICENSE_SERVER`, and place that `.env` beside `setup.bat`. Do not
+   edit credentials into the batch file. The local dashboard sends a filtered
+   bootstrap `.env` automatically and never sends the TensorDock API token.
 
 3. **Run as Administrator**:
 
@@ -123,13 +119,15 @@ This means you only need **one script** - just run `setup.bat` every time you co
 
 The `cloud_setup/` directory contains:
 
-- **`setup.bat`**: Unified setup script that handles both fresh installation and reconnection (template with placeholders)
-- **`my_setup.bat`**: Personal copy with actual credentials (gitignored) - this is the only file you need to copy to the VM
+- **`setup.bat`**: Unified setup script for fresh installation and reconnection; reads settings from a neighboring `.env`
 - **`license_automation.py`**: Automates Sim4Life license configuration, accepts `--license-server` argument
-- **`deploy_windows_vm.py`**: Python script for API-based VM deployment (template)
-- **`my_deploy_windows_vm.py`**: Personal deployment script with credentials (gitignored)
+- **`deploy_windows_vm.py`**: Python script for API-based VM deployment; reads credentials from `.env`
+- **`gpu_dashboard.py`**: Local VM dashboard; reads `TENSORDOCK_API_TOKEN` from `.env`
 
-The `my_*` versions contain actual credentials and are gitignored. The template versions use placeholders like `YOUR_VPN_USERNAME` and `YOUR_LICENSE_SERVER` for open source distribution.
+Do not create parallel credential-bearing source copies. Keep all local values
+in `.env`, which is ignored by Git. Delete the VM copy when it is no longer
+needed, and restrict access to the VM account because it contains bootstrap
+credentials.
 
 ## Cost estimation
 
@@ -161,10 +159,10 @@ While this guide focuses on TensorDock, similar setups work with AWS EC2 (G4/G5 
 
 ## Headless / SSH access
 
-For driving the VM programmatically (e.g. an agent running on a Linux box), see [`cloud_setup/ssh/README.md`](https://github.com/rwydaegh/goliat/blob/master/cloud_setup/ssh/README.md). It documents a one-shot script to enable key-only OpenSSH on the VM (re-using the Tensordock `:8888` port forward, locked-down ACL on `administrators_authorized_keys`, elevated admin tokens for SSH sessions), plus the conventions for running `goliat study` from SSH.
+For managing the VM programmatically from a Linux host, see [`cloud_setup/ssh/README.md`](https://github.com/rwydaegh/goliat/blob/master/cloud_setup/ssh/README.md). It documents a one-shot script to enable key-only OpenSSH on the VM (reusing the Tensordock `:8888` port forward, locked-down ACL on `administrators_authorized_keys`, elevated admin tokens for SSH sessions), plus the conventions for running `goliat study` from SSH.
 
 ## Related documentation
 
 - [oSPARC](osparc.md): Cloud batch execution via oSPARC platform (alternative to VM setup)
 - [Monitoring dashboard](monitoring.md): When running studies across multiple cloud VMs, use the monitoring dashboard to track progress, view logs, and coordinate super studies across all workers
-- [SSH bring-up](https://github.com/rwydaegh/goliat/blob/master/cloud_setup/ssh/README.md): Drive the VM from a Linux box (intended for autonomous agents)
+- [SSH bring-up](https://github.com/rwydaegh/goliat/blob/master/cloud_setup/ssh/README.md): Manage the VM from a Linux host

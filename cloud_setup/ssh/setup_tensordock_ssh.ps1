@@ -11,15 +11,16 @@
 # (Tensordock provisions one such forward by default; we re-purpose it for SSH
 # so you don't have to add a :22 forward post-create).
 #
-# This script leaves DefaultShell at cmd.exe. After my_setup.bat installs Git,
+# This script leaves DefaultShell at cmd.exe. After setup.bat installs Git,
 # switch to bash via:
 #   reg add "HKLM\SOFTWARE\OpenSSH" /v DefaultShell /t REG_SZ /d "C:\Program Files\Git\bin\bash.exe" /f
 #   reg add "HKLM\SOFTWARE\OpenSSH" /v DefaultShellCommandOption /t REG_SZ /d "-lc" /f
 # ============================================================================
 
 param(
-    [Parameter(Mandatory=$false)]
-    [string]$PublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH0Q3WH6yBe6uGy/zc6HT1kg9JEy5dYFt8JgcecTFlIc claude@goliat"
+    [Parameter(Mandatory=$true)]
+    [ValidatePattern('^ssh-(ed25519|rsa)\s+')]
+    [string]$PublicKey
 )
 
 $ErrorActionPreference = 'Stop'

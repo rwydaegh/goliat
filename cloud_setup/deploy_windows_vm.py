@@ -1,7 +1,14 @@
-import requests
 import json
+import os
+from pathlib import Path
+
+import requests
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 API_TOKEN = "<REDACTED>"
+VM_PASSWORD = os.getenv("TENSORDOCK_VM_PASSWORD", "").strip()
 BASE_URL = "https://dashboard.tensordock.com/api/v2"
 GPU_TYPE = "geforcertx4090-pcie-24gb"  # Switched to RTX 4090
 REQUESTED_VCPUS = 8
@@ -46,7 +53,7 @@ def create_vm_with_dedicated_ip(hostnode_id):
                     "storage_gb": 250,
                     "gpus": {GPU_TYPE: {"count": 1}},
                 },
-                "password": "YOUR_VM_PASSWORD",
+                "password": VM_PASSWORD,
             },
         }
     }
@@ -66,6 +73,17 @@ def create_vm_with_dedicated_ip(hostnode_id):
 
 
 if __name__ == "__main__":
+    missing = [
+        name
+        for name, value in {
+            "TENSORDOCK_API_TOKEN": API_TOKEN,
+            "TENSORDOCK_VM_PASSWORD": VM_PASSWORD,
+        }.items()
+        if not value
+    ]
+    if missing:
+        raise SystemExit(f"Missing {', '.join(missing)}. Copy .env.example to .env and set the values.")
+
     print("Searching for a suitable hostnode...")
     node_id = find_hostnode()
     if node_id:

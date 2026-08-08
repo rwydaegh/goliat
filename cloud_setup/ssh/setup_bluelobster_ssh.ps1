@@ -4,7 +4,7 @@
 #
 # Usage (over RDP, PowerShell as Admin):
 #   Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
-#   .\setup_bluelobster_ssh.ps1 -PublicKey "ssh-ed25519 AAAA... claude@goliat"
+#   .\setup_bluelobster_ssh.ps1 -PublicKey "ssh-ed25519 AAAA... user@host"
 #
 # Differs from the Tensordock version (setup_tensordock_ssh.ps1):
 #   * Blue Lobster gives the VM a REAL public IP with native ports - there is no
@@ -16,15 +16,16 @@
 #
 # After this runs, from the Linux side:  ssh -i ~/.ssh/goliat Admin@<public_ip>
 #
-# Leaves DefaultShell at cmd.exe. After my_setup.bat installs Git, switch to
+# Leaves DefaultShell at cmd.exe. After setup.bat installs Git, switch to
 # bash via:
 #   reg add "HKLM\SOFTWARE\OpenSSH" /v DefaultShell /t REG_SZ /d "C:\Program Files\Git\bin\bash.exe" /f
 #   reg add "HKLM\SOFTWARE\OpenSSH" /v DefaultShellCommandOption /t REG_SZ /d "-lc" /f
 # ============================================================================
 
 param(
-    [Parameter(Mandatory=$false)]
-    [string]$PublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAKFyYPvnOv5Yl6wpWtfryyMZw8RklyNL6AyyO5JVEbn claude@goliat"
+    [Parameter(Mandatory=$true)]
+    [ValidatePattern('^ssh-(ed25519|rsa)\s+')]
+    [string]$PublicKey
 )
 
 $ErrorActionPreference = 'Stop'
