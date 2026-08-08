@@ -7,11 +7,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+More than 120 commits since v1.4.0 expand large-study execution, auto-induced
+exposure processing, 26 GHz dosimetry, uncertainty analysis, cloud operation,
+and release reproducibility.
+
+### Added
+
+- Batch-worker and persistent study modes with assignment-aware progress,
+  memory-error recovery, retry limits, and cached-phase continuation.
+- A local GPU cloud dashboard plus automated Windows VM bootstrap and Sim4Life
+  license configuration.
+- Configurable overall-field sensors and explicit theta/phi sampling for
+  spherical far-field tessellation.
+- Low-memory auto-induced processing with streaming field reads, batched
+  scoring, slab caching, candidate deduplication, and RAM checks.
+- A complete FR1 auto-induced candidate-to-SAR extraction pipeline with
+  distance-to-skin metrics and reusable field caches.
+- Multi-core Dask dilation and analysis paths for systems without a CUDA
+  toolkit.
+- GUI disk-I/O monitoring, including throughput and page-fault views.
+- Skin-depth/material-property tooling and expanded FR1/FR3/26 GHz study
+  configurations.
+- Near-field symmetry reduction for head and trunk placements.
+- 26 GHz SAPD extraction and analysis, file-cache recovery, per-vertex field
+  export, and AEGIS validation configurations.
+- Optional `run_tag` isolation for simulation outputs and a far-field
+  uncertainty-analysis module.
+- Curated PMB, SoftwareX, and JOSS publication packages with their current PDFs
+  and reproducible source assets.
+- A portable `goliat free-space` validation path using the current config
+  schema and a frequency-aware absorbing boundary.
+
+### Changed
+
+- Cross-section lookup data now use compact NumPy `.npz` files; the default
+  power-balance method remains bounding-box based.
+- Auto-induced high-memory mode uses direct component loads, while low-memory
+  mode keeps chunked/streaming behavior.
+- Yee-grid field components are loaded separately to respect staggered sample
+  locations.
+- Result selection consistently chooses the newest solver input/output files.
+- Analysis plots use consistent near-/far-field grouping and publication-sized
+  output.
+- Research visualization scripts derive paths from the repository instead of a
+  developer workstation.
+- Cloud and SSH setup now use a documented `.env` workflow rather than edited
+  parallel source copies.
+- Ruff, pre-commit, CI, docs, and release automation have current pinned
+  actions/hooks and an explicit lint policy.
+
+### Fixed
+
+- Eliminated a long post-selection stall and several inefficient scattered H5
+  read patterns in auto-induced processing.
+- Prevented cascading SAR extraction failures and stale evaluator objects.
+- Corrected nested auto-induced configuration overrides and cached extraction
+  behavior when solver phases are skipped.
+- Stabilized progress rendering in long-running and headless jobs.
+- Corrected free-space setup/extraction flag propagation and simulation lookup.
+- Made PyPI/GitHub releases tag-driven, metadata-validated, retry-safe, and
+  non-mutating after a tag is pushed.
+
 ### Documentation
 
-- New `cloud_setup/ssh/` directory with one-shot script (`setup_tensordock_ssh.ps1`) and from-scratch README for SSH bring-up of Tensordock Windows VMs from a Linux box. Covers key-only OpenSSH (re-using the Tensordock `:8888` forward), the locked ACL on `administrators_authorized_keys`, `LocalAccountTokenFilterPolicy` for admin SSH tokens, the `schtasks`-not-`Start-Process` rule for launching `my_setup.bat` over SSH, and conventions for running `goliat study` headlessly. Cross-referenced from `docs/cloud/cloud_setup.md`.
+- New `cloud_setup/ssh/` directory with one-shot scripts and a from-scratch README for SSH bring-up of Windows VMs. Covers key-only OpenSSH, locked `administrators_authorized_keys` permissions, elevated admin SSH sessions, detached setup through Task Scheduler, and headless `goliat study` conventions.
+- Cloud deployment scripts now load local credentials and bootstrap settings from `.env`; credential-bearing parallel source copies are no longer part of the documented workflow.
+- README links now target the configured documentation domain and the actual
+  contribution/community files.
+- Added a restrained link to the official Sim4Life Student Competition 2025
+  result and to the PMB paper.
+- Removed internal design/investigation documents and obsolete generated paper
+  volumes from the public tree while preserving them locally.
 
-## [1.4.0] - 2025-01-15
+## [1.4.0] - 2026-01-15
 
 Major release with Sim4Life 9.2 support, air-based auto-induced exposure analysis, SAPD extraction, and far-field optimizations. ~41 commits since v1.3.0.
 
@@ -174,7 +242,6 @@ Use Gaussian pulses for frequency-domain analysis (antenna characterization, det
 - User guide: detuning workflow, multi-sine excitation, `goliat stats` command
 - AI assistant: `--simple`/`--complex` flags, cost tracking, setup instructions
 - Troubleshooting: antenna file fallback behavior
-- Technical docs: `multi_sine_excitation_analysis.md`, `detuning_feature_design.md`, `dispersion_model_guide.md`
 - Capita selecta gallery with nested collapsible sections
 
 ### 🔄 Environment variables

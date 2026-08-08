@@ -4,6 +4,17 @@
 
 ### Comprehensive automated near- and far-field SAR assessments using Sim4Life
 
+<table>
+<tr>
+<td align="center">
+🏆 <strong>Third Prize — Sim4Life Student Competition 2025</strong><br>
+GOLIAT was recognized for reproducible, scalable near- and far-field dosimetry workflows.<br>
+<a href="https://sim4life.swiss/news/sim4life-news/meet-the-winners-sim4life-student-competition-2025">Official announcement</a>
+· <a href="paper/pmb/paper.pdf">PMB paper</a>
+</td>
+</tr>
+</table>
+
 [![PyPI](https://img.shields.io/pypi/v/goliat.svg)](https://pypi.org/project/goliat/)
 [![Docs Deploy](https://github.com/rwydaegh/goliat/actions/workflows/docs.yml/badge.svg)](https://github.com/rwydaegh/goliat/actions/workflows/docs.yml)
 [![CI/CD](https://github.com/rwydaegh/goliat/actions/workflows/test.yml/badge.svg)](https://github.com/rwydaegh/goliat/actions/workflows/test.yml)
@@ -17,7 +28,7 @@
 [![Cloud](https://img.shields.io/badge/cloud-oSPARC-blue.svg?logo=cloud&logoColor=white)](https://osparc.io/)
 [![Sim4Life](https://img.shields.io/badge/Sim4Life-8.2.0-blue.svg?logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAADCUlEQVRYhe3XTWhcVRgG4OfOnclMJj9NozHkx7S2UWoUDNR2Y+tPidgsVKQVf5BqUWgRI93UjbhxIe7FjRtBFy0IbkSkiyiIRqFuSlKrKI0lTSjVNpo2tamZOS4mU02dTO7UVBD6woHDPS/v997vfN8593Id1/E/RA57MIxTmMYo3kT3tQ6+FeMIUSoX4vytIdXbH6KWtoCAGexFdC2CD2BOlAn1614LLVvGQ8uW8ZAfDiE/HELura/+buQg4iSiiUhoxedRKtfYfPenMqvvu7xQeKAFRG3dMk/sV/z+sDD5w524iC+WE04lNPAyWvMb3pbKdlUlZt/4WHRDJ+xHZqUM7IzSTTKt2xKR0w89C6uxeSUMZLAhbrg9UXBI3XFPebp2JQy0IU5lOxMbiDrXl6c3roSBx5NTFww0rCpPb1kJAy9F6WZx012JDRSPH6EuBy8q1cK/MiBKr5Lt2JXYQLxpu3jzIKX6aazGTSfQO5MKv/b2dnxWcbE40l7x+djYiAI/YaKaeJIj84M4tnN6vnIRNkWV3yFnwpxwCNuriSfZgkOFAls3/uzbsfllyacVDJk2J8BHCfSXRQoHEB5+LBdmQueiEfQsGrs0lO+D79CwnHgtt9Y3Tc3RxsnfOhY9vHIL1pty3PwUbsPscqLJm5svz58LisXqpJMKMJIkeK0GRkPg8NeXliRcFFwq7f2xpKK1GOiBiROFJQnTLqdnAJuSiC5XAzkMYh/u7eqOHZtY3PdX1sBeZ73jfCkP/Kj0uXYaF5QycxDnqgXcjQ8xiSJCHAvP7M7/owMqdUHQE07pCi9oDD3SoV4UUoSo1BlhQfeRShm4H++jO53m5jVpa9bGHhzM2jPUoK6ucrKWOogq4V2zhpw1KwQ8h/fKqgP4JJuN0q++3mTfK1WP76s2ADOK1plyRvF39JQNHM1mo76jJ9rd1F5LXdZuAA644Gm/wPMp9KFvx5P1NQe/WjwlX26/bSn0w6M7cv9J8DLaSh/k/Wl0wuiRP5ycWLrHl0K2pqPkLyz8D3T8CdbA7Thjal80AAAAAElFTkSuQmCC)](https://sim4life.swiss/)
 
-[🚀 Get Started](https://rwydaegh.github.io/goliat/user_guide/quick_start/) • [📖 View Tutorials](https://rwydaegh.github.io/goliat/tutorials/overview/)
+[🚀 Get Started](https://docs.goliat.waves-ugent.be/user_guide/quick_start/) • [📖 View Tutorials](https://docs.goliat.waves-ugent.be/tutorials/overview/)
 
 </div>
 
@@ -112,13 +123,13 @@ goliat study near_field_config
 
 The `--system-site-packages` flag allows the venv to access Sim4Life's packages (like `s4l_v1`). This installs the latest released version from PyPI. For unreleased features, use editable installation.
 
-**For developers**: If you need to modify code, run tests, or access repository tools, you should install in editable mode instead. See [installation guide](https://rwydaegh.github.io/goliat/installation/#editable-installation) for details.
+**For developers**: If you need to modify code, run tests, or access repository tools, you should install in editable mode instead. See [installation guide](https://docs.goliat.waves-ugent.be/installation/#editable-installation) for details.
 
 > **Note**: The `goliat init` command checks your setup and downloads required data files. If you skip this step, `goliat study` will automatically prompt you to install when first run.
 
 That's it! The GUI will launch, download required phantoms/antennas, and run the simulation. Results appear in `results/` with JSON metrics and plots.
 
-**New to GOLIAT?** Follow the [Quick Start Tutorial](https://rwydaegh.github.io/goliat/user_guide/quick_start/) for a step-by-step walkthrough.
+**New to GOLIAT?** Follow the [Quick Start Tutorial](https://docs.goliat.waves-ugent.be/user_guide/quick_start/) for a step-by-step walkthrough.
 
 ---
 
@@ -164,7 +175,7 @@ goliat study far_field_config
 goliat study large_study
 ```
 
-Also want to run setup and extract phases in parallel? See the [Cloud Setup Guide](https://rwydaegh.github.io/goliat/cloud/cloud_setup/) for deploying GPU instances. For monitoring distributed studies across multiple workers, see the [monitoring dashboard documentation](https://rwydaegh.github.io/goliat/cloud/monitoring/) or the [goliat-monitoring repository](https://github.com/rwydaegh/goliat-monitoring).
+Also want to run setup and extract phases in parallel? See the [Cloud Setup Guide](https://docs.goliat.waves-ugent.be/cloud/cloud_setup/) for deploying GPU instances. For monitoring distributed studies across multiple workers, see the [monitoring dashboard documentation](https://docs.goliat.waves-ugent.be/cloud/monitoring/) or the [goliat-monitoring repository](https://github.com/rwydaegh/goliat-monitoring).
 
 ---
 
@@ -342,7 +353,7 @@ graph LR
 
 Each stage is modular, swap in custom phantoms, antennas, or analysis strategies.
 
-🔗 [**Detailed Architecture Guide**](https://rwydaegh.github.io/goliat/developer_guide/technical_guide/)
+🔗 [**Detailed Architecture Guide**](https://docs.goliat.waves-ugent.be/developer_guide/technical_guide/)
 
 ---
 
@@ -350,15 +361,15 @@ Each stage is modular, swap in custom phantoms, antennas, or analysis strategies
 
 | Resource | Description |
 |----------|-------------|
-| [Quick Start](https://rwydaegh.github.io/goliat/user_guide/quick_start/) | Get running in 5 minutes |
-| [User Guide](https://rwydaegh.github.io/goliat/user_guide/user_guide/) | Workflows and concepts explained |
-| [Tutorials](https://rwydaegh.github.io/goliat/tutorials/overview/) | Step-by-step examples (basic → advanced) |
-| [Configuration](https://rwydaegh.github.io/goliat/developer_guide/configuration/) | All config options with examples |
-| [API Reference](https://rwydaegh.github.io/goliat/reference/api_reference/) | Class and function details |
-| [Troubleshooting](https://rwydaegh.github.io/goliat/troubleshooting/) | Common issues and solutions |
-| [Cloud & Monitoring](https://rwydaegh.github.io/goliat/cloud/monitoring/) | Web dashboard for distributed execution |
-| [AI Assistant](https://rwydaegh.github.io/goliat/user_guide/ai_assistant/) | Natural language query interface |
-| [Developer Guide](https://rwydaegh.github.io/goliat/developer_guide/developer_guide/) | Extend GOLIAT or contribute |
+| [Quick Start](https://docs.goliat.waves-ugent.be/user_guide/quick_start/) | Get running in 5 minutes |
+| [User Guide](https://docs.goliat.waves-ugent.be/user_guide/user_guide/) | Workflows and concepts explained |
+| [Tutorials](https://docs.goliat.waves-ugent.be/tutorials/overview/) | Step-by-step examples (basic → advanced) |
+| [Configuration](https://docs.goliat.waves-ugent.be/developer_guide/configuration/) | All config options with examples |
+| [API Reference](https://docs.goliat.waves-ugent.be/reference/api_reference/) | Class and function details |
+| [Troubleshooting](https://docs.goliat.waves-ugent.be/troubleshooting/) | Common issues and solutions |
+| [Cloud & Monitoring](https://docs.goliat.waves-ugent.be/cloud/monitoring/) | Web dashboard for distributed execution |
+| [AI Assistant](https://docs.goliat.waves-ugent.be/user_guide/ai_assistant/) | Natural language query interface |
+| [Developer Guide](https://docs.goliat.waves-ugent.be/developer_guide/developer_guide/) | Extend GOLIAT or contribute |
 
 ---
 
@@ -371,9 +382,9 @@ Contributions are welcome! We follow a standard fork-and-PR workflow:
 3. **Add tests** for new features
 4. **Submit a PR** with a clear description
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines, code style rules, and how to run tests locally.
+See [.github/CONTRIBUTING.md](.github/CONTRIBUTING.md) for detailed guidelines, code style rules, and how to run tests locally.
 
-**Quick links**: [Code of Conduct](CODE_OF_CONDUCT.md) • [Developer Guide](https://rwydaegh.github.io/goliat/developer_guide/developer_guide/)
+**Quick links**: [Code of Conduct](.github/CODE_OF_CONDUCT.md) • [Developer Guide](https://docs.goliat.waves-ugent.be/developer_guide/developer_guide/)
 
 > **Note**: GOLIAT has just come out of beta and is still in early development. You may still encounter occasional errors. Please report any issues you find.
 
@@ -403,19 +414,14 @@ This project is licensed under the **Apache 2.0 License** – see [LICENSE](LICE
 
 ## Results
 
-Check out the auto-generated first draft papers (results only):
-
-### Near-Field Results
-- [Results PDF](https://github.com/rwydaegh/goliat/raw/master/paper/near_field/pure_results/results.pdf) - Download the compiled PDF
-- [Results LaTeX Source](https://github.com/rwydaegh/goliat/raw/master/paper/near_field/pure_results/results.tex) - Download the LaTeX source
-
-### Far-Field Results
-- [Results PDF](https://github.com/rwydaegh/goliat/raw/master/paper/far_field/pure_results/results.pdf) - Download the compiled PDF
-- [Results LaTeX Source](https://github.com/rwydaegh/goliat/raw/master/paper/far_field/pure_results/results.tex) - Download the LaTeX source
+The [PMB paper](paper/pmb/paper.pdf) and its curated
+[LaTeX source](paper/pmb/source/) document the far-field research campaign.
+GOLIAT can also generate local LaTeX result reports for near- or far-field
+studies with the `--generate-paper` analysis option.
 
 ## 🔗 Links
 
-- 📚 [**Full Documentation**](https://rwydaegh.github.io/goliat/)
+- 📚 [**Full Documentation**](https://docs.goliat.waves-ugent.be/)
 - 🐛 [**Report an Issue**](https://github.com/rwydaegh/goliat/issues)
 - 💬 [**Discussions**](https://github.com/rwydaegh/goliat/discussions)
 - 📦 [**Releases**](https://github.com/rwydaegh/goliat/releases)
