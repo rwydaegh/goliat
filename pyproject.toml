@@ -21,7 +21,7 @@ classifiers = [
   "Operating System :: POSIX :: Linux",
 ]
 dependencies = [
-  "numpy<2",
+  "numpy<3",
   "pandas",
   "scipy",
   "gdown",
