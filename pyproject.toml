@@ -68,7 +68,7 @@ ai = [
 ]
 docs = [
   "mkdocs",
-  "mkdocs-material==9.5.3",
+  "mkdocs-material==9.7.7",
   "pymdown-extensions==10.7",
   "pygments<2.20",
   "mkdocstrings[python]",
