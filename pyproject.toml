@@ -70,6 +70,7 @@ docs = [
   "mkdocs",
   "mkdocs-material==9.5.3",
   "pymdown-extensions==10.7",
+  "pygments<2.20",
   "mkdocstrings[python]",
   "mkdocs-mermaid2-plugin",
   "mkdocs-panzoom-plugin",

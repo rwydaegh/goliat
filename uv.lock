@@ -1357,6 +1357,7 @@ docs = [
     { name = "mkdocstrings", version = "0.26.1", source = { registry = "https://pypi.org/simple" }, extra = ["python"], marker = "python_full_version < '3.9'" },
     { name = "mkdocstrings", version = "0.28.3", source = { registry = "https://pypi.org/simple" }, extra = ["python"], marker = "python_full_version >= '3.9'" },
     { name = "mknotebooks" },
+    { name = "pygments" },
     { name = "pymdown-extensions" },
 ]
 
@@ -1384,6 +1385,7 @@ requires-dist = [
     { name = "osparc" },
     { name = "pandas" },
     { name = "psutil" },
+    { name = "pygments", marker = "extra == 'docs'", specifier = "<2.20" },
     { name = "pymdown-extensions", marker = "extra == 'docs'", specifier = "==10.7" },
     { name = "pyside6" },
     { name = "pytest" },
