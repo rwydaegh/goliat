@@ -21,6 +21,7 @@ repos:
     args: [--autofix]
   - id: pretty-format-toml
     args: [--autofix, --trailing-commas]
+    exclude: ^uv\.lock$
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
   rev: v0.16.1
@@ -42,6 +43,7 @@ repos:
   - id: codespell
     additional_dependencies:
     - tomli
+    exclude: ^paper/
 
 - repo: https://github.com/astral-sh/uv-pre-commit
   rev: 0.12.1
