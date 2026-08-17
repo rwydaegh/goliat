@@ -24,7 +24,7 @@ repos:
     exclude: ^uv\.lock$
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.16.1
+  rev: v0.16.3
   hooks:
   - id: ruff-format
     exclude: ^(analysis/)
@@ -46,7 +46,7 @@ repos:
     exclude: ^(paper/|papers/)
 
 - repo: https://github.com/astral-sh/uv-pre-commit
-  rev: 0.12.1
+  rev: 0.12.5
   hooks:
   - id: uv-lock
 
