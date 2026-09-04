@@ -1,6 +1,6 @@
 # Monitoring dashboard
 
-**Dashboard:** [https://goliat.waves-ugent.be](https://goliat.waves-ugent.be)
+**Dashboard:** [https://monitor.goliat.waves-ugent.be](https://monitor.goliat.waves-ugent.be)
 
 Web-based interface for monitoring GOLIAT simulation studies across multiple worker machines. Track progress, monitor worker status, and coordinate large-scale studies.
 
@@ -77,7 +77,7 @@ Super studies split a large configuration file into multiple assignments and dis
 When you run a GOLIAT study with web monitoring enabled, the GUI:
 
 1. Detects your machine's public IP address (or uses local IP if no public IP)
-2. Connects to the monitoring dashboard at `https://goliat.waves-ugent.be`
+2. Connects to the monitoring dashboard at `https://monitor.goliat.waves-ugent.be`
 3. Sends periodic heartbeats every 30 seconds
 4. Forwards GUI messages (progress, logs, status) to the dashboard
 
@@ -181,7 +181,7 @@ The dashboard is publicly accessible (no authentication required). Workers are i
 If your worker doesn't appear on the dashboard:
 
 1. Check connection: Look for the green/red status indicator in the GOLIAT GUI
-2. Verify network: Ensure the worker can reach `https://goliat.waves-ugent.be`
+2. Verify network: Ensure the worker can reach `https://monitor.goliat.waves-ugent.be`
 3. Check requests library: Ensure `pip install requests` has been run
 4. Check logs: Look for "Web GUI bridge" messages in verbose logs
 

@@ -296,7 +296,7 @@ The web bridge initializes automatically when:
 
 - The `requests` library is installed (`pip install requests`).
 - A machine ID can be detected (public IP or local IP).
-- The dashboard URL is accessible (default: `https://goliat.waves-ugent.be`).
+- The dashboard URL is accessible (default: `https://monitor.goliat.waves-ugent.be`).
 
 No configuration is required. The GUI shows a connection status indicator to inform users whether web monitoring is active.
 
