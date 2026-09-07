@@ -1,6 +1,9 @@
 # .github/workflows/lint.yml
 name: Lint
 
+permissions:
+  contents: read
+
 on:
   pull_request:
   push:

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-09-07
+
 More than 120 commits since v1.4.0 expand large-study execution, auto-induced
 exposure processing, 26 GHz dosimetry, uncertainty analysis, cloud operation,
 and release reproducibility.
@@ -58,6 +60,8 @@ and release reproducibility.
 
 ### Fixed
 
+- Removed exponential backtracking when parsing underscore-rich tissue names in verbose logs.
+- Restricted default GitHub workflow permissions to read-only repository access.
 - Eliminated a long post-selection stall and several inefficient scattered H5
   read patterns in auto-induced processing.
 - Prevented cascading SAR extraction failures and stale evaluator objects.
@@ -70,6 +74,9 @@ and release reproducibility.
 
 ### Documentation
 
+- Linked the published PMB article and released Harvard Dataverse dataset.
+- Removed unavailable Tutorial 04 screenshot placeholders while preserving notebook code and outputs.
+- Updated documentation dependencies and refreshed the lockfile for available security fixes.
 - New `cloud_setup/ssh/` directory with one-shot scripts and a from-scratch README for SSH bring-up of Windows VMs. Covers key-only OpenSSH, locked `administrators_authorized_keys` permissions, elevated admin SSH sessions, detached setup through Task Scheduler, and headless `goliat study` conventions.
 - Cloud deployment scripts now load local credentials and bootstrap settings from `.env`; credential-bearing parallel source copies are no longer part of the documented workflow.
 - README links now target the configured documentation domain and the actual
@@ -353,7 +360,8 @@ Note that the code was already finished last weekend.
 ### Refactoring
 - **Analysis:** Split strategies.py into multiple files ([#14](https://github.com/rwydaegh/goliat/pull/14), [#15](https://github.com/rwydaegh/goliat/pull/15))
 
-[Unreleased]: https://github.com/rwydaegh/goliat/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/rwydaegh/goliat/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/rwydaegh/goliat/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/rwydaegh/goliat/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/rwydaegh/goliat/compare/v1.2.3...v1.3.0
 [1.2.3]: https://github.com/rwydaegh/goliat/compare/v1.1.0...v1.2.3

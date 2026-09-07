@@ -133,14 +133,11 @@ def is_version_supported(version: Optional[Tuple[int, int, int]] = None) -> bool
     """Check if a Sim4Life version is officially supported by GOLIAT.
 
     Args:
-        version: Version tuple to check. If None, checks current version.
+        version: Version tuple to check. ``None`` represents an unknown version.
 
     Returns:
         True if the version is supported (8.2.x or 9.2.x), False otherwise.
     """
-    if version is None:
-        version = get_sim4life_version()
-
     if version is None:
         return False
 

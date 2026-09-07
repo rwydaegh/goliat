@@ -8,7 +8,7 @@
 <tr>
 <td width="50%" align="center">
 📄 <strong>Research Paper<br>
-<a href="papers/pmb/paper.pdf">Physics in Medicine &amp; Biology</a></strong>
+<a href="https://doi.org/10.1088/1361-6560/ae97ac">Physics in Medicine &amp; Biology</a></strong>
 </td>
 <td width="50%" align="center">
 🏆 <strong>Third Prize<br>
@@ -400,9 +400,9 @@ If you use this software, please cite it as:
 @software{Wydaeghe_GOLIAT,
   title   = {{GOLIAT: A Comprehensive Automated Near- and Far-Field SAR Assessment Toolbox using Sim4Life}},
   author  = {Wydaeghe, Robin},
-  url     = {https://github.com/rwydaeghe/goliat},
+  url     = {https://github.com/rwydaegh/goliat},
   license = {Apache-2.0},
-  version = {1.4.0}
+  version = {1.5.0}
 }
 ```
 
@@ -416,8 +416,11 @@ This project is licensed under the **Apache 2.0 License** – see [LICENSE](LICE
 
 ## Results
 
-The [PMB paper](papers/pmb/paper.pdf) and its curated
-[LaTeX source](papers/pmb/source/) document the far-field research campaign.
+The [published PMB paper](https://doi.org/10.1088/1361-6560/ae97ac) documents
+the far-field research campaign. The supporting configurations and postprocessed
+SAR/APD datasets are available in [Harvard Dataverse](https://doi.org/10.7910/DVN/EEEE0X).
+The [submitted manuscript](papers/pmb/paper.pdf) and its curated
+[LaTeX source](papers/pmb/source/) are also included.
 GOLIAT can also generate local LaTeX result reports for near- or far-field
 studies with the `--generate-paper` analysis option.
 

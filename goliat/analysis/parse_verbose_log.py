@@ -220,7 +220,7 @@ def _extract_materials_info(content: str) -> dict[str, Any]:
     materials["lossy_metal_count"] = lossy_metal_count
 
     # Extract tissue names (from Eartha phantom)
-    tissue_pattern = re.findall(r"(\w+(?:_\w+)*)\s+\(Eartha\): (\w+)", content)
+    tissue_pattern = re.findall(r"\b(\w+)\s+\(Eartha\): (\w+)", content)
     materials["tissues"] = [{"name": t[0], "type": t[1]} for t in tissue_pattern]
     materials["tissue_count"] = len(materials["tissues"])
 

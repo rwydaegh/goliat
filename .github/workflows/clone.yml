@@ -1,5 +1,8 @@
 name: GitHub Clone Count Update Everyday
 
+permissions:
+  contents: read
+
 on:
   schedule:
   - cron: 0 0 * * *
