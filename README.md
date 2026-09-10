@@ -34,14 +34,6 @@
 
 </div>
 
-<div align="center">
-
-<img src="docs/img/tutorials/tut1_gui.gif" width="75%">
-
-*GOLIAT GUI showing real-time progress monitoring. Scroll down to see the online monitoring website and Bash shell!*
-
-</div>
-
 ---
 
 ## What is GOLIAT?
@@ -49,6 +41,16 @@
 GOLIAT is a Python framework that **automates electromagnetic field (EMF) dosimetry simulations** from start to finish. Calculate Specific Absorption Rate (SAR) in digital human phantoms with minimal manual intervention, whether you're simulating a phone call (near-field) or environmental exposure (far-field).
 
 **Perfect for**: Researchers, compliance engineers, and anyone studying EMF exposure in biological tissues.
+
+<div align="center">
+
+<a href="https://www.youtube.com/watch?v=d3WJnqdGxrU">
+  <img src="https://i.ytimg.com/vi/d3WJnqdGxrU/maxresdefault.jpg" alt="Watch GOLIAT automate electromagnetic exposure simulations in Sim4Life, from setup to results" width="850">
+</a>
+
+<p><a href="https://www.youtube.com/watch?v=d3WJnqdGxrU"><strong>▶ Watch the GOLIAT overview on YouTube</strong></a></p>
+
+</div>
 
 ### Why GOLIAT?
 
