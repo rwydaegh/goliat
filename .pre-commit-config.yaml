@@ -24,7 +24,7 @@ repos:
     exclude: ^uv\.lock$
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.16.1
+  rev: v0.16.9
   hooks:
   - id: ruff-format
     exclude: ^(analysis/)
@@ -33,7 +33,7 @@ repos:
     exclude: ^(analysis/|docs/)
 
 - repo: https://github.com/RobertCraigie/pyright-python
-  rev: v1.1.411
+  rev: v1.1.414
   hooks:
   - id: pyright
 
@@ -46,7 +46,7 @@ repos:
     exclude: ^(paper/|papers/)
 
 - repo: https://github.com/astral-sh/uv-pre-commit
-  rev: 0.12.1
+  rev: 0.12.19
   hooks:
   - id: uv-lock
 
