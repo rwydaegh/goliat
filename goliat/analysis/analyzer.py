@@ -190,6 +190,13 @@ class Analyzer:
                         "whole_body_sar": sar_results.get("whole_body_sar", None),
                         "peak_sar_10g_W_kg": sar_results.get("peak_sar_10g_W_kg", None),
                         "power_balance": sar_results.get("power_balance", None),
+                        # Extra averaging masses (e.g. 1 g), if present
+                        **{
+                            k: v
+                            for k, v in sar_results.items()
+                            if k.startswith("peak_sar_") and k.endswith("g_W_kg") and k != "peak_sar_10g_W_kg"
+                        },
+                        **{k: v for k, v in sar_results.items() if "_group_peak_sar_" in k},
                     },
                     "grouped_sar_stats": {},
                     "detailed_sar_stats": None,

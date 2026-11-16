@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 import pandas as pd
 
-from .base_strategy import BaseAnalysisStrategy
+from .base_strategy import BaseAnalysisStrategy, _add_extra_mass_columns
 
 if TYPE_CHECKING:
     from ..config import Config
@@ -154,6 +154,10 @@ class FarFieldAnalysisStrategy(BaseAnalysisStrategy):
                 key = f"psSAR10g_{group_name.replace('_group', '')}"
                 peak_sar = stats.get("peak_sar", pd.NA)
                 result_entry[key] = peak_sar * norm_factor if pd.notna(peak_sar) else pd.NA
+
+        # Additional averaging masses (e.g. 1 g), present only if requested via
+        # extraction.psSAR_averaging_masses_g. 10 g keys above stay unchanged.
+        _add_extra_mass_columns(result_entry, summary_results, norm_factor)
 
         # Extract power balance data if available
         power_balance = None

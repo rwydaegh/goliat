@@ -58,6 +58,7 @@ This object controls which data is extracted from simulation results. All flags 
 | `extraction.power_balance` | boolean | `true` | If `true`, extracts power balance metrics (Pin, DielLoss, RadPower) to verify energy conservation. Balance should be close to 100% for accurate simulations. |
 | `extraction.sapd` | boolean | `false` | If `true`, extracts Surface Absorbed Power Density (SAPD) from simulation results. Recommended for frequencies > 6 GHz where SAPD is the relevant exposure metric. Overridden to `true` in far-field configs. |
 | `extraction.point_sensors` | boolean | `true` | If `true`, extracts time-domain E-field data from point sensors configured via `simulation_parameters.number_of_point_sensors`. Generates plots and raw data for field dynamics analysis. |
+| `extraction.psSAR_averaging_masses_g` | array of numbers | `[10]` | Averaging masses (grams) for peak spatial-average SAR. 10 g (IEEE/IEC 62704-1, ICNIRP/IEEE C95.1 head/trunk) is always computed. Its result keys do not depend on this setting. Add `1` (e.g. `[1, 10]`) for 1 g psSAR as used in US FCC practice. Extra masses are computed with a separate Sim4Life `SarStatisticsEvaluator`/`AverageSarFieldEvaluator` pass (`TargetMass`), which adds extraction time. If a value is invalid, GOLIAT logs an error and skips all extra masses. |
 
 **Example:**
 ```json
@@ -66,10 +67,13 @@ This object controls which data is extracted from simulation results. All flags 
         "sar": true,
         "power_balance": true,
         "sapd": false,
-        "point_sensors": true
+        "point_sensors": true,
+        "psSAR_averaging_masses_g": [1, 10]
     }
 }
 ```
+
+**Result keys for additional masses:** With `[1, 10]` the results JSON has the 10 g keys `peak_sar_10g_W_kg`, `<group>_peak_sar` and `peak_sar_details`, and the 1 g keys `peak_sar_1g_W_kg`, `<group>_peak_sar_1g` (e.g. `eyes_group_peak_sar_1g`) and `peak_sar_details_1g`. The analysis tables have the extra columns `peak_sar_1g` and `psSAR1g_<group>`. Per-tissue 1 g values and 1 g plots are not produced. The per-tissue tables and the plots are for 10 g only.
 
 **Backward Compatibility:** Legacy top-level keys (`extract_sar`, `extract_power_balance`, `extract_sapd`) are still supported but deprecated. The new `extraction.*` structure takes precedence.
 
@@ -146,7 +150,7 @@ These settings control the core behavior of the FDTD solver.
 | `bandwidth_mhz` | number | `50.0` | The bandwidth in MHz for a Gaussian excitation. Typical values are 50-150 MHz. Narrower bandwidths provide better frequency resolution but require longer simulation times. |
 | `target_freq_resolution_mhz` | number | `10.0` | Target frequency resolution for Gaussian excitation simulations. Smaller values provide finer frequency resolution but increase simulation time. |
 | `gaussian_pulse_k` | number | `3` | Gaussian pulse k parameter. When set to 5, uses Sim4Life's built-in Gaussian excitation. Values other than 5 use custom UserDefined waveforms. Lower k values create faster pulses. |
-| `bbox_padding_mm` | number | `50` | **(Far-Field)** Padding in millimeters to add around the phantom's bounding box to define the simulation domain. |
+| `bbox_padding_mm` | number | `20` | **(Far-Field)** Padding in millimeters to add around the phantom's bounding box to define the simulation domain. |
 | `freespace_antenna_bbox_expansion_mm` | array | `[20, 20, 20]` | **(Near-Field)** Padding in [x, y, z] millimeters to add around the antenna for free-space simulations. |
 | `keep_awake` | boolean | `true` | If `true`, launches a keep-awake script when the simulation starts to prevent system sleep during long-running simulations. |
 | `detuning_enabled` | boolean | `false` | **(Near-Field)** If `true`, applies calibrated frequency detuning to account for body loading effects on antenna resonance. Requires detuning values in the `detuning_config` object. |
@@ -210,7 +214,7 @@ These settings define the spatial discretization of the simulation domain.
 | `padding.manual_bottom_padding_mm` | array | `[0, 0, 0]` | For manual padding, the [x, y, z] padding in millimeters at the bottom (minimum corner) of the domain. Positive values expand the domain **away** from the computational region (i.e., in the negative x, y, z directions). |
 | `padding.manual_top_padding_mm` | array | `[0, 0, 0]` | For manual padding, the [x, y, z] padding in millimeters at the top (maximum corner) of the domain. Positive values expand the domain **away** from the computational region (i.e., in the positive x, y, z directions). |
 | `phantom_bbox_reduction.auto_reduce_bbox` | boolean | `false` | **(Far-Field)** If `true`, enables automatic phantom height reduction for frequencies above `reference_frequency_mhz`. |
-| `phantom_bbox_reduction.reference_frequency_mhz` | number | `5800` | **(Far-Field)** The reference frequency where full-body simulation fits in memory. For higher frequencies, height is reduced by `(reference/current)³`. |
+| `phantom_bbox_reduction.reference_frequency_mhz` | number | `5800` | **(Far-Field)** The reference frequency where full-body simulation fits in memory. For higher frequencies, height is reduced by `(grid_step(current)/grid_step(reference))³`, but never below 20% of the body height. The head end is kept. Disabled unless `phantom_bbox_reduction` is configured. The code default for the reference frequency is `5800`. The published far-field campaign used 7 GHz. |
 | `phantom_bbox_reduction.height_limit_per_frequency_mm` | object | `{}` | **(Far-Field)** Manual height limits per frequency in mm (e.g., `{"10000": 400}`). Overrides automatic calculation. |
 | `phantom_bbox_reduction.use_symmetry_reduction` | boolean | `false` | **(Far-Field + Near-Field)** If `true`, cuts the phantom bounding box in half to exploit anatomical symmetry, reducing cell count by ~50%. The cut axis depends on the placement context — see note below. **Not compatible with auto-induced exposure** (you'd miss half the body's skin surface). |
 
@@ -222,6 +226,35 @@ These settings define the spatial discretization of the simulation domain.
 > - **Trunk placements** (`by_belly`): cuts at **y = 0**, keeping the **positive-y (front) side** — where the belly and the phone face.
 >
 > Far-field always cuts at x = 0 regardless of placement direction.
+
+### Numerical defaults
+
+| Item | Default | Source |
+| :--- | :--- | :--- |
+| Grid mode | `manual` (uniform maximum step). `automatic` can also be selected. | `base_config.json`, `gridding_setup.py` |
+| Fallback step | 3.0 mm (base/near-field), 2.0 mm (far-field). The maximum step for manual grids is 3.0 mm. | `gridding_setup.py::_validate_grid_size` |
+| Per-frequency step (near- and far-field) | 450-1450 MHz: 2.5 mm; 2140: 1.694; 2450: 1.482; 3500: 1.0; 5200, 5800: 0.7 mm | `far_field_config.json`, `near_field_config.json` |
+| Rule for the per-frequency steps | About 10 cells per wavelength in the highest-permittivity tissue (vitreous humour, eps_r about 69 to 65 over 0.45-5.8 GHz). The steps are a fixed table. GOLIAT does not compute them from tissue properties at run time. | see table below |
+| Antenna parts | Automatic grid with optional subgridding (`x9`, box mode) for PIFA parts. Manual 0.1 mm steps for the IFA antenna. Both are defined per antenna in `antenna_config`. | `near_field_config.json`, `gridding_setup.py` |
+| Padding | Far-field `bbox_padding_mm` 20 mm (code fallback 50 mm if unset). Manual grid padding 0 mm. Near-field free-space bbox expansion 20 mm (code fallback 10 mm if unset). Tissue must not touch the domain boundary: with 0 mm of far-field padding, whole-body SAR in a sphere test is 51 % too high. | `far_field_config.json`, `far_field_setup.py`, `near_field_setup.py` |
+| Phantom truncation | Off by default (full body). `phantom_bbox_reduction` turns it on. It keeps the head end and cuts the legs. The kept height scales with `(step ratio)^3` and is at least 20% of the body height. Half-body symmetry is optional. | `far_field_setup.py::_calculate_auto_height_limit` |
+| Phantom materials | Multisine runs: IT'IS V5.0 Gabriel 4-pole Cole-Cole from `data/itis_v5.db`, fitted to a linear-dispersive model. Single-frequency runs: Sim4Life database `IT'IS 4.2` linked by name (also the multisine fallback). Air: `Generic 1.1`. | `material_setup.py`, `dispersion/material_cache.py` |
+
+Cells per wavelength for these steps (lambda_tissue = lambda_0 / Re(sqrt(complex permittivity)), IT'IS V5 Cole-Cole parameters):
+
+| f (MHz) | step (mm) | lambda_0/step | muscle | skin | vitreous humour |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 450 | 2.5 | 266 | 34.1 | 37.8 | 29.7 |
+| 700 | 2.5 | 171 | 22.5 | 25.5 | 19.8 |
+| 835 | 2.5 | 144 | 19.0 | 21.7 | 16.8 |
+| 1450 | 2.5 | 83 | 11.2 | 13.0 | 9.8 |
+| 2140 | 1.694 | 83 | 11.3 | 13.2 | 9.9 |
+| 2450 | 1.482 | 83 | 11.3 | 13.3 | 9.9 |
+| 3500 | 1.0 | 86 | 11.8 | 13.9 | 10.3 |
+| 5200 | 0.7 | 82 | 11.6 | 13.6 | 10.0 |
+| 5800 | 0.7 | 74 | 10.4 | 12.3 | 9.0 |
+
+At 5800 MHz the default step gives 9.0 cells per wavelength in vitreous humour, the highest-permittivity tissue. The code does not check convergence. Verify it for your use case.
 
 <br>
 

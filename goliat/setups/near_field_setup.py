@@ -575,7 +575,11 @@ class NearFieldSetup(BaseSetup):
 
         import s4l_v1.units
 
-        simulation.Frequency = self.final_frequency_mhz, s4l_v1.units.MHz
+        # Not part of the s4l_v1 API: a silent no-op before 9.6, an AttributeError from 9.6 on.
+        try:
+            simulation.Frequency = self.final_frequency_mhz, s4l_v1.units.MHz
+        except AttributeError:
+            pass
 
         self.document.AllSimulations.Add(simulation)
 

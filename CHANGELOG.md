@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `goliat.validation`: license-free analytic references (Mie sphere, planar
+  multilayer slab, Gabriel Cole-Cole tissues, area- and mass-averaging
+  helpers) for checking solver output.
+- `goliat.postprocessing.multiport_apd`: worst-case spatially averaged APD for
+  multi-antenna devices (total-power eigenvalue bound, per-port caps,
+  phase-only steering, beam-codebook evaluation).
+- `goliat.postprocessing.measurement_link`: planar measured-field import,
+  plane-wave-spectrum propagation, IEC/IEEE 63195 spatially averaged power
+  density, map registration, and simulation-to-measurement calibration.
+- Configurable psSAR averaging masses (`extraction.psSAR_averaging_masses_g`,
+  default `[10]`). `[1, 10]` adds 1 g results and columns.
+- `validation/`: headless oSPARC verification runs of GOLIAT simulations against
+  analytic and IEEE 1528 references, with grid-convergence results.
+
+### Changed
+
+- Far-field default `bbox_padding_mm` is 20 mm instead of 0 mm. When tissue
+  touched the domain boundary, whole-body SAR in a sphere test was too high by
+  51 %.
+- Default grid step at 5.2 and 5.8 GHz is 0.7 mm instead of 1.0 mm. At 1.0 mm,
+  peak 10 g SAR was 6.4 % low in a 5.8 GHz convergence study.
+
+### Fixed
+
+- Fixed an `AttributeError` in Sim4Life 9.6 from assignments to two attributes that are
+  not part of the `s4l_v1` API (`Simulation.Frequency`,
+  `GlobalGridSettings.BoundingBox`).
+
 ## [1.5.0] - 2026-09-07
 
 More than 120 commits since v1.4.0 expand large-study execution, auto-induced

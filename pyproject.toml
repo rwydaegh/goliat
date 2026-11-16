@@ -4,7 +4,7 @@ requires = ["setuptools>=61.0", "wheel"]
 
 [project]
 authors = [
-  {name = "rwydaegh", email = "robin.wydaeghe@ugent.be"},
+  { name = "rwydaegh", email = "robin.wydaeghe@ugent.be" },
 ]
 classifiers = [
   "Development Status :: 4 - Beta",
@@ -55,7 +55,7 @@ keywords = [
   "phantom",
   "antenna",
 ]
-license = {text = "Apache-2.0"}
+license = { text = "Apache-2.0" }
 name = "goliat"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -93,7 +93,7 @@ Issues = "https://github.com/rwydaegh/goliat/issues"
 Repository = "https://github.com/rwydaegh/goliat"
 
 [tool.codespell]
-ignore-words-list = "Studi"
+ignore-words-list = "Studi,te"
 skip = "docs/img/waves.svg"
 
 [tool.pyright]
@@ -102,6 +102,7 @@ exclude = [
   "tests",
   "scripts",
   "cli",
+  "validation",
 ]
 pythonVersion = "3.11"
 reportMissingImports = false

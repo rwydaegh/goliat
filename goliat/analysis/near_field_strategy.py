@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 import pandas as pd
 
-from .base_strategy import BaseAnalysisStrategy
+from .base_strategy import BaseAnalysisStrategy, _add_extra_mass_columns
 
 if TYPE_CHECKING:
     from ..config import Config
@@ -204,6 +204,10 @@ class NearFieldAnalysisStrategy(BaseAnalysisStrategy):
         for group_name, stats in grouped_stats.items():
             key = f"psSAR10g_{group_name.replace('_group', '')}"
             result_entry[key] = stats.get("peak_sar", pd.NA) * norm_factor
+
+        # Additional averaging masses (e.g. 1 g), present only if requested via
+        # extraction.psSAR_averaging_masses_g. 10 g keys above stay unchanged.
+        _add_extra_mass_columns(result_entry, summary_results, norm_factor)
 
         # Include SAPD data if available (not scaled by norm_factor — already at target power;
         # however, like SAR we apply norm_factor since SAPD scales linearly with power)

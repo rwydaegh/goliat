@@ -179,7 +179,11 @@ class FarFieldSetup(BaseSetup):
         simulation.Name = sim_name
 
         # Set reference frequency for the simulation (for material properties)
-        simulation.Frequency = self.reference_frequency_mhz, self.s4l_v1.units.MHz
+        # Not part of the s4l_v1 API: a silent no-op before 9.6, an AttributeError from 9.6 on.
+        try:
+            simulation.Frequency = self.reference_frequency_mhz, self.s4l_v1.units.MHz
+        except AttributeError:
+            pass
 
         plane_wave_source = self.emfdtd.PlaneWaveSourceSettings()
         # Set CenterFrequency immediately (required for source to work)

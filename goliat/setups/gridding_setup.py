@@ -225,7 +225,11 @@ class GriddingSetup(BaseSetup):
         sim_bbox_entity = self._find_simulation_bbox_entity(sim_bbox_name)
 
         # Apply global grid settings
-        self.simulation.GlobalGridSettings.BoundingBox = self.model.GetBoundingBox([sim_bbox_entity])
+        # Not part of the s4l_v1 API: a silent no-op before 9.6, an AttributeError from 9.6 on.
+        try:
+            self.simulation.GlobalGridSettings.BoundingBox = self.model.GetBoundingBox([sim_bbox_entity])
+        except AttributeError:
+            pass
 
         # Setup gridding mode
         if gridding_mode == "automatic":

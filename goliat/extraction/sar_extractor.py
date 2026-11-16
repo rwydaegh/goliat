@@ -12,6 +12,51 @@ if TYPE_CHECKING:
     from ..results_extractor import ResultsExtractor
 
 
+PEAK_SAR_COL_PREFIX = "Peak Spatial-Average SAR"
+
+
+def _mass_label(mass_g: float) -> str:
+    """Formats an averaging mass for column/key names (10.0 -> '10', 0.5 -> '0.5')."""
+    return f"{float(mass_g):g}"
+
+
+def normalize_averaging_masses(value) -> list[float]:
+    """Normalizes the `extraction.psSAR_averaging_masses_g` config value.
+
+    Accepts None, a number or a list of numbers. Returns a sorted list of unique
+    positive masses in grams. Always defaults to [10.0] when nothing valid is given.
+
+    Raises:
+        ValueError: If an entry is not a positive number.
+    """
+    if value is None:
+        return [10.0]
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        value = [value]
+    if not isinstance(value, (list, tuple)) or not value:
+        raise ValueError(f"extraction.psSAR_averaging_masses_g must be a non-empty list of positive numbers (grams), got {value!r}")
+    masses = []
+    for m in value:
+        if isinstance(m, bool) or not isinstance(m, (int, float)) or m <= 0:
+            raise ValueError(f"Invalid psSAR averaging mass {m!r}: must be a positive number in grams.")
+        masses.append(float(m))
+    return sorted(set(masses))
+
+
+def find_peak_sar_column(columns, mass_g: float) -> str | None:
+    """Finds the peak spatial-average SAR column for a given averaging mass.
+
+    Sim4Life names the column e.g. 'Peak Spatial-Average SAR[IEEE/IEC62704-1] (10g)'.
+    Falls back to the only peak-SAR column present if the mass suffix is absent.
+    """
+    candidates = [c for c in columns if isinstance(c, str) and c.startswith(PEAK_SAR_COL_PREFIX)]
+    suffix = f"({_mass_label(mass_g)}g)"
+    for c in candidates:
+        if c.replace(" ", "").endswith(suffix):
+            return c
+    return candidates[0] if len(candidates) == 1 else None
+
+
 class SarExtractor(LoggingMixin):
     """Extracts SAR statistics from simulation results.
 
@@ -89,6 +134,7 @@ class SarExtractor(LoggingMixin):
                         self._store_group_sar_results(group_sar_stats)
                         self._store_all_regions_sar(df)
                         self.extract_peak_sar_details(em_sensor_extractor)
+                        self._extract_additional_averaging_masses(em_sensor_extractor)
                         self._store_temporary_data(df, tissue_groups, group_sar_stats)
                     finally:
                         try:
@@ -152,11 +198,12 @@ class SarExtractor(LoggingMixin):
         em_sensor_extractor.Update()
         return em_sensor_extractor
 
-    def _evaluate_sar_statistics(self, em_sensor_extractor: "analysis.Extractor") -> object | None:  # type: ignore
+    def _evaluate_sar_statistics(self, em_sensor_extractor: "analysis.Extractor", target_mass_g: float = 10.0) -> object | None:  # type: ignore
         """Evaluates SAR statistics using Sim4Life's SarStatisticsEvaluator.
 
         Args:
             em_sensor_extractor: Configured EM sensor extractor.
+            target_mass_g: Averaging mass in grams for the peak spatial-average SAR.
 
         Returns:
             Results data object if available, None otherwise.
@@ -164,7 +211,7 @@ class SarExtractor(LoggingMixin):
         inputs = [em_sensor_extractor.Outputs["EM E(x,y,z,f0)"]]
         sar_stats_evaluator = self.analysis.em_evaluators.SarStatisticsEvaluator(inputs=inputs)
         sar_stats_evaluator.PeakSpatialAverageSAR = True
-        sar_stats_evaluator.PeakSAR.TargetMass = 10.0, self.units.Unit("g")
+        sar_stats_evaluator.PeakSAR.TargetMass = float(target_mass_g), self.units.Unit("g")
         sar_stats_evaluator.UpdateAttributes()
         self.document.AllAlgorithms.Add(sar_stats_evaluator)
         sar_stats_evaluator.Update()
@@ -282,7 +329,9 @@ class SarExtractor(LoggingMixin):
             }
         )
 
-    def _calculate_group_sar(self, df: pd.DataFrame, tissue_groups: dict) -> dict:
+    def _calculate_group_sar(
+        self, df: pd.DataFrame, tissue_groups: dict, peak_sar_col: str = "Peak Spatial-Average SAR[IEEE/IEC62704-1] (10g)"
+    ) -> dict:
         """Calculates weighted average and peak SAR for tissue groups.
 
         Groups tissues into logical categories (e.g., all eye tissues into 'eyes_group')
@@ -305,7 +354,6 @@ class SarExtractor(LoggingMixin):
             no matching tissues are skipped.
         """
         group_sar_data = {}
-        peak_sar_col = "Peak Spatial-Average SAR[IEEE/IEC62704-1] (10g)"
 
         for group_name, tissues in tissue_groups.items():
             if not tissues:
@@ -346,7 +394,53 @@ class SarExtractor(LoggingMixin):
 
         return group_sar_data
 
-    def extract_peak_sar_details(self, em_sensor_extractor: "analysis.Extractor"):  # type: ignore
+    def _get_additional_masses(self) -> list[float]:
+        """Returns requested averaging masses other than the always-computed 10 g."""
+        masses = normalize_averaging_masses(self.config["extraction.psSAR_averaging_masses_g"])
+        return [m for m in masses if m != 10.0]
+
+    def _extract_additional_averaging_masses(self, em_sensor_extractor: "analysis.Extractor") -> None:  # type: ignore
+        """Extracts peak spatial-average SAR for extra averaging masses (e.g. 1 g).
+
+        10 g is always computed by the main path (backward compatible keys). For each
+        additional mass `m` this stores, using the label `{m}g` (e.g. `1g`):
+        - `peak_sar_{m}g_W_kg`: peak SAR over all regions
+        - `{group}_peak_sar_{m}g`: peak SAR per tissue group
+        - `peak_sar_details_{m}g`: location/metadata of the peak averaging cube
+        Failures are logged and never abort the 10 g extraction.
+        """
+        try:
+            additional_masses = self._get_additional_masses()
+        except ValueError as e:
+            self._log(f"  - ERROR: {e} Skipping additional averaging masses.", level="progress", log_type="error")
+            return
+        for mass_g in additional_masses:
+            label = _mass_label(mass_g)
+            try:
+                results = self._evaluate_sar_statistics(em_sensor_extractor, target_mass_g=mass_g)
+                if not results:
+                    continue
+                df = self._create_sar_dataframe(results)
+                col = find_peak_sar_column(df.columns, mass_g)
+                if col is None:
+                    self._log(f"  - WARNING: No peak SAR column found for {label} g averaging.", log_type="warning")
+                    continue
+
+                all_regions = df[df["Tissue"] == "All Regions"]
+                if not all_regions.empty:
+                    self.results_data[f"peak_sar_{label}g_W_kg"] = float(all_regions[col].iloc[0])  # type: ignore
+
+                tissue_groups = self.tissue_grouper.group_tissues(df["Tissue"].tolist())
+                group_stats = self._calculate_group_sar(df, tissue_groups, peak_sar_col=col)
+                for group, data in group_stats.items():
+                    self.results_data[f"{group}_peak_sar_{label}g"] = data["peak_sar"]
+
+                self.extract_peak_sar_details(em_sensor_extractor, target_mass_g=mass_g)
+            except Exception as e:
+                self._log(f"  - ERROR: {label} g peak SAR extraction failed: {e}", level="progress", log_type="error")
+                self.verbose_logger.error(traceback.format_exc())
+
+    def extract_peak_sar_details(self, em_sensor_extractor: "analysis.Extractor", target_mass_g: float = 10.0):  # type: ignore
         """Extracts detailed metadata about the peak spatial-average SAR location.
 
         While the main SAR extraction gives per-tissue statistics, this method
@@ -366,13 +460,15 @@ class SarExtractor(LoggingMixin):
         Args:
             em_sensor_extractor: The 'Overall Field' results extractor containing
                                the SAR field data.
+            target_mass_g: Averaging mass in grams (default 10). Non-10 g results are
+                stored under `peak_sar_details_{mass}g`.
         """
-        self._log("  - Extracting peak SAR details...", log_type="progress")
+        self._log(f"  - Extracting peak SAR details ({_mass_label(target_mass_g)} g)...", log_type="progress")
         average_sar_field_evaluator = None
         try:
             inputs = [em_sensor_extractor.Outputs["SAR(x,y,z,f0)"]]
             average_sar_field_evaluator = self.analysis.em_evaluators.AverageSarFieldEvaluator(inputs=inputs)
-            average_sar_field_evaluator.TargetMass = 10.0, self.units.Unit("g")
+            average_sar_field_evaluator.TargetMass = float(target_mass_g), self.units.Unit("g")
             average_sar_field_evaluator.UpdateAttributes()
             self.document.AllAlgorithms.Add(average_sar_field_evaluator)
             average_sar_field_evaluator.Update()
@@ -407,7 +503,8 @@ class SarExtractor(LoggingMixin):
                         pass  # Skip keys that fail to extract
 
                 if peak_sar_details:
-                    self.results_data["peak_sar_details"] = peak_sar_details
+                    details_key = "peak_sar_details" if target_mass_g == 10.0 else f"peak_sar_details_{_mass_label(target_mass_g)}g"
+                    self.results_data[details_key] = peak_sar_details
                 else:
                     self._log(
                         "  - WARNING: Peak SAR data collection was empty after filtering None values.",

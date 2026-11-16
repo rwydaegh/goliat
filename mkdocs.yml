@@ -104,6 +104,11 @@ nav:
   - Advanced Features: developer_guide/advanced_features.md
   - Configuration: developer_guide/configuration.md
   - Coloring Rules: developer_guide/coloring_rules.md
+- Postprocessing:
+  - Worst-case multi-antenna APD: postprocessing/multiport_apd.md
+  - Measurement link: postprocessing/measurement_link.md
+- Validation:
+  - Analytic references: validation/analytic_references.md
 - Cloud:
   - Overview: cloud/overview.md
   - oSPARC: cloud/osparc.md

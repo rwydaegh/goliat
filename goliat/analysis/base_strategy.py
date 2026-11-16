@@ -1,3 +1,4 @@
+import re
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
@@ -7,6 +8,31 @@ if TYPE_CHECKING:
     from ..config import Config
     from .analyzer import Analyzer
     from .plotter import Plotter
+
+
+_EXTRA_PEAK_KEY = re.compile(r"^peak_sar_(?P<mass>[0-9.]+)g_W_kg$")
+_EXTRA_GROUP_KEY = re.compile(r"^(?P<group>.+)_group_peak_sar_(?P<mass>[0-9.]+)g$")
+
+
+def _add_extra_mass_columns(result_entry: dict, summary_results: dict, norm_factor: float) -> None:
+    """Adds normalized psSAR columns for non-10 g averaging masses (e.g. 1 g).
+
+    Reads `peak_sar_{m}g_W_kg` (-> `peak_sar_{m}g`) and `{group}_group_peak_sar_{m}g`
+    (-> `psSAR{m}g_{group}`) from the results summary, if present. Results produced
+    without `extraction.psSAR_averaging_masses_g` containing extra masses are untouched.
+    """
+    for key, value in (summary_results or {}).items():
+        if not isinstance(key, str) or value is None or pd.isna(value):
+            continue
+        m = _EXTRA_PEAK_KEY.match(key)
+        if m and float(m.group("mass")) == 10.0:
+            continue
+        if m:
+            result_entry[f"peak_sar_{m.group('mass')}g"] = value * norm_factor
+            continue
+        m = _EXTRA_GROUP_KEY.match(key)
+        if m:
+            result_entry[f"psSAR{m.group('mass')}g_{m.group('group')}"] = value * norm_factor
 
 
 class BaseAnalysisStrategy(ABC):

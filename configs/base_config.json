@@ -6,7 +6,8 @@
         "power_balance": true,
         "sapd": false,
         "sapd_field": false,
-        "point_sensors": true
+        "point_sensors": true,
+        "psSAR_averaging_masses_g": [10]
     },
     "power_balance": {
         "input_method": "bounding_box"

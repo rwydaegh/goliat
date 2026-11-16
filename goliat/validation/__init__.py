@@ -1,0 +1,56 @@
+"""Analytic, license-free reference solutions for benchmarking dosimetry solver output.
+
+See :mod:`goliat.validation.analytic` and ``docs/validation/analytic_references.md``.
+"""
+
+from .analytic import (
+    C0,
+    EPS0,
+    ETA0,
+    GABRIEL_1996,
+    MU0,
+    ColeColeParams,
+    CubeAverageResult,
+    Layer,
+    MieResult,
+    MultilayerResult,
+    SquareAverageResult,
+    cole_cole,
+    fresnel_halfspace,
+    halfspace_apd,
+    mass_averaged_sar,
+    mie_sphere,
+    multilayer_response,
+    peak_spatial_average_apd,
+    sphere_absorbed_power,
+    sphere_internal_field,
+    sphere_local_sar,
+    sphere_wb_sar,
+    tissue_properties,
+)
+
+__all__ = [
+    "C0",
+    "EPS0",
+    "ETA0",
+    "MU0",
+    "GABRIEL_1996",
+    "ColeColeParams",
+    "CubeAverageResult",
+    "Layer",
+    "MieResult",
+    "MultilayerResult",
+    "SquareAverageResult",
+    "cole_cole",
+    "fresnel_halfspace",
+    "halfspace_apd",
+    "mass_averaged_sar",
+    "mie_sphere",
+    "multilayer_response",
+    "peak_spatial_average_apd",
+    "sphere_absorbed_power",
+    "sphere_internal_field",
+    "sphere_local_sar",
+    "sphere_wb_sar",
+    "tissue_properties",
+]
