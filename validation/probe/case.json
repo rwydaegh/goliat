@@ -1,0 +1,61 @@
+{
+ "runs": [
+  {
+   "name": "p1_sphere50_2450_default",
+   "phantom": "valsphere",
+   "timeout_s": 1500,
+   "geometry": {
+    "kind": "sphere",
+    "radius_mm": 50.0,
+    "ico_level": 6,
+    "tissue_entity": "Muscle",
+    "itis_material": "Muscle"
+   },
+   "config": {
+    "far_field_setup": {
+     "type": "environmental",
+     "environmental": {
+      "incident_directions": [
+       "x_pos"
+      ],
+      "polarizations": [
+       "theta"
+      ]
+     }
+    },
+    "solver_settings": {
+     "kernel": "software",
+     "server": "localhost"
+    },
+    "manual_isolve": false,
+    "use_gui": false,
+    "use_web": false,
+    "execution_control": {
+     "do_setup": true,
+     "do_run": true,
+     "do_extract": true,
+     "only_write_input_file": false,
+     "batch_run": false,
+     "auto_cleanup_previous_results": []
+    },
+    "extraction": {
+     "sar": true,
+     "power_balance": true,
+     "sapd": false,
+     "point_sensors": false,
+     "psSAR_averaging_masses_g": [
+      1,
+      10
+     ]
+    },
+    "export_material_properties": true,
+    "phantoms": [
+     "valsphere"
+    ],
+    "frequencies_mhz": [
+     2450
+    ]
+   }
+  }
+ ]
+}

@@ -1,0 +1,170 @@
+{
+ "name": "c5_arr_10_15",
+ "driver": "run_head.py",
+ "frequency_mhz": 10000,
+ "grid_mm": 0.5,
+ "distance_mm": 15.0,
+ "array_n": 4,
+ "length_lambda": 0.45,
+ "pitch_lambda": 0.5,
+ "pad_mm": 20.0,
+ "min_half_mm": 30.0,
+ "tissue_depth_mm": 30.0,
+ "placement": {
+  "frac_ear_to_lips": 0.5,
+  "fallback_forward_mm": 40.0,
+  "fallback_up_mm": -15.0
+ },
+ "timeout_s": 3000,
+ "keep_h5": false,
+ "mapping": {
+  "_tissue_groups": {
+   "eyes_group": [
+    "Eye_Sclera",
+    "Eye_vitreous_humor",
+    "Cornea",
+    "Eye_lens"
+   ],
+   "skin_group": [
+    "Skin",
+    "Ear_skin"
+   ],
+   "brain_group": [
+    "commissura_anterior",
+    "Medulla_oblongata",
+    "Pinealbody",
+    "Pons",
+    "Brain_grey_matter",
+    "commissura_posterior",
+    "Brain_white_matter",
+    "Cerebellum",
+    "Thalamus",
+    "Hypothalamus",
+    "Hippocampus",
+    "Hypophysis",
+    "Midbrain",
+    "Cerebrospinal_fluid"
+   ],
+   "genitals_group": [
+    "Ovary",
+    "Uterus",
+    "Vagina"
+   ]
+  },
+  "commissura_anterior": "Commissura Anterior",
+  "Medulla_oblongata": "Medulla Oblongata",
+  "Skin": "Skin",
+  "Bladder": "Urinary Bladder Wall",
+  "Stomach": "Stomach",
+  "Ear_skin": "Skin",
+  "Pinealbody": "Pineal Body",
+  "Bronchi_lumen": "Bronchi lumen",
+  "Esophagus_lumen": "Esophagus Lumen",
+  "Breast": "Breast Gland",
+  "Mandible": "Mandible",
+  "Thymus": "Thymus",
+  "Kidney_cortex": "Kidney (Cortex)",
+  "SAT": "SAT (Subcutaneous Fat)",
+  "Large_intestine_lumen": "Large Intestine Lumen",
+  "Marrow_red": "Bone Marrow (Red)",
+  "Pons": "Pons",
+  "Gallbladder": "Gallbladder",
+  "Muscle": "Muscle",
+  "Stomach_lumen": "Stomach Lumen",
+  "Eye_Sclera": "Eye (Sclera)",
+  "Skull": "Skull",
+  "Connective_tissue": "Connective Tissue",
+  "Bronchi": "Bronchi",
+  "Fat": "Fat",
+  "Brain_grey_matter": "Brain (Grey Matter)",
+  "Nerve": "Nerve",
+  "commissura_posterior": "Commissura Posterior",
+  "Ear_cartilage": "Cartilage",
+  "Intervertebral_disc": "Intervertebral Disc",
+  "Spinal_cord": "Spinal Cord",
+  "Thyroid_gland": "Thyroid Gland",
+  "Esophagus": "Esophagus",
+  "Brain_white_matter": "Brain (White Matter)",
+  "Eye_vitreous_humor": "Eye (Vitreous Humor)",
+  "Cornea": "Eye (Cornea)",
+  "Cartilage": "Cartilage",
+  "Bone": "Bone (Cortical)",
+  "Ovary": "Ovary",
+  "Vein": "Blood",
+  "Lung": "Lung",
+  "Cerebellum": "Cerebellum",
+  "Thalamus": "Thalamus",
+  "Patella": "Bone (Cortical)",
+  "Pharynx": "Pharynx",
+  "Eye_lens": "Eye (Lens)",
+  "Mucosa": "Mucous Membrane",
+  "Vagina": "Vagina",
+  "Adrenal_gland": "Adrenal Gland",
+  "Hypothalamus": "Hypothalamus",
+  "Diaphragm": "Diaphragm",
+  "Hippocampus": "Hippocampus",
+  "Kidney_medulla": "Kidney (Medulla)",
+  "Pancreas": "Pancreas",
+  "Liver": "Liver",
+  "Tongue": "Tongue",
+  "Larynx": "Larynx",
+  "Artery": "Blood",
+  "Vertebrae": "Vertebrae",
+  "Small_intestine": "Small Intestine",
+  "Hypophysis": "Hypophysis",
+  "Meniscus": "Meniscus",
+  "Midbrain": "Midbrain",
+  "Heart_lumen": "Heart Lumen",
+  "Teeth": "Tooth",
+  "Trachea_lumen": "Trachea Lumen",
+  "Large_intestine": "Large Intestine",
+  "Tendon_Ligament": "Tendon\\Ligament",
+  "Uterus": "Uterus",
+  "Cerebrospinal_fluid": "Cerebrospinal Fluid",
+  "Air_internal": "Air",
+  "Spleen": "Spleen",
+  "Small_intestine_lumen": "Small Intestine Lumen",
+  "Heart_muscle": "Heart Muscle",
+  "Ureter_Urethra": "Ureter\\Urethra"
+ },
+ "config": {
+  "solver_settings": {
+   "kernel": "cuda",
+   "server": "localhost",
+   "boundary_conditions": {
+    "type": "UpmlCpml",
+    "strength": "High"
+   }
+  },
+  "manual_isolve": true,
+  "use_gui": false,
+  "use_web": false,
+  "execution_control": {
+   "do_setup": true,
+   "do_run": true,
+   "do_extract": true,
+   "only_write_input_file": false,
+   "batch_run": false,
+   "auto_cleanup_previous_results": []
+  },
+  "extraction": {
+   "sar": true,
+   "power_balance": true,
+   "sapd": true,
+   "sapd_field": false,
+   "point_sensors": false,
+   "psSAR_averaging_masses_g": [
+    10
+   ]
+  },
+  "export_material_properties": false,
+  "gridding_parameters": {
+   "global_gridding": {
+    "grid_mode": "manual"
+   },
+   "global_gridding_per_frequency": {
+    "10000": 0.5
+   }
+  }
+ }
+}

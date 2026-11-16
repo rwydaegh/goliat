@@ -1,0 +1,464 @@
+[
+ {
+  "name": "h2450_dx1p0",
+  "ok": true,
+  "fatal": null,
+  "solver": {
+   "dt_s": "1.92564e-12",
+   "iterations": "1287",
+   "iter_planned": "1287",
+   "cells": "150x150x150",
+   "mcells": "3.3750",
+   "speed": "79.08",
+   "sim_time_ns": 2.47829868
+  },
+  "materials": {
+   "Air": {
+    "eps_r": 1.0,
+    "sigma": 0.0,
+    "rho": 1.2
+   },
+   "Muscle": {
+    "eps_r": 52.7295,
+    "sigma": 1.7388,
+    "rho": 1090.4
+   }
+  },
+  "permissive": [
+   "ApiObject.BoundingBox",
+   "ApiObject.Frequency"
+  ],
+  "freq_mhz": 2450,
+  "grid": [
+   [
+    150,
+    0.000999999999999987,
+    0.0010000000000000009
+   ],
+   [
+    150,
+    0.000999999999999987,
+    0.0010000000000000009
+   ],
+   [
+    150,
+    0.000999999999999987,
+    0.0010000000000000009
+   ]
+  ],
+  "gridding_cfg": {
+   "global_gridding_per_frequency": {
+    "2450": 1.0
+   }
+  },
+  "wbSAR": 1.4556893008581959e-05,
+  "psSAR10g": 2.9257529604365118e-05,
+  "psSAR1g": 4.97587097925134e-05,
+  "DielLoss": 8.317111934251834e-06,
+  "RadPower": 1.878121919193426e-05,
+  "balance_pct": 90.8095185295303,
+  "mie_Pabs": 8.209974421776998e-06,
+  "mie_wbSAR": 1.4379948773483132e-05,
+  "err_Pabs_pct": 1.3049676767646456,
+  "err_wbSAR_pct": 1.2304928055454134,
+  "wbSAR_per_Wm2_goliat754": 0.010975897328470798,
+  "mie_wbSAR_per_Wm2": 0.010834725223928145,
+  "cpw_tissue": 16.85108200038753
+ },
+ {
+  "name": "h2450_dx1p482",
+  "ok": true,
+  "fatal": null,
+  "solver": {
+   "dt_s": "2.83182e-12",
+   "iterations": "875",
+   "iter_planned": "875",
+   "cells": "102x102x102",
+   "mcells": "1.0612",
+   "speed": "83.66",
+   "sim_time_ns": 2.4778425
+  },
+  "materials": {
+   "Air": {
+    "eps_r": 1.0,
+    "sigma": 0.0,
+    "rho": 1.2
+   },
+   "Muscle": {
+    "eps_r": 52.7295,
+    "sigma": 1.7388,
+    "rho": 1090.4
+   }
+  },
+  "permissive": [
+   "ApiObject.BoundingBox",
+   "ApiObject.Frequency"
+  ],
+  "freq_mhz": 2450,
+  "grid": [
+   [
+    102,
+    0.0014705882352940847,
+    0.001470588235294154
+   ],
+   [
+    102,
+    0.0014705882352940847,
+    0.001470588235294154
+   ],
+   [
+    102,
+    0.0014705882352940847,
+    0.001470588235294154
+   ]
+  ],
+  "gridding_cfg": {
+   "global_gridding_per_frequency": {
+    "2450": 1.482
+   }
+  },
+  "wbSAR": 1.4515149045854152e-05,
+  "psSAR10g": 2.8852466130047105e-05,
+  "psSAR1g": 4.724448444903828e-05,
+  "DielLoss": 8.303865360283083e-06,
+  "RadPower": 1.897267854961174e-05,
+  "balance_pct": 91.40672936915867,
+  "mie_Pabs": 8.209974421776998e-06,
+  "mie_wbSAR": 1.4379948773483132e-05,
+  "err_Pabs_pct": 1.143620353518271,
+  "err_wbSAR_pct": 0.9401999582942411,
+  "wbSAR_per_Wm2_goliat754": 0.010944422380574031,
+  "mie_wbSAR_per_Wm2": 0.010834725223928145,
+  "cpw_tissue": 11.458735760263247
+ },
+ {
+  "name": "h2450_dx2p5",
+  "ok": true,
+  "fatal": null,
+  "solver": {
+   "dt_s": "4.8141e-12",
+   "iterations": "515",
+   "iter_planned": "515",
+   "cells": "60x60x60",
+   "mcells": "0.2160",
+   "speed": "112.06",
+   "sim_time_ns": 2.4792615000000002
+  },
+  "materials": {
+   "Air": {
+    "eps_r": 1.0,
+    "sigma": 0.0,
+    "rho": 1.2
+   },
+   "Muscle": {
+    "eps_r": 52.7295,
+    "sigma": 1.7388,
+    "rho": 1090.4
+   }
+  },
+  "permissive": [
+   "ApiObject.BoundingBox",
+   "ApiObject.Frequency"
+  ],
+  "freq_mhz": 2450,
+  "grid": [
+   [
+    60,
+    0.0024999999999999883,
+    0.0025000000000000022
+   ],
+   [
+    60,
+    0.0024999999999999883,
+    0.0025000000000000022
+   ],
+   [
+    60,
+    0.0024999999999999883,
+    0.0025000000000000022
+   ]
+  ],
+  "gridding_cfg": {
+   "global_gridding_per_frequency": {
+    "2450": 2.5
+   }
+  },
+  "wbSAR": 1.4054353440479774e-05,
+  "psSAR10g": 2.894619683502242e-05,
+  "psSAR1g": 3.9851231122156605e-05,
+  "DielLoss": 8.034061498869444e-06,
+  "RadPower": 1.919546857731095e-05,
+  "balance_pct": 91.24918078862231,
+  "mie_Pabs": 8.209974421776998e-06,
+  "mie_wbSAR": 1.4379948773483132e-05,
+  "err_Pabs_pct": -2.142673215167934,
+  "err_wbSAR_pct": -2.264231522185678,
+  "wbSAR_per_Wm2_goliat754": 0.01059698249412175,
+  "mie_wbSAR_per_Wm2": 0.010834725223928145,
+  "cpw_tissue": 6.740432800155013
+ },
+ {
+  "name": "h5800_dx0p5",
+  "ok": true,
+  "fatal": null,
+  "solver": {
+   "dt_s": "9.6282e-13",
+   "iterations": "4801",
+   "iter_planned": "4801",
+   "cells": "160x160x160",
+   "mcells": "4.0960",
+   "speed": "83.01",
+   "sim_time_ns": 4.62249882
+  },
+  "materials": {
+   "Air": {
+    "eps_r": 1.0,
+    "sigma": 0.0,
+    "rho": 1.2
+   },
+   "Muscle": {
+    "eps_r": 48.4846,
+    "sigma": 4.9616,
+    "rho": 1090.4
+   }
+  },
+  "permissive": [
+   "ApiObject.BoundingBox",
+   "ApiObject.Frequency"
+  ],
+  "freq_mhz": 5800,
+  "grid": [
+   [
+    160,
+    0.0004999999999999935,
+    0.0005000000000000004
+   ],
+   [
+    160,
+    0.0004999999999999935,
+    0.0005000000000000004
+   ],
+   [
+    160,
+    0.0004999999999999935,
+    0.0005000000000000004
+   ]
+  ],
+  "gridding_cfg": {
+   "global_gridding_per_frequency": {
+    "5800": 0.5
+   }
+  },
+  "wbSAR": 2.8436907077695545e-05,
+  "psSAR10g": 3.999448745162226e-05,
+  "psSAR1g": 6.949343514861539e-05,
+  "DielLoss": 2.0309359548315747e-06,
+  "RadPower": 4.698424221772849e-06,
+  "balance_pct": 79.28027458062087,
+  "mie_Pabs": 2.0088492369431424e-06,
+  "mie_wbSAR": 2.8148345061119566e-05,
+  "err_Pabs_pct": 1.0994711540444735,
+  "err_wbSAR_pct": 1.0251473610594752,
+  "wbSAR_per_Wm2_goliat754": 0.021441427936582443,
+  "mie_wbSAR_per_Wm2": 0.021208669728221347,
+  "cpw_tissue": 14.846387664094888
+ },
+ {
+  "name": "h5800_dx0p7",
+  "ok": true,
+  "fatal": null,
+  "solver": {
+   "dt_s": "1.33958e-12",
+   "iterations": "3451",
+   "iter_planned": "3451",
+   "cells": "115x115x115",
+   "mcells": "1.5209",
+   "speed": "93.54",
+   "sim_time_ns": 4.622890580000001
+  },
+  "materials": {
+   "Air": {
+    "eps_r": 1.0,
+    "sigma": 0.0,
+    "rho": 1.2
+   },
+   "Muscle": {
+    "eps_r": 48.4846,
+    "sigma": 4.9616,
+    "rho": 1090.4
+   }
+  },
+  "permissive": [
+   "ApiObject.BoundingBox",
+   "ApiObject.Frequency"
+  ],
+  "freq_mhz": 5800,
+  "grid": [
+   [
+    115,
+    0.0006956521739130278,
+    0.0006956521739130625
+   ],
+   [
+    115,
+    0.0006956521739130278,
+    0.0006956521739130625
+   ],
+   [
+    115,
+    0.0006956521739130278,
+    0.0006956521739130625
+   ]
+  ],
+  "gridding_cfg": {
+   "global_gridding_per_frequency": {
+    "5800": 0.7
+   }
+  },
+  "wbSAR": 2.8245593341273498e-05,
+  "psSAR10g": 3.9606817153980955e-05,
+  "psSAR1g": 6.857747212052345e-05,
+  "DielLoss": 2.016110094182369e-06,
+  "RadPower": 4.727179289000875e-06,
+  "balance_pct": 79.4443780456276,
+  "mie_Pabs": 2.0088492369431424e-06,
+  "mie_wbSAR": 2.8148345061119566e-05,
+  "err_Pabs_pct": 0.3614436118797748,
+  "err_wbSAR_pct": 0.3454848942016753,
+  "wbSAR_per_Wm2_goliat754": 0.021297177379320218,
+  "mie_wbSAR_per_Wm2": 0.021208669728221347,
+  "cpw_tissue": 10.670841133567917
+ },
+ {
+  "name": "h5800_dx1p0",
+  "ok": true,
+  "fatal": null,
+  "solver": {
+   "dt_s": "1.92564e-12",
+   "iterations": "2401",
+   "iter_planned": "2401",
+   "cells": "80x80x80",
+   "mcells": "0.5120",
+   "speed": "105.22",
+   "sim_time_ns": 4.6234616399999995
+  },
+  "materials": {
+   "Air": {
+    "eps_r": 1.0,
+    "sigma": 0.0,
+    "rho": 1.2
+   },
+   "Muscle": {
+    "eps_r": 48.4846,
+    "sigma": 4.9616,
+    "rho": 1090.4
+   }
+  },
+  "permissive": [
+   "ApiObject.BoundingBox",
+   "ApiObject.Frequency"
+  ],
+  "freq_mhz": 5800,
+  "grid": [
+   [
+    80,
+    0.000999999999999994,
+    0.0010000000000000009
+   ],
+   [
+    80,
+    0.000999999999999994,
+    0.0010000000000000009
+   ],
+   [
+    80,
+    0.000999999999999994,
+    0.0010000000000000009
+   ]
+  ],
+  "gridding_cfg": {
+   "global_gridding_per_frequency": {
+    "5800": 1.0
+   }
+  },
+  "wbSAR": 2.751231130374623e-05,
+  "psSAR10g": 3.780062252189964e-05,
+  "psSAR1g": 6.663898966507986e-05,
+  "DielLoss": 1.97252208772406e-06,
+  "RadPower": 4.769754391693843e-06,
+  "balance_pct": 79.43244477314217,
+  "mie_Pabs": 2.0088492369431424e-06,
+  "mie_wbSAR": 2.8148345061119566e-05,
+  "err_Pabs_pct": -1.8083561748198251,
+  "err_wbSAR_pct": -2.2595778046357373,
+  "wbSAR_per_Wm2_goliat754": 0.020744282723024657,
+  "mie_wbSAR_per_Wm2": 0.021208669728221347,
+  "cpw_tissue": 7.423193832047444
+ },
+ {
+  "name": "h5800_dx1p4",
+  "ok": true,
+  "fatal": null,
+  "solver": {
+   "dt_s": "2.65606e-12",
+   "iterations": "1741",
+   "iter_planned": "1741",
+   "cells": "58x58x58",
+   "mcells": "0.1951",
+   "speed": "114.33",
+   "sim_time_ns": 4.62420046
+  },
+  "materials": {
+   "Air": {
+    "eps_r": 1.0,
+    "sigma": 0.0,
+    "rho": 1.2
+   },
+   "Muscle": {
+    "eps_r": 48.4846,
+    "sigma": 4.9616,
+    "rho": 1090.4
+   }
+  },
+  "permissive": [
+   "ApiObject.BoundingBox",
+   "ApiObject.Frequency"
+  ],
+  "freq_mhz": 5800,
+  "grid": [
+   [
+    58,
+    0.001379310344827571,
+    0.0013793103448276021
+   ],
+   [
+    58,
+    0.001379310344827571,
+    0.0013793103448276021
+   ],
+   [
+    58,
+    0.001379310344827571,
+    0.0013793103448276021
+   ]
+  ],
+  "gridding_cfg": {
+   "global_gridding_per_frequency": {
+    "5800": 1.4
+   }
+  },
+  "wbSAR": 2.5723429288603533e-05,
+  "psSAR10g": 3.521488542901352e-05,
+  "psSAR1g": 6.158864562166855e-05,
+  "DielLoss": 1.8342085821262716e-06,
+  "RadPower": 4.740677738806191e-06,
+  "balance_pct": 77.46037946848557,
+  "mie_Pabs": 2.0088492369431424e-06,
+  "mie_wbSAR": 2.8148345061119566e-05,
+  "err_Pabs_pct": -8.693567023607052,
+  "err_wbSAR_pct": -8.614772084293843,
+  "wbSAR_per_Wm2_goliat754": 0.019395465683607064,
+  "mie_wbSAR_per_Wm2": 0.021208669728221347,
+  "cpw_tissue": 5.381815528234339
+ }
+]

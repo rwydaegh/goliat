@@ -1,0 +1,794 @@
+[
+ {
+  "run": "c5_arr_10_10",
+  "report": "case5_li/vm92/out/c5_arr_10_10/driver_report.json",
+  "ant": "arr",
+  "f_GHz": 10,
+  "d_mm": 10,
+  "grid_mm": 0.5,
+  "P_in_W": 0.03499956801533699,
+  "sAPD1": 1.5542468759063877,
+  "sAPD4": 1.0883794648820533,
+  "ref_T3": [
+   0.96,
+   0.37,
+   0.72,
+   0.29
+  ],
+  "ref_T2_VHP": [
+   2.3,
+   1.37,
+   1.47,
+   0.76
+  ],
+  "geometry": {
+   "rule": "ear centre + 0.5 * (lips - ear centre)",
+   "lips_ok": true,
+   "antenna_centre_mm": [
+    -18.14531708117024,
+    72.7989730834961,
+    580.9408569335938
+   ],
+   "closest_skin_point_mm": [
+    -8.372695922851676,
+    71.24839782714844,
+    582.3871307373047
+   ],
+   "centre_to_skin_mm": 10.000014114369922,
+   "n_deleted": 51
+  },
+  "antenna": {
+   "n_elements": 16,
+   "length_mm": 13.490660609999999,
+   "radius_mm": 0.5,
+   "gap_mm": 1.0,
+   "pitch_mm": 14.989622899999999,
+   "bbox_mm": [
+    [
+     -18.64531707763672,
+     49.814537048339844,
+     551.7110595703125
+    ],
+    [
+     -17.64531707763672,
+     95.78340911865234,
+     610.170654296875
+    ]
+   ],
+   "min_metal_to_Skin_mm": 2.797750495829473,
+   "min_metal_to_Ear_skin_mm": 15.321856197724543
+  },
+  "sim_cells_estimate": 4047540,
+  "fatal": false,
+  "sAPD1_z": 1.61,
+  "sAPD1_rel_pct": 61.9,
+  "sAPD4_z": 1.27,
+  "sAPD4_rel_pct": 51.2
+ },
+ {
+  "run": "c5_arr_10_15",
+  "report": "case5_li/vm92/out/c5_arr_10_15/driver_report.json",
+  "ant": "arr",
+  "f_GHz": 10,
+  "d_mm": 15,
+  "grid_mm": 0.5,
+  "P_in_W": 0.03549991175532341,
+  "sAPD1": 1.7369712433108575,
+  "sAPD4": 1.5527851126535834,
+  "ref_T3": [
+   1.61,
+   0.54,
+   1.31,
+   0.39
+  ],
+  "ref_T2_VHP": [
+   1.9,
+   0.65,
+   1.46,
+   0.44
+  ],
+  "geometry": {
+   "rule": "ear centre + 0.5 * (lips - ear centre)",
+   "lips_ok": true,
+   "antenna_centre_mm": [
+    -23.260734570757812,
+    72.7989730834961,
+    580.9408569335938
+   ],
+   "closest_skin_point_mm": [
+    -8.596710205078239,
+    70.46163940429688,
+    583.0630187988281
+   ],
+   "centre_to_skin_mm": 15.000018819161372,
+   "n_deleted": 51
+  },
+  "antenna": {
+   "n_elements": 16,
+   "length_mm": 13.490660609999999,
+   "radius_mm": 0.5,
+   "gap_mm": 1.0,
+   "pitch_mm": 14.989622899999999,
+   "bbox_mm": [
+    [
+     -23.76073455810547,
+     49.814537048339844,
+     551.7110595703125
+    ],
+    [
+     -22.76073455810547,
+     95.78340911865234,
+     610.170654296875
+    ]
+   ],
+   "min_metal_to_Skin_mm": 7.899229528785545,
+   "min_metal_to_Ear_skin_mm": 17.82498962487645
+  },
+  "sim_cells_estimate": 4378765,
+  "fatal": false,
+  "sAPD1_z": 0.24,
+  "sAPD1_rel_pct": 7.9,
+  "sAPD4_z": 0.62,
+  "sAPD4_rel_pct": 18.5
+ },
+ {
+  "run": "c5_arr_10_20",
+  "report": "case5_li/vm92/out/c5_arr_10_20/driver_report.json",
+  "ant": "arr",
+  "f_GHz": 10,
+  "d_mm": 20,
+  "grid_mm": 0.5,
+  "P_in_W": 0.033935077488422394,
+  "sAPD1": 2.0261380744107886,
+  "sAPD4": 1.744187513132071,
+  "ref_T3": [
+   1.48,
+   0.61,
+   1.25,
+   0.48
+  ],
+  "ref_T2_VHP": [
+   1.6,
+   0.52,
+   1.3,
+   0.4
+  ],
+  "geometry": {
+   "rule": "ear centre + 0.5 * (lips - ear centre)",
+   "lips_ok": true,
+   "antenna_centre_mm": [
+    -28.38045501592118,
+    72.7989730834961,
+    580.9408569335938
+   ],
+   "closest_skin_point_mm": [
+    -8.855300903320426,
+    69.54254150390625,
+    583.7981567382812
+   ],
+   "centre_to_skin_mm": 19.99999771118151,
+   "n_deleted": 51
+  },
+  "antenna": {
+   "n_elements": 16,
+   "length_mm": 13.490660609999999,
+   "radius_mm": 0.5,
+   "gap_mm": 1.0,
+   "pitch_mm": 14.989622899999999,
+   "bbox_mm": [
+    [
+     -28.880455017089844,
+     49.814537048339844,
+     551.7110595703125
+    ],
+    [
+     -27.880455017089844,
+     95.78340911865234,
+     610.170654296875
+    ]
+   ],
+   "min_metal_to_Skin_mm": 13.006242867009096,
+   "min_metal_to_Ear_skin_mm": 20.955027062251375
+  },
+  "sim_cells_estimate": 4707939,
+  "fatal": false,
+  "sAPD1_z": 0.9,
+  "sAPD1_rel_pct": 36.9,
+  "sAPD4_z": 1.03,
+  "sAPD4_rel_pct": 39.5
+ },
+ {
+  "run": "c5_arr_30_10",
+  "report": "case5_li/vm92/out/c5_arr_30_10/driver_report.json",
+  "ant": "arr",
+  "f_GHz": 30,
+  "d_mm": 10,
+  "grid_mm": 0.25,
+  "P_in_W": 0.0360342375934124,
+  "sAPD1": 13.589042653021076,
+  "sAPD4": 6.864760985548546,
+  "ref_T3": [
+   12.42,
+   2.85,
+   5.97,
+   1.45
+  ],
+  "ref_T2_VHP": [
+   7.45,
+   3.71,
+   3.74,
+   1.61
+  ],
+  "geometry": {
+   "rule": "ear centre + 0.5 * (lips - ear centre)",
+   "lips_ok": true,
+   "antenna_centre_mm": [
+    -18.14531708117024,
+    72.7989730834961,
+    580.9408569335938
+   ],
+   "closest_skin_point_mm": [
+    -8.372695922851676,
+    71.24839782714844,
+    582.3871307373047
+   ],
+   "centre_to_skin_mm": 10.000014114369922,
+   "n_deleted": 58
+  },
+  "antenna": {
+   "n_elements": 16,
+   "length_mm": 4.49688687,
+   "radius_mm": 0.25,
+   "gap_mm": 0.5,
+   "pitch_mm": 4.996540966666666,
+   "bbox_mm": [
+    [
+     -18.39531707763672,
+     65.05414581298828,
+     571.1976318359375
+    ],
+    [
+     -17.89531707763672,
+     80.54378509521484,
+     590.68408203125
+    ]
+   ],
+   "min_metal_to_Skin_mm": 6.6393898207879625,
+   "min_metal_to_Ear_skin_mm": 29.802213609649137
+  },
+  "sim_cells_estimate": 11467611,
+  "fatal": false,
+  "sAPD1_z": 0.41,
+  "sAPD1_rel_pct": 9.4,
+  "sAPD4_z": 0.62,
+  "sAPD4_rel_pct": 15.0
+ },
+ {
+  "run": "c5_arr_30_15",
+  "report": "case5_li/vm92/out/c5_arr_30_15/driver_report.json",
+  "ant": "arr",
+  "f_GHz": 30,
+  "d_mm": 15,
+  "grid_mm": 0.25,
+  "P_in_W": 0.037166766822338104,
+  "sAPD1": 13.021569849806724,
+  "sAPD4": 6.127503822338011,
+  "ref_T3": [
+   11.59,
+   2.89,
+   5.17,
+   1.25
+  ],
+  "ref_T2_VHP": [
+   6.15,
+   4.33,
+   3.08,
+   1.69
+  ],
+  "geometry": {
+   "rule": "ear centre + 0.5 * (lips - ear centre)",
+   "lips_ok": true,
+   "antenna_centre_mm": [
+    -23.260734570757812,
+    72.7989730834961,
+    580.9408569335938
+   ],
+   "closest_skin_point_mm": [
+    -8.596710205078239,
+    70.46163940429688,
+    583.0630187988281
+   ],
+   "centre_to_skin_mm": 15.000018819161372,
+   "n_deleted": 58
+  },
+  "antenna": {
+   "n_elements": 16,
+   "length_mm": 4.49688687,
+   "radius_mm": 0.25,
+   "gap_mm": 0.5,
+   "pitch_mm": 4.996540966666666,
+   "bbox_mm": [
+    [
+     -23.51073455810547,
+     65.05414581298828,
+     571.1976318359375
+    ],
+    [
+     -23.01073455810547,
+     80.54378509521484,
+     590.68408203125
+    ]
+   ],
+   "min_metal_to_Skin_mm": 11.576588228814707,
+   "min_metal_to_Ear_skin_mm": 31.356107943606357
+  },
+  "sim_cells_estimate": 12594591,
+  "fatal": false,
+  "sAPD1_z": 0.5,
+  "sAPD1_rel_pct": 12.4,
+  "sAPD4_z": 0.77,
+  "sAPD4_rel_pct": 18.5
+ },
+ {
+  "run": "c5_arr_30_20",
+  "report": "case5_li/vm92/out/c5_arr_30_20/driver_report.json",
+  "ant": "arr",
+  "f_GHz": 30,
+  "d_mm": 20,
+  "grid_mm": 0.25,
+  "P_in_W": 0.03776700794696808,
+  "sAPD1": 11.095266926310149,
+  "sAPD4": 5.615374702949417,
+  "ref_T3": [
+   9.71,
+   2.53,
+   4.57,
+   1.17
+  ],
+  "ref_T2_VHP": [
+   5.03,
+   3.99,
+   2.65,
+   1.72
+  ],
+  "geometry": {
+   "rule": "ear centre + 0.5 * (lips - ear centre)",
+   "lips_ok": true,
+   "antenna_centre_mm": [
+    -28.38045501592118,
+    72.7989730834961,
+    580.9408569335938
+   ],
+   "closest_skin_point_mm": [
+    -8.855300903320426,
+    69.54254150390625,
+    583.7981567382812
+   ],
+   "centre_to_skin_mm": 19.99999771118151,
+   "n_deleted": 58
+  },
+  "antenna": {
+   "n_elements": 16,
+   "length_mm": 4.49688687,
+   "radius_mm": 0.25,
+   "gap_mm": 0.5,
+   "pitch_mm": 4.996540966666666,
+   "bbox_mm": [
+    [
+     -28.630455017089844,
+     65.05414581298828,
+     571.1976318359375
+    ],
+    [
+     -28.130455017089844,
+     80.54378509521484,
+     590.68408203125
+    ]
+   ],
+   "min_metal_to_Skin_mm": 16.528263738132498,
+   "min_metal_to_Ear_skin_mm": 33.620665089997104
+  },
+  "sim_cells_estimate": 13714595,
+  "fatal": false,
+  "sAPD1_z": 0.55,
+  "sAPD1_rel_pct": 14.3,
+  "sAPD4_z": 0.89,
+  "sAPD4_rel_pct": 22.9
+ },
+ {
+  "run": "c5_dip_10_10",
+  "report": "case5_li/vm92/out/c5_dip_10_10/driver_report.json",
+  "ant": "dip",
+  "f_GHz": 10,
+  "d_mm": 10,
+  "grid_mm": 0.5,
+  "P_in_W": 0.0022063611540943384,
+  "sAPD1": 3.913930484519771,
+  "sAPD4": 2.570765711200708,
+  "ref_T3": [
+   3.09,
+   0.85,
+   1.87,
+   0.47
+  ],
+  "ref_T2_VHP": [
+   2.3,
+   1.37,
+   1.47,
+   0.76
+  ],
+  "geometry": {
+   "rule": "ear centre + 0.5 * (lips - ear centre)",
+   "lips_ok": true,
+   "antenna_centre_mm": [
+    -18.14531708117024,
+    72.7989730834961,
+    580.9408569335938
+   ],
+   "closest_skin_point_mm": [
+    -8.372695922851676,
+    71.24839782714844,
+    582.3871307373047
+   ],
+   "centre_to_skin_mm": 10.000014114369922,
+   "n_deleted": 55
+  },
+  "antenna": {
+   "n_elements": 1,
+   "length_mm": 13.490660609999999,
+   "radius_mm": 0.5,
+   "gap_mm": 1.0,
+   "pitch_mm": 14.989622899999999,
+   "bbox_mm": [
+    [
+     -18.64531707763672,
+     72.2989730834961,
+     574.1954956054688
+    ],
+    [
+     -17.64531707763672,
+     73.2989730834961,
+     587.6862182617188
+    ]
+   ],
+   "min_metal_to_Skin_mm": 8.397560819068888,
+   "min_metal_to_Ear_skin_mm": 36.891357931622174
+  },
+  "sim_cells_estimate": 1721451,
+  "fatal": false,
+  "sAPD1_z": 0.97,
+  "sAPD1_rel_pct": 26.7,
+  "sAPD4_z": 1.49,
+  "sAPD4_rel_pct": 37.5
+ },
+ {
+  "run": "c5_dip_10_15",
+  "report": "case5_li/vm92/out/c5_dip_10_15/driver_report.json",
+  "ant": "dip",
+  "f_GHz": 10,
+  "d_mm": 15,
+  "grid_mm": 0.5,
+  "P_in_W": 0.002373965922743082,
+  "sAPD1": 2.5925128671671325,
+  "sAPD4": 2.0552772440772977,
+  "ref_T3": [
+   2.01,
+   0.52,
+   1.48,
+   0.35
+  ],
+  "ref_T2_VHP": [
+   1.9,
+   0.65,
+   1.46,
+   0.44
+  ],
+  "geometry": {
+   "rule": "ear centre + 0.5 * (lips - ear centre)",
+   "lips_ok": true,
+   "antenna_centre_mm": [
+    -23.260734570757812,
+    72.7989730834961,
+    580.9408569335938
+   ],
+   "closest_skin_point_mm": [
+    -8.596710205078239,
+    70.46163940429688,
+    583.0630187988281
+   ],
+   "centre_to_skin_mm": 15.000018819161372,
+   "n_deleted": 55
+  },
+  "antenna": {
+   "n_elements": 1,
+   "length_mm": 13.490660609999999,
+   "radius_mm": 0.5,
+   "gap_mm": 1.0,
+   "pitch_mm": 14.989622899999999,
+   "bbox_mm": [
+    [
+     -23.76073455810547,
+     72.2989730834961,
+     574.1954956054688
+    ],
+    [
+     -22.76073455810547,
+     73.2989730834961,
+     587.6862182617188
+    ]
+   ],
+   "min_metal_to_Skin_mm": 13.371427540202678,
+   "min_metal_to_Ear_skin_mm": 38.15065095078654
+  },
+  "sim_cells_estimate": 1862323,
+  "fatal": false,
+  "sAPD1_z": 1.12,
+  "sAPD1_rel_pct": 29.0,
+  "sAPD4_z": 1.64,
+  "sAPD4_rel_pct": 38.9
+ },
+ {
+  "run": "c5_dip_10_20",
+  "report": "case5_li/vm92/out/c5_dip_10_20/driver_report.json",
+  "ant": "dip",
+  "f_GHz": 10,
+  "d_mm": 20,
+  "grid_mm": 0.5,
+  "P_in_W": 0.002216648543253541,
+  "sAPD1": 1.6390977511211937,
+  "sAPD4": 1.4120678082604015,
+  "ref_T3": [
+   1.29,
+   0.35,
+   1.04,
+   0.25
+  ],
+  "ref_T2_VHP": [
+   1.6,
+   0.52,
+   1.3,
+   0.4
+  ],
+  "geometry": {
+   "rule": "ear centre + 0.5 * (lips - ear centre)",
+   "lips_ok": true,
+   "antenna_centre_mm": [
+    -28.38045501592118,
+    72.7989730834961,
+    580.9408569335938
+   ],
+   "closest_skin_point_mm": [
+    -8.855300903320426,
+    69.54254150390625,
+    583.7981567382812
+   ],
+   "centre_to_skin_mm": 19.99999771118151,
+   "n_deleted": 55
+  },
+  "antenna": {
+   "n_elements": 1,
+   "length_mm": 13.490660609999999,
+   "radius_mm": 0.5,
+   "gap_mm": 1.0,
+   "pitch_mm": 14.989622899999999,
+   "bbox_mm": [
+    [
+     -28.880455017089844,
+     72.2989730834961,
+     574.1954956054688
+    ],
+    [
+     -27.880455017089844,
+     73.2989730834961,
+     587.6862182617188
+    ]
+   ],
+   "min_metal_to_Skin_mm": 18.321741681994066,
+   "min_metal_to_Ear_skin_mm": 40.02517823293389
+  },
+  "sim_cells_estimate": 2002324,
+  "fatal": false,
+  "sAPD1_z": 1.0,
+  "sAPD1_rel_pct": 27.1,
+  "sAPD4_z": 1.49,
+  "sAPD4_rel_pct": 35.8
+ },
+ {
+  "run": "c5_dip_30_10",
+  "report": "case5_li/vm92/out/c5_dip_30_10/driver_report.json",
+  "ant": "dip",
+  "f_GHz": 30,
+  "d_mm": 10,
+  "grid_mm": 0.25,
+  "P_in_W": 0.002261471003293991,
+  "sAPD1": 5.138406909377837,
+  "sAPD4": 3.2179388164906544,
+  "ref_T3": [
+   4.15,
+   0.75,
+   2.37,
+   0.4
+  ],
+  "ref_T2_VHP": [
+   7.45,
+   3.71,
+   3.74,
+   1.61
+  ],
+  "geometry": {
+   "rule": "ear centre + 0.5 * (lips - ear centre)",
+   "lips_ok": true,
+   "antenna_centre_mm": [
+    -18.14531708117024,
+    72.7989730834961,
+    580.9408569335938
+   ],
+   "closest_skin_point_mm": [
+    -8.372695922851676,
+    71.24839782714844,
+    582.3871307373047
+   ],
+   "centre_to_skin_mm": 10.000014114369922,
+   "n_deleted": 58
+  },
+  "antenna": {
+   "n_elements": 1,
+   "length_mm": 4.49688687,
+   "radius_mm": 0.25,
+   "gap_mm": 0.5,
+   "pitch_mm": 4.996540966666666,
+   "bbox_mm": [
+    [
+     -18.39531707763672,
+     72.5489730834961,
+     578.6924438476562
+    ],
+    [
+     -17.89531707763672,
+     73.0489730834961,
+     583.1892700195312
+    ]
+   ],
+   "min_metal_to_Skin_mm": 9.418463296456553,
+   "min_metal_to_Ear_skin_mm": 37.297426485763566
+  },
+  "sim_cells_estimate": 11467611,
+  "fatal": false,
+  "sAPD1_z": 1.32,
+  "sAPD1_rel_pct": 23.8,
+  "sAPD4_z": 2.12,
+  "sAPD4_rel_pct": 35.8
+ },
+ {
+  "run": "c5_dip_30_15",
+  "report": "case5_li/vm92/out/c5_dip_30_15/driver_report.json",
+  "ant": "dip",
+  "f_GHz": 30,
+  "d_mm": 15,
+  "grid_mm": 0.25,
+  "P_in_W": 0.0022472685668617487,
+  "sAPD1": 2.6085686646577453,
+  "sAPD4": 2.0026802887915336,
+  "ref_T3": [
+   2.14,
+   0.41,
+   1.55,
+   0.25
+  ],
+  "ref_T2_VHP": [
+   6.15,
+   4.33,
+   3.08,
+   1.69
+  ],
+  "geometry": {
+   "rule": "ear centre + 0.5 * (lips - ear centre)",
+   "lips_ok": true,
+   "antenna_centre_mm": [
+    -23.260734570757812,
+    72.7989730834961,
+    580.9408569335938
+   ],
+   "closest_skin_point_mm": [
+    -8.596710205078239,
+    70.46163940429688,
+    583.0630187988281
+   ],
+   "centre_to_skin_mm": 15.000018819161372,
+   "n_deleted": 58
+  },
+  "antenna": {
+   "n_elements": 1,
+   "length_mm": 4.49688687,
+   "radius_mm": 0.25,
+   "gap_mm": 0.5,
+   "pitch_mm": 4.996540966666666,
+   "bbox_mm": [
+    [
+     -23.51073455810547,
+     72.5489730834961,
+     578.6924438476562
+    ],
+    [
+     -23.01073455810547,
+     73.0489730834961,
+     583.1892700195312
+    ]
+   ],
+   "min_metal_to_Skin_mm": 14.419728624644724,
+   "min_metal_to_Ear_skin_mm": 38.5507066397216
+  },
+  "sim_cells_estimate": 12594591,
+  "fatal": false,
+  "sAPD1_z": 1.14,
+  "sAPD1_rel_pct": 21.9,
+  "sAPD4_z": 1.81,
+  "sAPD4_rel_pct": 29.2
+ },
+ {
+  "run": "c5_dip_30_20",
+  "report": "case5_li/vm92/out/c5_dip_30_20/driver_report.json",
+  "ant": "dip",
+  "f_GHz": 30,
+  "d_mm": 20,
+  "grid_mm": 0.25,
+  "P_in_W": 0.002238656161352992,
+  "sAPD1": 1.4824757806978817,
+  "sAPD4": 1.291181914007918,
+  "ref_T3": [
+   1.27,
+   0.24,
+   1.03,
+   0.18
+  ],
+  "ref_T2_VHP": [
+   5.03,
+   3.99,
+   2.65,
+   1.72
+  ],
+  "geometry": {
+   "rule": "ear centre + 0.5 * (lips - ear centre)",
+   "lips_ok": true,
+   "antenna_centre_mm": [
+    -28.38045501592118,
+    72.7989730834961,
+    580.9408569335938
+   ],
+   "closest_skin_point_mm": [
+    -8.855300903320426,
+    69.54254150390625,
+    583.7981567382812
+   ],
+   "centre_to_skin_mm": 19.99999771118151,
+   "n_deleted": 58
+  },
+  "antenna": {
+   "n_elements": 1,
+   "length_mm": 4.49688687,
+   "radius_mm": 0.25,
+   "gap_mm": 0.5,
+   "pitch_mm": 4.996540966666666,
+   "bbox_mm": [
+    [
+     -28.630455017089844,
+     72.5489730834961,
+     578.6924438476562
+    ],
+    [
+     -28.130455017089844,
+     73.0489730834961,
+     583.1892700195312
+    ]
+   ],
+   "min_metal_to_Skin_mm": 19.42185693004992,
+   "min_metal_to_Ear_skin_mm": 40.41870397302931
+  },
+  "sim_cells_estimate": 13714595,
+  "fatal": false,
+  "sAPD1_z": 0.89,
+  "sAPD1_rel_pct": 16.7,
+  "sAPD4_z": 1.45,
+  "sAPD4_rel_pct": 25.4
+ }
+]

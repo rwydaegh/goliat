@@ -1,0 +1,491 @@
+{
+ "budget_s": 3200,
+ "runs": [
+  {
+   "name": "d835_g2p5",
+   "driver": "run_dipole.py",
+   "frequency_mhz": 835,
+   "timeout_s": 3000,
+   "antenna": {
+    "length_mm": 161.0,
+    "diameter_mm": 3.6,
+    "gap_mm": 1.0,
+    "distance_mm": 15.0,
+    "arm_grid_mm": [
+     1.0,
+     0.4,
+     0.4
+    ]
+   },
+   "geometry": {
+    "liquid_x_mm": 360,
+    "liquid_y_mm": 240,
+    "liquid_depth_mm": 150,
+    "shell_mm": 2.0,
+    "liquid": {
+     "eps_r": 41.5,
+     "sigma": 0.9,
+     "rho": 1000.0
+    },
+    "shell": {
+     "eps_r": 4.0,
+     "sigma": 0.0,
+     "rho": 1.0
+    }
+   },
+   "domain_margin_mm": {
+    "lateral_below": [
+     20,
+     20,
+     20
+    ],
+    "lateral_above": [
+     20,
+     20,
+     50
+    ]
+   },
+   "config": {
+    "solver_settings": {
+     "kernel": "software",
+     "server": "localhost"
+    },
+    "manual_isolve": false,
+    "use_gui": false,
+    "use_web": false,
+    "execution_control": {
+     "do_setup": true,
+     "do_run": true,
+     "do_extract": true,
+     "only_write_input_file": false,
+     "batch_run": false,
+     "auto_cleanup_previous_results": []
+    },
+    "extraction": {
+     "sar": true,
+     "power_balance": true,
+     "sapd": false,
+     "point_sensors": false,
+     "psSAR_averaging_masses_g": [
+      1,
+      10
+     ]
+    },
+    "export_material_properties": false,
+    "gridding_parameters": {
+     "global_gridding": {
+      "grid_mode": "manual"
+     },
+     "global_gridding_per_frequency": {
+      "835": 2.5
+     }
+    }
+   }
+  },
+  {
+   "name": "d1900_g1p694",
+   "driver": "run_dipole.py",
+   "frequency_mhz": 1900,
+   "timeout_s": 3000,
+   "antenna": {
+    "length_mm": 68.0,
+    "diameter_mm": 3.6,
+    "gap_mm": 1.0,
+    "distance_mm": 10.0,
+    "arm_grid_mm": [
+     1.0,
+     0.4,
+     0.4
+    ]
+   },
+   "geometry": {
+    "liquid_x_mm": 240,
+    "liquid_y_mm": 160,
+    "liquid_depth_mm": 100,
+    "shell_mm": 2.0,
+    "liquid": {
+     "eps_r": 40.0,
+     "sigma": 1.4,
+     "rho": 1000.0
+    },
+    "shell": {
+     "eps_r": 4.0,
+     "sigma": 0.0,
+     "rho": 1.0
+    }
+   },
+   "domain_margin_mm": {
+    "lateral_below": [
+     20,
+     20,
+     20
+    ],
+    "lateral_above": [
+     20,
+     20,
+     50
+    ]
+   },
+   "config": {
+    "solver_settings": {
+     "kernel": "software",
+     "server": "localhost"
+    },
+    "manual_isolve": false,
+    "use_gui": false,
+    "use_web": false,
+    "execution_control": {
+     "do_setup": true,
+     "do_run": true,
+     "do_extract": true,
+     "only_write_input_file": false,
+     "batch_run": false,
+     "auto_cleanup_previous_results": []
+    },
+    "extraction": {
+     "sar": true,
+     "power_balance": true,
+     "sapd": false,
+     "point_sensors": false,
+     "psSAR_averaging_masses_g": [
+      1,
+      10
+     ]
+    },
+    "export_material_properties": false,
+    "gridding_parameters": {
+     "global_gridding": {
+      "grid_mode": "manual"
+     },
+     "global_gridding_per_frequency": {
+      "1900": 1.694
+     }
+    }
+   }
+  },
+  {
+   "name": "d2450_g1p482",
+   "driver": "run_dipole.py",
+   "frequency_mhz": 2450,
+   "timeout_s": 3000,
+   "antenna": {
+    "length_mm": 51.5,
+    "diameter_mm": 3.6,
+    "gap_mm": 1.0,
+    "distance_mm": 10.0,
+    "arm_grid_mm": [
+     1.0,
+     0.4,
+     0.4
+    ]
+   },
+   "geometry": {
+    "liquid_x_mm": 240,
+    "liquid_y_mm": 160,
+    "liquid_depth_mm": 100,
+    "shell_mm": 2.0,
+    "liquid": {
+     "eps_r": 39.2,
+     "sigma": 1.8,
+     "rho": 1000.0
+    },
+    "shell": {
+     "eps_r": 4.0,
+     "sigma": 0.0,
+     "rho": 1.0
+    }
+   },
+   "domain_margin_mm": {
+    "lateral_below": [
+     20,
+     20,
+     20
+    ],
+    "lateral_above": [
+     20,
+     20,
+     50
+    ]
+   },
+   "config": {
+    "solver_settings": {
+     "kernel": "software",
+     "server": "localhost"
+    },
+    "manual_isolve": false,
+    "use_gui": false,
+    "use_web": false,
+    "execution_control": {
+     "do_setup": true,
+     "do_run": true,
+     "do_extract": true,
+     "only_write_input_file": false,
+     "batch_run": false,
+     "auto_cleanup_previous_results": []
+    },
+    "extraction": {
+     "sar": true,
+     "power_balance": true,
+     "sapd": false,
+     "point_sensors": false,
+     "psSAR_averaging_masses_g": [
+      1,
+      10
+     ]
+    },
+    "export_material_properties": false,
+    "gridding_parameters": {
+     "global_gridding": {
+      "grid_mode": "manual"
+     },
+     "global_gridding_per_frequency": {
+      "2450": 1.482
+     }
+    }
+   }
+  },
+  {
+   "name": "d1900_g1p0",
+   "driver": "run_dipole.py",
+   "frequency_mhz": 1900,
+   "timeout_s": 3000,
+   "antenna": {
+    "length_mm": 68.0,
+    "diameter_mm": 3.6,
+    "gap_mm": 1.0,
+    "distance_mm": 10.0,
+    "arm_grid_mm": [
+     1.0,
+     0.4,
+     0.4
+    ]
+   },
+   "geometry": {
+    "liquid_x_mm": 240,
+    "liquid_y_mm": 160,
+    "liquid_depth_mm": 100,
+    "shell_mm": 2.0,
+    "liquid": {
+     "eps_r": 40.0,
+     "sigma": 1.4,
+     "rho": 1000.0
+    },
+    "shell": {
+     "eps_r": 4.0,
+     "sigma": 0.0,
+     "rho": 1.0
+    }
+   },
+   "domain_margin_mm": {
+    "lateral_below": [
+     20,
+     20,
+     20
+    ],
+    "lateral_above": [
+     20,
+     20,
+     50
+    ]
+   },
+   "config": {
+    "solver_settings": {
+     "kernel": "software",
+     "server": "localhost"
+    },
+    "manual_isolve": false,
+    "use_gui": false,
+    "use_web": false,
+    "execution_control": {
+     "do_setup": true,
+     "do_run": true,
+     "do_extract": true,
+     "only_write_input_file": false,
+     "batch_run": false,
+     "auto_cleanup_previous_results": []
+    },
+    "extraction": {
+     "sar": true,
+     "power_balance": true,
+     "sapd": false,
+     "point_sensors": false,
+     "psSAR_averaging_masses_g": [
+      1,
+      10
+     ]
+    },
+    "export_material_properties": false,
+    "gridding_parameters": {
+     "global_gridding": {
+      "grid_mode": "manual"
+     },
+     "global_gridding_per_frequency": {
+      "1900": 1.0
+     }
+    }
+   }
+  },
+  {
+   "name": "d2450_g1p0",
+   "driver": "run_dipole.py",
+   "frequency_mhz": 2450,
+   "timeout_s": 3000,
+   "antenna": {
+    "length_mm": 51.5,
+    "diameter_mm": 3.6,
+    "gap_mm": 1.0,
+    "distance_mm": 10.0,
+    "arm_grid_mm": [
+     1.0,
+     0.4,
+     0.4
+    ]
+   },
+   "geometry": {
+    "liquid_x_mm": 240,
+    "liquid_y_mm": 160,
+    "liquid_depth_mm": 100,
+    "shell_mm": 2.0,
+    "liquid": {
+     "eps_r": 39.2,
+     "sigma": 1.8,
+     "rho": 1000.0
+    },
+    "shell": {
+     "eps_r": 4.0,
+     "sigma": 0.0,
+     "rho": 1.0
+    }
+   },
+   "domain_margin_mm": {
+    "lateral_below": [
+     20,
+     20,
+     20
+    ],
+    "lateral_above": [
+     20,
+     20,
+     50
+    ]
+   },
+   "config": {
+    "solver_settings": {
+     "kernel": "software",
+     "server": "localhost"
+    },
+    "manual_isolve": false,
+    "use_gui": false,
+    "use_web": false,
+    "execution_control": {
+     "do_setup": true,
+     "do_run": true,
+     "do_extract": true,
+     "only_write_input_file": false,
+     "batch_run": false,
+     "auto_cleanup_previous_results": []
+    },
+    "extraction": {
+     "sar": true,
+     "power_balance": true,
+     "sapd": false,
+     "point_sensors": false,
+     "psSAR_averaging_masses_g": [
+      1,
+      10
+     ]
+    },
+    "export_material_properties": false,
+    "gridding_parameters": {
+     "global_gridding": {
+      "grid_mode": "manual"
+     },
+     "global_gridding_per_frequency": {
+      "2450": 1.0
+     }
+    }
+   }
+  },
+  {
+   "name": "d835_g1p6",
+   "driver": "run_dipole.py",
+   "frequency_mhz": 835,
+   "timeout_s": 3000,
+   "antenna": {
+    "length_mm": 161.0,
+    "diameter_mm": 3.6,
+    "gap_mm": 1.0,
+    "distance_mm": 15.0,
+    "arm_grid_mm": [
+     1.0,
+     0.4,
+     0.4
+    ]
+   },
+   "geometry": {
+    "liquid_x_mm": 360,
+    "liquid_y_mm": 240,
+    "liquid_depth_mm": 150,
+    "shell_mm": 2.0,
+    "liquid": {
+     "eps_r": 41.5,
+     "sigma": 0.9,
+     "rho": 1000.0
+    },
+    "shell": {
+     "eps_r": 4.0,
+     "sigma": 0.0,
+     "rho": 1.0
+    }
+   },
+   "domain_margin_mm": {
+    "lateral_below": [
+     20,
+     20,
+     20
+    ],
+    "lateral_above": [
+     20,
+     20,
+     50
+    ]
+   },
+   "config": {
+    "solver_settings": {
+     "kernel": "software",
+     "server": "localhost"
+    },
+    "manual_isolve": false,
+    "use_gui": false,
+    "use_web": false,
+    "execution_control": {
+     "do_setup": true,
+     "do_run": true,
+     "do_extract": true,
+     "only_write_input_file": false,
+     "batch_run": false,
+     "auto_cleanup_previous_results": []
+    },
+    "extraction": {
+     "sar": true,
+     "power_balance": true,
+     "sapd": false,
+     "point_sensors": false,
+     "psSAR_averaging_masses_g": [
+      1,
+      10
+     ]
+    },
+    "export_material_properties": false,
+    "gridding_parameters": {
+     "global_gridding": {
+      "grid_mode": "manual"
+     },
+     "global_gridding_per_frequency": {
+      "835": 1.6
+     }
+    }
+   }
+  }
+ ]
+}

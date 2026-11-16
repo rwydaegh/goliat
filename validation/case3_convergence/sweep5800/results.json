@@ -1,0 +1,368 @@
+[
+ {
+  "name": "s5800_dx0p35",
+  "ok": true,
+  "fatal": null,
+  "solver": {
+   "dt_s": "6.72713e-13",
+   "iterations": "6871",
+   "iter_planned": "6871",
+   "cells": "229x229x229",
+   "mcells": "12.0090",
+   "speed": "128.43",
+   "sim_time_ns": 4.622211022999999
+  },
+  "materials": {
+   "Air": {
+    "eps_r": 1.0,
+    "sigma": 0.0,
+    "rho": 1.2
+   },
+   "Muscle": {
+    "eps_r": 48.4846,
+    "sigma": 4.9616,
+    "rho": 1090.4
+   }
+  },
+  "permissive": [
+   "ApiObject.BoundingBox",
+   "ApiObject.Frequency"
+  ],
+  "freq_mhz": 5800,
+  "grid": [
+   [
+    229,
+    0.00034934497816592816,
+    0.0003493449781659455
+   ],
+   [
+    229,
+    0.00034934497816592816,
+    0.0003493449781659455
+   ],
+   [
+    229,
+    0.00034934497816592816,
+    0.0003493449781659455
+   ]
+  ],
+  "gridding_cfg": {
+   "global_gridding_per_frequency": {
+    "5800": 0.35
+   }
+  },
+  "wbSAR": 2.795560938280721e-05,
+  "psSAR10g": 3.935846689273603e-05,
+  "psSAR1g": 6.725932325934991e-05,
+  "DielLoss": 1.993463476715994e-06,
+  "RadPower": 4.583279650672502e-06,
+  "balance_pct": 77.48225496954572,
+  "mie_Pabs": 2.0088492369431424e-06,
+  "mie_wbSAR": 2.8148345061119566e-05,
+  "err_Pabs_pct": -0.7658991996114528,
+  "err_wbSAR_pct": -0.6847140671817797,
+  "wbSAR_per_Wm2_goliat754": 0.021078529474636638,
+  "mie_wbSAR_per_Wm2": 0.021208669728221347,
+  "cpw_tissue": 21.248892344235422
+ },
+ {
+  "name": "s5800_dx0p5",
+  "ok": true,
+  "fatal": null,
+  "solver": {
+   "dt_s": "9.6282e-13",
+   "iterations": "4801",
+   "iter_planned": "4801",
+   "cells": "160x160x160",
+   "mcells": "4.0960",
+   "speed": "103.95",
+   "sim_time_ns": 4.62249882
+  },
+  "materials": {
+   "Air": {
+    "eps_r": 1.0,
+    "sigma": 0.0,
+    "rho": 1.2
+   },
+   "Muscle": {
+    "eps_r": 48.4846,
+    "sigma": 4.9616,
+    "rho": 1090.4
+   }
+  },
+  "permissive": [
+   "ApiObject.BoundingBox",
+   "ApiObject.Frequency"
+  ],
+  "freq_mhz": 5800,
+  "grid": [
+   [
+    160,
+    0.0004999999999999935,
+    0.0005000000000000004
+   ],
+   [
+    160,
+    0.0004999999999999935,
+    0.0005000000000000004
+   ],
+   [
+    160,
+    0.0004999999999999935,
+    0.0005000000000000004
+   ]
+  ],
+  "gridding_cfg": {
+   "global_gridding_per_frequency": {
+    "5800": 0.5
+   }
+  },
+  "wbSAR": 2.8283867435360154e-05,
+  "psSAR10g": 3.9691214624326676e-05,
+  "psSAR1g": 6.86055573169142e-05,
+  "DielLoss": 2.020006014662778e-06,
+  "RadPower": 4.6809904229683144e-06,
+  "balance_pct": 78.9461142808413,
+  "mie_Pabs": 2.0088492369431424e-06,
+  "mie_wbSAR": 2.8148345061119566e-05,
+  "err_Pabs_pct": 0.5553815345850754,
+  "err_wbSAR_pct": 0.4814576982992147,
+  "wbSAR_per_Wm2_goliat754": 0.021326036046261557,
+  "mie_wbSAR_per_Wm2": 0.021208669728221347,
+  "cpw_tissue": 14.846387664094888
+ },
+ {
+  "name": "s5800_dx0p7",
+  "ok": true,
+  "fatal": null,
+  "solver": {
+   "dt_s": "1.33958e-12",
+   "iterations": "3451",
+   "iter_planned": "3451",
+   "cells": "115x115x115",
+   "mcells": "1.5209",
+   "speed": "122.41",
+   "sim_time_ns": 4.622890580000001
+  },
+  "materials": {
+   "Air": {
+    "eps_r": 1.0,
+    "sigma": 0.0,
+    "rho": 1.2
+   },
+   "Muscle": {
+    "eps_r": 48.4846,
+    "sigma": 4.9616,
+    "rho": 1090.4
+   }
+  },
+  "permissive": [
+   "ApiObject.BoundingBox",
+   "ApiObject.Frequency"
+  ],
+  "freq_mhz": 5800,
+  "grid": [
+   [
+    115,
+    0.0006956521739130278,
+    0.0006956521739130625
+   ],
+   [
+    115,
+    0.0006956521739130278,
+    0.0006956521739130625
+   ],
+   [
+    115,
+    0.0006956521739130278,
+    0.0006956521739130625
+   ]
+  ],
+  "gridding_cfg": {
+   "global_gridding_per_frequency": {
+    "5800": 0.7
+   }
+  },
+  "wbSAR": 2.821791294889259e-05,
+  "psSAR10g": 3.953756458940916e-05,
+  "psSAR1g": 6.840418791398406e-05,
+  "DielLoss": 2.014134326613036e-06,
+  "RadPower": 4.724914289787126e-06,
+  "balance_pct": 79.39441651196441,
+  "mie_Pabs": 2.0088492369431424e-06,
+  "mie_wbSAR": 2.8148345061119566e-05,
+  "err_Pabs_pct": 0.26309040881216106,
+  "err_wbSAR_pct": 0.24714734604101007,
+  "wbSAR_per_Wm2_goliat754": 0.021276306363465013,
+  "mie_wbSAR_per_Wm2": 0.021208669728221347,
+  "cpw_tissue": 10.670841133567917
+ },
+ {
+  "name": "s5800_dx1p0",
+  "ok": true,
+  "fatal": null,
+  "solver": {
+   "dt_s": "1.92564e-12",
+   "iterations": "2401",
+   "iter_planned": "2401",
+   "cells": "80x80x80",
+   "mcells": "0.5120",
+   "speed": "146.39",
+   "sim_time_ns": 4.6234616399999995
+  },
+  "materials": {
+   "Air": {
+    "eps_r": 1.0,
+    "sigma": 0.0,
+    "rho": 1.2
+   },
+   "Muscle": {
+    "eps_r": 48.4846,
+    "sigma": 4.9616,
+    "rho": 1090.4
+   }
+  },
+  "permissive": [
+   "ApiObject.BoundingBox",
+   "ApiObject.Frequency"
+  ],
+  "freq_mhz": 5800,
+  "grid": [
+   [
+    80,
+    0.000999999999999994,
+    0.0010000000000000009
+   ],
+   [
+    80,
+    0.000999999999999994,
+    0.0010000000000000009
+   ],
+   [
+    80,
+    0.000999999999999994,
+    0.0010000000000000009
+   ]
+  ],
+  "gridding_cfg": {
+   "global_gridding_per_frequency": {
+    "5800": 1.0
+   }
+  },
+  "wbSAR": 2.7589753840935627e-05,
+  "psSAR10g": 3.752824341063388e-05,
+  "psSAR1g": 6.510878301924095e-05,
+  "DielLoss": 1.978074404410232e-06,
+  "RadPower": 4.793908008229871e-06,
+  "balance_pct": 79.78241779891621,
+  "mie_Pabs": 2.0088492369431424e-06,
+  "mie_wbSAR": 2.8148345061119566e-05,
+  "err_Pabs_pct": -1.5319632736471633,
+  "err_wbSAR_pct": -1.9844549261103905,
+  "wbSAR_per_Wm2_goliat754": 0.020802674396065462,
+  "mie_wbSAR_per_Wm2": 0.021208669728221347,
+  "cpw_tissue": 7.423193832047444
+ },
+ {
+  "name": "s5800_dx1p0_production_pad0",
+  "ok": false,
+  "fatal": null,
+  "solver": {
+   "dt_s": "1.92564e-12",
+   "iterations": "429",
+   "iter_planned": "429",
+   "cells": "50x50x50",
+   "mcells": "0.1250",
+   "speed": "112.12",
+   "sim_time_ns": 0.82609956
+  },
+  "materials": {
+   "Air": {
+    "eps_r": 1.0,
+    "sigma": 0.0,
+    "rho": 1.2
+   },
+   "Muscle": {
+    "eps_r": 48.4846,
+    "sigma": 4.9616,
+    "rho": 1090.4
+   }
+  },
+  "permissive": [
+   "ApiObject.BoundingBox",
+   "ApiObject.Frequency"
+  ],
+  "freq_mhz": 5800,
+  "grid": [
+   [
+    50,
+    0.0009999999999999974,
+    0.0010000000000000009
+   ],
+   [
+    50,
+    0.0009999999999999974,
+    0.0010000000000000009
+   ],
+   [
+    50,
+    0.0009999999999999974,
+    0.0010000000000000009
+   ]
+  ],
+  "gridding_cfg": null
+ },
+ {
+  "name": "s5800_dx1p4",
+  "ok": false,
+  "fatal": null,
+  "solver": {
+   "dt_s": "2.65606e-12",
+   "iterations": "1741",
+   "iter_planned": "1741",
+   "cells": "58x58x58",
+   "mcells": "0.1951",
+   "speed": "135.29",
+   "sim_time_ns": 4.62420046
+  },
+  "materials": {
+   "Air": {
+    "eps_r": 1.0,
+    "sigma": 0.0,
+    "rho": 1.2
+   },
+   "Muscle": {
+    "eps_r": 48.4846,
+    "sigma": 4.9616,
+    "rho": 1090.4
+   }
+  },
+  "permissive": [
+   "ApiObject.BoundingBox",
+   "ApiObject.Frequency"
+  ],
+  "freq_mhz": 5800,
+  "grid": [
+   [
+    58,
+    0.001379310344827571,
+    0.0013793103448276021
+   ],
+   [
+    58,
+    0.001379310344827571,
+    0.0013793103448276021
+   ],
+   [
+    58,
+    0.001379310344827571,
+    0.0013793103448276021
+   ]
+  ],
+  "gridding_cfg": {
+   "global_gridding_per_frequency": {
+    "5800": 1.4
+   }
+  }
+ }
+]

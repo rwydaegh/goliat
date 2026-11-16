@@ -1,0 +1,55 @@
+{
+    "input_power_W": 0.0024723068345338106,
+    "input_power_frequency_MHz": 3500.0,
+    "eyes_group_weighted_avg_sar": 8.878463943675662e-05,
+    "eyes_group_peak_sar": 0.0001264412421733141,
+    "skin_group_weighted_avg_sar": 8.957222323023481e-05,
+    "skin_group_peak_sar": 0.0002430870954412967,
+    "brain_group_weighted_avg_sar": 7.648079843642027e-06,
+    "brain_group_peak_sar": 0.0001264412421733141,
+    "genitals_group_weighted_avg_sar": 0.0,
+    "genitals_group_peak_sar": 0.0,
+    "head_SAR": 1.6909327627033823e-05,
+    "peak_sar_10g_W_kg": 0.0002430870954412967,
+    "peak_sar_details": {
+        "PeakValue": 0.0002430870954412967,
+        "PeakLocation": [
+            -0.006211917381733656,
+            0.14521345496177673,
+            0.06287507712841034
+        ],
+        "PeakCell": [
+            163,
+            173,
+            220
+        ],
+        "PeakCubeSideLength": 0.023528004065155983
+    },
+    "peak_sar_1g_W_kg": 0.0006177350296638906,
+    "eyes_group_peak_sar_1g": 0.00022355400142259896,
+    "skin_group_peak_sar_1g": 0.0006177350296638906,
+    "brain_group_peak_sar_1g": 0.0001581010001245886,
+    "genitals_group_peak_sar_1g": 0.0,
+    "peak_sar_details_1g": {
+        "PeakValue": 0.0006177350296638906,
+        "PeakLocation": [
+            -0.07724190503358841,
+            0.049372002482414246,
+            0.10567880421876907
+        ],
+        "PeakCell": [
+            7,
+            77,
+            263
+        ],
+        "PeakCubeSideLength": 0.012126724235713482
+    },
+    "power_balance": {
+        "Pin": 0.0024723068345338106,
+        "LumpedLoss": 0.0,
+        "DielLoss": 7.866887765540056e-05,
+        "SIBCLoss": 5.313652271036363e-06,
+        "RadPower": 0.0023840981946087287,
+        "Balance": 99.61413518191078
+    }
+}

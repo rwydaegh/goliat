@@ -1,0 +1,200 @@
+[
+ {
+  "name": "s2450_dx0p7_pad50",
+  "ok": true,
+  "fatal": null,
+  "solver": {
+   "dt_s": "1.3466e-12",
+   "iterations": "2453",
+   "iter_planned": "2453",
+   "cells": "286x286x286",
+   "mcells": "23.3937",
+   "speed": "160.18",
+   "sim_time_ns": 3.3032098
+  },
+  "materials": {
+   "Air": {
+    "eps_r": 1.0,
+    "sigma": 0.0,
+    "rho": 1.2
+   },
+   "Muscle": {
+    "eps_r": 52.7295,
+    "sigma": 1.7388,
+    "rho": 1090.4
+   }
+  },
+  "permissive": [
+   "ApiObject.BoundingBox",
+   "ApiObject.Frequency"
+  ],
+  "freq_mhz": 2450,
+  "grid": [
+   [
+    286,
+    0.000699300699300659,
+    0.0006993006993007284
+   ],
+   [
+    286,
+    0.000699300699300659,
+    0.0006993006993007284
+   ],
+   [
+    286,
+    0.000699300699300659,
+    0.0006993006993007284
+   ]
+  ],
+  "gridding_cfg": {
+   "global_gridding_per_frequency": {
+    "2450": 0.7
+   }
+  },
+  "wbSAR": 1.4867166746764244e-05,
+  "psSAR10g": 2.9747388907708228e-05,
+  "psSAR1g": 5.240197788225487e-05,
+  "DielLoss": 8.483801049220344e-06,
+  "RadPower": 1.8972729731765934e-05,
+  "balance_pct": 51.755560522159136,
+  "mie_Pabs": 8.209974421776998e-06,
+  "mie_wbSAR": 1.4379948773483132e-05,
+  "err_Pabs_pct": 3.335292089546815,
+  "err_wbSAR_pct": 3.388176000873866,
+  "wbSAR_per_Wm2_goliat754": 0.01120984372706024,
+  "mie_wbSAR_per_Wm2": 0.010834725223928145,
+  "cpw_tissue": 24.09704726055319
+ },
+ {
+  "name": "s2450_dx0p7_pmlhigh",
+  "ok": true,
+  "fatal": null,
+  "solver": {
+   "dt_s": "1.34347e-12",
+   "iterations": "1844",
+   "iter_planned": "1844",
+   "cells": "215x215x215",
+   "mcells": "9.9384",
+   "speed": "106.40",
+   "sim_time_ns": 2.4773586799999996
+  },
+  "materials": {
+   "Air": {
+    "eps_r": 1.0,
+    "sigma": 0.0,
+    "rho": 1.2
+   },
+   "Muscle": {
+    "eps_r": 52.7295,
+    "sigma": 1.7388,
+    "rho": 1090.4
+   }
+  },
+  "permissive": [
+   "ApiObject.BoundingBox",
+   "ApiObject.Frequency"
+  ],
+  "freq_mhz": 2450,
+  "grid": [
+   [
+    215,
+    0.0006976744186046324,
+    0.0006976744186046879
+   ],
+   [
+    215,
+    0.0006976744186046324,
+    0.0006976744186046879
+   ],
+   [
+    215,
+    0.0006976744186046324,
+    0.0006976744186046879
+   ]
+  ],
+  "gridding_cfg": {
+   "global_gridding_per_frequency": {
+    "2450": 0.7
+   }
+  },
+  "wbSAR": 1.4535068797136926e-05,
+  "psSAR10g": 2.9399812774499878e-05,
+  "psSAR1g": 5.093840809422545e-05,
+  "DielLoss": 8.298019427018231e-06,
+  "RadPower": 1.863250379021817e-05,
+  "balance_pct": 90.24717558131667,
+  "mie_Pabs": 8.209974421776998e-06,
+  "mie_wbSAR": 1.4379948773483132e-05,
+  "err_Pabs_pct": 1.0724150980019331,
+  "err_wbSAR_pct": 1.0787244523418504,
+  "wbSAR_per_Wm2_goliat754": 0.010959441873041242,
+  "mie_wbSAR_per_Wm2": 0.010834725223928145,
+  "cpw_tissue": 24.153217533887542
+ },
+ {
+  "name": "s5800_dx0p35_pmlhigh",
+  "ok": true,
+  "fatal": null,
+  "solver": {
+   "dt_s": "6.72713e-13",
+   "iterations": "6871",
+   "iter_planned": "6871",
+   "cells": "229x229x229",
+   "mcells": "12.0090",
+   "speed": "103.84",
+   "sim_time_ns": 4.622211022999999
+  },
+  "materials": {
+   "Air": {
+    "eps_r": 1.0,
+    "sigma": 0.0,
+    "rho": 1.2
+   },
+   "Muscle": {
+    "eps_r": 48.4846,
+    "sigma": 4.9616,
+    "rho": 1090.4
+   }
+  },
+  "permissive": [
+   "ApiObject.BoundingBox",
+   "ApiObject.Frequency"
+  ],
+  "freq_mhz": 5800,
+  "grid": [
+   [
+    229,
+    0.00034934497816592816,
+    0.0003493449781659455
+   ],
+   [
+    229,
+    0.00034934497816592816,
+    0.0003493449781659455
+   ],
+   [
+    229,
+    0.00034934497816592816,
+    0.0003493449781659455
+   ]
+  ],
+  "gridding_cfg": {
+   "global_gridding_per_frequency": {
+    "5800": 0.35
+   }
+  },
+  "wbSAR": 2.847505780478205e-05,
+  "psSAR10g": 4.0391943912254646e-05,
+  "psSAR1g": 7.015364099061117e-05,
+  "DielLoss": 2.030504395659368e-06,
+  "RadPower": 4.662151732469543e-06,
+  "balance_pct": 78.84785500951872,
+  "mie_Pabs": 2.0088492369431424e-06,
+  "mie_wbSAR": 2.8148345061119566e-05,
+  "err_Pabs_pct": 1.0779882490921988,
+  "err_wbSAR_pct": 1.160681890722448,
+  "wbSAR_per_Wm2_goliat754": 0.021470193584805664,
+  "mie_wbSAR_per_Wm2": 0.021208669728221347,
+  "cpw_tissue": 21.248892344235422
+ }
+]

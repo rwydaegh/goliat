@@ -1,0 +1,86 @@
+{
+ "budget_s": 1000,
+ "runs": [
+  {
+   "name": "probe1900",
+   "driver": "run_dipole.py",
+   "frequency_mhz": 1900,
+   "timeout_s": 900,
+   "antenna": {
+    "length_mm": 68.0,
+    "diameter_mm": 3.6,
+    "gap_mm": 1.0,
+    "distance_mm": 10.0,
+    "arm_grid_mm": [
+     2.0,
+     1.0,
+     1.0
+    ]
+   },
+   "geometry": {
+    "liquid_x_mm": 120,
+    "liquid_y_mm": 80,
+    "liquid_depth_mm": 40,
+    "shell_mm": 2.0,
+    "liquid": {
+     "eps_r": 40.0,
+     "sigma": 1.4,
+     "rho": 1000.0
+    },
+    "shell": {
+     "eps_r": 4.0,
+     "sigma": 0.0,
+     "rho": 1.0
+    }
+   },
+   "domain_margin_mm": {
+    "lateral_below": [
+     20,
+     20,
+     20
+    ],
+    "lateral_above": [
+     20,
+     20,
+     50
+    ]
+   },
+   "config": {
+    "solver_settings": {
+     "kernel": "software",
+     "server": "localhost"
+    },
+    "manual_isolve": false,
+    "use_gui": false,
+    "use_web": false,
+    "execution_control": {
+     "do_setup": true,
+     "do_run": true,
+     "do_extract": true,
+     "only_write_input_file": false,
+     "batch_run": false,
+     "auto_cleanup_previous_results": []
+    },
+    "extraction": {
+     "sar": true,
+     "power_balance": true,
+     "sapd": false,
+     "point_sensors": false,
+     "psSAR_averaging_masses_g": [
+      1,
+      10
+     ]
+    },
+    "export_material_properties": false,
+    "gridding_parameters": {
+     "global_gridding": {
+      "grid_mode": "manual"
+     },
+     "global_gridding_per_frequency": {
+      "1900": 3.0
+     }
+    }
+   }
+  }
+ ]
+}

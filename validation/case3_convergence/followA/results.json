@@ -1,0 +1,332 @@
+[
+ {
+  "name": "s2450_dx0p7_off",
+  "ok": true,
+  "fatal": null,
+  "solver": {
+   "dt_s": "1.34347e-12",
+   "iterations": "1844",
+   "iter_planned": "1844",
+   "cells": "215x215x215",
+   "mcells": "9.9384",
+   "speed": "141.91",
+   "sim_time_ns": 2.4773586799999996
+  },
+  "materials": {
+   "Air": {
+    "eps_r": 1.0,
+    "sigma": 0.0,
+    "rho": 1.2
+   },
+   "Muscle": {
+    "eps_r": 52.7295,
+    "sigma": 1.7388,
+    "rho": 1090.4
+   }
+  },
+  "permissive": [
+   "ApiObject.BoundingBox",
+   "ApiObject.Frequency"
+  ],
+  "freq_mhz": 2450,
+  "grid": [
+   [
+    215,
+    0.0006976744186046324,
+    0.0006976744186046879
+   ],
+   [
+    215,
+    0.0006976744186046324,
+    0.0006976744186046879
+   ],
+   [
+    215,
+    0.0006976744186046324,
+    0.0006976744186046949
+   ]
+  ],
+  "gridding_cfg": {
+   "global_gridding_per_frequency": {
+    "2450": 0.7
+   }
+  },
+  "wbSAR": 1.4079913700922264e-05,
+  "psSAR10g": 2.981521720357705e-05,
+  "psSAR1g": 4.804706259164959e-05,
+  "DielLoss": 8.038172991158211e-06,
+  "RadPower": 1.8095263702205616e-05,
+  "balance_pct": 87.57605007465034,
+  "mie_Pabs": 8.209974421776998e-06,
+  "mie_wbSAR": 1.4379948773483132e-05,
+  "err_Pabs_pct": -2.0925939813293826,
+  "err_wbSAR_pct": -2.086482207183782,
+  "wbSAR_per_Wm2_goliat754": 0.010616254930495388,
+  "mie_wbSAR_per_Wm2": 0.010834725223928145,
+  "cpw_tissue": 24.153217533887542
+ },
+ {
+  "name": "s2450_dx0p7_t20",
+  "ok": true,
+  "fatal": null,
+  "solver": {
+   "dt_s": "1.34347e-12",
+   "iterations": "12902",
+   "iter_planned": "12902",
+   "cells": "215x215x215",
+   "mcells": "9.9384",
+   "speed": "132.08",
+   "sim_time_ns": 17.333449939999998
+  },
+  "materials": {
+   "Air": {
+    "eps_r": 1.0,
+    "sigma": 0.0,
+    "rho": 1.2
+   },
+   "Muscle": {
+    "eps_r": 52.7295,
+    "sigma": 1.7388,
+    "rho": 1090.4
+   }
+  },
+  "permissive": [
+   "ApiObject.BoundingBox",
+   "ApiObject.Frequency"
+  ],
+  "freq_mhz": 2450,
+  "grid": [
+   [
+    215,
+    0.0006976744186046324,
+    0.0006976744186046879
+   ],
+   [
+    215,
+    0.0006976744186046324,
+    0.0006976744186046879
+   ],
+   [
+    215,
+    0.0006976744186046324,
+    0.0006976744186046879
+   ]
+  ],
+  "gridding_cfg": {
+   "global_gridding_per_frequency": {
+    "2450": 0.7
+   }
+  },
+  "wbSAR": 1.4107685302910426e-05,
+  "psSAR10g": 2.9781060220557265e-05,
+  "psSAR1g": 4.846001320402138e-05,
+  "DielLoss": 8.054027700172466e-06,
+  "RadPower": 1.807936170890963e-05,
+  "balance_pct": 87.57589161976847,
+  "mie_Pabs": 8.209974421776998e-06,
+  "mie_wbSAR": 1.4379948773483132e-05,
+  "err_Pabs_pct": -1.8994787753647935,
+  "err_wbSAR_pct": -1.8933549406988437,
+  "wbSAR_per_Wm2_goliat754": 0.010637194718394461,
+  "mie_wbSAR_per_Wm2": 0.010834725223928145,
+  "cpw_tissue": 24.153217533887542
+ },
+ {
+  "name": "s2450_dx1p0_t20",
+  "ok": true,
+  "fatal": null,
+  "solver": {
+   "dt_s": "1.92564e-12",
+   "iterations": "9001",
+   "iter_planned": "9001",
+   "cells": "150x150x150",
+   "mcells": "3.3750",
+   "speed": "121.75",
+   "sim_time_ns": 17.332685639999998
+  },
+  "materials": {
+   "Air": {
+    "eps_r": 1.0,
+    "sigma": 0.0,
+    "rho": 1.2
+   },
+   "Muscle": {
+    "eps_r": 52.7295,
+    "sigma": 1.7388,
+    "rho": 1090.4
+   }
+  },
+  "permissive": [
+   "ApiObject.BoundingBox",
+   "ApiObject.Frequency"
+  ],
+  "freq_mhz": 2450,
+  "grid": [
+   [
+    150,
+    0.000999999999999987,
+    0.0010000000000000009
+   ],
+   [
+    150,
+    0.000999999999999987,
+    0.0010000000000000009
+   ],
+   [
+    150,
+    0.000999999999999987,
+    0.0010000000000000009
+   ]
+  ],
+  "gridding_cfg": {
+   "global_gridding_per_frequency": {
+    "2450": 1.0
+   }
+  },
+  "wbSAR": 1.4416699453168347e-05,
+  "psSAR10g": 2.8988126359763555e-05,
+  "psSAR1g": 4.897865073871799e-05,
+  "DielLoss": 8.237012046864018e-06,
+  "RadPower": 1.854965235081075e-05,
+  "balance_pct": 89.76508869265234,
+  "mie_Pabs": 8.209974421776998e-06,
+  "mie_wbSAR": 1.4379948773483132e-05,
+  "err_Pabs_pct": 0.3293265447368743,
+  "err_wbSAR_pct": 0.2555689193620925,
+  "wbSAR_per_Wm2_goliat754": 0.010870191387688934,
+  "mie_wbSAR_per_Wm2": 0.010834725223928145,
+  "cpw_tissue": 16.85108200038753
+ },
+ {
+  "name": "s2450_dx1p482_off",
+  "ok": true,
+  "fatal": null,
+  "solver": {
+   "dt_s": "2.83182e-12",
+   "iterations": "875",
+   "iter_planned": "875",
+   "cells": "102x102x102",
+   "mcells": "1.0612",
+   "speed": "131.07",
+   "sim_time_ns": 2.4778425
+  },
+  "materials": {
+   "Air": {
+    "eps_r": 1.0,
+    "sigma": 0.0,
+    "rho": 1.2
+   },
+   "Muscle": {
+    "eps_r": 52.7295,
+    "sigma": 1.7388,
+    "rho": 1090.4
+   }
+  },
+  "permissive": [
+   "ApiObject.BoundingBox",
+   "ApiObject.Frequency"
+  ],
+  "freq_mhz": 2450,
+  "grid": [
+   [
+    102,
+    0.0014705882352940847,
+    0.001470588235294154
+   ],
+   [
+    102,
+    0.0014705882352940847,
+    0.0014705882352941402
+   ],
+   [
+    102,
+    0.0014705882352940847,
+    0.001470588235294154
+   ]
+  ],
+  "gridding_cfg": {
+   "global_gridding_per_frequency": {
+    "2450": 1.482
+   }
+  },
+  "wbSAR": 1.4480610127533088e-05,
+  "psSAR10g": 2.8766766263288446e-05,
+  "psSAR1g": 4.706823528977111e-05,
+  "DielLoss": 8.284106245489949e-06,
+  "RadPower": 1.8936028150368202e-05,
+  "balance_pct": 91.217694819898,
+  "mie_Pabs": 8.209974421776998e-06,
+  "mie_wbSAR": 1.4379948773483132e-05,
+  "err_Pabs_pct": 0.9029482907561226,
+  "err_wbSAR_pct": 0.7000119098864666,
+  "wbSAR_per_Wm2_goliat754": 0.010918380036159948,
+  "mie_wbSAR_per_Wm2": 0.010834725223928145,
+  "cpw_tissue": 11.458735760263247
+ },
+ {
+  "name": "s2450_dx2p5",
+  "ok": true,
+  "fatal": null,
+  "solver": {
+   "dt_s": "4.8141e-12",
+   "iterations": "515",
+   "iter_planned": "515",
+   "cells": "60x60x60",
+   "mcells": "0.2160",
+   "speed": "141.66",
+   "sim_time_ns": 2.4792615000000002
+  },
+  "materials": {
+   "Air": {
+    "eps_r": 1.0,
+    "sigma": 0.0,
+    "rho": 1.2
+   },
+   "Muscle": {
+    "eps_r": 52.7295,
+    "sigma": 1.7388,
+    "rho": 1090.4
+   }
+  },
+  "permissive": [
+   "ApiObject.BoundingBox",
+   "ApiObject.Frequency"
+  ],
+  "freq_mhz": 2450,
+  "grid": [
+   [
+    60,
+    0.0024999999999999883,
+    0.0025000000000000022
+   ],
+   [
+    60,
+    0.0024999999999999883,
+    0.0025000000000000022
+   ],
+   [
+    60,
+    0.0024999999999999883,
+    0.0025000000000000022
+   ]
+  ],
+  "gridding_cfg": {
+   "global_gridding_per_frequency": {
+    "2450": 2.5
+   }
+  },
+  "wbSAR": 1.391863393432188e-05,
+  "psSAR10g": 2.8484661015681922e-05,
+  "psSAR1g": 3.898196155205369e-05,
+  "DielLoss": 7.956478510404413e-06,
+  "RadPower": 1.9094213959256752e-05,
+  "balance_pct": 90.6498760983312,
+  "mie_Pabs": 8.209974421776998e-06,
+  "mie_wbSAR": 1.4379948773483132e-05,
+  "err_Pabs_pct": -3.0876577483626044,
+  "err_wbSAR_pct": -3.2080422985367285,
+  "wbSAR_per_Wm2_goliat754": 0.010494649986478697,
+  "mie_wbSAR_per_Wm2": 0.010834725223928145,
+  "cpw_tissue": 6.740432800155013
+ }
+]

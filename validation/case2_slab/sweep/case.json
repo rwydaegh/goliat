@@ -1,0 +1,536 @@
+{
+ "runs": [
+  {
+   "name": "slab10G_N6",
+   "phantom": "valslab",
+   "timeout_s": 3000,
+   "keep_h5": false,
+   "skin_group": true,
+   "geometry": {
+    "kind": "box",
+    "lo_mm": [
+     -40,
+     -40,
+     -15
+    ],
+    "hi_mm": [
+     40,
+     40,
+     0
+    ],
+    "tissue_entity": "Skin",
+    "itis_material": "Skin"
+   },
+   "config": {
+    "far_field_setup": {
+     "type": "environmental",
+     "environmental": {
+      "incident_directions": [
+       "z_neg"
+      ],
+      "polarizations": [
+       "theta"
+      ]
+     }
+    },
+    "solver_settings": {
+     "kernel": "software",
+     "server": "localhost"
+    },
+    "manual_isolve": false,
+    "use_gui": false,
+    "use_web": false,
+    "execution_control": {
+     "do_setup": true,
+     "do_run": true,
+     "do_extract": true,
+     "only_write_input_file": false,
+     "batch_run": false,
+     "auto_cleanup_previous_results": []
+    },
+    "extraction": {
+     "sar": true,
+     "power_balance": true,
+     "sapd": true,
+     "point_sensors": false,
+     "psSAR_averaging_masses_g": [
+      1,
+      10
+     ],
+     "sapd_field": true
+    },
+    "export_material_properties": true,
+    "phantoms": [
+     "valslab"
+    ],
+    "frequencies_mhz": [
+     10000
+    ],
+    "simulation_parameters": {
+     "bbox_padding_mm": 10
+    },
+    "gridding_parameters": {
+     "global_gridding_per_frequency": {
+      "10000": 0.8932
+     }
+    }
+   }
+  },
+  {
+   "name": "slab10G_N10",
+   "phantom": "valslab",
+   "timeout_s": 3000,
+   "keep_h5": false,
+   "skin_group": true,
+   "geometry": {
+    "kind": "box",
+    "lo_mm": [
+     -40,
+     -40,
+     -15
+    ],
+    "hi_mm": [
+     40,
+     40,
+     0
+    ],
+    "tissue_entity": "Skin",
+    "itis_material": "Skin"
+   },
+   "config": {
+    "far_field_setup": {
+     "type": "environmental",
+     "environmental": {
+      "incident_directions": [
+       "z_neg"
+      ],
+      "polarizations": [
+       "theta"
+      ]
+     }
+    },
+    "solver_settings": {
+     "kernel": "software",
+     "server": "localhost"
+    },
+    "manual_isolve": false,
+    "use_gui": false,
+    "use_web": false,
+    "execution_control": {
+     "do_setup": true,
+     "do_run": true,
+     "do_extract": true,
+     "only_write_input_file": false,
+     "batch_run": false,
+     "auto_cleanup_previous_results": []
+    },
+    "extraction": {
+     "sar": true,
+     "power_balance": true,
+     "sapd": true,
+     "point_sensors": false,
+     "psSAR_averaging_masses_g": [
+      1,
+      10
+     ],
+     "sapd_field": true
+    },
+    "export_material_properties": true,
+    "phantoms": [
+     "valslab"
+    ],
+    "frequencies_mhz": [
+     10000
+    ],
+    "simulation_parameters": {
+     "bbox_padding_mm": 10
+    },
+    "gridding_parameters": {
+     "global_gridding_per_frequency": {
+      "10000": 0.5359
+     }
+    }
+   }
+  },
+  {
+   "name": "slab10G_N15",
+   "phantom": "valslab",
+   "timeout_s": 3000,
+   "keep_h5": false,
+   "skin_group": true,
+   "geometry": {
+    "kind": "box",
+    "lo_mm": [
+     -40,
+     -40,
+     -15
+    ],
+    "hi_mm": [
+     40,
+     40,
+     0
+    ],
+    "tissue_entity": "Skin",
+    "itis_material": "Skin"
+   },
+   "config": {
+    "far_field_setup": {
+     "type": "environmental",
+     "environmental": {
+      "incident_directions": [
+       "z_neg"
+      ],
+      "polarizations": [
+       "theta"
+      ]
+     }
+    },
+    "solver_settings": {
+     "kernel": "software",
+     "server": "localhost"
+    },
+    "manual_isolve": false,
+    "use_gui": false,
+    "use_web": false,
+    "execution_control": {
+     "do_setup": true,
+     "do_run": true,
+     "do_extract": true,
+     "only_write_input_file": false,
+     "batch_run": false,
+     "auto_cleanup_previous_results": []
+    },
+    "extraction": {
+     "sar": true,
+     "power_balance": true,
+     "sapd": true,
+     "point_sensors": false,
+     "psSAR_averaging_masses_g": [
+      1,
+      10
+     ],
+     "sapd_field": true
+    },
+    "export_material_properties": true,
+    "phantoms": [
+     "valslab"
+    ],
+    "frequencies_mhz": [
+     10000
+    ],
+    "simulation_parameters": {
+     "bbox_padding_mm": 10
+    },
+    "gridding_parameters": {
+     "global_gridding_per_frequency": {
+      "10000": 0.3573
+     }
+    }
+   }
+  },
+  {
+   "name": "slab10G_N20",
+   "phantom": "valslab",
+   "timeout_s": 3000,
+   "keep_h5": false,
+   "skin_group": true,
+   "geometry": {
+    "kind": "box",
+    "lo_mm": [
+     -40,
+     -40,
+     -15
+    ],
+    "hi_mm": [
+     40,
+     40,
+     0
+    ],
+    "tissue_entity": "Skin",
+    "itis_material": "Skin"
+   },
+   "config": {
+    "far_field_setup": {
+     "type": "environmental",
+     "environmental": {
+      "incident_directions": [
+       "z_neg"
+      ],
+      "polarizations": [
+       "theta"
+      ]
+     }
+    },
+    "solver_settings": {
+     "kernel": "software",
+     "server": "localhost"
+    },
+    "manual_isolve": false,
+    "use_gui": false,
+    "use_web": false,
+    "execution_control": {
+     "do_setup": true,
+     "do_run": true,
+     "do_extract": true,
+     "only_write_input_file": false,
+     "batch_run": false,
+     "auto_cleanup_previous_results": []
+    },
+    "extraction": {
+     "sar": true,
+     "power_balance": true,
+     "sapd": true,
+     "point_sensors": false,
+     "psSAR_averaging_masses_g": [
+      1,
+      10
+     ],
+     "sapd_field": true
+    },
+    "export_material_properties": true,
+    "phantoms": [
+     "valslab"
+    ],
+    "frequencies_mhz": [
+     10000
+    ],
+    "simulation_parameters": {
+     "bbox_padding_mm": 10
+    },
+    "gridding_parameters": {
+     "global_gridding_per_frequency": {
+      "10000": 0.268
+     }
+    }
+   }
+  },
+  {
+   "name": "slab30G_N6",
+   "phantom": "valslab",
+   "timeout_s": 3000,
+   "keep_h5": false,
+   "skin_group": true,
+   "geometry": {
+    "kind": "box",
+    "lo_mm": [
+     -20,
+     -20,
+     -8
+    ],
+    "hi_mm": [
+     20,
+     20,
+     0
+    ],
+    "tissue_entity": "Skin",
+    "itis_material": "Skin"
+   },
+   "config": {
+    "far_field_setup": {
+     "type": "environmental",
+     "environmental": {
+      "incident_directions": [
+       "z_neg"
+      ],
+      "polarizations": [
+       "theta"
+      ]
+     }
+    },
+    "solver_settings": {
+     "kernel": "software",
+     "server": "localhost"
+    },
+    "manual_isolve": false,
+    "use_gui": false,
+    "use_web": false,
+    "execution_control": {
+     "do_setup": true,
+     "do_run": true,
+     "do_extract": true,
+     "only_write_input_file": false,
+     "batch_run": false,
+     "auto_cleanup_previous_results": []
+    },
+    "extraction": {
+     "sar": true,
+     "power_balance": true,
+     "sapd": true,
+     "point_sensors": false,
+     "psSAR_averaging_masses_g": [
+      1,
+      10
+     ],
+     "sapd_field": true
+    },
+    "export_material_properties": true,
+    "phantoms": [
+     "valslab"
+    ],
+    "frequencies_mhz": [
+     30000
+    ],
+    "simulation_parameters": {
+     "bbox_padding_mm": 5
+    },
+    "gridding_parameters": {
+     "global_gridding_per_frequency": {
+      "30000": 0.4229
+     }
+    }
+   }
+  },
+  {
+   "name": "slab30G_N10",
+   "phantom": "valslab",
+   "timeout_s": 3000,
+   "keep_h5": false,
+   "skin_group": true,
+   "geometry": {
+    "kind": "box",
+    "lo_mm": [
+     -20,
+     -20,
+     -8
+    ],
+    "hi_mm": [
+     20,
+     20,
+     0
+    ],
+    "tissue_entity": "Skin",
+    "itis_material": "Skin"
+   },
+   "config": {
+    "far_field_setup": {
+     "type": "environmental",
+     "environmental": {
+      "incident_directions": [
+       "z_neg"
+      ],
+      "polarizations": [
+       "theta"
+      ]
+     }
+    },
+    "solver_settings": {
+     "kernel": "software",
+     "server": "localhost"
+    },
+    "manual_isolve": false,
+    "use_gui": false,
+    "use_web": false,
+    "execution_control": {
+     "do_setup": true,
+     "do_run": true,
+     "do_extract": true,
+     "only_write_input_file": false,
+     "batch_run": false,
+     "auto_cleanup_previous_results": []
+    },
+    "extraction": {
+     "sar": true,
+     "power_balance": true,
+     "sapd": true,
+     "point_sensors": false,
+     "psSAR_averaging_masses_g": [
+      1,
+      10
+     ],
+     "sapd_field": true
+    },
+    "export_material_properties": true,
+    "phantoms": [
+     "valslab"
+    ],
+    "frequencies_mhz": [
+     30000
+    ],
+    "simulation_parameters": {
+     "bbox_padding_mm": 5
+    },
+    "gridding_parameters": {
+     "global_gridding_per_frequency": {
+      "30000": 0.2537
+     }
+    }
+   }
+  },
+  {
+   "name": "slab30G_N15",
+   "phantom": "valslab",
+   "timeout_s": 3000,
+   "keep_h5": false,
+   "skin_group": true,
+   "geometry": {
+    "kind": "box",
+    "lo_mm": [
+     -20,
+     -20,
+     -8
+    ],
+    "hi_mm": [
+     20,
+     20,
+     0
+    ],
+    "tissue_entity": "Skin",
+    "itis_material": "Skin"
+   },
+   "config": {
+    "far_field_setup": {
+     "type": "environmental",
+     "environmental": {
+      "incident_directions": [
+       "z_neg"
+      ],
+      "polarizations": [
+       "theta"
+      ]
+     }
+    },
+    "solver_settings": {
+     "kernel": "software",
+     "server": "localhost"
+    },
+    "manual_isolve": false,
+    "use_gui": false,
+    "use_web": false,
+    "execution_control": {
+     "do_setup": true,
+     "do_run": true,
+     "do_extract": true,
+     "only_write_input_file": false,
+     "batch_run": false,
+     "auto_cleanup_previous_results": []
+    },
+    "extraction": {
+     "sar": true,
+     "power_balance": true,
+     "sapd": true,
+     "point_sensors": false,
+     "psSAR_averaging_masses_g": [
+      1,
+      10
+     ],
+     "sapd_field": true
+    },
+    "export_material_properties": true,
+    "phantoms": [
+     "valslab"
+    ],
+    "frequencies_mhz": [
+     30000
+    ],
+    "simulation_parameters": {
+     "bbox_padding_mm": 5
+    },
+    "gridding_parameters": {
+     "global_gridding_per_frequency": {
+      "30000": 0.1692
+     }
+    }
+   }
+  }
+ ]
+}

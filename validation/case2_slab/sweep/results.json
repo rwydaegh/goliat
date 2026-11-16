@@ -1,0 +1,541 @@
+[
+ {
+  "name": "slab10G_N10",
+  "ok": true,
+  "fatal": null,
+  "solver": {
+   "dt_s": "1.02687e-12",
+   "iterations": "1608",
+   "iter_planned": "1608",
+   "cells": "187x187x66",
+   "mcells": "2.3080",
+   "speed": "94.65",
+   "sim_time_ns": 1.6512069600000001
+  },
+  "materials": {
+   "Air": {
+    "eps_r": 1.0,
+    "sigma": 0.0,
+    "rho": 1.2
+   },
+   "Skin": {
+    "eps_r": 31.2902,
+    "sigma": 8.014,
+    "rho": 1109.0
+   }
+  },
+  "permissive": [
+   "ApiObject.BoundingBox",
+   "ApiObject.Frequency"
+  ],
+  "freq_mhz": 10000,
+  "grid": [
+   [
+    187,
+    0.0005347593582887486,
+    0.0005347593582887833
+   ],
+   [
+    187,
+    0.0005347593582887486,
+    0.0005347593582887833
+   ],
+   [
+    66,
+    0.000530303030303025,
+    0.0005303030303030346
+   ]
+  ],
+  "gridding_cfg": {
+   "global_gridding_per_frequency": {
+    "10000": 0.5359
+   }
+  },
+  "wbSAR": 5.0506231466894026e-05,
+  "psSAR10g": 6.12634903518483e-05,
+  "psSAR1g": 0.00014685135101899505,
+  "DielLoss": 5.280170879774457e-06,
+  "RadPower": 1.4709281345743363e-05,
+  "balance_pct": 150.7204697804044,
+  "analytic_APD_per_Wm2": 0.4888279824769368,
+  "sapd": {
+   "peak_sapd_W_m2": 0.0009444612660445273,
+   "peak_sapd_location_m": null
+  },
+  "sapd_per_Wm2": 0.7116143780084624,
+  "err_sapd_pct": 45.57562241069879,
+  "apd_field": {
+   "n": 2393,
+   "max": 0.5769305229187012,
+   "center_mean_10mm_square": 0.44875118136405945,
+   "err_center_10mm_pct": -8.198548886216471,
+   "center_mean_20mm_square": 0.39646485447883606,
+   "err_center_20mm_pct": -18.894811939792856,
+   "center_mean_40mm_square": 0.41638797521591187,
+   "err_center_40mm_pct": -14.819120397724516
+  },
+  "cpw_tissue": 10.022086341669342
+ },
+ {
+  "name": "slab10G_N15",
+  "ok": true,
+  "fatal": null,
+  "solver": {
+   "dt_s": "6.87729e-13",
+   "iterations": "2401",
+   "iter_planned": "2401",
+   "cells": "280x280x98",
+   "mcells": "7.6832",
+   "speed": "78.82",
+   "sim_time_ns": 1.651237329
+  },
+  "materials": {
+   "Air": {
+    "eps_r": 1.0,
+    "sigma": 0.0,
+    "rho": 1.2
+   },
+   "Skin": {
+    "eps_r": 31.2902,
+    "sigma": 8.014,
+    "rho": 1109.0
+   }
+  },
+  "permissive": [
+   "ApiObject.BoundingBox",
+   "ApiObject.Frequency"
+  ],
+  "freq_mhz": 10000,
+  "grid": [
+   [
+    280,
+    0.0003571428571428406,
+    0.0003571428571428753
+   ],
+   [
+    280,
+    0.0003571428571428406,
+    0.0003571428571428753
+   ],
+   [
+    98,
+    0.0003571428571428506,
+    0.0003571428571428614
+   ]
+  ],
+  "gridding_cfg": {
+   "global_gridding_per_frequency": {
+    "10000": 0.3573
+   }
+  },
+  "wbSAR": 4.9841955148857555e-05,
+  "psSAR10g": 6.160476914374158e-05,
+  "psSAR1g": 0.00015035204705782235,
+  "DielLoss": 5.306373880871219e-06,
+  "RadPower": 1.4325078843207475e-05,
+  "balance_pct": 148.02115353955335,
+  "analytic_APD_per_Wm2": 0.4888279824769368,
+  "sapd": {
+   "peak_sapd_W_m2": 0.000740186485927552,
+   "peak_sapd_location_m": null
+  },
+  "sapd_per_Wm2": 0.5577013740326027,
+  "err_sapd_pct": 14.08949446933827,
+  "apd_field": {
+   "n": 2586,
+   "max": 0.5480961799621582,
+   "center_mean_10mm_square": 0.45394113659858704,
+   "err_center_10mm_pct": -7.13683486398935,
+   "center_mean_20mm_square": 0.4152187407016754,
+   "err_center_20mm_pct": -15.05831180168462,
+   "center_mean_40mm_square": 0.39254075288772583,
+   "err_center_40mm_pct": -19.697569091956368
+  },
+  "cpw_tissue": 15.006332490199691
+ },
+ {
+  "name": "slab10G_N20",
+  "ok": true,
+  "fatal": null,
+  "solver": {
+   "dt_s": "5.14746e-13",
+   "iterations": "3208",
+   "iter_planned": "3208",
+   "cells": "374x374x131",
+   "mcells": "18.3238",
+   "speed": "93.25",
+   "sim_time_ns": 1.6513051680000002
+  },
+  "materials": {
+   "Air": {
+    "eps_r": 1.0,
+    "sigma": 0.0,
+    "rho": 1.2
+   },
+   "Skin": {
+    "eps_r": 31.2902,
+    "sigma": 8.014,
+    "rho": 1109.0
+   }
+  },
+  "permissive": [
+   "ApiObject.BoundingBox",
+   "ApiObject.Frequency"
+  ],
+  "freq_mhz": 10000,
+  "grid": [
+   [
+    374,
+    0.0002673796791443639,
+    0.0002673796791443986
+   ],
+   [
+    374,
+    0.0002673796791443639,
+    0.0002673796791443986
+   ],
+   [
+    131,
+    0.0002671755725190787,
+    0.00026717557251908913
+   ]
+  ],
+  "gridding_cfg": {
+   "global_gridding_per_frequency": {
+    "10000": 0.268
+   }
+  },
+  "wbSAR": 4.982762897909773e-05,
+  "psSAR10g": 6.211070285644382e-05,
+  "psSAR1g": 0.00015180422633420676,
+  "DielLoss": 5.414678564308366e-06,
+  "RadPower": 1.4462906870526805e-05,
+  "balance_pct": 149.8769941786572,
+  "analytic_APD_per_Wm2": 0.4888279824769368,
+  "sapd": {
+   "peak_sapd_W_m2": 0.000699427560903132,
+   "peak_sapd_location_m": null
+  },
+  "sapd_per_Wm2": 0.5269911288141622,
+  "err_sapd_pct": 7.807070729431076,
+  "apd_field": {
+   "n": 2547,
+   "max": 0.5266079902648926,
+   "center_mean_10mm_square": 0.4491997957229614,
+   "err_center_10mm_pct": -8.10677542500241,
+   "center_mean_20mm_square": 0.4082048237323761,
+   "err_center_20mm_pct": -16.49315539098962,
+   "center_mean_40mm_square": 0.3778149485588074,
+   "err_center_40mm_pct": -22.710040729586733
+  },
+  "cpw_tissue": 20.04417268333816
+ },
+ {
+  "name": "slab10G_N6",
+  "ok": true,
+  "fatal": null,
+  "solver": {
+   "dt_s": "1.70763e-12",
+   "iterations": "967",
+   "iter_planned": "967",
+   "cells": "112x112x40",
+   "mcells": "0.5018",
+   "speed": "106.34",
+   "sim_time_ns": 1.65127821
+  },
+  "materials": {
+   "Air": {
+    "eps_r": 1.0,
+    "sigma": 0.0,
+    "rho": 1.2
+   },
+   "Skin": {
+    "eps_r": 31.2902,
+    "sigma": 8.014,
+    "rho": 1109.0
+   }
+  },
+  "permissive": [
+   "ApiObject.BoundingBox",
+   "ApiObject.Frequency"
+  ],
+  "freq_mhz": 10000,
+  "grid": [
+   [
+    112,
+    0.0008928571428571327,
+    0.0008928571428571536
+   ],
+   [
+    112,
+    0.0008928571428571327,
+    0.0008928571428571536
+   ],
+   [
+    40,
+    0.0008749999999999964,
+    0.0008750000000000035
+   ]
+  ],
+  "gridding_cfg": {
+   "global_gridding_per_frequency": {
+    "10000": 0.8932
+   }
+  },
+  "wbSAR": 4.0039406132254435e-05,
+  "psSAR10g": 5.133651939104311e-05,
+  "psSAR1g": 0.00012347720621619374,
+  "DielLoss": 4.515945572452064e-06,
+  "RadPower": 1.402332717602874e-05,
+  "balance_pct": 139.78611652354527,
+  "analytic_APD_per_Wm2": 0.4888279824769368,
+  "sapd": {
+   "peak_sapd_W_m2": 0.0006286140996962786,
+   "peak_sapd_location_m": null
+  },
+  "sapd_per_Wm2": 0.4736359739094129,
+  "err_sapd_pct": -3.1078434770744012,
+  "apd_field": {
+   "n": 2645,
+   "max": 0.4709974229335785,
+   "center_mean_10mm_square": 0.3929745554924011,
+   "err_center_10mm_pct": -19.608825685231334,
+   "center_mean_20mm_square": 0.35611698031425476,
+   "err_center_20mm_pct": -27.148814495075158,
+   "center_mean_40mm_square": 0.338273286819458,
+   "err_center_40mm_pct": -30.799115650991205
+  },
+  "cpw_tissue": 6.0025329960801095
+ },
+ {
+  "name": "slab30G_N10",
+  "ok": true,
+  "fatal": null,
+  "solver": {
+   "dt_s": "4.8691e-13",
+   "iterations": "1696",
+   "iter_planned": "1696",
+   "cells": "198x198x71",
+   "mcells": "2.7835",
+   "speed": "86.04",
+   "sim_time_ns": 0.82579936
+  },
+  "materials": {
+   "Air": {
+    "eps_r": 1.0,
+    "sigma": 0.0,
+    "rho": 1.2
+   },
+   "Skin": {
+    "eps_r": 15.5097,
+    "sigma": 27.0996,
+    "rho": 1109.0
+   }
+  },
+  "permissive": [
+   "ApiObject.BoundingBox",
+   "ApiObject.Frequency"
+  ],
+  "freq_mhz": 30000,
+  "grid": [
+   [
+    198,
+    0.00025252525252524374,
+    0.0002525252525252611
+   ],
+   [
+    198,
+    0.00025252525252524374,
+    0.0002525252525252611
+   ],
+   [
+    71,
+    0.00025352112676056086,
+    0.0002535211267605658
+   ]
+  ],
+  "gridding_cfg": {
+   "global_gridding_per_frequency": {
+    "30000": 0.2537
+   }
+  },
+  "wbSAR": 9.319273761371807e-05,
+  "psSAR10g": 0.0,
+  "psSAR1g": 0.00012717371282633394,
+  "DielLoss": 1.2930439419511134e-06,
+  "RadPower": 3.2422554164064055e-06,
+  "balance_pct": 136.78462864806278,
+  "analytic_APD_per_Wm2": 0.5417594443639409,
+  "sapd": {
+   "peak_sapd_W_m2": 0.000782676157541573,
+   "peak_sapd_location_m": null
+  },
+  "sapd_per_Wm2": 0.5897156686622036,
+  "err_sapd_pct": 8.85194061629444,
+  "apd_field": {
+   "n": 158,
+   "max": 0.5582762360572815,
+   "center_mean_10mm_square": 0.5508483648300171,
+   "err_center_10mm_pct": 1.6776671935543552,
+   "center_mean_20mm_square": 0.5459674000740051,
+   "err_center_20mm_pct": 0.7767203237231346,
+   "center_mean_40mm_square": 0.4107828438282013,
+   "err_center_40mm_pct": -24.176154545771546
+  },
+  "cpw_tissue": 10.008836459342414
+ },
+ {
+  "name": "slab30G_N15",
+  "ok": true,
+  "fatal": null,
+  "solver": {
+   "dt_s": "3.24829e-13",
+   "iterations": "2542",
+   "iter_planned": "2542",
+   "cells": "296x296x107",
+   "mcells": "9.3749",
+   "speed": "87.02",
+   "sim_time_ns": 0.8257153180000001
+  },
+  "materials": {
+   "Air": {
+    "eps_r": 1.0,
+    "sigma": 0.0,
+    "rho": 1.2
+   },
+   "Skin": {
+    "eps_r": 15.5097,
+    "sigma": 27.0996,
+    "rho": 1109.0
+   }
+  },
+  "permissive": [
+   "ApiObject.BoundingBox",
+   "ApiObject.Frequency"
+  ],
+  "freq_mhz": 30000,
+  "grid": [
+   [
+    296,
+    0.00016891891891891025,
+    0.0001689189189189276
+   ],
+   [
+    296,
+    0.00016891891891891025,
+    0.0001689189189189276
+   ],
+   [
+    107,
+    0.00016822429906541807,
+    0.00016822429906542327
+   ]
+  ],
+  "gridding_cfg": {
+   "global_gridding_per_frequency": {
+    "30000": 0.1692
+   }
+  },
+  "wbSAR": 9.923733831483418e-05,
+  "psSAR10g": 0.0,
+  "psSAR1g": 0.00013700257113669068,
+  "DielLoss": 1.382845999552344e-06,
+  "RadPower": 3.29243371351397e-06,
+  "balance_pct": 141.00643614608006,
+  "analytic_APD_per_Wm2": 0.5417594443639409,
+  "sapd": {
+   "peak_sapd_W_m2": 0.0008565885946154594,
+   "peak_sapd_location_m": null
+  },
+  "sapd_per_Wm2": 0.6454057798678267,
+  "err_sapd_pct": 19.131431225084228,
+  "apd_field": {
+   "n": 158,
+   "max": 0.6068079471588135,
+   "center_mean_10mm_square": 0.5681900978088379,
+   "err_center_10mm_pct": 4.878669623550036,
+   "center_mean_20mm_square": 0.5740430355072021,
+   "err_center_20mm_pct": 5.959026922209776,
+   "center_mean_40mm_square": 0.4422757625579834,
+   "err_center_40mm_pct": -18.363072917493383
+  },
+  "cpw_tissue": 15.021712860668773
+ },
+ {
+  "name": "slab30G_N6",
+  "ok": true,
+  "fatal": null,
+  "solver": {
+   "dt_s": "8.08085e-13",
+   "iterations": "1022",
+   "iter_planned": "1022",
+   "cells": "119x119x43",
+   "mcells": "0.6089",
+   "speed": "112.60",
+   "sim_time_ns": 0.8258628699999999
+  },
+  "materials": {
+   "Air": {
+    "eps_r": 1.0,
+    "sigma": 0.0,
+    "rho": 1.2
+   },
+   "Skin": {
+    "eps_r": 15.5097,
+    "sigma": 27.0996,
+    "rho": 1109.0
+   }
+  },
+  "permissive": [
+   "ApiObject.BoundingBox",
+   "ApiObject.Frequency"
+  ],
+  "freq_mhz": 30000,
+  "grid": [
+   [
+    119,
+    0.00042016806722688753,
+    0.00042016806722689967
+   ],
+   [
+    119,
+    0.00042016806722688753,
+    0.00042016806722689967
+   ],
+   [
+    43,
+    0.0004186046511627879,
+    0.0004186046511627916
+   ]
+  ],
+  "gridding_cfg": {
+   "global_gridding_per_frequency": {
+    "30000": 0.4229
+   }
+  },
+  "wbSAR": 7.377259629842195e-05,
+  "psSAR10g": 0.0,
+  "psSAR1g": 0.00010162467515328899,
+  "DielLoss": 1.036758384287073e-06,
+  "RadPower": 2.9848726794166882e-06,
+  "balance_pct": 121.29239288130545,
+  "analytic_APD_per_Wm2": 0.5417594443639409,
+  "sapd": {
+   "peak_sapd_W_m2": 0.0006664144457317889,
+   "peak_sapd_location_m": null
+  },
+  "sapd_per_Wm2": 0.5021170463468464,
+  "err_sapd_pct": -7.317343228531459,
+  "apd_field": {
+   "n": 158,
+   "max": 0.46270179748535156,
+   "center_mean_10mm_square": 0.45705556869506836,
+   "err_center_10mm_pct": -15.634960599223168,
+   "center_mean_20mm_square": 0.4550153315067291,
+   "err_center_20mm_pct": -16.011555268603516,
+   "center_mean_40mm_square": 0.34459957480430603,
+   "err_center_40mm_pct": -36.39251177081236
+  },
+  "cpw_tissue": 6.039134562228506
+ }
+]
