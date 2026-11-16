@@ -130,7 +130,9 @@ GOLIAT has one workflow for study definition, scene setup, execution, extraction
 
 Near- and far-field studies use different scene rules. A near-field case places an antenna relative to an anatomical landmark and uses an input-power normalization. A far-field case defines incident fields, directions, and polarizations and uses an incident-power-density normalization. Both study types use the same job identity, execution interface, output layout, and campaign analysis.
 
-GOLIAT uses the Sim4Life solver and evaluators. Table~\ref{tab:capabilities} lists its study-level functions.
+GOLIAT uses the Sim4Life solver and evaluators. Table~\ref{tab:capabilities} lists its study-level functions. Table~\ref{tab:comparison} compares GOLIAT with three common alternatives. Because the solver is the same, the differences are only in the workflow.
+
+
 
 \begin{table*}[!ht]
 \centering
@@ -143,13 +145,36 @@ Define a study & Inherited and validated \gls{json} for phantoms, sources, numer
 Set up near-field scenes & Antenna import, material mapping, and eye, cheek, trunk, or wrist placement relative to anatomical landmarks & Isolated device--body project \\
 Set up far-field scenes & Plane-wave or beamforming sources over direction and polarization sets & Isolated incident-field project \\
 Run simulations & Local \texttt{iSolve}, split workers, multiple workstations, or oSPARC batch jobs & Solver output, logs, and progress record \\
-Extract dosimetry & Whole-body, regional, tissue, and peak 10~g \gls{sar}, \gls{apd}, point fields, and power balance & \gls{json}, serialized tissue table, and \gls{html} report \\
+Extract dosimetry & Whole-body, regional, tissue, and peak 1~g or 10~g \gls{sar}, \gls{apd}, point fields, and power balance & \gls{json}, serialized tissue table, and \gls{html} report \\
+Postprocess and verify & Worst-case multi-antenna \gls{apd}, measured-field comparison, and analytic reference solutions & Worst-case excitation, calibration factor, and reference values \\
 Analyze a campaign & Shared result discovery, normalization, grouping, and plotting & Detailed and summary \gls{csv}, Excel, and plots \\
 Manage jobs & Per-job projects, status records, deliverable checks, and optional phase recovery & Reviewable scenario directory \\
 \bottomrule
 \end{tabularx}
 \caption{Main GOLIAT functions and outputs.}
 \label{tab:capabilities}
+\end{table*}
+
+\begin{table*}[!ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.17\textwidth}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+Aspect & Manual \gls{gui} setup & Sim4Life parameter sweep & Stand-alone \gls{api} script & GOLIAT \\
+\midrule
+Study definition & Project state after manual edits & Swept parameters inside one project & Program code mixed with parameters & Inherited, validated \gls{json} with one expanded file per job \\
+Case expansion & One case at a time & Selected scalar parameters & Loops written per study & Phantoms, frequencies, placements, directions, and polarizations \\
+Device placement & Interactive & Interactive for the base case & Written per study & Landmark-based offsets and rotation sequences \\
+Normalization & Set per simulation & Shared within the sweep & Written per study & Declared once per study type \\
+Execution & Local & Local & Written per study & Local, split workers, multiple workstations, or oSPARC with retries \\
+Recovery & Manual & Rerun the sweep & Written per study & Per-phase reruns, deliverable checks, configuration checksum \\
+Provenance & Project file & Project file & Script version & Job record with versions, timings, grid, and power balance \\
+Campaign analysis & Manual export & Per-project export & Written per study & Tables and plots across all jobs \\
+Testing & None & Vendor tests & Ad hoc & License-free continuous integration \\
+\bottomrule
+\end{tabularx}
+\caption{Workflow comparison for a large dosimetry campaign. All four workflows use the same Sim4Life solver and evaluators.}
+\label{tab:comparison}
 \end{table*}
 
 \section{Software description}
@@ -175,27 +200,29 @@ The package keeps exposure rules separate from project and result management. Th
 
 \subsubsection{Study definition and scene setup}
 
-Figure~\ref{fig:configuration} depicts representative anatomical phantoms and the near- and far-field exposure paths. Near-field configurations select \gls{pifa} or \gls{ifa} models by frequency. Each antenna part has a material and grid setting. The anatomical landmarks are the nasion, tragus, and umbilicus. The nasion is the midline depression at the bridge of the nose. The tragus is the cartilage projection in front of the ear canal. The umbilicus is the navel. Users can define eye, cheek, trunk, wrist, or free-space cases with offsets and rotation sequences. The setup code loads the phantom and antenna, places the antenna, sets the simulation domain and grid, and writes the solver input.
+Figure~\ref{fig:configuration} depicts representative anatomical phantoms and the near- and far-field exposure paths. Near-field configurations select \gls{pifa} or \gls{ifa} models by frequency, with a material and grid setting per antenna part. For eye, cheek, trunk, or wrist cases, the antenna is placed relative to the nasion, tragus, or umbilicus with offsets and rotation sequences. Free-space cases have no phantom.
 
-Users set the far-field source type, incident directions, polarizations, and frequencies. For example, spherical tessellation gives a configurable set of incident directions. A multi-sine source runs configured frequencies together. The extractor keeps each frequency component. Grid controls can set frequency-specific steps, domain padding, high-frequency phantom truncation, and bilateral symmetry. The auto-induced workflow combines environmental field results, ranks candidate focus points, and extracts the selected high-exposure cases.
+Users set the far-field source type, incident directions, polarizations, and frequencies. Spherical tessellation gives a configurable set of incident directions. A multi-sine source excites several frequencies in one simulation. The auto-induced workflow combines environmental field results, ranks candidate focus points, and extracts the selected high-exposure cases.
 
-Both study types have settings for solver termination, excitation, boundaries, padding, sensors, kernels, and grids. Users can choose automatic grids or set manual steps for the whole domain and selected components. The configuration also selects the requested result quantities and tissue groups.
+Both study types set solver termination, excitation, boundaries, padding, sensors, and automatic or manual grids. The default is a manual grid step per frequency: 2.5~mm up to 1450~MHz, 1.69~mm at 2140~MHz, 1.48~mm at 2450~MHz, 1.0~mm at 3.5~GHz, and 0.7~mm at 5.2 and 5.8~GHz. This gives at least 9 cells per wavelength in vitreous humor, the highest-permittivity tissue. The 5.2--5.8~GHz step is based on the grid-convergence study in Section~\ref{sec:verification} and on Laakso~\cite{Laakso2009}, who recommends 1~mm voxels only below 5~GHz. Phantom truncation is off by default. When enabled, GOLIAT keeps the head end of the phantom. The kept height scales with the cube of the grid step. Single-frequency simulations use tissue properties from the IT'IS database (v4.2) in Sim4Life. Multi-sine simulations use dispersive models fitted to the Gabriel parametric spectra of IT'IS v5.0~\cite{Gabriel1996,ITIS2024}.
 
 \subsubsection{Execution and monitoring}
 
-Local execution calls the Sim4Life \texttt{iSolve} executable and records its output. Split execution divides one configuration into disjoint job sets for \gls{cpu} processes or separate workstations. Setup and extraction can use several \gls{cpu} processes. However, \gls{fdtd} solves remain serial on a single-\gls{gpu} workstation. oSPARC execution writes solver inputs, submits batch jobs, monitors their states, retries failed submissions, and downloads the outputs~\cite{oSPARC}.
+Local execution calls the Sim4Life \texttt{iSolve} executable and records its output. Split execution divides one configuration into disjoint job sets for \gls{cpu} processes or separate workstations. oSPARC execution writes solver inputs, submits batch jobs, monitors their states, retries failed submissions, and downloads the outputs~\cite{oSPARC}.
 
-A PySide6 interface shows the active phase, completed jobs, time estimates, logs, and \gls{cpu}, memory, and \gls{gpu} use. A console mode provides the same study commands without the interface. GOLIAT uses timing records for phase estimates and campaign statistics. Progress and verbose logs remain available after the session.
+A PySide6 interface shows the active phase, completed jobs, time estimates, logs, and \gls{cpu}, memory, and \gls{gpu} use. A console mode has the same commands without the interface.
 
 Each job has a separate Sim4Life project and result directory. GOLIAT records phase status, checks project locks and required deliverables, and retries failed saves or remote submissions. Users can rerun setup, solving, or extraction for selected jobs. A checksum identifies changes to the expanded configuration. The job record can also store the GOLIAT release, Sim4Life version, model identifiers, and material data.
 
 \subsubsection{Extraction and analysis}
 
-GOLIAT extracts whole-body, head, trunk, tissue-specific, and peak spatial-average \gls{sar} over 10~g, according to the ICNIRP guidelines and IEEE/IEC standards~\cite{ICNIRP2020,IEC627041}. It also extracts point-sensor fields and power balance. High-frequency studies can request \gls{apd} over a selected averaging area. Near-field results use the declared antenna input power. Far-field results use the incident power density.
+GOLIAT extracts whole-body, head, trunk, tissue-specific, and peak spatial-average \gls{sar} according to the ICNIRP guidelines and IEEE/IEC standards~\cite{ICNIRP2020,IEC627041}. GOLIAT uses a 10~g averaging mass by default and can add 1~g for the US Federal Communications Commission limits. It also extracts point-sensor fields and power balance. High-frequency studies can request \gls{apd} over a selected averaging area. Near-field results use the declared antenna input power. Far-field results use the incident power density.
 
-Each scenario directory can have the project, solver input and output, expanded configuration, logs, a compact \texttt{sar\_results.json}, a serialized tissue table, an \gls{html} report, and simulation metadata. The metadata record timings, solver settings, grid size, hardware, performance, power balance, and file sizes.
+Each scenario directory has the project, solver files, expanded configuration, logs, extracted results, an \gls{html} report, and metadata on timings, grid, hardware, and power balance.
 
-The analysis command finds completed scenario directories and writes detailed and summary \gls{csv} files, Excel workbooks, and plots. GOLIAT can make heatmaps, line charts, bar charts, boxplots, cumulative distributions, power summaries, and tissue rankings. Near- and far-field analysis classes use the same file discovery and export rules. A paper-generation command can place selected tables and plots in a LaTeX results draft.
+Two postprocessing modules use the extracted fields. For an $N$-port device, the multi-antenna module forms one Hermitian matrix per averaging area that maps the port excitations to the \gls{apd}. Its largest eigenvalue gives the worst-case \gls{apd} under a total-power constraint. The module also has phase-only and per-port power constraints and evaluates a device's beam codebook. The formulation is from Wu et al.~\cite{Wu2024}. The measurement module reconstructs electric and magnetic fields from planar complex electric-field maps with the plane-wave spectrum, computes spatial-average power density as defined in IEC/IEEE~63195~\cite{IEC631952}, aligns measured and simulated maps, and estimates a calibration factor. The module also reads super-resolved maps, for example from the method of Yi et al.~\cite{Yi2026}.
+
+The analysis command finds completed scenario directories and writes detailed and summary \gls{csv} files, Excel workbooks, and plots. The plots include heatmaps, line and bar charts, boxplots, cumulative distributions, and tissue rankings.
 
 The package has commands for studies, validation, analysis, status, initialization, and parallel execution. A typical command sequence is:
 
@@ -220,11 +247,42 @@ The examples come from two completed campaigns: device-to-body and far-field exp
   \label{fig:configuration}
 \end{figure*}
 
+\subsection{Verification against reference solutions}
+\label{sec:verification}
+
+We ran the GOLIAT setup and extraction code in the Sim4Life~9.6 Python runner on oSPARC and compared the sphere and slab results with the analytic references in the \texttt{goliat.validation} module. For a plane wave on a homogeneous muscle sphere (radius 50~mm, 2.45~GHz), the whole-body \gls{sar} was within 1\% of the Mie solution for paddings of 5--50~mm. This test checks the incident-field normalization and the extraction of power, \gls{sar}, and mass. Without padding, the sphere touched the absorbing boundary and the whole-body \gls{sar} was 51\% too high. The default far-field padding is 20~mm, as in the environmental campaign.
+
+Table~\ref{tab:convergence} gives a grid-convergence study for a muscle sphere (radius 25~mm, 5.8~GHz). A 1.0~mm step (7.4 cells per wavelength in muscle) underestimated the peak 10~g and 1~g \gls{sar} by 6.4\% and 5.0\% relative to a 0.35~mm grid. At the default 0.7~mm step (10.7 cells), both errors were about 2\%, which agrees with Laakso~\cite{Laakso2009}. For the 50~mm sphere at 2.45~GHz, the whole-body and 10~g \gls{sar} errors were below 2\% at the 1.48~mm default, but the 1~g \gls{sar} needed about 1.0~mm.
+
+For a skin slab at 10 and 30~GHz, the central \gls{apd} was within $-13\%$ to $+10\%$ of the analytic transmitted power density at 10 cells per wavelength. Therefore, \gls{apd} studies at these frequencies need finer grids or a convergence check.
+
+We also simulated a half-wave dipole over a flat phantom in the IEEE~1528 geometry, without GOLIAT's landmark-based placement. With the default grids at 835, 1900, and 2450~MHz, the peak 1~g and 10~g \gls{sar} per watt of input power were within $-0.5\%$ to $+5.2\%$ of the published values. This test checks the source, the input-power normalization, and both averaging masses. With finer grids, the 1900 and 2450~MHz values were 2--4 percentage points higher. This agreement is not a converged result, probably because of the staircased feed gap and dipole spacing.
+
+The face intercomparison of Li et al.~\cite{Li2026} at 10 and 30~GHz reports inter-laboratory means with relative standard deviations of 16--41\%. For a dipole and a dipole array in front of the Ella head (Sim4Life~9.2), GOLIAT's \gls{apd} was 8--62\% above these means in all 24 cases, or 1.1 standard deviations on average and 2.1 at most. Li et al. used two other head models, so this comparison is only indicative. The specifications, outputs, and scripts are in the repository.
+
+\begin{table}[!ht]
+\centering
+\small
+\begin{tabular}{@{}rrrrr@{}}
+\toprule
+Step (mm) & Cells/$\lambda$ & WB-\gls{sar} & 10~g & 1~g \\
+\midrule
+1.38 & 5.4 & $-8.6$ & $-12.8$ & $-12.2$ \\
+1.00 & 7.4 & $-2.3$ & $-6.4$ & $-5.0$ \\
+0.70 & 10.7 & $+0.4$ & $-1.9$ & $-2.3$ \\
+0.50 & 14.8 & $+1.0$ & $-1.0$ & $-0.9$ \\
+0.35 & 21.2 & $+1.2$ & 0 & 0 \\
+\bottomrule
+\end{tabular}
+\caption{Grid convergence at 5.8~GHz for a muscle sphere (radius 25~mm). Whole-body (WB) \gls{sar} errors (\%) are relative to the Mie solution, and peak spatial-average \gls{sar} errors are relative to the 0.35~mm grid. $\lambda$ is the wavelength in muscle.}
+\label{tab:convergence}
+\end{table}
+
 \subsection{Near-field device campaign}
 
-Figure~\ref{fig:near-field-campaign} summarizes coverage and cumulative solver time for the completed near-field campaign. The study used two child phantoms, eight frequencies from 700~MHz to 5.8~GHz, and 22 device placements per phantom and frequency. It used \gls{pifa} models at 700 and 835~MHz and \gls{ifa} models at the other six frequencies. The study used eight eye, six cheek, and eight belly placements. Eye and belly cases varied position and horizontal or vertical orientation. Cheek cases used cheek and tilt alignments with three angular variants.
+Figure~\ref{fig:near-field-campaign} summarizes coverage and cumulative solver time for the completed near-field campaign. The study used two child phantoms, eight frequencies from 700~MHz to 5.8~GHz, and 22 device placements per phantom and frequency. It used \gls{pifa} models at 700 and 835~MHz and \gls{ifa} models at the other six frequencies. The placements were eight eye, six cheek, and eight belly cases with varied positions, orientations, and tilts.
 
-Thus, GOLIAT expanded the study into $2\times8\times22=352$ simulation jobs. All 352 scenario directories have an expanded configuration, progress and solver logs, compact \gls{sar} results, a serialized tissue table, and an \gls{html} report. Across these jobs, the solver logs record 114.5 cumulative hours and $2.98\times10^{15}$ cell-iterations. One cell-iteration is one grid cell advanced through one \gls{fdtd} time step.
+Thus, GOLIAT expanded the study into $2\times8\times22=352$ simulation jobs. All 352 scenario directories have the configuration, logs, and results. Across these jobs, the solver logs record 114.5 cumulative hours and $2.98\times10^{15}$ cell-iterations. One cell-iteration is one grid cell advanced through one \gls{fdtd} time step.
 
 \begin{figure*}[!ht]
   \centering
@@ -233,15 +291,15 @@ Thus, GOLIAT expanded the study into $2\times8\times22=352$ simulation jobs. All
 \label{fig:near-field-campaign}
 \end{figure*}
 
-The configuration set the antenna model, target input power, material mapping, grid rules, anatomical reference, distance, position, and orientation for each case. GOLIAT generated the Sim4Life scene and normalized extracted \gls{sar} values to the declared input power. The analysis step grouped results by phantom, frequency, placement, and tissue. It produced detailed tables and several plot families.
+GOLIAT normalized the extracted \gls{sar} to the declared input power and grouped the results by phantom, frequency, placement, and tissue.
 
 \subsection{Far-field research campaign}
 
 GOLIAT supported a far-field campaign with two adult and two child Virtual Population phantoms~\cite{Gosselin2014,GOLIATFarField}. The study covered 15 frequencies from 450~MHz to 26~GHz and produced 550 \gls{fdtd} simulations in Sim4Life 8.2. Environmental exposure used incident plane waves. Auto-induced exposure used a beamforming source model. The scientific results and numerical methods are reported in the \emph{Physics in Medicine \& Biology} article~\cite{GOLIATFarField}.
 
-The environmental sub-study below 6~GHz had four phantoms, nine frequencies, six incident directions, and two polarizations. Therefore, GOLIAT generated all 432 parameter combinations. Base files stored shared execution, material, extraction, and output settings. Derived files selected environmental and beamforming cases. The full campaign added higher-frequency and auto-induced cases.
+The environmental sub-study below 6~GHz had four phantoms, nine frequencies, six incident directions, and two polarizations. Therefore, GOLIAT generated all 432 parameter combinations. Derived files added the higher-frequency and auto-induced cases of the full campaign.
 
-Figure~\ref{fig:run-directory} shows one completed environmental job. GOLIAT stored each job in a separate project and result directory. The path encoded the study, phantom, frequency, and exposure case. The completed job directory has its configuration and extracted results beside the project and solver files. Operators can inspect, transfer, or reprocess each job separately.
+Figure~\ref{fig:run-directory} shows one completed environmental job. Its path contains the study, phantom, frequency, and exposure case. Operators can inspect, transfer, or reprocess each job separately.
 
 \begin{figure*}[!ht]
   \centering
@@ -250,7 +308,7 @@ Figure~\ref{fig:run-directory} shows one completed environmental job. GOLIAT sto
   \label{fig:run-directory}
 \end{figure*}
 
-Figure~\ref{fig:monitoring-output} shows two outputs from the documented workflows. The monitoring page shows phase progress and the live worker log. Extraction writes the point-sensor plot to the job results.
+Figure~\ref{fig:monitoring-output} shows the monitoring page and an extracted point-sensor plot.
 
 \begin{figure*}[!ht]
   \centering
@@ -259,7 +317,7 @@ Figure~\ref{fig:monitoring-output} shows two outputs from the documented workflo
   \label{fig:monitoring-output}
 \end{figure*}
 
-The campaign analysis read the same directory structure for all 550 jobs and wrote scenario, frequency, and tissue tables. The Harvard Dataverse deposit contains consolidated configurations and postprocessed \gls{sar} and \gls{apd} data~\cite{GOLIATFarFieldData}. Licensed anatomical models and raw solver projects are excluded.
+The campaign analysis read the same directory structure for all 550 jobs and wrote scenario, frequency, and tissue tables. The Harvard Dataverse deposit contains consolidated configurations and postprocessed \gls{sar} and \gls{apd} data~\cite{GOLIATFarFieldData}.
 
 Table~\ref{tab:evidence} lists the evidence used for the software claims. The near-field and far-field campaigns together have 902 completed \gls{fdtd} job records.
 
@@ -283,23 +341,21 @@ Far-field licensed execution & Environmental and auto-induced sub-studies over 1
 \FloatBarrier
 \section{Impact}
 
-Table~\ref{tab:evidence} summarizes the execution evidence for the two large computational dosimetry campaigns supported by GOLIAT. The software was developed for the European GOLIAT project. The near-field campaign produced 352 device-exposure simulations for two child phantoms. The far-field campaign produced 550 environmental and auto-induced simulations for four child and adult phantoms~\cite{GOLIATFarField}. Both campaigns used the same configuration, job directory, extraction, and analysis structure.
+GOLIAT was developed for the European GOLIAT project. Both campaigns in Table~\ref{tab:evidence} used the same configuration, job directory, extraction, and analysis structure.
 
-Researchers can add a phantom, frequency, incident direction, polarization, or device placement without changing the common execution and output interfaces. Configuration inheritance keeps shared settings in one base file. Derived files show the choices that differ between studies. The same analysis code can then group results by phantom, source, frequency, exposure case, and tissue. GOLIAT runs job sets on one workstation, across separate workers, or through oSPARC. A workstation can call \texttt{iSolve}. oSPARC can run independent solver jobs in parallel. The \gls{gui} and logs give the operator a common view of each route.
+Researchers can add a phantom, frequency, incident direction, polarization, or device placement without changing the common execution and output interfaces. The same analysis code then groups results by phantom, source, frequency, exposure case, and tissue, whether the jobs ran on one workstation, across workers, or on oSPARC.
 
-Test laboratories and device developers can use a controlled GOLIAT configuration as a computational profile. IEC/IEEE~62704-3 defines \gls{fdtd} procedures, benchmark phone models, meshing guidance, test positions, uncertainty, and validation for mobile-phone \gls{sar} pre-compliance from 30~MHz to 6~GHz~\cite{IEC627043}. IEC/IEEE~63195-2:2022 defines computational incident-power-density procedures for devices used within 200~mm of the head or body from 6 to 300~GHz~\cite{IEC631952}. IEEE/IEC P63195-4 is an active project for computational absorbed-power-density procedures in the same frequency range~\cite{IEEEP631954}.
+The phase logs of the 432 environmental far-field jobs give the time overhead of GOLIAT. These jobs took 54.4~h of wall time. The median job took 227~s. The median setup, solver, and extraction phases took 30, 127, and 61~s. Sim4Life operations that any workflow needs, such as voxelization and dosimetry evaluators, took 38\% of the wall time. GOLIAT's own steps took 1.8\%, a median of 9~s per job. Loading, merging, and expanding the 432-job configuration took 11~ms, and the analysis read each result record in 6.5~ms. GOLIAT was started more than once for 238 of the 432 jobs and continued from the last completed phase. The repeated work was 5.0\% of the wall time.
 
-IEC/IEEE~62704-3 provides the procedural basis for near-field \gls{sar} profiles below 6~GHz. A profile can fix device-to-head or device-to-trunk placements, input power, frequencies, grid rules, and \gls{sar} fields. Above 6~GHz, IEC/IEEE~63195-2 covers incident power density, while the active IEEE/IEC P63195-4 project covers absorbed power density. GOLIAT can store the grid and output settings used with these procedures.
+GOLIAT also avoids several errors of manual setup. GOLIAT places the antenna with the same landmark, offsets, and rotation sequence for every phantom and frequency, so no operator places it by hand. Material mapping, grid rules, tissue groups, and normalization are declared once and applied to every job. Result paths are derived from the case coordinates, so a result cannot be stored under the wrong phantom or placement. GOLIAT checks for missing or incomplete outputs before extraction. The power balance shows jobs where absorbed and radiated power differ from the injected power. Two jobs can be compared with a diff of their expanded configurations.
 
-Far-field environmental profiles are for research and internal repeatability unless a separate assessment procedure defines them. A far-field profile can set anatomical models, incident directions, polarizations, normalization, and report fields.
+GOLIAT runs and records simulation studies, but it does not assess compliance. IEC/IEEE~62704-3 defines \gls{fdtd} procedures for mobile-phone \gls{sar} from 30~MHz to 6~GHz~\cite{IEC627043}. IEC/IEEE~63195-2 covers computational incident power density from 6 to 300~GHz~\cite{IEC631952}, and IEEE/IEC P63195-4 is the active project for absorbed power density~\cite{IEEEP631954}. A laboratory that follows these procedures can keep its placements, input power, frequencies, grid rules, averaging mass or area, and report fields in a GOLIAT configuration under change control. The laboratory remains responsible for model qualification, validation of the numerical setup, uncertainty analysis, and its quality system. The main sources of computational variability are discretization, boundary conditions, the averaging algorithm, and the anatomical and dielectric models~\cite{Hirata2026}. GOLIAT records the settings for these sources and has reference solutions (Section~\ref{sec:verification}), but it does not quantify their uncertainty for a given device.
 
-A test laboratory can place a GOLIAT configuration and its job records under change control for repeated pre-compliance studies. The profile gives each device revision the same scenario coordinates and report fields. The configuration diff records changes to the computational procedure. A complete record also lists release identifiers, model identifiers, the material database, and the solver version.
-
-The test laboratory must also qualify device and phantom models, validate the numerical setup, analyze uncertainty, control releases, and follow its quality system. GOLIAT records the selected grid, material set, exposure case, and normalization. Users can use power balance, logs, and metadata to flag suspect runs and review the model setup. However, local scene setup and solver execution require a licensed Sim4Life installation on Windows. The source release does not contain licensed anatomical models. Users must obtain them under the applicable license. Continuous integration can test configuration handling, job management, and analysis code without Sim4Life. Full \gls{fdtd} reproduction still needs the solver and the selected models. Sim4Life version changes need \gls{api} and numerical regression checks.
+Scene setup and solver execution need a licensed Sim4Life installation, either on Windows or through the Sim4Life Python runner on oSPARC. Continuous integration tests configuration handling, job management, analysis, and the analytic references without Sim4Life. Sim4Life version changes need \gls{api} and numerical regression checks.
 
 \section{Conclusions}
 
-GOLIAT uses hierarchical \gls{json} study definitions to create near- and far-field Sim4Life jobs and common analysis-ready results. The completed campaigns have 352 near-field and 550 far-field jobs with configurations, logs, and extracted results. Laboratories can use a controlled profile for repeatable research and pre-compliance studies after they qualify the models, validate the numerical setup, analyze uncertainty, control releases, and follow their quality procedures. Future work could include additional study types, automated quality-control checks, and broader cloud execution.
+GOLIAT uses hierarchical \gls{json} study definitions to create near- and far-field Sim4Life jobs and common analysis-ready results. The completed campaigns have 352 near-field and 550 far-field jobs with configurations, logs, and extracted results. GOLIAT does not assess compliance. A laboratory can keep a GOLIAT configuration under change control for repeatable studies. It must still qualify the models, validate the numerical setup, and analyze uncertainty. Future work could include additional study types, automated quality-control checks, and broader cloud execution.
 
 \section*{Funding}
 

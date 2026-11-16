@@ -19,7 +19,7 @@ Publication in *SoftwareX* and its latest clean PDF.
   raster assets referenced by the manuscript and figures.
 - `references.bib`: manuscript references.
 
-The complete running text is about 2,600 words by `texcount`. SoftwareX sets a 3,000-word limit for the descriptive paper.
+The complete running text is about 3,000 words by `texcount`. SoftwareX sets a 3,000-word limit for the descriptive paper.
 
 ## Template note
 
