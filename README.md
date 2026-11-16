@@ -404,7 +404,7 @@ If you use this software, please cite it as:
   author  = {Wydaeghe, Robin},
   url     = {https://github.com/rwydaegh/goliat},
   license = {Apache-2.0},
-  version = {1.5.0}
+  version = {1.6.0}
 }
 ```
 

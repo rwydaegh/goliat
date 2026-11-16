@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-11-16
+
 ### Added
 
 - `goliat.validation`: license-free analytic references (Mie sphere, planar
@@ -390,7 +392,8 @@ Note that the code was already finished last weekend.
 ### Refactoring
 - **Analysis:** Split strategies.py into multiple files ([#14](https://github.com/rwydaegh/goliat/pull/14), [#15](https://github.com/rwydaegh/goliat/pull/15))
 
-[Unreleased]: https://github.com/rwydaegh/goliat/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/rwydaegh/goliat/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/rwydaegh/goliat/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/rwydaegh/goliat/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/rwydaegh/goliat/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/rwydaegh/goliat/compare/v1.2.3...v1.3.0
