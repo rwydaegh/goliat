@@ -522,3 +522,13 @@
     font-size: 0.75rem;
   }
 }
+.footer-author {
+  margin-top: 0.4rem;
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.md-typeset .footer-author a {
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: underline;
+}
